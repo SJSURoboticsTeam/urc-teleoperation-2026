@@ -1,11 +1,50 @@
-# React + Vite
+# URC Teleoperation 🤖
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### This tool acts as the user interface for operating SJSU Robotic's University Rover Challenge Mars rover remotely.
 
-Currently, two official plugins are available:
+---
+## Project Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
+
+Make sure you have the following installed on your machine:
+
+- [Node.js](https://nodejs.org/) (LTS version recommended)
+- [npm](https://www.npmjs.com/) (comes with Node.js) or [yarn](https://yarnpkg.com/)
+
+---
+
+## Getting Started
+
+### 1. Navigate to your desired folder and Clone the Repository
+```bash
+git clone <repository-url>
+cd urc-teleoperation-2026
+```
+### 2. Install dependencies
+```bash
+npm install
+```
+**Navigate to the ```server directory and install dependencies**
+```bash
+cd ../server
+npm installl
+```
+### 3. Running the Development Environment
+**Start the Client**
+In the ```urc-teleoperation-2026``` directory
+```bash
+npm run dev
+```
+This will start the React Vite development server. Open [http://localhost:5173](http://localhost:5173) in your browser to view the client.
+
+**Start the Server**
+In the ```server``` directory
+```bash
+npm start
+```
+This will start the Node.js server. By default, it will run on [http://localhost:4000](http://localhost:4000).
+
 
 ## Expanding the ESLint configuration
 
