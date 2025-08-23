@@ -1,5 +1,16 @@
+// React imports
 import { useState, useEffect } from 'react'
+// MUI components
+import Box from '@mui/material/Box'
+import CssBaseline from '@mui/material/CssBaseline'
+
+// Local imports
 import './App.css'
+import TopAppBar from './components/TopAppBar'
+import DriveView from './panes/DriveView'
+import ArmView from './panes/ArmView'
+
+// Socket io
 import { socket } from './socket'
 import { ConnectionState } from './components/ConnectionState'
 import { ConnectionManager } from './components/ConnectionManager'
@@ -7,7 +18,9 @@ import { Events } from './components/Events'  // used for logging actions/events
 
 function App() {
   const [isConnected, setIsConnected] = useState(socket.connected)
+  const [currentView, setCurrentView] = useState('DriveView')
 
+  // Handles connection to socket.io server
   useEffect(() => {
     function onConnect() {
       setIsConnected(true)
@@ -26,11 +39,40 @@ function App() {
     }
   }, [])
 
+  // Select which view we want to display
+  function renderView() {
+    switch (currentView) {
+      case 'DriveView':
+        return <DriveView />
+      case 'ArmView':
+        return <ArmView />
+      default:
+        return <div>Select a view</div>
+    }
+  }
+
   return (
-    <div className="App">
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      
+      <CssBaseline /> {/* Normalizes styles */}
+      <div>easter egg :))</div>
       <ConnectionState isConnected={ isConnected } />
       <ConnectionManager />
-    </div>
+      {/* Drawer and Switch views */}
+      <TopAppBar setCurrentView={setCurrentView}></TopAppBar>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'auto',
+        }}
+      >
+        {renderView()}
+      </Box>
+    </Box>
   )
 }
 
