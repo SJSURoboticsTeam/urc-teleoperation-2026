@@ -28,7 +28,7 @@ function DriveUi(){
         
         // call socket.emit; driveCanCommands will be defined
         // and emit
-        socket.emit('Drive Commands', driveCommands)
+        socket.emit('driveCommands', driveCommands)
 
     }, [tolerance, sidewaysVelocity, forwardsVelocity, rotationalVelocity])
 
