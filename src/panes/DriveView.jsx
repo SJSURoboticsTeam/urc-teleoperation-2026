@@ -17,17 +17,14 @@ function DriveUi(){
     const [sidewaysVelocity, setSidewaysVelocity] = useState('0');
     const [forwardsVelocity, setForwardVelocity] = useState('0');
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
-
+   
+    // Sends drive commands to server
     userEffect(() => {
-        // put xvel, yVel, rotVel into JSON and emit
         let driveCommands = {
             xVel: setSidewaysVelocity, 
             yVel: setForwardVelocity, 
             rotVel: setRotationalVelocity, 
         }    
-        
-        // call socket.emit; driveCanCommands will be defined
-        // and emit
         socket.emit('driveCommands', driveCommands)
 
     }, [tolerance, sidewaysVelocity, forwardsVelocity, rotationalVelocity])
