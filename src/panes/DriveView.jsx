@@ -19,11 +19,16 @@ function DriveUi(){
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
 
     userEffect(() => {
-        // translate these values into CAN messages
-
-        // call socket.emit; driveCanCommands will be defined
-        socket.emit('Drive Commands', driveCanCommands)
+        // put xvel, yVel, rotVel into JSON and emit
+        let driveCommands = {
+            xVel: setSidewaysVelocity, 
+            yVel: setForwardVelocity, 
+            rotVel: setRotationalVelocity, 
+        }    
         
+        // call socket.emit; driveCanCommands will be defined
+        // and emit
+        socket.emit('Drive Commands', driveCommands)
 
     }, [tolerance, sidewaysVelocity, forwardsVelocity, rotationalVelocity])
 
