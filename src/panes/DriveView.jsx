@@ -21,9 +21,9 @@ function DriveUi(){
     // Sends drive commands to server
     useEffect(() => {
         let driveCommands = {
-            xVel: SidewaysVelocity, 
-            yVel: ForwardVelocity, 
-            rotVel: RotationalVelocity, 
+            xVel: sidewaysVelocity, 
+            yVel: forwardsVelocity, 
+            rotVel: rotationalVelocity, 
         }    
         socket.emit('driveCommands', driveCommands)
 
