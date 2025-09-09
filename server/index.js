@@ -21,7 +21,9 @@ const ID = {
 }
 
 
-
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 const port = 4000;
 const io = new Server({
     cors: {
@@ -46,17 +48,29 @@ const devices = await binding.list();
 
 const rpiSerial = new SerialPort({
     path: devices[0].path,
-    baudRate: 9600
+    dataBits: 8,
+    baudRate: 115200,
+    stopBits: 1,
+    parity: 'None',
+    autoOpen:true
 })
-
+console.log(devices[0])
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+rpiSerial.on('open', async ()=> {
 
-const parser = rpiSerial.pipe(new ByteLengthParser({length: 1}))
-parser.on('data', (data) => {
-    console.log(decoder.decode(data));
+    console.log('it opened')
+    await sleep(200);
+    await rpiSerial.set({dtr:true, rts:true})
+    await sleep(200);
+    await rpiSerial.set({dtr:false,rts:true})
+    await sleep(200);
+    await rpiSerial.write(encoder.encode('\r\r\r\r'))
+    await sleep(200);
+    await rpiSerial.write(encoder.encode('V\r'))
+    await sleep(200);
+    await rpiSerial.write(encoder.encode('S8\r'))
+    await sleep(200);
+    await rpiSerial.write(encoder.encode('O\r'))
+    await sleep(200);
 })
-
-setInterval(() => {
-    rpiSerial.write(encoder.encode("1"));
-}, 1000)
