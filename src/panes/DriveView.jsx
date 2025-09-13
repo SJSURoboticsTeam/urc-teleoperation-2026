@@ -5,6 +5,7 @@ import {useState} from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import { socket } from '../socket';
 
 // In the future, it's one of these per view (drive, arm, science, etc)}
 function DriveUi(){
@@ -12,6 +13,18 @@ function DriveUi(){
     const [sidewaysVelocity, setSidewaysVelocity] = useState('0');
     const [forwardsVelocity, setForwardVelocity] = useState('0');
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
+   
+    // Sends drive commands to server
+    useEffect(() => {
+        let driveCommands = {
+            xVel: sidewaysVelocity, 
+            yVel: forwardsVelocity, 
+            rotVel: rotationalVelocity, 
+        }    
+        socket.emit('driveCommands', driveCommands)
+
+    }, [tolerance, sidewaysVelocity, forwardsVelocity, rotationalVelocity])
+
 
     const handleChange = (event) => {
         setTolerance(event.target.value);
