@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import {SerialPort} from 'serialport'
-import { ByteLengthParser } from '@serialport/parser-byte-length'
+import { DelimiterParser } from '@serialport/parser-delimiter'
 import { autoDetect } from '@serialport/bindings-cpp';
 
 
@@ -48,22 +48,20 @@ const devices = await binding.list();
 
 const rpiSerial = new SerialPort({
     path: devices[0].path,
-    dataBits: 8,
     baudRate: 115200,
-    stopBits: 1,
-    parity: 'None',
-    autoOpen:true
 })
-console.log(devices[0])
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-rpiSerial.on('open', async ()=> {
 
-    console.log('it opened')
+rpiSerial.on('open', async ()=> {
+    await rpiSerial.set({dtr:false, rts:false})
     await sleep(200);
-    await rpiSerial.set({dtr:true, rts:true})
+    await rpiSerial.set({dtr:false, rts:true})
     await sleep(200);
     await rpiSerial.set({dtr:false,rts:true})
+    await sleep(200)
+    await rpiSerial.set({dtr:false,rts:false})
     await sleep(200);
     await rpiSerial.write(encoder.encode('\r\r\r\r'))
     await sleep(200);
@@ -73,4 +71,9 @@ rpiSerial.on('open', async ()=> {
     await sleep(200);
     await rpiSerial.write(encoder.encode('O\r'))
     await sleep(200);
+})
+
+const parser = rpiSerial.pipe(new DelimiterParser({ delimiter: '\r', includeDelimiter: true }))
+parser.on('data', (data) => {
+    console.log((data))
 })
