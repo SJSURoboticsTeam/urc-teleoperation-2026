@@ -2,6 +2,7 @@ import 'react-resizable/css/styles.css' // Import default styles
 import { createContext } from 'react';
 import { useContext } from 'react';
 import {useState} from 'react';
+import { useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
