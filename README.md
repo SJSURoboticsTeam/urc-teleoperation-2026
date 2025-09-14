@@ -27,8 +27,8 @@ npm install
 ```
 **Navigate to the ```server directory and install dependencies**
 ```bash
-cd ../server
-npm installl
+cd /server
+npm install
 ```
 ### 3. Running the Development Environment
 **Start the Client**
