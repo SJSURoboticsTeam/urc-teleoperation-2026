@@ -23,6 +23,14 @@ export function ConnectionManager() {
 }
 export default function NavConnectionStatus() {
   const [open, setOpen] = useState(false);
+  
+  function connect() {
+    socket.connect();
+  }
+
+  function disconnect() {
+    socket.disconnect();
+  }
 
   return (
       <div style
@@ -47,8 +55,8 @@ export default function NavConnectionStatus() {
             <Typography  sx={{ color: 'black' }}>Latency: 33ms</Typography>
             <TextField id="outlined-basic" label="Server Address" variant="outlined" />
             <ButtonGroup variant="contained" aria-label="Basic button group">
-                <Button color="error" variant="contained">DISCONNECT</Button>
-                <Button color="success" variant="contained">CONNECT</Button>
+                <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>
+                <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
             </ButtonGroup>
             
           </div>
