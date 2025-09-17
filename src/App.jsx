@@ -13,7 +13,6 @@ import ArmView from './panes/ArmView'
 // Socket io
 import { socket } from './socket'
 import { ConnectionState } from './components/ConnectionState'
-import { ConnectionManager } from './components/ConnectionManager'
 import { Events } from './components/Events'  // used for logging actions/events from server/other clients
 
 function App() {
@@ -57,7 +56,6 @@ function App() {
       <CssBaseline /> {/* Normalizes styles */}
       <div>easter egg :))</div>
       <ConnectionState isConnected={ isConnected } />
-      <ConnectionManager />
       {/* Drawer and Switch views */}
       <TopAppBar setCurrentView={setCurrentView}></TopAppBar>
       <Box

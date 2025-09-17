@@ -5,24 +5,8 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 
-export function ConnectionManager() {
-  function connect() {
-    socket.connect();
-  }
 
-  function disconnect() {
-    socket.disconnect();
-  }
-
-  return (
-    <>
-        <button onClick={ connect }>Connect</button>
-        <button onClick={ disconnect }>Disconnect</button>
-    </>
-  )
-}
 export default function NavConnectionStatus() {
-  const [open, setOpen] = useState(false);
   
   function connect() {
     socket.connect();
@@ -53,6 +37,7 @@ export default function NavConnectionStatus() {
           >
             <Typography variant="h6" sx={{ color: 'black' }}>Server info</Typography>
             <Typography  sx={{ color: 'black' }}>Latency: 33ms</Typography>
+            <Typography  sx={{ color: 'black' }}>{ 'Connected=' + socket.connected }</Typography>
             <TextField id="outlined-basic" label="Server Address" variant="outlined" />
             <ButtonGroup variant="contained" aria-label="Basic button group">
                 <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>
