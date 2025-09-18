@@ -19,8 +19,8 @@ export default function NavConnectionStatus() {
       }
   
       function onDisconnect() {
-        setIsConnected(false);
-      }
+      setIsConnected(false);
+  }
   
       socket.on('connect', onConnect)
       socket.on('disconnect', onDisconnect);
@@ -41,7 +41,7 @@ export default function NavConnectionStatus() {
   function ConnectionDetails() {
     if (isConnected) {
       return "CONNECTED";
-    } else {
+    } else {  
       return "DISCONNECTED";
     }
   }
@@ -107,7 +107,7 @@ useEffect(() => {
             {isConnected ? (
               <div>
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
-            <Typography  sx={{ color: 'black' }}>Num Clients: {numConnections}</Typography>
+            <Typography  sx={{ color: 'black' }}>Clients Connected: {numConnections}</Typography>
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>you are offline :(</Typography>}
