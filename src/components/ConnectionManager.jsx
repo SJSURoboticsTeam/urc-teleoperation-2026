@@ -16,13 +16,16 @@ export default function NavConnectionStatus() {
     socket.disconnect();
   }
 
+
+  const [open, setOpen] = useState(false);
   return (
+      
       <div style
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         style={{ position: "relative" }}
       >
-        <span style={{ cursor: "pointer" }}> SERVER: CONNECTED</span>
+        <span style={{ cursor: "pointer" }}> SERVER SETTINGS</span>
 
         {open && (
           <div
