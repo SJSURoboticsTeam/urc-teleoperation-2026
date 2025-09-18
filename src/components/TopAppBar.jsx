@@ -35,7 +35,7 @@ export default function TopAppBar({ setCurrentView }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant='h6' component='div' sx={{}}>
+          <Typography variant='h6' component='div' sx={{}} sx={{ display: { xs: 'none', sm: 'block' } }}>
             Teleoperations
           </Typography>
 
