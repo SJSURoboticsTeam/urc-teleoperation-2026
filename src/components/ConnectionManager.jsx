@@ -47,7 +47,7 @@ export default function NavConnectionStatus() {
 
 useEffect(() => {
   let interval;
-
+  // send a ping to the server every 750ms and measure latency
   function checkLatency() {
     const start = Date.now();
     socket.emit("pingCheck", () => {
@@ -55,7 +55,7 @@ useEffect(() => {
     });
   }
 
-  interval = setInterval(checkLatency, 1000); // every 2s
+  interval = setInterval(checkLatency, 750); 
 
   return () => clearInterval(interval);
 }, []);
@@ -83,14 +83,13 @@ useEffect(() => {
               padding: "10px",
             }}
           >
-            <Typography variant="h6" sx={{ color: 'black' }}>Server info</Typography>
-            <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
-            <Typography  sx={{ color: 'black' }}>{ 'Connected=' + isConnected }</Typography>
-            <TextField id="outlined-basic" label="Server Address" variant="outlined" />
+    
             <ButtonGroup variant="contained" aria-label="Basic button group">
                 <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>
                 <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
             </ButtonGroup>
+            <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
+            <TextField id="outlined-basic" label="Server Address" variant="outlined" />
             
           </div>
         )}
