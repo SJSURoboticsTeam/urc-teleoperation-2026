@@ -15,27 +15,9 @@ import { socket } from './socket'
 import { Events } from './components/Events'  // used for logging actions/events from server/other clients
 
 function App() {
-  const [isConnected, setIsConnected] = useState(socket.connected)
+  
   const [currentView, setCurrentView] = useState('DriveView')
 
-  // Handles connection to socket.io server
-  useEffect(() => {
-    function onConnect() {
-      setIsConnected(true)
-    }
-
-    function onDisconnect() {
-      setIsConnected(false)
-    }
-
-    socket.on('connect', onConnect)
-    socket.on('disconnect', onDisconnect)
-
-    return () => {
-      socket.off('connect', onConnect)
-      socket.off('disconnect', onDisconnect)
-    }
-  }, [])
 
   // Select which view we want to display
   function renderView() {

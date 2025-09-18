@@ -1,5 +1,5 @@
 import { socket } from "../socket";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -8,6 +8,28 @@ import ButtonGroup from '@mui/material/ButtonGroup';
 
 export default function NavConnectionStatus() {
   
+    const [isConnected, setIsConnected] = useState(socket.connected)
+    const [latency, setLatency] = useState(null);
+  
+    // Handles connection to socket.io server
+    useEffect(() => {
+      function onConnect() {
+        setIsConnected(true);
+      }
+  
+      function onDisconnect() {
+        setIsConnected(false);
+      }
+  
+      socket.on('connect', onConnect)
+      socket.on('disconnect', onDisconnect);
+  
+      return () => {
+        socket.off('connect', onConnect)
+        socket.off('disconnect', onDisconnect);
+      }
+    }, [])
+  
   function connect() {
     socket.connect();
   }
@@ -15,6 +37,29 @@ export default function NavConnectionStatus() {
   function disconnect() {
     socket.disconnect();
   }
+  function ConnectionDetails() {
+    if (isConnected) {
+      return "CONNECTED";
+    } else {
+      return "DISCONNECTED";
+    }
+  }
+
+useEffect(() => {
+  let interval;
+
+  function checkLatency() {
+    const start = Date.now();
+    socket.emit("pingCheck", () => {
+      setLatency(Date.now() - start);
+    });
+  }
+
+  interval = setInterval(checkLatency, 1000); // every 2s
+
+  return () => clearInterval(interval);
+}, []);
+
 
 
   const [open, setOpen] = useState(false);
@@ -25,7 +70,7 @@ export default function NavConnectionStatus() {
         onMouseLeave={() => setOpen(false)}
         style={{ position: "relative" }}
       >
-        <span style={{ cursor: "pointer" }}> SERVER SETTINGS</span>
+        <span style={{ cursor: "pointer" }}> { 'SERVER: ' + ConnectionDetails() } </span>
 
         {open && (
           <div
@@ -39,8 +84,8 @@ export default function NavConnectionStatus() {
             }}
           >
             <Typography variant="h6" sx={{ color: 'black' }}>Server info</Typography>
-            <Typography  sx={{ color: 'black' }}>Latency: 33ms</Typography>
-            <Typography  sx={{ color: 'black' }}>{ 'Connected=' + socket.connected }</Typography>
+            <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
+            <Typography  sx={{ color: 'black' }}>{ 'Connected=' + isConnected }</Typography>
             <TextField id="outlined-basic" label="Server Address" variant="outlined" />
             <ButtonGroup variant="contained" aria-label="Basic button group">
                 <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>

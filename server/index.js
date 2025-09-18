@@ -18,3 +18,9 @@ io.on("connection", (socket) => {
 io.listen(port, () => {
     console.log(`Server: http://localhost:${port}`)
 })
+// latency check
+io.on("connection", (socket) => {
+  socket.on("pingCheck", (cb) => {
+    cb(); // immediately respond
+  });
+});
