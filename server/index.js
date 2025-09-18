@@ -2,9 +2,10 @@ import { Server } from "socket.io";
 
 const port = 4000;
 const io = new Server({
-    cors: {
-        origin: "http://localhost:5173" // Allows requests from React app
-    },
+  cors: {
+    origin: true, // reflects request origin
+    methods: ["GET", "POST"],
+  },
 });
 
 io.on("connection", (socket) => {
