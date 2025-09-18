@@ -89,7 +89,7 @@ useEffect(() => {
                 <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
             </ButtonGroup>
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
-            <TextField id="outlined-basic" label="Server Address" variant="outlined" />
+             {/* <TextField id="outlined-basic" label="Address Placeholder" variant="outlined" /> */}
             
           </div>
         )}
