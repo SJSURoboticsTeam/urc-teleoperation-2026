@@ -27,10 +27,8 @@ io.on("connection", (socket) => {
   socket.on("pingCheck", (cb) => {
     cb(); // immediately respond
   });
-});
-
-io.on("connection", (socket) => {
-  socket.on("getConnections", (cb) => {
+    socket.on("getConnections", (cb) => {
     cb(connections);
   });
 });
+

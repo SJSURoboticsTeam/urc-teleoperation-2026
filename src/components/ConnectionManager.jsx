@@ -104,8 +104,13 @@ useEffect(() => {
                 <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>
                 <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
             </ButtonGroup>
+            {isConnected ? (
+              <div>
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
             <Typography  sx={{ color: 'black' }}>Num Clients: {numConnections}</Typography>
+              </div>
+            ):
+              <Typography  sx={{ color: 'black' }}>you are offline :(</Typography>}
              {/* <TextField id="outlined-basic" label="Address Placeholder" variant="outlined" /> */}
             
           </div>
