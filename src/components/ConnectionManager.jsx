@@ -10,6 +10,7 @@ export default function NavConnectionStatus() {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [latency, setLatency] = useState(null);
+    const [numConnections, setNumConnections] = useState(0);
   
     // Handles connection to socket.io server
     useEffect(() => {
@@ -61,6 +62,21 @@ useEffect(() => {
 }, []);
 
 
+useEffect(() => {
+  let interval;
+  // send a ping to the server every 750ms and measure latency
+  function numClients() {
+    socket.emit("getConnections", (connections) => {
+      setNumConnections(connections);
+    });
+  }
+
+  interval = setInterval(numClients, 2000); 
+
+  return () => clearInterval(interval);
+}, []);
+
+
 
   const [open, setOpen] = useState(false);
   return (
@@ -89,6 +105,7 @@ useEffect(() => {
                 <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
             </ButtonGroup>
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
+            <Typography  sx={{ color: 'black' }}>Num Clients: {numConnections}</Typography>
              {/* <TextField id="outlined-basic" label="Address Placeholder" variant="outlined" /> */}
             
           </div>

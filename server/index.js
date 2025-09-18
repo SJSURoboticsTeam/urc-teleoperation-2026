@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 
 const port = 4000;
+var connections = 0;
 const io = new Server({
   cors: {
     origin: true, // reflects request origin
@@ -9,10 +10,12 @@ const io = new Server({
 });
 
 io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.id}`);
-
+    const ip = socket.handshake.address;
+  console.log(`User connected: ${socket.id} at ${ip}`);
+    connections++;
     socket.on("disconnect", () => {
         console.log(`User disconnected: ${socket.id}`)
+        connections--;
     });
 });
 
@@ -23,5 +26,11 @@ io.listen(port, () => {
 io.on("connection", (socket) => {
   socket.on("pingCheck", (cb) => {
     cb(); // immediately respond
+  });
+});
+
+io.on("connection", (socket) => {
+  socket.on("getConnections", (cb) => {
+    cb(connections);
   });
 });
