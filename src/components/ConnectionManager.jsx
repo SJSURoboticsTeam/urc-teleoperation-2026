@@ -72,7 +72,6 @@ useEffect(() => {
   }
 
   interval = setInterval(numClients, 2000); 
-
   return () => clearInterval(interval);
 }, []);
 
@@ -81,13 +80,12 @@ useEffect(() => {
   const [open, setOpen] = useState(false);
   return (
       
-      <div style
+      <div
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        style={{ position: "relative" }}
+        style={{ position: "relative", cursor: "pointer" }}
       >
-        <span style={{ cursor: "pointer" }}> { 'SERVER: ' + ConnectionDetails() } </span>
-
+        <span> { 'SERVER: ' + ConnectionDetails() } </span>
         {open && (
           <div
             style={{
