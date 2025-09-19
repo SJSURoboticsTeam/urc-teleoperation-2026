@@ -35,6 +35,7 @@ export default function TopAppBar({ setCurrentView }) {
           >
             <MenuIcon />
           </IconButton>
+          {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
           <Typography variant='h6' component='div' sx={{ display: { xs: 'none', sm: 'block' } }}>
             Teleoperations
           </Typography>

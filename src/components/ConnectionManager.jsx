@@ -64,7 +64,7 @@ useEffect(() => {
 
 useEffect(() => {
   let interval;
-  // send a ping to the server every 750ms and measure latency
+  // send a ping to the server every 2s to get number of connected clients from backend
   function numClients() {
     socket.emit("getConnections", (connections) => {
       setNumConnections(connections);
@@ -83,6 +83,7 @@ useEffect(() => {
       <div
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
+        // needed to detect hover and placement of popup
         style={{ position: "relative", cursor: "pointer" }}
       >
         <span> { 'SERVER: ' + ConnectionDetails() } </span>

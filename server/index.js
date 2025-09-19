@@ -11,12 +11,13 @@ const io = new Server({
 
 io.on("connection", (socket) => {
     const ip = socket.handshake.address;
+    // log connection with socket id and ip address
   console.log(`User connected: ${socket.id} at ${ip}`);
-    connections++;
-    socket.on("disconnect", () => {
-        console.log(`User disconnected: ${socket.id}`)
-        connections--;
-    });
+  connections++;
+  socket.on("disconnect", () => {
+      console.log(`User disconnected: ${socket.id}`)
+      connections--;
+  });
 });
 
 io.listen(port, () => {
