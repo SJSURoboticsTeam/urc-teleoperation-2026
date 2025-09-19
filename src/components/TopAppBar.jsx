@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
+import NavConnectionStatus from './ConnectionManager';
 
 export default function TopAppBar({ setCurrentView }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -34,7 +35,8 @@ export default function TopAppBar({ setCurrentView }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant='h6' component='div' sx={{}}>
+          {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
+          <Typography variant='h6' component='div' sx={{ display: { xs: 'none', sm: 'block' } }}>
             Teleoperations
           </Typography>
 
@@ -51,6 +53,9 @@ export default function TopAppBar({ setCurrentView }) {
           >
             Arm View
           </Button>
+          { /* fill the space between the buttons and the connection status */ }
+          <div style={{ flexGrow: 1 }} />
+          <NavConnectionStatus />
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
