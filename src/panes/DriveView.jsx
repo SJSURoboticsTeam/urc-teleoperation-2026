@@ -57,7 +57,6 @@ function DriveUi(){
         setTolerance(event.target.value);
     };
     return (
-        <>
         <section>
             <Box
             sx={{ 
@@ -149,15 +148,16 @@ function DriveUi(){
                 alignItems: 'center',
                 width: '350px',
                 height: '200px',
-                marginTop: 5,
+                gap:4,
+                p:2,
                 }}>
                 <SportsEsportsIcon sx={{color:controllerno>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
                 {/* sx={{color:pink[500]}} */}
             </Box>
-            <GamepadDebug></GamepadDebug></Box>
+            <GamepadDebug></GamepadDebug>
+            </Box>
             </Box>
         </section>
-        </>
         );
     }
 
