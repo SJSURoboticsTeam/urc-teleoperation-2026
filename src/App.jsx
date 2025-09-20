@@ -7,7 +7,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 // Local imports
 import './App.css'
 import TopAppBar from './components/TopAppBar'
-import DriveView from './panes/DriveView'
+import DriveView from './panes/drive/DriveView'
 import ArmView from './panes/ArmView'
 
 // Socket io
