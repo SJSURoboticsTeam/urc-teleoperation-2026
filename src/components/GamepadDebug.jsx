@@ -16,6 +16,7 @@ export default function GamepadDebug() {
           leftStick: { x: gp.axes[0], y: gp.axes[1] },
           rightStick: { x: gp.axes[2], y: gp.axes[3] },
         });
+        console.log(gp)
       }
 
       setGamepadAxes(axesData);

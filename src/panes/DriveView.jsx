@@ -6,7 +6,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { green } from "@mui/material/colors";
-import GamepadDebug from './GamepadDebug'
+import GamepadDebug from '../components/GamepadDebug'
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 //test
 // In the future, it's one of these per view (drive, arm, science, etc)
