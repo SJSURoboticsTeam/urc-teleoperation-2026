@@ -3,12 +3,11 @@ import { useEffect } from 'react';
 import {useState} from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
 import { socket } from '../../socket';
+import Button from '@mui/material/Button';
 
 // In the future, it's one of these per view (drive, arm, science, etc)}
 function DriveUi(){
-    const [tolerance, setTolerance] = useState('0');
     const [sidewaysVelocity, setSidewaysVelocity] = useState('0');
     const [forwardsVelocity, setForwardVelocity] = useState('0');
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
@@ -22,26 +21,20 @@ function DriveUi(){
         }    
         socket.emit('driveCommands', driveCommands)
 
-    }, [tolerance, sidewaysVelocity, forwardsVelocity, rotationalVelocity])
+    }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity])
 
 
-    const handleChange = (event) => {
-        setTolerance(event.target.value);
+    const handleClick= (event) => {
+        socket.emit('driveHoming')
     };
     const velocities = [{id: sidewaysVelocity, name: "Sideways Velocity"}, 
                         {id: forwardsVelocity, name: "Forward Velocity"}, 
                         {id: rotationalVelocity, name: "Rotational Velocity"}];    
     return (
-        <section>
-            <div sx={{display: 'flex', justifyContent: "flex-start"}}>
-                <TextField
-                    label="tolerance field"
-                    variant="outlined"
-                    size="small"
-                    value={tolerance}
-                    onChange= {handleChange}
-                />
-            </div>
+        <Box>
+            <Button onclick ={handleClick}>
+                Homing 
+            </Button>
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, marginTop: 2,}}>
                 {velocities.map((velocity) => (
                     <Box
@@ -64,7 +57,7 @@ function DriveUi(){
                     </Box>
                 ))}
             </Box>
-        </section>
+        </Box>
         );
     }
 
