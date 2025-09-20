@@ -5,19 +5,17 @@ import { autoDetect } from '@serialport/bindings-cpp';
 
 
 const ID = {
-    STOP: 0x0E,
-    HEARTBEAT: 0x0D,
-    HEARTBEAT_REPLY: 0x0F,
-    HOMING_SEQUENCE: 0x110,
-    GET_OFFSET: 0x111,
-    RETURN_OFFSET: 0x112,
-    SET_TRANSLATION_VELOCITY: 0x113,
-    SET_ROTATIONAL_VELOCITY: 0x114,
-    SET_VELOCITY_RESPONSE: 0x115,
-    GET_ESTIMATED_VELOCITY: 0x116,
-    RETURN_ESTIMATED_VELOCITY: 0x117,
-    RETURN_ESTIMATED_ROTATION: 0x118,
-    CONFIG: 0x119
+    SET_CHASSIS_VELOCITIES: 0X0C,
+    SET_VELOCITIES_RESPONSE: 0x0D,
+    HEARTBEAT: 0x0E,
+    HEARTBEAT_REPLY: 0X0F,
+    HOMING_SEQUENCE: 0X100,
+    HOMING_SEQUENCE_RESPONSE: 0x111,
+    GET_OFFSET: 0X112,
+    RETURN_OFFSET: 0X113,
+    GET_ESTIMATED_VELOCITIES: 0X114,
+    RETURN_ESTIMATED_CHASSIS_VELOCITIES: 0X115,
+    CONFIG: 0X119
 }
 
 
@@ -74,6 +72,40 @@ rpiSerial.on('open', async ()=> {
 })
 
 const parser = rpiSerial.pipe(new DelimiterParser({ delimiter: '\r', includeDelimiter: true }))
+
 parser.on('data', (data) => {
-    console.log((data))
+
+    if (data.byteLength != 22) {
+        console.log("Potentially bad data\n")
+        console.log(decoder.decode(data))
+    }
+
+    if (data.includes('\r')) {
+        console.log(decoder.decode(data))
+        parseCanMessage(data)
+    }
 })
+
+function parseCanMessage(data) {
+    const canID = data[1] << 16 | data[2] << 8 | data[3];
+
+    if (canID = ID.SET_VELOCITIES_RESPONSE) {
+
+    }
+
+    else if (canID = ID.HEARTBEAT_REPLY) {
+
+    }
+
+    else if (canID = ID.HOMING_SEQUENCE_RESPONSE) {
+
+    }
+
+    else if (canID = ID.RETURN_OFFSET) {
+
+    }
+
+    else if (canID = ID.RETURN_ESTIMATED_CHASSIS_VELOCITIES) {
+        
+    }
+}
