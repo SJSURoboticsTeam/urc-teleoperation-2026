@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { green } from "@mui/material/colors";
+import GamepadDebug from './GamepadDebug'
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 //test
 // In the future, it's one of these per view (drive, arm, science, etc)
@@ -32,7 +33,7 @@ function DriveUi(){
     };
     useEffect(()=>{
         if (controllerno>0)
-        alert("Number of controllers connected:"+ controllerno);
+        alert("Number of controllers currently connected:"+ controllerno);
     },[controllerno])
     useEffect(() => {
         const handleConnect = (e) => {
@@ -58,6 +59,21 @@ function DriveUi(){
     return (
         <>
         <section>
+            <Box
+            sx={{ 
+                display: "flex",
+                flexDirection: "row",     
+                gap: 4,
+                p: 2,    
+            }}>
+                <Box
+            sx={{ 
+                display: "flex",
+                flexDirection: "column",     
+                gap: 4,
+                p: 2,    
+            }}
+            >
             <div sx={{display: 'flex', justifyContent: "flex-start"}}>
                 <TextField
                     label="tolerance field"
@@ -123,7 +139,8 @@ function DriveUi(){
                 </Typography>
             </Box>
             </Box>
-
+                </Box>
+            <Box>
             <Box
             sx={{
                 display: 'flex',
@@ -136,6 +153,8 @@ function DriveUi(){
                 }}>
                 <SportsEsportsIcon sx={{color:controllerno>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
                 {/* sx={{color:pink[500]}} */}
+            </Box>
+            <GamepadDebug></GamepadDebug></Box>
             </Box>
         </section>
         </>
