@@ -1,20 +1,61 @@
 import 'react-resizable/css/styles.css' // Import default styles
 import { createContext } from 'react';
 import { useContext } from 'react';
-import {useState} from 'react';
-import { useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { socket } from '../socket';
-
+import { green } from "@mui/material/colors";
+import Gamepad from '../components/Gamepad'
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+//test
 // In the future, it's one of these per view (drive, arm, science, etc)}
+
 function DriveUi(){
     const [tolerance, setTolerance] = useState('0');
     const [sidewaysVelocity, setSidewaysVelocity] = useState('0');
     const [forwardsVelocity, setForwardVelocity] = useState('0');
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
-   
+    const [gamepads,setGamepads]=useState({})
+    const [controllerno,setControllerno]=useState(0)
+    const gamepadHandler = (event, connected) => {
+        const gamepad = event.gamepad;
+        const regex=new RegExp('STANDARD','i');
+        if (connected) {
+        if (regex.test(gamepad.id))
+        setGamepads({...gamepads,[gamepad.index]:gamepad});
+        } else {
+        setGamepads((prev) => {
+          const copy = { ...prev };
+          delete copy[gamepad.index];
+          return copy;
+        });
+        alert("you disconnected controller index "+gamepad.index);
+        }
+    };
+    useEffect(()=>{
+        if (controllerno>0)
+        alert("Number of controllers currently connected:"+ controllerno);
+    },[controllerno])
+    useEffect(() => {
+        const handleConnect = (e) => {
+        setControllerno(prev => {return prev + 1;});
+        gamepadHandler(e, true);
+        };
+    const handleDisconnect = (e) => {
+        setControllerno(prev => {Math.max(prev - 1, 0)});
+        gamepadHandler(e, false);
+    };
+
+    window.addEventListener("gamepadconnected", handleConnect);
+    window.addEventListener("gamepaddisconnected", handleDisconnect);
+
+    return () => {
+      window.removeEventListener("gamepadconnected", handleConnect);
+      window.removeEventListener("gamepaddisconnected", handleDisconnect);
+    };
+    }, []);   
     // Sends drive commands to server
     useEffect(() => {
         let driveCommands = {
@@ -35,6 +76,21 @@ function DriveUi(){
                         {id: rotationalVelocity, name: "Rotational Velocity"}];    
     return (
         <section>
+            <Box
+            sx={{ 
+                display: "flex",
+                flexDirection: "row",     
+                gap: 4,
+                p: 2,    
+            }}>
+                <Box
+            sx={{ 
+                display: "flex",
+                flexDirection: "column",     
+                gap: 4,
+                p: 2,    
+            }}
+            >
             <div sx={{display: 'flex', justifyContent: "flex-start"}}>
                 <TextField
                     label="tolerance field"
@@ -65,6 +121,29 @@ function DriveUi(){
                         </Typography>
                     </Box>
                 ))}
+            </Box>
+            <Box
+            sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: '350px',
+                height: '200px',
+                gap:4,
+                marginTop:5,
+                p:2,
+                }}>
+                <SportsEsportsIcon sx={{color:controllerno>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
+            </Box>
+            </Box>
+            <Box >
+            <Gamepad onVelocitiesChange={(vel)=>{
+                setForwardVelocity(vel.ly.toPrecision(2));
+                setRotationalVelocity(vel.rx.toPrecision(2));
+                setSidewaysVelocity(vel.lx.toPrecision(2));
+            }} gamepads={gamepads}></Gamepad>
+            </Box>
             </Box>
         </section>
         );
