@@ -17,15 +17,20 @@ function DriveUi(){
     const [sidewaysVelocity, setSidewaysVelocity] = useState('0');
     const [forwardsVelocity, setForwardVelocity] = useState('0');
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
-    const gamepads={}
+    const [gamepads,setGamepads]=useState({})
     const [controllerno,setControllerno]=useState(0)
     const gamepadHandler = (event, connected) => {
         const gamepad = event.gamepad;
         const regex=new RegExp('STANDARD','i');
         if (connected) {
-        gamepads[gamepad.index] = gamepad;
+        if (regex.test(gamepad.id))
+        setGamepads({...gamepads,[gamepad.index]:gamepad});
         } else {
-        delete gamepads[gamepad.index];
+        setGamepads((prev) => {
+          const copy = { ...prev };
+          delete copy[gamepad.index];
+          return copy;
+        });
         alert("you disconnected controller index "+gamepad.index);
         }
     };
@@ -137,7 +142,7 @@ function DriveUi(){
                 setForwardVelocity(vel.ly.toPrecision(2));
                 setRotationalVelocity(vel.rx.toPrecision(2));
                 setSidewaysVelocity(vel.lx.toPrecision(2));
-            }}></GamepadDebug>
+            }} gamepads={gamepads}></GamepadDebug>
             </Box>
             </Box>
         </section>
