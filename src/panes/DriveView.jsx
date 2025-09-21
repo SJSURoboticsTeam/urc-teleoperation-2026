@@ -5,15 +5,12 @@ import {useState, useEffect} from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import { socket } from '../socket';
 import { green } from "@mui/material/colors";
 import GamepadDebug from '../components/GamepadDebug'
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 //test
-// In the future, it's one of these per view (drive, arm, science, etc)
-const ThemeContext = createContext('null');
-function DriveThemeContext(){
-
-}
+// In the future, it's one of these per view (drive, arm, science, etc)}
 
 function DriveUi(){
     const [tolerance, setTolerance] = useState('0');
@@ -52,10 +49,25 @@ function DriveUi(){
       window.removeEventListener("gamepadconnected", handleConnect);
       window.removeEventListener("gamepaddisconnected", handleDisconnect);
     };
-    }, []);
+    }, []);   
+    // Sends drive commands to server
+    useEffect(() => {
+        let driveCommands = {
+            xVel: sidewaysVelocity, 
+            yVel: forwardsVelocity, 
+            rotVel: rotationalVelocity, 
+        }    
+        socket.emit('driveCommands', driveCommands)
+
+    }, [tolerance, sidewaysVelocity, forwardsVelocity, rotationalVelocity])
+
+
     const handleChange = (event) => {
         setTolerance(event.target.value);
     };
+    const velocities = [{id: sidewaysVelocity, name: "Sideways Velocity"}, 
+                        {id: forwardsVelocity, name: "Forward Velocity"}, 
+                        {id: rotationalVelocity, name: "Rotational Velocity"}];    
     return (
         <section>
             <Box
@@ -83,60 +95,26 @@ function DriveUi(){
                 />
             </div>
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, marginTop: 2,}}>
-            <Box
-                sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                alignItems: 'center',
-                border: '2px solid #000000',
-                width: '100px',
-                height: '60px',
-                borderRadius: 2,
-                marginTop: 5,
-                }}
-            >
-                <Typography variant="body1" sx={{marginTop: 10}}>{sidewaysVelocity}</Typography>
-                <Typography variant="body2" sx={{ marginTop: 5}}>
-                 sidewaysVel km/s
-                </Typography>
-            </Box>
-            <Box
-                sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                alignItems: 'center',
-                border: '2px solid #000000',
-                width: '100px',
-                height: '60px',
-                borderRadius: 2,
-                marginTop: 5,
-                }}
-            >
-                <Typography variant="body1" sx={{marginTop: 10}}>{forwardsVelocity}</Typography>
-                <Typography variant="body2" sx={{ marginTop: 5 }}>
-                 forwardVel km/s
-                </Typography>
-            </Box>
-            <Box
-                sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                alignItems: 'center',
-                border: '2px solid #000000',
-                width: '100px',
-                height: '60px',
-                borderRadius: 2,
-                marginTop: 5,
-                }}
-            >
-                <Typography variant="body1" sx={{marginTop: 10}}>{rotationalVelocity}</Typography>
-                <Typography variant="body2"sx={{marginTop: 5}}>
-                 rotationalVel rad/s
-                </Typography>
-            </Box>
+                {velocities.map((velocity) => (
+                    <Box
+                        sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        border: '2px solid #000000',
+                        width: '100px',
+                        height: '60px',
+                        borderRadius: 2,
+                        marginTop: 5,
+                        }}
+                    >
+                        <Typography variant="body1" sx={{marginTop: 10}}>{velocity.id}</Typography>
+                        <Typography variant="body2" sx={{ marginTop: 5}}>
+                         {velocity.name} 
+                        </Typography>
+                    </Box>
+                ))}
             </Box>
                 </Box>
             <Box>
