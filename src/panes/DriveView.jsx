@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import { socket } from '../socket';
 import { green } from "@mui/material/colors";
-import GamepadDebug from '../components/GamepadDebug'
+import Gamepad from '../components/Gamepad'
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 //test
 // In the future, it's one of these per view (drive, arm, science, etc)}
@@ -138,11 +138,11 @@ function DriveUi(){
             </Box>
             </Box>
             <Box >
-            <GamepadDebug onVelocitiesChange={(vel)=>{
+            <Gamepad onVelocitiesChange={(vel)=>{
                 setForwardVelocity(vel.ly.toPrecision(2));
                 setRotationalVelocity(vel.rx.toPrecision(2));
                 setSidewaysVelocity(vel.lx.toPrecision(2));
-            }} gamepads={gamepads}></GamepadDebug>
+            }} gamepads={gamepads}></Gamepad>
             </Box>
             </Box>
         </section>
