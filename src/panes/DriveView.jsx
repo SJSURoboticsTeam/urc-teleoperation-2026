@@ -117,8 +117,6 @@ function DriveUi(){
                     </Box>
                 ))}
             </Box>
-                </Box>
-            <Box>
             <Box
             sx={{
                 display: 'flex',
@@ -128,10 +126,13 @@ function DriveUi(){
                 width: '350px',
                 height: '200px',
                 gap:4,
+                marginTop:5,
                 p:2,
                 }}>
                 <SportsEsportsIcon sx={{color:controllerno>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
             </Box>
+            </Box>
+            <Box >
             <GamepadDebug onVelocitiesChange={(vel)=>{
                 setForwardVelocity(vel.ly.toPrecision(2));
                 setRotationalVelocity(vel.rx.toPrecision(2));

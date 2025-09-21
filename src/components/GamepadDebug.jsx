@@ -38,7 +38,7 @@ export default function Gamepad({onVelocitiesChange}) {
       if (gp) {
         const newVel = {
           lx: gp.axes[0] || 0,
-          ly: gp.axes[1] || 0,
+          ly: -gp.axes[1] || 0,
           rx: gp.axes[2] || 0,
         };
         setVelocities(newVel);
@@ -52,7 +52,7 @@ export default function Gamepad({onVelocitiesChange}) {
   }, [connectedOne,onVelocitiesChange]);
 
   return (
-    <section>
+    <Box>
       <Typography variant="h5" sx={{ marginBottom: 2 }}>
         Connected Gamepads
       </Typography>
@@ -87,6 +87,6 @@ export default function Gamepad({onVelocitiesChange}) {
           </Box>
         ))}
       </Box>
-    </section>
+    </Box>
   );
 }
