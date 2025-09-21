@@ -21,6 +21,7 @@ function DriveUi(){
     const [controllerno,setControllerno]=useState(0)
     const gamepadHandler = (event, connected) => {
         const gamepad = event.gamepad;
+        const regex=new RegExp('STANDARD','i');
         if (connected) {
         gamepads[gamepad.index] = gamepad;
         } else {
@@ -130,9 +131,12 @@ function DriveUi(){
                 p:2,
                 }}>
                 <SportsEsportsIcon sx={{color:controllerno>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
-                {/* sx={{color:pink[500]}} */}
             </Box>
-            <GamepadDebug></GamepadDebug>
+            <GamepadDebug onVelocitiesChange={(vel)=>{
+                setForwardVelocity(vel.ly.toPrecision(2));
+                setRotationalVelocity(vel.rx.toPrecision(2));
+                setSidewaysVelocity(vel.lx.toPrecision(2));
+            }}></GamepadDebug>
             </Box>
             </Box>
         </section>
