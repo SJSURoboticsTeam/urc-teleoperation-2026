@@ -16,8 +16,10 @@
     "@mui/material": "^7.1.2",
     "@mui/system": "^7.1.1",
     "express": "^4.21.2",
-    "react": "^19.1.0",
+    "leaflet": "^1.9.4",
+    "react": "^19.1.1",
     "react-dom": "^19.1.0",
+    "react-leaflet": "^5.0.0-rc.2",
     "react-resizable": "^3.0.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
