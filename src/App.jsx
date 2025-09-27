@@ -7,37 +7,17 @@ import CssBaseline from '@mui/material/CssBaseline'
 // Local imports
 import './App.css'
 import TopAppBar from './components/TopAppBar'
-import DriveView from './panes/DriveView'
+import DriveView from './panes/drive/DriveView'
 import ArmView from './panes/ArmView'
 
 // Socket io
 import { socket } from './socket'
-import { ConnectionState } from './components/ConnectionState'
-import { ConnectionManager } from './components/ConnectionManager'
 import { Events } from './components/Events'  // used for logging actions/events from server/other clients
 
 function App() {
-  const [isConnected, setIsConnected] = useState(socket.connected)
+  
   const [currentView, setCurrentView] = useState('DriveView')
 
-  // Handles connection to socket.io server
-  useEffect(() => {
-    function onConnect() {
-      setIsConnected(true)
-    }
-
-    function onDisconnect() {
-      setIsConnected(false)
-    }
-
-    socket.on('connect', onConnect)
-    socket.on('disconnect', onDisconnect)
-
-    return () => {
-      socket.off('connect', onConnect)
-      socket.off('disconnect', onDisconnect)
-    }
-  }, [])
 
   // Select which view we want to display
   function renderView() {
@@ -56,8 +36,6 @@ function App() {
       
       <CssBaseline /> {/* Normalizes styles */}
       <div>easter egg :))</div>
-      <ConnectionState isConnected={ isConnected } />
-      <ConnectionManager />
       {/* Drawer and Switch views */}
       <TopAppBar setCurrentView={setCurrentView}></TopAppBar>
       <Box
