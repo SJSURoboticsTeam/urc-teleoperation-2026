@@ -18,12 +18,11 @@ function DriveUi(){
     const [forwardsVelocity, setForwardVelocity] = useState('0');
     const [rotationalVelocity, setRotationalVelocity] = useState('0');
     const [gamepads,setGamepads]=useState({})
-    const [controllerno,setControllerno]=useState(0)
     const gamepadHandler = (event, connected) => {
         const gamepad = event.gamepad;
         const regex=new RegExp('STANDARD','i');
         if (connected) {
-        if (regex.test(gamepad.id))
+        //if (regex.test(gamepad.id))
         setGamepads({...gamepads,[gamepad.index]:gamepad});
         } else {
         setGamepads((prev) => {
@@ -34,27 +33,21 @@ function DriveUi(){
         alert("you disconnected controller index "+gamepad.index);
         }
     };
-    useEffect(()=>{
-        if (controllerno>0)
-        alert("Number of controllers currently connected:"+ controllerno);
-    },[controllerno])
     useEffect(() => {
         const handleConnect = (e) => {
-        setControllerno(prev => {return prev + 1;});
         gamepadHandler(e, true);
         };
-    const handleDisconnect = (e) => {
-        setControllerno(prev => {Math.max(prev - 1, 0)});
+        const handleDisconnect = (e) => {
         gamepadHandler(e, false);
-    };
+        };
 
-    window.addEventListener("gamepadconnected", handleConnect);
-    window.addEventListener("gamepaddisconnected", handleDisconnect);
+        window.addEventListener("gamepadconnected", handleConnect);
+        window.addEventListener("gamepaddisconnected", handleDisconnect);
 
-    return () => {
-      window.removeEventListener("gamepadconnected", handleConnect);
-      window.removeEventListener("gamepaddisconnected", handleDisconnect);
-    };
+        return () => {
+            window.removeEventListener("gamepadconnected", handleConnect);
+            window.removeEventListener("gamepaddisconnected", handleDisconnect);
+        };
     }, []);   
     // Sends drive commands to server
     useEffect(() => {
@@ -134,7 +127,7 @@ function DriveUi(){
                 marginTop:5,
                 p:2,
                 }}>
-                <SportsEsportsIcon sx={{color:controllerno>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
+                <SportsEsportsIcon sx={{color:gamepads.length>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
             </Box>
             </Box>
             <Box >
