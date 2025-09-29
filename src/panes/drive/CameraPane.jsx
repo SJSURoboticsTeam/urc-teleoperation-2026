@@ -9,12 +9,17 @@ export default function CameraPane(){
     const handleChange = (event) => {
     setCamera(event.target.value);
     };
-    const cameras= [{value: 'camera 1', image:'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww', name:'camera 1'}, 
-        {value: 'camera 2',image:'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww', name:'camera 2'}];
+    const cameras= [
+    { value: 'Test', name: 'Test', url: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww'},
+    { value: 'Mast Cam',name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
+    { value: 'Under Chasis Cam', name: 'Under Chasis Cam', url: 'http://192.168.1.201:8081/'},
+    { value: 'Front Left Cam', name: 'Front Left Cam', url: 'http://192.168.1.202:8081/'},
+    { value: 'Front Right Cam', name: 'Front Right Cam', url: 'http://192.168.1.203:8081/'},
+    ];
 
     const selectedCamera = cameras.find((cam) => cam.value == camera);
     return(
-        <Box sx={{ minWidth: 120 , mb: 2, }}>
+        <Box sx={{ minWidth: 150, mb: 1, }}>
         <FormControl fullWidth>
             <Select
                 labelId="camera-select-label"
@@ -30,7 +35,7 @@ export default function CameraPane(){
             </Select>
             {selectedCamera && (
                 <img
-                    src={selectedCamera.image}
+                    src={selectedCamera.url}
                     alt={selectedCamera.name}
                     style={{ marginTop: "1rem", maxWidth: "100%" }}
                 />
