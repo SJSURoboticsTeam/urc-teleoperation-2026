@@ -5,11 +5,52 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
+import Gamepad from "./Gamepad";
 
 export default function DriveManualInput() {
   const [sidewaysVelocity, setSidewaysVelocity] = useState("0");
   const [forwardsVelocity, setForwardVelocity] = useState("0");
   const [rotationalVelocity, setRotationalVelocity] = useState("0");
+
+  const [gamepads,setGamepads]=useState({})
+    const [controllerno,setControllerno]=useState(0)
+    const gamepadHandler = (event, connected) => {
+        const gamepad = event.gamepad;
+        const regex=new RegExp('STANDARD','i');
+        if (connected) {
+        if (regex.test(gamepad.id))
+        setGamepads({...gamepads,[gamepad.index]:gamepad});
+        } else {
+        setGamepads((prev) => {
+          const copy = { ...prev };
+          delete copy[gamepad.index];
+          return copy;
+        });
+        alert("you disconnected controller index "+gamepad.index);
+        }
+    };
+    useEffect(()=>{
+        if (controllerno>0)
+        alert("Number of controllers currently connected:"+ controllerno);
+    },[controllerno])
+    useEffect(() => {
+        const handleConnect = (e) => {
+        setControllerno(prev => {return prev + 1;});
+        gamepadHandler(e, true);
+        };
+    const handleDisconnect = (e) => {
+        setControllerno(prev => {Math.max(prev - 1, 0)});
+        gamepadHandler(e, false);
+    };
+
+    window.addEventListener("gamepadconnected", handleConnect);
+    window.addEventListener("gamepaddisconnected", handleDisconnect);
+
+    return () => {
+      window.removeEventListener("gamepadconnected", handleConnect);
+      window.removeEventListener("gamepaddisconnected", handleDisconnect);
+    };
+    }, []);   
 
   // Sends drive commands to server
   useEffect(() => {

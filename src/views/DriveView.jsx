@@ -2,7 +2,7 @@ import 'react-resizable/css/styles.css' // Import default styles
 import DriveManualInput from '../components/drive/DriveManualInput'
 import CameraPane from '../components/drive/CameraPane'
 import Map from '../components/drive/Map'
-import Controller from '../components/drive/Controller'
+import Gamepad from '../components/drive/Gamepad'
 import Wheel from '../components/drive/Wheel'
 
 import '../components/drive/drive.css'
@@ -21,7 +21,7 @@ export default function DriveView (){
                 <CameraPane />
             </div>
             <div class = "item4">
-                <Controller />
+                
             </div>
             <div class = "item5">
                 <Wheel />
