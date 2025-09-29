@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
 import Gamepad from "./Gamepad";
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 
 export default function DriveManualInput() {
   const [sidewaysVelocity, setSidewaysVelocity] = useState("0");
@@ -71,7 +72,7 @@ export default function DriveManualInput() {
     { id: rotationalVelocity, name: "Rotational Velocity" },
   ];
   return (
-    <Box>
+    <Box sx={{display:'flex',flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
       <Button onClick={handleClick}>Homing</Button>
       <Box
         sx={{
@@ -104,6 +105,22 @@ export default function DriveManualInput() {
             </Typography>
           </Box>
         ))}
+      </Box>
+      <Box
+      sx={{
+        marginTop:10,
+        display:'flex',
+        flexDirection:'column',
+        alignItems:'center',
+        justifyContent:'center'
+        }}
+      >
+      <SportsEsportsIcon sx={{color:gamepads.length>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
+      <Gamepad onVelocitiesChange={(vel)=>{
+                setForwardVelocity(vel.ly.toPrecision(2));
+                setRotationalVelocity(vel.rx.toPrecision(2));
+                setSidewaysVelocity(vel.lx.toPrecision(2));
+      }} gamepads={gamepads}></Gamepad>
       </Box>
     </Box>
   );

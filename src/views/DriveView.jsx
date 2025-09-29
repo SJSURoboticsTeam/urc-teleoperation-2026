@@ -2,7 +2,6 @@ import 'react-resizable/css/styles.css' // Import default styles
 import DriveManualInput from '../components/drive/DriveManualInput'
 import CameraPane from '../components/drive/CameraPane'
 import Map from '../components/drive/Map'
-import Gamepad from '../components/drive/Gamepad'
 import Wheel from '../components/drive/Wheel'
 
 import '../components/drive/drive.css'
