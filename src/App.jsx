@@ -7,12 +7,8 @@ import CssBaseline from '@mui/material/CssBaseline'
 // Local imports
 import './App.css'
 import TopAppBar from './components/TopAppBar'
-import DriveView from './panes/drive/DriveView'
-import ArmView from './panes/ArmView'
-
-// Socket io
-import { socket } from './socket'
-import { Events } from './components/Events'  // used for logging actions/events from server/other clients
+import DriveView from './views/DriveView'
+import ArmView from './views/ArmView'
 
 function App() {
   
