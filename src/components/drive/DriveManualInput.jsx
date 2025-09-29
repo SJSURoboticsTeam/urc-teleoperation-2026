@@ -14,8 +14,7 @@ export default function DriveManualInput() {
   const [rotationalVelocity, setRotationalVelocity] = useState("0");
 
   const [gamepads,setGamepads]=useState({})
-    const [controllerno,setControllerno]=useState(0)
-    const gamepadHandler = (event, connected) => {
+  const gamepadHandler = (event, connected) => {
         const gamepad = event.gamepad;
         const regex=new RegExp('STANDARD','i');
         if (connected) {
@@ -27,20 +26,13 @@ export default function DriveManualInput() {
           delete copy[gamepad.index];
           return copy;
         });
-        alert("you disconnected controller index "+gamepad.index);
         }
     };
-    useEffect(()=>{
-        if (controllerno>0)
-        alert("Number of controllers currently connected:"+ controllerno);
-    },[controllerno])
     useEffect(() => {
         const handleConnect = (e) => {
-        setControllerno(prev => {return prev + 1;});
         gamepadHandler(e, true);
         };
     const handleDisconnect = (e) => {
-        setControllerno(prev => {Math.max(prev - 1, 0)});
         gamepadHandler(e, false);
     };
 
