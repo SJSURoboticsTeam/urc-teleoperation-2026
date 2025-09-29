@@ -32,7 +32,7 @@ function DriveUi(){
                         {id: rotationalVelocity, name: "Rotational Velocity"}];    
     return (
         <Box>
-            <Button onclick ={handleClick}>
+            <Button onClick ={handleClick}>
                 Homing 
             </Button>
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, marginTop: 2,}}>
