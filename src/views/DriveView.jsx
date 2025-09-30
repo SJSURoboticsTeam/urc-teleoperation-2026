@@ -1,11 +1,10 @@
 import 'react-resizable/css/styles.css' // Import default styles
-import DriveManualInput from './DriveManualInput'
-import CameraPane from './CameraPane'
-import Map from './Map'
-import Controller from './Controller'
-import Wheel from './Wheel'
+import DriveManualInput from '../components/drive/DriveManualInput'
+import CameraPane from '../components/drive/CameraPane'
+import Map from '../components/drive/Map'
+import Wheel from '../components/drive/Wheel'
 
-import './drive.css'
+import '../components/drive/drive.css'
 
 export default function DriveView (){
     return (
@@ -21,7 +20,7 @@ export default function DriveView (){
                 <CameraPane />
             </div>
             <div class = "item4">
-                <Controller />
+                
             </div>
             <div class = "item5">
                 <Wheel />
