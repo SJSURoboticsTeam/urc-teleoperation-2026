@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
+import { green } from "@mui/material/colors";
 import Gamepad from "./Gamepad";
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 
