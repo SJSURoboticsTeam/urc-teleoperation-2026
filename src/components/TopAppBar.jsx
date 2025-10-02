@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
-import NavConnectionStatus from './ConnectionManager';
+import NavConnectionStatus from './BackendConnectionManager';
 
 export default function TopAppBar({ setCurrentView }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
