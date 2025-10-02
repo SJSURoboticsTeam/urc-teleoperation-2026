@@ -44,18 +44,7 @@ function App() {
       <div>easter egg :))</div>
       {/* Drawer and Switch views */}
       <TopAppBar setCurrentView={setCurrentView}></TopAppBar>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'auto',
-        }}
-      >
-        {renderView()}
-      </Box>
+      {renderView()}
     </Box>
   )
 }
