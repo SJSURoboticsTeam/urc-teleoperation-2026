@@ -1,20 +1,17 @@
 // React imports
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react'
 // MUI components
-import Box from "@mui/material/Box";
-import CssBaseline from "@mui/material/CssBaseline";
-// Local imports
-//import "./App.css";
-import TopAppBar from "./components/TopAppBar";
-import DriveView from "./views/DriveView";
-import ArmView from "./views/ArmView";
-import SpeedTestView from "./views/SpeedTestView";
-import ScienceView from "./views/ScienceView";
-import AutonomyView from "./views/AutonomyView";
-import FullscreenMap from "./views/MapView";
+import Box from '@mui/material/Box'
+import CssBaseline from '@mui/material/CssBaseline'
+import './App.css'
+import TopAppBar from './components/TopAppBar'
+import DriveView from './views/DriveView'
+import ArmView from './views/ArmView'
 
 function App() {
-  const [currentView, setCurrentView] = useState("DriveView");
+  
+  const [currentView, setCurrentView] = useState('DriveView')
+
   const [sidewaysVelocity, setSidewaysVelocity] = useState("0");
   const [forwardsVelocity, setForwardVelocity] = useState("0");
   const [rotationalVelocity, setRotationalVelocity] = useState("0");
@@ -28,30 +25,22 @@ function App() {
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
-      case "DriveView":
+      case 'DriveView':
         return <DriveView sidewaysVelocity={sidewaysVelocity}
           forwardsVelocity={forwardsVelocity}
-          rotationalVelocity={rotationalVelocity} />;
-      case "ArmView":
-        return <ArmView />;
-      case "SpeedTestView":
-        return <SpeedTestView />;
-      case "ScienceView":
-        return <ScienceView />;
-      case "AutonomyView":
-        return <AutonomyView />;
-      case "MapView":
-        return <FullscreenMap />;
+          rotationalVelocity={rotationalVelocity} />
+      case 'ArmView':
+        return <ArmView />
       default:
-        return <div>Select a view</div>;
+        return <div>Select a view</div>
     }
   }
 
   return (
-    <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      <CssBaseline /> Normalizes styles
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      
+      <CssBaseline /> 
       <div>easter egg :))</div>
-      {/* Drawer and Switch views */}
       <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange}></TopAppBar>
       <Box
         component="main"
@@ -64,24 +53,10 @@ function App() {
           overflow: 'auto',
         }}
       >
-              <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          minHeight: 0,
-        }}
-      >
         {renderView()}
       </Box>
-        </Box>
-
-      
     </Box>
-  );
+  )
 }
 
-export default App;
+export default App
