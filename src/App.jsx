@@ -9,6 +9,10 @@ import './App.css'
 import TopAppBar from './components/TopAppBar'
 import DriveView from './views/DriveView'
 import ArmView from './views/ArmView'
+import SpeedTestView from './views/SpeedTestView'
+import ScienceView from './views/ScienceView'
+import AutonomyView from './views/AutonomyView'
+
 
 function App() {
   
@@ -22,6 +26,12 @@ function App() {
         return <DriveView />
       case 'ArmView':
         return <ArmView />
+      case 'SpeedTestView':
+        return <SpeedTestView />
+      case 'ScienceView':
+        return <ScienceView />
+      case 'AutonomyView':
+        return <AutonomyView />
       default:
         return <div>Select a view</div>
     }

@@ -51,6 +51,24 @@ export default function TopAppBar({ setCurrentView }) {
           >
             Arm View
           </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('ScienceView')}
+          >
+            Science View
+          </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('AutonomyView')}
+          >
+            Autonomy View
+          </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('SpeedTestView')}
+          >
+            SPEEDTEST
+          </Button>
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
           <NavConnectionStatus />
