@@ -53,8 +53,22 @@ function App() {
           overflow: 'auto',
         }}
       >
+              <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'auto',
+        }}
+>
+      >
         {renderView()}
       </Box>
+        </Box>
+
+      
     </Box>
   )
 }
