@@ -8,24 +8,24 @@ import '../components/drive/drive.css'
 
 export default function DriveView ({ sidewaysVelocity, forwardsVelocity, rotationalVelocity }) {
     return (
-        <div class = "container">
-            <div class = "item1">
+        <div className = "container">
+            <div className = "item1">
                 <DriveManualInput   
                 sidewaysVelocity={sidewaysVelocity}
                 forwardsVelocity={forwardsVelocity}
                 rotationalVelocity={rotationalVelocity}/>
             </div>
-            <div class = "item2"> 
+            <div className = "item2"> 
                 <Map />
             </div>
-            <div class = "item3"> 
+            <div className = "item3"> 
                 <CameraPane />
                 <CameraPane />
             </div>
-            <div class = "item4">
+            <div className = "item4">
                 
             </div>
-            <div class = "item5">
+            <div className = "item5">
                 <Wheel />
             </div>
         </div>
