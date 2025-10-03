@@ -7,8 +7,8 @@ export default function Map() {
   const mapRef = useRef(null);
 
   const target = [-121.875329832, 37.334665328]; // San Jose area
-  const locations = { "offline" : "http://192.168.1.2:8080/styles/basic-preview/style.json"
-    , "online" : "https://demotiles.maplibre.org/globe.json"
+  const locations = { "robonet" : "http://192.168.1.2:8080/styles/basic-preview/style.json"
+    , "internetdemo" : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
   }
 
   useEffect(() => {
@@ -16,7 +16,7 @@ export default function Map() {
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: locations["online"], // Map style to use
+      style: locations["internetdemo"], // Map style to use
       center: target,
       zoom: 3,
       pitch: 0,
@@ -59,5 +59,5 @@ export default function Map() {
     });
   }, []);
 
-  return <div ref={mapContainer} style={{ width: "100vw", height: "100vh" }} />;
+  return <div ref={mapContainer} style={{ width: "30vw", height: "80vh" }} />;
 }
