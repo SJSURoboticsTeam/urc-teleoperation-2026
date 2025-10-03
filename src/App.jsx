@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
 
 // Local imports
-import "./App.css";
+//import "./App.css";
 import TopAppBar from "./components/TopAppBar";
 import DriveView from "./views/DriveView";
 import ArmView from "./views/ArmView";
