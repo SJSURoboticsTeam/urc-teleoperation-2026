@@ -79,6 +79,17 @@ function App() {
           minHeight: 0,
         }}
       >
+              <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'auto',
+        }}
+>
+      >
         {renderView()}
       </Box>
         </Box>
