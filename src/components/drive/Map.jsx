@@ -7,13 +7,16 @@ export default function Map() {
   const mapRef = useRef(null);
 
   const target = [-121.875329832, 37.334665328]; // San Jose area
+  const locations = { "offline" : "http://192.168.1.2:8080/styles/basic-preview/style.json"
+    , "online" : "https://demotiles.maplibre.org/globe.json"
+  }
 
   useEffect(() => {
     if (mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: "https://demotiles.maplibre.org/globe.json",
+      style: locations["online"], // Map style to use
       center: target,
       zoom: 3,
       pitch: 0,
