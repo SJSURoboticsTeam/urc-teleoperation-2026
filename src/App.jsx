@@ -84,11 +84,11 @@ function App() {
         sx={{
           flexGrow: 1,
           p: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'auto',
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          minHeight: 0,
         }}
->
       >
         {renderView()}
       </Box>
