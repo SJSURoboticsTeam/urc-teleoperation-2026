@@ -7,16 +7,18 @@ export default function CameraPane(){
     const [camera, setCamera] = useState('camera 1');
 
     const handleChange = (event) => {
-        setCamera(event.target.value);
+    setCamera(event.target.value);
     };
-
     const cameras= [
-        {value: 'camera 1', image:'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww', name:'camera 1'},
-        {value: 'camera 2', image:'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww', name:'camera 2'}
+    { value: 'Test', name: 'Test', url: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww'},
+    { value: 'Mast Cam',name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
+    { value: 'Under Chasis Cam', name: 'Under Chasis Cam', url: 'http://192.168.1.201:8081/'},
+    { value: 'Front Left Cam', name: 'Front Left Cam', url: 'http://192.168.1.202:8081/'},
+    { value: 'Front Right Cam', name: 'Front Right Cam', url: 'http://192.168.1.203:8081/'},
+    { value: 'Drive Cam', name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"}
     ];
 
-    const selectedCamera = cameras.find((cam) => cam.value === camera);
-
+    const selectedCamera = cameras.find((cam) => cam.value == camera);
     return(
         // Root Box is flexible so CameraPane can grow inside a column
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1}}>
@@ -55,5 +57,6 @@ export default function CameraPane(){
                 )}
             </Box>
         </Box>
+        
     );
 }
