@@ -41,7 +41,9 @@ export default function DriveView() {
     <div ref={containerRef} className="flex flex-1 h-full min-h-0" style={{ userSelect: 'none' }}>
       {/* left pane: width controlled by leftPct */}
       <div className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0" style={{ flex: `0 0 ${leftPct}%` }}>
-        <DriveManualInput />
+        <DriveManualInput sidewaysVelocity={sidewaysVelocity}
+                forwardsVelocity={forwardsVelocity}
+                rotationalVelocity={rotationalVelocity}/>
         <Map />
         <Wheel />
       </div>

@@ -28,18 +28,18 @@ function App() {
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
-      case 'DriveView':
+      case "DriveView":
         return <DriveView sidewaysVelocity={sidewaysVelocity}
           forwardsVelocity={forwardsVelocity}
-          rotationalVelocity={rotationalVelocity} />
-      case 'ArmView':
-        return <ArmView />
-      case 'SpeedTestView':
-        return <SpeedTestView />
-      case 'ScienceView':
-        return <ScienceView />
-      case 'AutonomyView':
-        return <AutonomyView />
+          rotationalVelocity={rotationalVelocity} />;
+      case "ArmView":
+        return <ArmView />;
+      case "SpeedTestView":
+        return <SpeedTestView />;
+      case "ScienceView":
+        return <ScienceView />;
+      case "AutonomyView":
+        return <AutonomyView />;
       case "MapView":
         return <FullscreenMap />;
       default:

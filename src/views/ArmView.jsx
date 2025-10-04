@@ -17,7 +17,7 @@ export default function ArmView () {
     function gamepadHandler(event, connected) {
         const gamepad = event.gamepad;
         const regex = /EXTREME/i;
-        if (connected && regex.test(gamepad.id)) {
+        if (connected ) {
             setGamepads({ ...gamepads, [gamepad.index]: gamepad });
             alert('added controller index ' + gamepad.index);
         }
