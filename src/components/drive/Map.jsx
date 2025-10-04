@@ -8,10 +8,11 @@ export default function Map() {
 
   useEffect(() => {
     const target = [-121.875329832, 37.334665328]; // San Jose area
-    const locations = {
-      robonet: "http://192.168.1.2:8080/styles/basic-preview/style.json",
-      internetdemo: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
-    };
+ 
+
+    const urls = (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
+    ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
+    : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
 
     if (mapRef.current) return;
 
@@ -20,7 +21,7 @@ export default function Map() {
 
     const map = new maplibregl.Map({
       container,
-      style: locations.internetdemo,
+      style: urls,
       center: target,
       zoom: 3,
       pitch: 0,

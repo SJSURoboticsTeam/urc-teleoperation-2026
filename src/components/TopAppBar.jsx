@@ -69,12 +69,12 @@ export default function TopAppBar({ setCurrentView }) {
           >
             Map View
           </Button>
-          <Button
+          { (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
             color='inherit'
             onClick={() => handleViewChange('SpeedTestView')}
           >
             SPEEDTEST
-          </Button>
+          </Button> }
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
           <NavConnectionStatus />
