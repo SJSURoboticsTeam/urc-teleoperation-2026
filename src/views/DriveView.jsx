@@ -4,7 +4,7 @@ import CameraPane from '../components/drive/CameraPane'
 import Map from '../components/drive/Map'
 import Wheel from '../components/drive/Wheel'
 
-import '../components/drive/drive.css'
+//import '../components/drive/drive.css'
 
 export default function DriveView (){
     return (
