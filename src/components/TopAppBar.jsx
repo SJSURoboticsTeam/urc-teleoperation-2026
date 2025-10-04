@@ -89,6 +89,12 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange }) {
           </Button>
           <Button
             color='inherit'
+            onClick={() => handleViewChange('MapView')}
+          >
+            Map View
+          </Button>
+          <Button
+            color='inherit'
             onClick={() => handleViewChange('SpeedTestView')}
           >
             SPEEDTEST
