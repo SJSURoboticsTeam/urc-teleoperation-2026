@@ -59,5 +59,5 @@ export default function Map() {
     });
   }, []);
 
-  return <div ref={mapContainer} style={{ width: "30vw", height: "80vh" }} />;
+  return <div ref={mapContainer} style={{ width: "100vw", height: "100vh" }} />;
 }
