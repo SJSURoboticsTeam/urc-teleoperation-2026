@@ -16,7 +16,6 @@
     "@mui/material": "^7.1.2",
     "@mui/system": "^7.1.1",
     "@vis.gl/react-maplibre": "^8.0.4",
-    "@tailwindcss/vite": "^4.1.14",
     "@vis.gl/react-maplibre": "^8.0.4",
     "express": "^4.21.2",
     "maplibre-gl": "^5.8.0",
