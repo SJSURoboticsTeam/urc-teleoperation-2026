@@ -1,15 +1,13 @@
-import { Resizable, ResizableBox } from 'react-resizable';
-import 'react-resizable/css/styles.css' // Import default styles
-import Map from '../components/drive/Map.jsx';
-// Import list of components, in index.jsx? 
-// or do I handpick the components I want 
+import 'react-resizable/css/styles.css' // keep global resizable styles if used elsewhere
+import Box from '@mui/material/Box'
+import Map from '../components/drive/Map'
 
-// In the future, it's one of these per view (drive, arm, science, etc)
+// Fullscreen map view — map should receive its full height from the parent Box
 export default function FullscreenMap() {
-
+    // Let the parent (App) control the viewport height. Use flex:1 so Map fills available space.
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <Map/>
-        </div>
+        <Box component="main" sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+            <Map />
+        </Box>
     )
 }
