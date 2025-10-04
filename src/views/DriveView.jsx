@@ -52,9 +52,9 @@ export default function DriveView() {
         aria-orientation="vertical"
         onPointerDown={startDrag}
         className="flex items-stretch justify-center"
-        style={{ width: 12, cursor: 'col-resize', touchAction: 'none' }}
+        style={{ width: 24, cursor: 'col-resize', touchAction: 'none' }}
       >
-        <div style={{ width: 2, background: 'rgba(156,163,175,1)', height: '100%' }} />
+        <div style={{ width: 3, background: 'rgba(156,163,175,1)', height: '100%' }} />
       </div>
 
       {/* right pane: takes remaining space */}
