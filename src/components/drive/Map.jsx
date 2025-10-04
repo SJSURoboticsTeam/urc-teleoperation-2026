@@ -59,5 +59,5 @@ export default function Map() {
     });
   }, []);
 
-  return <div ref={mapContainer} style={{ width: "100vw", height: "100vh" }} />;
+  return <div ref={mapContainer} className="w-96 h-64 bg-gray-200" />;
 }

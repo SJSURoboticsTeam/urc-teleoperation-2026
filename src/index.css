@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* small app-level resets if needed */
+html, body, #root {
+  height: 100%;
+}
+
+/* Ensure app uses full viewport so h-full / flex utilities behave */
+body {
+  margin: 0;
+}

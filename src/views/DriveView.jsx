@@ -6,25 +6,26 @@ import Wheel from '../components/drive/Wheel'
 
 //import '../components/drive/drive.css'
 
-export default function DriveView (){
-    return (
-        <div className = "container">
-            <div className = "item1">
-                <DriveManualInput />
-            </div>
-            <div className = "item2"> 
-                <Map />
-            </div>
-            <div className = "item3"> 
-                <CameraPane />
-                <CameraPane />
-            </div>
-            <div className = "item4">
-                
-            </div>
-            <div className = "item5">
-                <Wheel />
-            </div>
-        </div>
-    )
+export default function DriveView() {
+  return (
+    <div className="container flex">
+      <div className="flex-1 bg-gray-100"></div>
+      <div className="flex-1">
+        <DriveManualInput />
+      </div>
+      <div className="flex-1"> 
+        <Map />
+      </div>
+      <div className="flex-1">
+        <Wheel />
+      </div>
+      {/* divider */}
+      <div className="w-1 bg-gray-400"></div>
+      <div className="flex-1"> 
+        <CameraPane />
+        <CameraPane />
+      </div>
+      <div className="flex-1 bg-gray-100"></div>
+    </div>
+  )
 }
