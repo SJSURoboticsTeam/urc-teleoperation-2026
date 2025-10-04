@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 
 export default function CameraPane(){
-    const [camera, setCamera] = useState('camera 1');
+    const [camera, setCamera] = useState('Test');
 
     const handleChange = (event) => {
     setCamera(event.target.value);
