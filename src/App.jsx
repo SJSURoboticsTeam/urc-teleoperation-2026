@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 // MUI components
 import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
-
 // Local imports
 import './App.css'
 import TopAppBar from './components/TopAppBar'
@@ -14,12 +13,23 @@ function App() {
   
   const [currentView, setCurrentView] = useState('DriveView')
 
+  const [sidewaysVelocity, setSidewaysVelocity] = useState("0");
+  const [forwardsVelocity, setForwardVelocity] = useState("0");
+  const [rotationalVelocity, setRotationalVelocity] = useState("0");
+
+  const handleVelocitiesChange = ({ lx, ly, rx }) => {
+    setSidewaysVelocity(lx.toFixed(2));
+    setForwardVelocity(ly.toFixed(2));
+    setRotationalVelocity(rx.toFixed(2));
+  };
 
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
       case 'DriveView':
-        return <DriveView />
+        return <DriveView sidewaysVelocity={sidewaysVelocity}
+          forwardsVelocity={forwardsVelocity}
+          rotationalVelocity={rotationalVelocity} />
       case 'ArmView':
         return <ArmView />
       default:
@@ -33,12 +43,13 @@ function App() {
       <CssBaseline /> {/* Normalizes styles */}
       <div>easter egg :))</div>
       {/* Drawer and Switch views */}
-      <TopAppBar setCurrentView={setCurrentView}></TopAppBar>
+      <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange}></TopAppBar>
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 2,
+          mt:10,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'auto',

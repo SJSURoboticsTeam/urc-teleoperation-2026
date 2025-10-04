@@ -6,11 +6,14 @@ import Wheel from '../components/drive/Wheel'
 
 import '../components/drive/drive.css'
 
-export default function DriveView (){
+export default function DriveView ({ sidewaysVelocity, forwardsVelocity, rotationalVelocity }) {
     return (
         <div class = "container">
             <div class = "item1">
-                <DriveManualInput />
+                <DriveManualInput   
+                sidewaysVelocity={sidewaysVelocity}
+                forwardsVelocity={forwardsVelocity}
+                rotationalVelocity={rotationalVelocity}/>
             </div>
             <div class = "item2"> 
                 <Map />
