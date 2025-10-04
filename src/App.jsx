@@ -36,7 +36,7 @@ function App() {
       case 'ArmView':
         return <ArmView />
       case "DriveView":
-        return <DriveView />;
+        return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
       case "ArmView":
         return <ArmView />;
       case "SpeedTestView":
