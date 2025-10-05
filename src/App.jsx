@@ -1,7 +1,7 @@
 // React imports
 import { useState, useEffect } from "react";
 // MUI components
-import Box from '@mui/material/Box'
+import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
 
 // Local imports
@@ -37,6 +37,8 @@ function App() {
         return <ArmView />
       case "DriveView":
         return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
+      case "DriveView":
+        return <DriveView />;
       case "ArmView":
         return <ArmView />;
       case "SpeedTestView":
@@ -55,6 +57,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
+      <CssBaseline /> Normalizes styles
       <div>easter egg :))</div>
       <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} />
       <Box
@@ -62,10 +65,9 @@ function App() {
         sx={{
           flexGrow: 1,
           p: 2,
-          mt: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'auto',
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           minHeight: 0,
         }}
       >
