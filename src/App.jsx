@@ -29,18 +29,10 @@ function App() {
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
-      case 'DriveView':
-        return <DriveView sidewaysVelocity={sidewaysVelocity}
-          forwardsVelocity={forwardsVelocity}
-          rotationalVelocity={rotationalVelocity} />
       case 'ArmView':
         return <ArmView />
       case "DriveView":
         return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
-      case "DriveView":
-        return <DriveView />;
-      case "ArmView":
-        return <ArmView />;
       case "SpeedTestView":
         return <SpeedTestView />;
       case "ScienceView":
@@ -57,7 +49,6 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <CssBaseline /> Normalizes styles
       <div>easter egg :))</div>
       <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} />
       <Box
