@@ -8,6 +8,7 @@ export default function Map() {
 
   useEffect(() => {
     const target = [-121.875329832, 37.334665328]; // San Jose area
+    //const target = [-110.768401, 38.372207]; // Utah
  
 
     const urls = (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")

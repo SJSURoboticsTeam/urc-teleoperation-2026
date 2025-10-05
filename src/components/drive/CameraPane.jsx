@@ -10,7 +10,7 @@ export default function CameraPane(){
     setCamera(event.target.value);
     };
     const cameras= [
-    { value: 'Test', mediatype: "image", name: 'Test', url: '/lake.png'},
+    { value: 'Test', mediatype: "image", name: 'Test', url: '/mars.jpg'},
     { value: 'Mast Cam', mediatype: "image", name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
     { value: 'Under Chasis Cam', mediatype: "image", name: 'Under Chasis Cam', url: 'http://192.168.1.106:8081/'},
     { value: 'Drive Cam', mediatype: "video", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
@@ -47,19 +47,20 @@ export default function CameraPane(){
             </FormControl>
 
             {/* image container grows to fill remaining space */}
-            <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
+                <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
                 {selectedCamera && (
                     (selectedCamera.mediatype == "image")?
-                    <img
-                        src={selectedCamera.url}
-                        alt={selectedCamera.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
+                        <img
+                            src={selectedCamera.url}
+                            alt={selectedCamera.name}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
                     :
                     <iframe
                         src={selectedCamera.url}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        ></iframe> 
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' }}
+                        title={selectedCamera.name}
+                        ></iframe>
                 )}
             </Box>
         </Box>
