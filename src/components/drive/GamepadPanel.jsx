@@ -35,9 +35,9 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
   const gpList = Object.values(gamepads);
 
   return (
-    <Box sx={{ position:'relative', marginRight:5,marginTop:5,width: 150, height: 100}}>
+    <Box sx={{ position:'relative', marginRight:5, width: 150}}>
       <Button sx={{maxWidth:'contain'}} variant="contained" onClick={() => setOpen(!open)}>
-        {name} Gamepads {open ? "▲" : "▼"}
+        Gamepads {open ? "▲" : "▼"}
       </Button>
 
       <Collapse in={open}>

@@ -49,7 +49,6 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <div>easter egg :))</div>
       <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} />
       <Box
         component="main"
@@ -60,6 +59,7 @@ function App() {
           flexDirection: "column",
           overflow: "hidden",
           minHeight: 0,
+          marginTop: '64px'
         }}
       >
         {renderView()}
