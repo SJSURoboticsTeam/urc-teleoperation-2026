@@ -33,6 +33,8 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
           justifyContent: "center",
           alignItems: "center",
           gap: 2,
+          height: 100,
+          marginBottom:5,
           marginTop: 2,
         }}
       >
@@ -48,6 +50,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
               height: "50px",
               borderRadius: 2,
               marginTop: 5,
+              marginBottom:10
             }}
           >
             <Typography variant="body1" sx={{ marginTop: 10 }}>
