@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
-import GamepadPanel from './drive/GamepadPanel';import GamepadPanel from './drive/GamepadPanel';
+import GamepadPanel from './drive/GamepadPanel';
 export default function TopAppBar({ setCurrentView, onVelocitiesChange }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [gamepads, setGamepads] = useState({});

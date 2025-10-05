@@ -54,47 +54,23 @@ function App() {
 
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      <CssBaseline /> Normalizes styles
+      <CssBaseline />{/* Normalizes styles */}
       <div>easter egg :))</div>
-      <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange}></TopAppBar>
+      <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} />
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 2,
-          mt:10,
+          mt: 10,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'auto',
-        }}
-      >
-              <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          minHeight: 0,
-        }}
-      >
-              <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
           minHeight: 0,
         }}
       >
         {renderView()}
       </Box>
-        </Box>
-
-      
     </Box>
   );
 }
