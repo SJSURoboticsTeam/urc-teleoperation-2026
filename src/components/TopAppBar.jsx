@@ -9,6 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
+import { orange } from '@mui/material/colors';
 
 export default function TopAppBar({ setCurrentView }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -23,8 +24,15 @@ export default function TopAppBar({ setCurrentView }) {
 
   return (
     <>
-      <AppBar position='fixed'>
-        <Toolbar>
+    {/*sx={{ bgcolor: orange[800] }} */}
+      <AppBar 
+        sx={{
+    bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
+      ? orange[900]
+      : undefined,
+  }}
+        >
+      <Toolbar>
           <IconButton
             edge='start'
             color='inherit'

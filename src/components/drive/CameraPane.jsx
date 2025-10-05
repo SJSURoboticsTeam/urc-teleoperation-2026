@@ -1,7 +1,7 @@
 import 'react-resizable/css/styles.css';
 import Box from '@mui/material/Box';
-import { useState } from 'react';
-import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import { useState, useEffect, useRef } from 'react';
+import { Select, MenuItem, FormControl, InputLabel, CircularProgress, Typography, Button } from "@mui/material";
 
 export default function CameraPane(){
     const [camera, setCamera] = useState('Test');
@@ -19,6 +19,39 @@ export default function CameraPane(){
     ];
 
     const selectedCamera = cameras.find((cam) => cam.value == camera);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const iframeTimeoutRef = useRef(null);
+
+    // derive simple deps for the effect so lint can verify
+    const selectedUrl = selectedCamera?.url ?? null;
+    const selectedMediaType = selectedCamera?.mediatype ?? null;
+
+    // whenever camera changes, reset loading/error
+    useEffect(() => {
+        setLoading(true);
+        setError(false);
+        // clear any previous iframe timeout
+        if (iframeTimeoutRef.current) {
+            clearTimeout(iframeTimeoutRef.current);
+            iframeTimeoutRef.current = null;
+        }
+        // if selectedCamera is iframe/video, start a timeout to mark error if not loaded
+        if (selectedMediaType === 'video') {
+            // for video/iframe style streams, give them up to 10s to load
+            iframeTimeoutRef.current = setTimeout(() => {
+                setLoading(false);
+                setError(true);
+            }, 5000);
+        }
+        // for images, onLoad handler will clear loading
+        return () => {
+            if (iframeTimeoutRef.current) {
+                clearTimeout(iframeTimeoutRef.current);
+                iframeTimeoutRef.current = null;
+            }
+        };
+    }, [selectedUrl, selectedMediaType]);
     return(
         // Root Box is flexible so CameraPane can grow inside a column
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1}}>
@@ -49,18 +82,37 @@ export default function CameraPane(){
             {/* image container grows to fill remaining space */}
                 <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
                 {selectedCamera && (
-                    (selectedCamera.mediatype == "image")?
+                    (selectedCamera.mediatype == "image") ?
                         <img
+                            key={selectedCamera.url}
                             src={selectedCamera.url}
                             alt={selectedCamera.name}
+                            onLoad={() => { setLoading(false); setError(false); }}
+                            onError={() => { setLoading(false); setError(true); }}
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                         />
                     :
-                    <iframe
-                        src={selectedCamera.url}
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' }}
-                        title={selectedCamera.name}
-                        ></iframe>
+                        <iframe
+                            key={selectedCamera.url}
+                            src={selectedCamera.url}
+                            onLoad={() => { if (iframeTimeoutRef.current) { clearTimeout(iframeTimeoutRef.current); iframeTimeoutRef.current = null; } setLoading(false); setError(false); }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' }}
+                            title={selectedCamera.name}
+                        />
+                )}
+
+                {/* loading / error overlays */}
+                {loading && (
+                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                        <CircularProgress color="inherit" />
+                    </Box>
+                )}
+
+                {error && (
+                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+                        <Typography color="error">Failed to load camera</Typography>
+                        <Button sx={{ mt: 1 }} variant="contained" onClick={() => { setLoading(true); setError(false); /* force reload by changing key: handled by key prop */ }}>Retry</Button>
+                    </Box>
                 )}
             </Box>
         </Box>
