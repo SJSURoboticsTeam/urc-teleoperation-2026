@@ -72,7 +72,7 @@ export default function ArmView () {
                         </Grid>
                     ))}
                 </Grid>
-                <Button sx={{ mt: 2 }} variant="contained" onClick={handleManualUpdate}>Update</Button>
+                <Button sx={{ mt: 2, left:'50%', transform:'translateX(-50%)'}} variant="contained" onClick={handleManualUpdate}>Update</Button>
             </Box>
         </Box>
     );
