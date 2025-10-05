@@ -59,7 +59,7 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
               <Button
                 variant="outlined"
                 size="small"
-                sx={{ marginTop: 1 }}
+                sx={{ marginTop: 1, left:'50%',transform: 'translateX(-50%)' }}
                 onClick={() =>
                   setConnectedOne(connectedOne == gp.index ? null : gp.index)
                 }
