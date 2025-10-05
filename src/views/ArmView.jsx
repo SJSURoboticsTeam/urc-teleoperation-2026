@@ -57,7 +57,7 @@ export default function ArmView () {
                         { label: 'Roll', value: roll, set: setRoll, max: 360 },
                         { label: 'Effector (cm)', value: effector, set: setEffector, max: 20 }
                     ].map(({ label, value, set, max }) => (
-                        <Grid item xs={12} sm={6} key={label} sx={{border: '1px solid #ccc', borderRadius: 2, padding: 2}}>
+                        <Grid item xs={12} sm={6} key={label} sx={{border: '1px solid #ccc', borderRadius: 2, padding: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                             <Typography gutterBottom>{label}</Typography>
                             <Slider
                                 value={value}
