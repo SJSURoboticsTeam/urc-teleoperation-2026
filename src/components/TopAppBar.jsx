@@ -9,6 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
+import { orange } from '@mui/material/colors';
 
 export default function TopAppBar({ setCurrentView }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -23,8 +24,15 @@ export default function TopAppBar({ setCurrentView }) {
 
   return (
     <>
-      <AppBar position='fixed'>
-        <Toolbar>
+    {/*sx={{ bgcolor: orange[800] }} */}
+      <AppBar 
+        sx={{
+    bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
+      ? orange[800]
+      : undefined,
+  }}
+        >
+      <Toolbar>
           <IconButton
             edge='start'
             color='inherit'
@@ -69,12 +77,12 @@ export default function TopAppBar({ setCurrentView }) {
           >
             Map View
           </Button>
-          <Button
+          { (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
             color='inherit'
             onClick={() => handleViewChange('SpeedTestView')}
           >
             SPEEDTEST
-          </Button>
+          </Button> }
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
           <NavConnectionStatus />
