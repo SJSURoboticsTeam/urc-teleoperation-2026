@@ -21,21 +21,29 @@ export default function CameraPane(){
     const selectedCamera = cameras.find((cam) => cam.value == camera);
     return(
         // Root Box is flexible so CameraPane can grow inside a column
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1}}>
-            <FormControl fullWidth sx={{ mb: 0.5, minHeight: 40, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <InputLabel id="camera-select-label" sx={{ position: 'static', transform: 'none', mb: 0, fontSize: '0.875rem' }}>Camera</InputLabel>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <FormControl fullWidth sx={{ mb: 1 }}>
+                <InputLabel id="camera-select-label">Camera</InputLabel>
                 <Select
                     labelId="camera-select-label"
                     value={camera}
                     label="Camera"
                     onChange={handleChange}
                     size="small"
-                    sx={{ py: 0, height: 32, fontSize: '0.9rem' }}
                     MenuProps={{
-                        // Render menu in a portal so it isn't clipped by ancestor overflow
+                        // Portal the menu to body and use a fixed positioning strategy
                         disablePortal: false,
                         // give the menu a high z-index so it appears above other elements
                         PaperProps: { sx: { zIndex: 3000 } },
+                        // use Popper with fixed strategy to avoid being trapped in ancestor stacking contexts
+                        PopperProps: {
+                            strategy: 'fixed',
+                            modifiers: [
+                                { name: 'preventOverflow', options: { boundary: typeof document !== 'undefined' ? document.body : 'clippingParents' } },
+                                { name: 'flip', options: { fallbackPlacements: ['bottom', 'top'] } },
+                                { name: 'computeStyles', options: { adaptive: false } },
+                            ],
+                        },
                     }}
                 >
                     {cameras.map((cam) => (
@@ -50,13 +58,12 @@ export default function CameraPane(){
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
                 {selectedCamera && (
                     <img
-                        src={selectedCamera.image}
+                        src={selectedCamera.url}
                         alt={selectedCamera.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
                 )}
             </Box>
         </Box>
-        
     );
 }
