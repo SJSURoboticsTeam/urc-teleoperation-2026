@@ -10,12 +10,12 @@ export default function CameraPane(){
     setCamera(event.target.value);
     };
     const cameras= [
-    { value: 'Test', name: 'Test', url: 'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww'},
-    { value: 'Mast Cam',name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
-    { value: 'Under Chasis Cam', name: 'Under Chasis Cam', url: 'http://192.168.1.201:8081/'},
-    { value: 'Front Left Cam', name: 'Front Left Cam', url: 'http://192.168.1.202:8081/'},
-    { value: 'Front Right Cam', name: 'Front Right Cam', url: 'http://192.168.1.203:8081/'},
-    { value: 'Drive Cam', name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"}
+    { value: 'Test', mediatype: "image", name: 'Test', url: '/lake.png'},
+    { value: 'Mast Cam', mediatype: "image", name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
+    { value: 'Under Chasis Cam', mediatype: "image", name: 'Under Chasis Cam', url: 'http://192.168.1.106:8081/'},
+    { value: 'Drive Cam', mediatype: "video", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
+    { value: 'Arm 1', mediatype: "video", name: 'Arm Base', url: "http://192.168.1.114:8889/one-720p"},
+    { value: 'Arm 2', mediatype: "video", name: 'Arm Front', url: "http://192.168.1.114:8889/two-720p/"}
     ];
 
     const selectedCamera = cameras.find((cam) => cam.value == camera);
@@ -49,11 +49,17 @@ export default function CameraPane(){
             {/* image container grows to fill remaining space */}
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
                 {selectedCamera && (
+                    (selectedCamera.mediatype == "image")?
                     <img
                         src={selectedCamera.url}
                         alt={selectedCamera.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
+                    :
+                    <iframe
+                        src={selectedCamera.url}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        ></iframe> 
                 )}
             </Box>
         </Box>
