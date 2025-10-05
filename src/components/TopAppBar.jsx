@@ -28,7 +28,7 @@ export default function TopAppBar({ setCurrentView }) {
       <AppBar 
         sx={{
     bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
-      ? orange[900]
+      ? orange[800]
       : undefined,
   }}
         >
