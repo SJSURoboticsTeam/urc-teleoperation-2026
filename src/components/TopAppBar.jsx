@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
-import NavConnectionStatus from './ConnectionManager';
+import NavConnectionStatus from './BackendConnectionManager';
 
 export default function TopAppBar({ setCurrentView }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -50,6 +50,30 @@ export default function TopAppBar({ setCurrentView }) {
             onClick={() => handleViewChange('ArmView')}
           >
             Arm View
+          </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('ScienceView')}
+          >
+            Science View
+          </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('AutonomyView')}
+          >
+            Autonomy View
+          </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('MapView')}
+          >
+            Map View
+          </Button>
+          <Button
+            color='inherit'
+            onClick={() => handleViewChange('SpeedTestView')}
+          >
+            SPEEDTEST
           </Button>
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
