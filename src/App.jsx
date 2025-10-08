@@ -13,6 +13,7 @@ import SpeedTestView from "./views/SpeedTestView";
 import ScienceView from "./views/ScienceView";
 import AutonomyView from "./views/AutonomyView";
 import FullscreenMap from "./views/MapView";
+import RecordingsView from "./views/Recordings";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
@@ -32,6 +33,8 @@ function App() {
         return <AutonomyView />;
       case "MapView":
         return <FullscreenMap />;
+      case "RecordingsView":
+        return <RecordingsView />;  
       default:
         return <div>Select a view</div>;
     }

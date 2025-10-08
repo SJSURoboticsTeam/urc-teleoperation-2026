@@ -80,7 +80,7 @@ export default function TopAppBar({ setCurrentView }) {
 
           {  (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
             color='inherit'
-            onClick={() => handleViewChange('SpeedTestView')}
+            onClick={() => handleViewChange('RecordingsView')}
           >
             RECORDINGS
           </Button>  }
