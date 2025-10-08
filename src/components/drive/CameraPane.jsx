@@ -98,6 +98,7 @@ export default function CameraPane(){
                             onLoad={() => { if (iframeTimeoutRef.current) { clearTimeout(iframeTimeoutRef.current); iframeTimeoutRef.current = null; } setLoading(false); setError(false); }}
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' }}
                             title={selectedCamera.name}
+                            allow="fullscreen;"
                         />
                 )}
 
