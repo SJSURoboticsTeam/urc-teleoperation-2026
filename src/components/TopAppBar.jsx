@@ -42,7 +42,7 @@ export default function TopAppBar({ setCurrentView }) {
             <MenuIcon />
           </IconButton>
           {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
-          <Typography variant='h6' component='div' sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Typography variant='h6' component='div' sx={{ display: { xs: 'none', sm: 'none',  md: 'block' } }}>
             Teleoperations
           </Typography>
 
@@ -77,12 +77,22 @@ export default function TopAppBar({ setCurrentView }) {
           >
             Map View
           </Button>
+
+          {  (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
+            color='inherit'
+            onClick={() => handleViewChange('SpeedTestView')}
+          >
+            RECORDINGS
+          </Button>  }
+
           { (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
             color='inherit'
             onClick={() => handleViewChange('SpeedTestView')}
           >
             SPEEDTEST
           </Button> }
+          
+
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
           <NavConnectionStatus />
