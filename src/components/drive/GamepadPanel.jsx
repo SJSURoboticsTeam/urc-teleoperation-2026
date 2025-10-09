@@ -53,7 +53,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         Gamepads {open ? "▲" : "▼"}
       </Button>
       <Collapse in={open}>
-      <Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, marginTop: 1, padding: 2}}>
+      <Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
         <GamepadDiv gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name="Drive" />
         <GamepadDiv gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name="Arm" />
         </Paper>
