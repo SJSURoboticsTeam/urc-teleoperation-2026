@@ -42,7 +42,7 @@ export default function GamepadPanel({ driveGamepads, onVelocitiesChange}) {
         // needed to detect hover and placement of popup
         style={{ position: "relative", cursor: "pointer", marginRight: 5}}
       >
-      <Button disableRipple sx={{maxWidth:'contain', border: 'none', boxShadow:'none', backgroundColor:'inherit', "&:hover":{boxShadow:'none', backgroundColor:'inherit'}}} variant="contained" onClick={() => setOpen(!open)}>
+      <Button disableRipple sx={{maxWidth:'contain', border: 'none', boxShadow:'none', backgroundColor:'inherit', "&:hover":{boxShadow:'none', backgroundColor:'inherit'}}} variant="contained">
         Gamepads {open ? "▲" : "▼"}
       </Button>
 
