@@ -93,7 +93,8 @@ useEffect(() => {
             style={{
               position: "absolute",
               top: "100%",
-              right: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
               background: "white",
               border: "1px solid gray",
               padding: "10px",
@@ -101,8 +102,8 @@ useEffect(() => {
           >
     
             <ButtonGroup variant="contained" aria-label="Basic button group">
-                <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>
-                <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
+                <Button color="error" onClick={ disconnect } variant="contained" sx={{width:120}}>DISCONNECT</Button>
+                <Button color="success" onClick={ connect } variant="contained" sx={{width:120}}>CONNECT</Button>
             </ButtonGroup>
             {isConnected ? (
               <div>
