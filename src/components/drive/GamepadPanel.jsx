@@ -40,11 +40,9 @@ export default function GamepadPanel({ driveGamepads, onVelocitiesChange}) {
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer", marginRight: 5}}
+        style={{ position: "relative", cursor: "pointer", marginRight: 20}}
       >
-      <Button disableRipple sx={{maxWidth:'contain', border: 'none', boxShadow:'none', backgroundColor:'inherit', "&:hover":{boxShadow:'none', backgroundColor:'inherit'}}} variant="contained">
-        Gamepads {open ? "▲" : "▼"}
-      </Button>
+      <span>  GAMEPADS: {(connectedOne != null) ? "ACTIVE" : "DISCONNECTED"}</span>
 
       <Collapse in={open}>
         <GamepadPaper gpList={gpList} connectedOne={connectedOne} setConnectedOne={setConnectedOne} />
