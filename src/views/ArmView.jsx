@@ -44,8 +44,6 @@ export default function ArmView () {
         <Box sx={{display: 'flex', marginTop:15,alignItems: 'center', justifyContent: 'center', flexDirection: 'column', overflowY: 'auto' }}>
             <Typography variant='h4' sx={{ mb: 2 }}>Arm Control</Typography>
             <Typography variant='body1' sx={{ mb: 2 }}>Use Logitech gamepad to control the arm</Typography>
-            <GamepadPanel onVelocitiesChange={(vel) => console.log(vel.ly+' '+vel.lx+ ' '+vel.rx)} driveGamepads={gamepads} />
-
             <Box sx={{ mt: 4 }}>
                 <Typography variant='h5'>Manual Controls</Typography>
                 <Grid container spacing={2} sx={{ mt: 1}}>

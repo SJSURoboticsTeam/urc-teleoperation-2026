@@ -1,6 +1,7 @@
 import {Paper, Typography, Box, Button} from '@mui/material';
-export default function GamepadPaper({gpList, connectedOne, setConnectedOne}) {
-    return (<Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, marginTop: 1, padding: 2}}>
+export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name}) {
+    return (<div style={{border:'1px solid black', borderRadius:5, padding:5, marginTop: 2}}>
+          <Typography variant="h7" sx={{textAlign:'center', marginBottom:1}}>{name} Gamepads</Typography>
           {gpList.length === 0 && <Typography>No gamepads connected</Typography>}
           {gpList.map((gp) => (
             <Box
@@ -27,5 +28,5 @@ export default function GamepadPaper({gpList, connectedOne, setConnectedOne}) {
               </Button>
             </Box>
           ))}
-    </Paper>);
+    </div>);
 }

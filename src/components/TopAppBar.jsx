@@ -129,7 +129,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange }) {
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
 
-          <GamepadPanel name="Drive" onVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} />
+          <GamepadPanel name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads}/>
           
 
           <NavConnectionStatus />
