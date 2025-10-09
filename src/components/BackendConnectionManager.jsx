@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
+import { textAlign } from "@mui/system";
 
 
 export default function NavConnectionStatus() {
@@ -84,7 +85,7 @@ useEffect(() => {
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer" }}
+        style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
       >
         <span> { 'SERVER: ' + ConnectionDetails() } </span>
         {open && (

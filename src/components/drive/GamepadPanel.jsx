@@ -39,7 +39,7 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer", marginRight: 10 }}
+        style={{ position: "relative", cursor: "pointer"}}
       >
       <Button sx={{maxWidth:'contain', border: 'none', boxShadow:'none'}} variant="contained" onClick={() => setOpen(!open)}>
         Gamepads {open ? "▲" : "▼"}
