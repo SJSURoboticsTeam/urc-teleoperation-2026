@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Box, Typography, Button, Collapse, Paper } from "@mui/material";
+import GamepadPaper from "./GamepadPaper";
 
-export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
+export default function GamepadPanel({ driveGamepads, onVelocitiesChange}) {
   const [connectedOne, setConnectedOne] = useState(null);
   const [velocities, setVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
   const [open, setOpen] = useState(false);
@@ -31,45 +32,23 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
 
     return () => cancelAnimationFrame(animationId);
   }, [connectedOne, onVelocitiesChange]);
-
-  const gpList = Object.values(gamepads);
-
+  console.log(driveGamepads)
+  const gpList = Object.values(driveGamepads);
+  console.log(gpList);
   return (
-    <Box sx={{ position:'relative', marginRight:5, width: 150}}>
-      <Button sx={{maxWidth:'contain'}} variant="contained" onClick={() => setOpen(!open)}>
+    <div
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        // needed to detect hover and placement of popup
+        style={{ position: "relative", cursor: "pointer", marginRight: 5}}
+      >
+      <Button sx={{maxWidth:'contain', border: 'none', boxShadow:'none', backgroundColor:'inherit', "&:hover":{boxShadow:'none', backgroundColor:'inherit'}}} variant="contained" onClick={() => setOpen(!open)}>
         Gamepads {open ? "▲" : "▼"}
       </Button>
 
       <Collapse in={open}>
-        <Paper sx={{maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, marginTop: 1, padding: 2}}>
-          {gpList.length === 0 && <Typography>No gamepads connected</Typography>}
-          {gpList.map((gp) => (
-            <Box
-              key={gp.index}
-              sx={{
-                border: "1px solid #ccc",
-                borderRadius: 1,
-                padding: 1,
-                marginBottom: 1,
-                backgroundColor: connectedOne === gp.index ? "#e0f7fa" : "#f9f9f9",
-              }}
-            >
-              <Typography variant="subtitle1">Gamepad {gp.index}</Typography>
-              <Typography variant="body2">ID: {gp.id}</Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                sx={{ marginTop: 1, left:'50%',transform: 'translateX(-50%)' }}
-                onClick={() =>
-                  setConnectedOne(connectedOne == gp.index ? null : gp.index)
-                }
-              >
-                {connectedOne === gp.index ? "Disconnect" : "Select"}
-              </Button>
-            </Box>
-          ))}
-        </Paper>
+        <GamepadPaper gpList={gpList} connectedOne={connectedOne} setConnectedOne={setConnectedOne} />
       </Collapse>
-    </Box>
+    </div>
   );
 }
