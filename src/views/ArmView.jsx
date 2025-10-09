@@ -4,7 +4,7 @@ import 'react-resizable/css/styles.css';
 import { Typography, Box, Slider, Grid, TextField, Button } from '@mui/material';
 import GamepadPanel from '../components/drive/GamepadPanel';
 
-export default function ArmView () {
+export default function ArmView ({velocities}) {
     const [gamepads, setGamepads] = useState({});
 
     const [elbow, setElbow] = useState(0);

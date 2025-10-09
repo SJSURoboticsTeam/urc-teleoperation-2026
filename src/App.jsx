@@ -31,7 +31,7 @@ function App() {
   function renderView() {
     switch (currentView) {
       case 'ArmView':
-        return <ArmView />
+        return <ArmView velocities={{}}/>
       case "DriveView":
         return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
       case "SpeedTestView":
@@ -52,7 +52,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} />
+      <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={()=>{}} />
       <Box
         component="main"
         sx={{
