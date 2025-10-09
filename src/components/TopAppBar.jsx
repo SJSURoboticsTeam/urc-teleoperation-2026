@@ -9,18 +9,43 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
+import GamepadPanel from './drive/GamepadPanel';
 import { orange } from '@mui/material/colors';
 
-export default function TopAppBar({ setCurrentView }) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [gamepads, setGamepads] = useState({});
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
   };
 
-  const handleViewChange = (view) => {
-    setCurrentView(view);
-  };
+  const handleViewChange = (view) => setCurrentView(view);
+
+  useEffect(() => {
+    const handleConnect = (e) => {
+      const gp = e.gamepad;
+      if (/STANDARD/i.test(gp.id)) {
+        setGamepads((prev) => ({ ...prev, [gp.index]: gp }));
+      }
+    };
+
+    const handleDisconnect = (e) => {
+      setGamepads((prev) => {
+        const copy = { ...prev };
+        delete copy[e.gamepad.index];
+        return copy;
+      });
+    };
+
+    window.addEventListener("gamepadconnected", handleConnect);
+    window.addEventListener("gamepaddisconnected", handleDisconnect);
+
+    return () => {
+      window.removeEventListener("gamepadconnected", handleConnect);
+      window.removeEventListener("gamepaddisconnected", handleDisconnect);
+    };
+  }, []);
 
   return (
     <>
@@ -95,14 +120,18 @@ export default function TopAppBar({ setCurrentView }) {
 
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
+
+          <GamepadPanel name="Drive" onVelocitiesChange={onVelocitiesChange} gamepads={gamepads} />
+          
+
           <NavConnectionStatus />
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
       <Drawer anchor='left' open={drawerOpen} onClose={toggleDrawer(false)} sx={{
         '& .MuiDrawer-paper': {
-        width: 240,
-        },
+            width: 240,
+          },
       }}>
         <List>
           <ListItem disablePadding>
