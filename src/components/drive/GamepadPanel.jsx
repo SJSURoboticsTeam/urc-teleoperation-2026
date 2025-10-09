@@ -36,7 +36,7 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
 
   return (
     <Box sx={{ position:'relative', marginRight:5, width: 150}}>
-      <Button sx={{maxWidth:'contain'}} variant="contained" onClick={() => setOpen(!open)}>
+      <Button sx={{maxWidth:'contain', border: 'none', boxShadow:'none'}} variant="contained" onClick={() => setOpen(!open)}>
         Gamepads {open ? "▲" : "▼"}
       </Button>
 
