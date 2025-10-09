@@ -35,7 +35,12 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
   const gpList = Object.values(gamepads);
 
   return (
-    <Box sx={{ position:'relative', marginRight:5, width: 150}}>
+    <div
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        // needed to detect hover and placement of popup
+        style={{ position: "relative", cursor: "pointer", marginRight: 10 }}
+      >
       <Button sx={{maxWidth:'contain', border: 'none', boxShadow:'none'}} variant="contained" onClick={() => setOpen(!open)}>
         Gamepads {open ? "▲" : "▼"}
       </Button>
@@ -70,6 +75,6 @@ export default function GamepadPanel({ gamepads, onVelocitiesChange, name }) {
           ))}
         </Paper>
       </Collapse>
-    </Box>
+    </div>
   );
 }
