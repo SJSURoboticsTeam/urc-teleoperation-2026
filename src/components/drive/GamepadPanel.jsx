@@ -103,17 +103,23 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
           <Button
             size="small"
-            disabled={page === "Drive"}
+            sx={{textDecoration:page==='Drive'?'underline':'none',
+              color:page==='Drive'?'black':'gray',
+               '&:hover': {textDecoration:page==='Drive'?'underline':'none'}
+            }}
             onClick={() => setPage("Drive")}
           >
-            ← Drive
+            Drive
           </Button>
           <Button
             size="small"
-            disabled={page === "Arm"}
+            sx={{textDecoration:page==='Arm'?'underline':'none',
+                 color:page==='Arm'?'black':'gray',
+                '&:hover': {textDecoration:page==='Arm'?'underline':'none'}
+            }}
             onClick={() => setPage("Arm")}
           >
-            Arm →
+            Arm 
           </Button>
           {page==='Drive'?<GamepadDiv gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name={page}/>:
           <GamepadDiv gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name={page} />}
