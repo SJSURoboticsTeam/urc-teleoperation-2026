@@ -73,7 +73,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} />
+      <TopAppBar currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} />
       <Box
         component="main"
         sx={{

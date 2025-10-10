@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./GamepadDiv";
 
-export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange }) {
+export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
   const [open, setOpen] = useState(false);
@@ -72,14 +72,22 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
 
   return (
     <div
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer", marginRight: 5}}
-      >
-      <Button disableRipple sx={{maxWidth:'contain', border: 'none', boxShadow:'none', backgroundColor:'inherit', color:'inherit', "&:hover":{boxShadow:'none', backgroundColor:'inherit'}}} variant="contained">
-        Gamepads {open ? "▲" : "▼"}
-      </Button>
+    onMouseEnter={() => setOpen(true)}
+    onMouseLeave={() => setOpen(false)}
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      textAlign: 'center',
+      cursor: 'pointer',
+      position: 'relative',
+      marginRight: 20
+    }}
+    >
+      <span style={{ whiteSpace: 'pre-wrap' }}>
+        GAMEPADS: {currentView !== "ArmView" 
+          ? (driveConnectedOne != null ? "CONNECTED" : "DISCONNECTED")
+          : (armConnectedOne != null ? "CONNECTED" : "DISCONNECTED")}
+      </span>
       <Collapse in={open}>
         <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
           <Button
