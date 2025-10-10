@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Select, MenuItem, FormControl, InputLabel, CircularProgress, Typography, Button } from "@mui/material";
 
 export default function CameraPane(){
-    const [camera, setCamera] = useState('Test');
+    const [camera, setCamera] = useState('Standby');
 
     const handleChange = (event) => {
     setCamera(event.target.value);
     };
     const cameras= [
-    { value: 'Test', mediatype: "image", name: 'Test', url: '/mars.jpg'},
+    { value: 'Standby', mediatype: "image", name: 'Standby', url: '/mars.jpg'},
     { value: 'Mast Cam', mediatype: "image", name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
     { value: 'Under Chasis Cam', mediatype: "image", name: 'Under Chasis Cam', url: 'http://192.168.1.106:8081/'},
     { value: 'Drive Cam', mediatype: "video", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
@@ -98,6 +98,7 @@ export default function CameraPane(){
                             onLoad={() => { if (iframeTimeoutRef.current) { clearTimeout(iframeTimeoutRef.current); iframeTimeoutRef.current = null; } setLoading(false); setError(false); }}
                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' }}
                             title={selectedCamera.name}
+                            allow="fullscreen;"
                         />
                 )}
 

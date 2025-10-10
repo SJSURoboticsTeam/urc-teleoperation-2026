@@ -1,14 +1,79 @@
 import { Resizable, ResizableBox } from 'react-resizable';
-import 'react-resizable/css/styles.css' // Import default styles
-// Import list of components, in index.jsx? 
-// or do I handpick the components I want 
+import { useEffect, useState } from 'react';
+import 'react-resizable/css/styles.css'; 
+import { Typography, Box, Slider, Grid, TextField, Button } from '@mui/material';
+import GamepadPanel from '../components/drive/GamepadPanel';
 
-// In the future, it's one of these per view (drive, arm, science, etc)
 export default function ArmView () {
+    const [gamepads, setGamepads] = useState({});
+
+    const [elbow, setElbow] = useState(0);
+    const [shoulder, setShoulder] = useState(0);
+    const [track, setTrack] = useState(0);
+    const [pitch, setPitch] = useState(0);
+    const [roll, setRoll] = useState(0);
+    const [effector, setEffector] = useState(0);
+
+    function gamepadHandler(event, connected) {
+        const gamepad = event.gamepad;
+        const regex = /EXTREME/i;
+        if (connected ) {
+            setGamepads(prev => ({ ...prev, [gamepad.index]: gamepad }));
+            alert('added controller index ' + gamepad.index);
+        }
+    }
+
+    useEffect(() => {
+        const handleConnect = (e) => gamepadHandler(e, true);
+        const handleDisconnect = (e) => gamepadHandler(e, false);
+
+        window.addEventListener("gamepadconnected", handleConnect);
+        window.addEventListener("gamepaddisconnected", handleDisconnect);
+
+        return () => {
+            window.removeEventListener("gamepadconnected", handleConnect);
+            window.removeEventListener("gamepaddisconnected", handleDisconnect);
+        };
+    }, []);
+
+    const handleManualUpdate = () => {
+        console.log("Manual positions:", { elbow, shoulder, track, pitch, roll, effector });
+    };
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <span>This is the arm view!!</span>
-        </div>
-    )
+        <Box sx={{display: 'flex', marginTop:15,alignItems: 'center', justifyContent: 'center', flexDirection: 'column', overflowY: 'auto' }}>
+            <Typography variant='h4' sx={{ mb: 2 }}>Arm Control</Typography>
+            <Typography variant='body1' sx={{ mb: 2 }}>Use Logitech gamepad to control the arm</Typography>
+            <GamepadPanel onVelocitiesChange={(vel) => console.log(vel.ly+' '+vel.lx+ ' '+vel.rx)} driveGamepads={gamepads} />
+
+            <Box sx={{ mt: 4 }}>
+                <Typography variant='h5'>Manual Controls</Typography>
+                <Grid container spacing={2} sx={{ mt: 1}}>
+                    {[
+                        { label: 'Elbow', value: elbow, set: setElbow, max: 90 },
+                        { label: 'Shoulder', value: shoulder, set: setShoulder, max: 110 },
+                        { label: 'Track (cm)', value: track, set: setTrack, max: 45 },
+                        { label: 'Pitch', value: pitch, set: setPitch, max: 150 },
+                        { label: 'Roll', value: roll, set: setRoll, max: 360 },
+                        { label: 'Effector (cm)', value: effector, set: setEffector, max: 20 }
+                    ].map(({ label, value, set, max }) => (
+                        <Grid item xs={12} sm={6} key={label} sx={{border: '1px solid #ccc', borderRadius: 2, padding: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                            <Typography gutterBottom>{label}</Typography>
+                            <Slider
+                                value={value}
+                                onChange={(_, v) => set(Number(v))}
+                                min={0}
+                                max={max}
+                                step={1}
+                                sx={{ width: 100 }}
+                                valueLabelDisplay="auto"
+                            />
+                            <Typography variant="body2">{value}</Typography>
+                        </Grid>
+                    ))}
+                </Grid>
+                <Button sx={{ mt: 2, left:'50%', transform:'translateX(-50%)'}} variant="contained" onClick={handleManualUpdate}>Update</Button>
+            </Box>
+        </Box>
+    );
 }
