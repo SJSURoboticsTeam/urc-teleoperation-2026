@@ -45,7 +45,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       const gp=navigator.getGamepads()[armConnectedOne];
       if (gp) {
         const newVal= {
-          'Elbow':0,
+          'Elbow':gp.axes[0],
           'Shoulder':0,
           'Track':0,
           'Pitch':0,
@@ -81,7 +81,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         Gamepads {open ? "▲" : "▼"}
       </Button>
       <Collapse in={open}>
-        <Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
+        <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
           <Button
             size="small"
             disabled={page === "Drive"}
