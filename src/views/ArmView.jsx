@@ -4,7 +4,7 @@ import 'react-resizable/css/styles.css';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { Typography, Box, Slider, Grid, Button } from '@mui/material';
 
-export default function ArmView ({track: controllerTrack, effector: controllerEffect, pitch: controllerPitch, roll: controllerRoll, shoulder: controllerShoulder, elbow: controllerElbow, armConnectedOne}) {
+export default function ArmView ({track: controllerTrack, effector: controllerEffector, pitch: controllerPitch, roll: controllerRoll, shoulder: controllerShoulder, elbow: controllerElbow, armConnectedOne}) {
     const [elbow, setElbow] = useState(0);
     const [shoulder, setShoulder] = useState(0);
     const [track, setTrack] = useState(0);
@@ -62,16 +62,16 @@ export default function ArmView ({track: controllerTrack, effector: controllerEf
                 </Box>
                 <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
                 {[
-                    { label: 'elbow', value: elbow },
-                    { label: 'shoulder', value: shoulder },
-                    { label: 'track', value: track },
-                    { label: 'pitch', value: pitch },
-                    { label: 'roll', value: roll },
-                    { label: 'effector', value: effector }
+                    { label: 'elbow', value: controllerElbow },
+                    { label: 'shoulder', value: controllerShoulder },
+                    { label: 'track', value: controllerTrack },
+                    { label: 'pitch', value: controllerPitch },
+                    { label: 'roll', value: controllerRoll },
+                    { label: 'effector', value: controllerEffector }
                 ].map(({ label, value }) => (
                     <Grid item xs={12} sm={6} key={label} sx={{textAlign:'center', border: '1px solid #ccc', borderRadius: 2, padding: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                     <Typography gutterBottom sx={{textTransform: 'capitalize', width: 200 }}>{label}</Typography>
-                    <Typography variant="h6">{value}</Typography>
+                    <Typography variant="h6">{Math.round(value*100)/100}</Typography>
                     </Grid>
                 ))}
                 </Grid>
