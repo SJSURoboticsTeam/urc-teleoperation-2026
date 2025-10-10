@@ -70,6 +70,19 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   const armList=Object.values(armGamepads);
   console.log(armList); //dbg
 
+  const [info, setInfo] = useState('');
+
+  useEffect(() => {
+    if (currentView === 'DriveView') {
+      setInfo(driveConnectedOne != null ? ': CONNECTED' : ': DISCONNECTED');
+    } else if (currentView === 'ArmView') {
+      setInfo(armConnectedOne != null ? ': CONNECTED' : ': DISCONNECTED');
+    } else {
+      setInfo(''); // empty string if neither view
+    }
+  }, [currentView, driveConnectedOne, armConnectedOne]);
+
+
   return (
     <div
     onMouseEnter={() => setOpen(true)}
@@ -84,9 +97,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     }}
     >
       <span style={{ whiteSpace: 'pre-wrap' }}>
-        GAMEPADS: {currentView !== "ArmView" 
-          ? (driveConnectedOne != null ? "CONNECTED" : "DISCONNECTED")
-          : (armConnectedOne != null ? "CONNECTED" : "DISCONNECTED")}
+        GAMEPADS{info}
       </span>
       <Collapse in={open}>
         <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
