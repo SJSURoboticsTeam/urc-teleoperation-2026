@@ -7,6 +7,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
   const [open, setOpen] = useState(false);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
+  const [page,setPage]=useState('Drive');
 
   useEffect(() => {
     if (driveConnectedOne == null) {
@@ -53,9 +54,23 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         Gamepads {open ? "▲" : "▼"}
       </Button>
       <Collapse in={open}>
-      <Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
-        <GamepadDiv gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name="Drive" />
-        <GamepadDiv gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name="Arm" />
+        <Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
+          <Button
+            size="small"
+            disabled={page === "Drive"}
+            onClick={() => setPage("Drive")}
+          >
+            ← Drive
+          </Button>
+          <Button
+            size="small"
+            disabled={page === "Arm"}
+            onClick={() => setPage("Arm")}
+          >
+            Arm →
+          </Button>
+          {page==='Drive'?<GamepadDiv gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name={page}/>:
+          <GamepadDiv gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name={page} />}
         </Paper>
       </Collapse>
     </div>

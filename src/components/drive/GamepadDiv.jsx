@@ -1,7 +1,6 @@
 import {Typography, Box, Button} from '@mui/material';
 export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name}) {
-    return (<div style={{border:'1px solid black', borderRadius:5, padding:5, marginTop: 5}}>
-          <Typography variant="h7" sx={{textAlign:'center', marginBottom:1}}>{name} Gamepads</Typography>
+    return (<div style={{padding:5, marginTop: 5}}>
           {gpList.length === 0 && <Typography>No gamepads connected</Typography>}
           {gpList.map((gp) => (
             <Box
