@@ -4,7 +4,7 @@ import 'react-resizable/css/styles.css';
 import { Typography, Box, Slider, Grid, TextField, Button } from '@mui/material';
 import GamepadPanel from '../components/drive/GamepadPanel';
 
-export default function ArmView ({velocities}) {
+export default function ArmView ({velocities, armConnectedOne}) {
     const [elbow, setElbow] = useState(0);
     const [shoulder, setShoulder] = useState(0);
     const [track, setTrack] = useState(0);
@@ -47,7 +47,7 @@ export default function ArmView ({velocities}) {
                         </Grid>
                     ))}
                 </Grid>
-                <Button sx={{ mt: 2, left:'50%', transform:'translateX(-50%)'}} variant="contained" onClick={handleManualUpdate}>Update</Button>
+                {armConnectedOne!=null?<div style={{textAlign:'center', marginTop: 25, fontSize: 20}}>Controller In Use</div>:<Button sx={{ mt: 2, left:'50%', transform:'translateX(-50%)'}} variant="contained" onClick={handleManualUpdate}>Update</Button>}
             </Box>
         </Box>
     );
