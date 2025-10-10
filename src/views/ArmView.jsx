@@ -5,8 +5,6 @@ import { Typography, Box, Slider, Grid, TextField, Button } from '@mui/material'
 import GamepadPanel from '../components/drive/GamepadPanel';
 
 export default function ArmView ({velocities}) {
-    const [gamepads, setGamepads] = useState({});
-
     const [elbow, setElbow] = useState(0);
     const [shoulder, setShoulder] = useState(0);
     const [track, setTrack] = useState(0);
@@ -14,27 +12,6 @@ export default function ArmView ({velocities}) {
     const [roll, setRoll] = useState(0);
     const [effector, setEffector] = useState(0);
 
-    function gamepadHandler(event, connected) {
-        const gamepad = event.gamepad;
-        const regex = /EXTREME/i;
-        if (connected ) {
-            setGamepads(prev => ({ ...prev, [gamepad.index]: gamepad }));
-            alert('added controller index ' + gamepad.index);
-        }
-    }
-
-    useEffect(() => {
-        const handleConnect = (e) => gamepadHandler(e, true);
-        const handleDisconnect = (e) => gamepadHandler(e, false);
-
-        window.addEventListener("gamepadconnected", handleConnect);
-        window.addEventListener("gamepaddisconnected", handleDisconnect);
-
-        return () => {
-            window.removeEventListener("gamepadconnected", handleConnect);
-            window.removeEventListener("gamepaddisconnected", handleDisconnect);
-        };
-    }, []);
 
     const handleManualUpdate = () => {
         console.log("Manual positions:", { elbow, shoulder, track, pitch, roll, effector });
