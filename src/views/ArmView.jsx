@@ -41,12 +41,12 @@ export default function ArmView ({velocities}) {
     };
 
     return (
-        <Box sx={{display: 'flex', marginTop:15,alignItems: 'center', justifyContent: 'center', flexDirection: 'column', overflowY: 'auto' }}>
+        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', overflowY: 'auto' }}>
             <Typography variant='h4' sx={{ mb: 2 }}>Arm Control</Typography>
             <Typography variant='body1' sx={{ mb: 2 }}>Use Logitech gamepad to control the arm</Typography>
             <Box sx={{ mt: 4 }}>
-                <Typography variant='h5'>Manual Controls</Typography>
-                <Grid container spacing={2} sx={{ mt: 1}}>
+                <Typography sx={{textAlign:'center'}} variant='h5'>Manual Controls</Typography>
+                <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
                     {[
                         { label: 'Elbow', value: elbow, set: setElbow, max: 90 },
                         { label: 'Shoulder', value: shoulder, set: setShoulder, max: 110 },
@@ -63,7 +63,7 @@ export default function ArmView ({velocities}) {
                                 min={0}
                                 max={max}
                                 step={1}
-                                sx={{ width: 100 }}
+                                sx={{ width: 200 }}
                                 valueLabelDisplay="auto"
                             />
                             <Typography variant="body2">{value}</Typography>
