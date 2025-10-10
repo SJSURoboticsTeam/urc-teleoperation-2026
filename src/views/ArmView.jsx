@@ -1,10 +1,10 @@
-import { Resizable, ResizableBox } from 'react-resizable';
-import { useEffect, useState } from 'react';
+import { green } from "@mui/material/colors"
+import { useState } from 'react';
 import 'react-resizable/css/styles.css'; 
-import { Typography, Box, Slider, Grid, TextField, Button } from '@mui/material';
-import GamepadPanel from '../components/drive/GamepadPanel';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import { Typography, Box, Slider, Grid, Button } from '@mui/material';
 
-export default function ArmView ({velocities, armConnectedOne}) {
+export default function ArmView ({track: controllerTrack, effector: controllerEffect, pitch: controllerPitch, roll: controllerRoll, shoulder: controllerShoulder, elbow: controllerElbow, armConnectedOne}) {
     const [elbow, setElbow] = useState(0);
     const [shoulder, setShoulder] = useState(0);
     const [track, setTrack] = useState(0);
@@ -19,10 +19,9 @@ export default function ArmView ({velocities, armConnectedOne}) {
 
     return (
         <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', overflowY: 'auto' }}>
-            <Typography variant='h4' sx={{ mb: 2 }}>Arm Control</Typography>
-            <Typography variant='body1' sx={{ mb: 2 }}>Use Logitech gamepad to control the arm</Typography>
+            {armConnectedOne==null?<>
             <Box sx={{ mt: 4 }}>
-                <Typography sx={{textAlign:'center'}} variant='h5'>Manual Controls</Typography>
+                <Typography sx={{textAlign:'center', mb: 2}} variant='h5'>Manual Controls</Typography>
                 <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
                     {[
                         { label: 'Elbow', value: elbow, set: setElbow, max: 90 },
@@ -47,8 +46,36 @@ export default function ArmView ({velocities, armConnectedOne}) {
                         </Grid>
                     ))}
                 </Grid>
-                {armConnectedOne!=null?<div style={{textAlign:'center', marginTop: 25, fontSize: 20}}>Controller In Use</div>:<Button sx={{ mt: 2, left:'50%', transform:'translateX(-50%)'}} variant="contained" onClick={handleManualUpdate}>Update</Button>}
+                <Button sx={{ mt: 2, left:'50%', transform:'translateX(-50%)'}} variant="contained" onClick={handleManualUpdate}>Update</Button>
             </Box>
+            </>:
+            <Box sx={{ mt: 4 }}>
+                <Box 
+                    sx={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        mb: 2
+                    }}
+                    >
+                    <SportsEsportsIcon sx={{ color: green[500], fontSize: 60 }} />
+                </Box>
+                <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
+                {[
+                    { label: 'elbow', value: elbow },
+                    { label: 'shoulder', value: shoulder },
+                    { label: 'track', value: track },
+                    { label: 'pitch', value: pitch },
+                    { label: 'roll', value: roll },
+                    { label: 'effector', value: effector }
+                ].map(({ label, value }) => (
+                    <Grid item xs={12} sm={6} key={label} sx={{textAlign:'center', border: '1px solid #ccc', borderRadius: 2, padding: 2, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                    <Typography gutterBottom sx={{textTransform: 'capitalize', width: 200 }}>{label}</Typography>
+                    <Typography variant="h6">{value}</Typography>
+                    </Grid>
+                ))}
+                </Grid>
+            </Box>}
         </Box>
     );
 }

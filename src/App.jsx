@@ -1,5 +1,5 @@
 // React imports
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -21,6 +21,14 @@ function App() {
   const [forwardsVelocity, setForwardVelocity] = useState("0");
   const [rotationalVelocity, setRotationalVelocity] = useState("0");
   const [armConnectedOne,setArmConnectedOne]=useState(null)
+
+  const [effector,setEffector]=useState(0);
+  const [elbow,setElbow]=useState(0);
+  const [shoulder,setShoulder]=useState(0);
+  const [pitch,setPitch]=useState(0);
+  const [track,setTrack]=useState(0);
+  const [roll, setRoll]=useState(0);
+
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx.toFixed(2));
     setForwardVelocity(ly.toFixed(2));
@@ -30,6 +38,12 @@ function App() {
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
     console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
     setArmConnectedOne(armConnectedOne)
+    setEffector(Effector)
+    setElbow(Elbow)
+    setPitch(Pitch)
+    setRoll(Roll)
+    setTrack(Track)
+    setShoulder(Shoulder)
     console.log(armConnectedOne)
   }
 
@@ -37,7 +51,7 @@ function App() {
   function renderView() {
     switch (currentView) {
       case 'ArmView':
-        return <ArmView velocities={{}} armConnectedOne={armConnectedOne}/>
+        return <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/>
       case "DriveView":
         return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
       case "SpeedTestView":
