@@ -1,47 +1,74 @@
 import 'react-resizable/css/styles.css';
 import Box from '@mui/material/Box';
-import { useState } from 'react';
-import { Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import { useState, useEffect, useRef } from 'react';
+import { Select, MenuItem, FormControl, InputLabel, CircularProgress, Typography, Button } from "@mui/material";
 
 export default function CameraPane(){
-    const [camera, setCamera] = useState('camera 1');
+    const [camera, setCamera] = useState('Standby');
 
     const handleChange = (event) => {
-        setCamera(event.target.value);
+    setCamera(event.target.value);
     };
-
     const cameras= [
-        {value: 'camera 1', image:'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww', name:'camera 1'},
-        {value: 'camera 2', image:'https://images.unsplash.com/photo-1580757468214-c73f7062a5cb?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8MTYlM0E5fGVufDB8fDB8fHww', name:'camera 2'}
+    { value: 'Standby', mediatype: "image", name: 'Standby', url: '/mars.jpg'},
+    { value: 'Mast Cam', mediatype: "image", name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
+    { value: 'Under Chasis Cam', mediatype: "image", name: 'Under Chasis Cam', url: 'http://192.168.1.106:8081/'},
+    { value: 'Drive Cam', mediatype: "video", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
+    { value: 'Arm 1', mediatype: "video", name: 'Arm Base', url: "http://192.168.1.114:8889/one-720p"},
+    { value: 'Arm 2', mediatype: "video", name: 'Arm Front', url: "http://192.168.1.114:8889/two-720p/"}
     ];
 
-    const selectedCamera = cameras.find((cam) => cam.value === camera);
+    const selectedCamera = cameras.find((cam) => cam.value == camera);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const iframeTimeoutRef = useRef(null);
 
+    // derive simple deps for the effect so lint can verify
+    const selectedUrl = selectedCamera?.url ?? null;
+    const selectedMediaType = selectedCamera?.mediatype ?? null;
+
+    // whenever camera changes, reset loading/error
+    useEffect(() => {
+        setLoading(true);
+        setError(false);
+        // clear any previous iframe timeout
+        if (iframeTimeoutRef.current) {
+            clearTimeout(iframeTimeoutRef.current);
+            iframeTimeoutRef.current = null;
+        }
+        // if selectedCamera is iframe/video, start a timeout to mark error if not loaded
+        if (selectedMediaType === 'video') {
+            // for video/iframe style streams, give them up to 10s to load
+            iframeTimeoutRef.current = setTimeout(() => {
+                setLoading(false);
+                setError(true);
+            }, 5000);
+        }
+        // for images, onLoad handler will clear loading
+        return () => {
+            if (iframeTimeoutRef.current) {
+                clearTimeout(iframeTimeoutRef.current);
+                iframeTimeoutRef.current = null;
+            }
+        };
+    }, [selectedUrl, selectedMediaType]);
     return(
         // Root Box is flexible so CameraPane can grow inside a column
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-            <FormControl fullWidth sx={{ mb: 1 }}>
-                <InputLabel id="camera-select-label">Camera</InputLabel>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1}}>
+            <FormControl fullWidth sx={{ mb: 0.5, minHeight: 40, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <InputLabel id="camera-select-label" sx={{ position: 'static', transform: 'none', mb: 0, fontSize: '0.875rem' }}>Camera</InputLabel>
                 <Select
                     labelId="camera-select-label"
                     value={camera}
                     label="Camera"
                     onChange={handleChange}
                     size="small"
+                    sx={{ py: 0, height: 32, fontSize: '0.9rem' }}
                     MenuProps={{
-                        // Portal the menu to body and use a fixed positioning strategy
+                        // Render menu in a portal so it isn't clipped by ancestor overflow
                         disablePortal: false,
                         // give the menu a high z-index so it appears above other elements
                         PaperProps: { sx: { zIndex: 3000 } },
-                        // use Popper with fixed strategy to avoid being trapped in ancestor stacking contexts
-                        PopperProps: {
-                            strategy: 'fixed',
-                            modifiers: [
-                                { name: 'preventOverflow', options: { boundary: typeof document !== 'undefined' ? document.body : 'clippingParents' } },
-                                { name: 'flip', options: { fallbackPlacements: ['bottom', 'top'] } },
-                                { name: 'computeStyles', options: { adaptive: false } },
-                            ],
-                        },
                     }}
                 >
                     {cameras.map((cam) => (
@@ -53,15 +80,43 @@ export default function CameraPane(){
             </FormControl>
 
             {/* image container grows to fill remaining space */}
-            <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}>
+                <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
                 {selectedCamera && (
-                    <img
-                        src={selectedCamera.image}
-                        alt={selectedCamera.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
+                    (selectedCamera.mediatype == "image") ?
+                        <img
+                            key={selectedCamera.url}
+                            src={selectedCamera.url}
+                            alt={selectedCamera.name}
+                            onLoad={() => { setLoading(false); setError(false); }}
+                            onError={() => { setLoading(false); setError(true); }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                    :
+                        <iframe
+                            key={selectedCamera.url}
+                            src={selectedCamera.url}
+                            onLoad={() => { if (iframeTimeoutRef.current) { clearTimeout(iframeTimeoutRef.current); iframeTimeoutRef.current = null; } setLoading(false); setError(false); }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, display: 'block' }}
+                            title={selectedCamera.name}
+                            allow="fullscreen;"
+                        />
+                )}
+
+                {/* loading / error overlays */}
+                {loading && (
+                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                        <CircularProgress color="inherit" />
+                    </Box>
+                )}
+
+                {error && (
+                    <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+                        <Typography color="error">Failed to load camera</Typography>
+                        <Button sx={{ mt: 1 }} variant="contained" onClick={() => { setLoading(true); setError(false); /* force reload by changing key: handled by key prop */ }}>Retry</Button>
+                    </Box>
                 )}
             </Box>
         </Box>
+        
     );
 }

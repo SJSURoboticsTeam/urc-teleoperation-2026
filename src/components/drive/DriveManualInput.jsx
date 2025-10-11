@@ -5,47 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
-import Gamepad from "./Gamepad";
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import { green } from "@mui/material/colors";
-
-export default function DriveManualInput() {
-  const [sidewaysVelocity, setSidewaysVelocity] = useState("0");
-  const [forwardsVelocity, setForwardVelocity] = useState("0");
-  const [rotationalVelocity, setRotationalVelocity] = useState("0");
-
-  const [gamepads,setGamepads]=useState({})
-  const gamepadHandler = (event, connected) => {
-        const gamepad = event.gamepad;
-        const regex=new RegExp('STANDARD','i');
-        if (connected) {
-        if (regex.test(gamepad.id))
-        setGamepads({...gamepads,[gamepad.index]:gamepad});
-        } else {
-        setGamepads((prev) => {
-          const copy = { ...prev };
-          delete copy[gamepad.index];
-          return copy;
-        });
-        }
-    };
-    useEffect(() => {
-        const handleConnect = (e) => {
-        gamepadHandler(e, true);
-        };
-    const handleDisconnect = (e) => {
-        gamepadHandler(e, false);
-    };
-
-    window.addEventListener("gamepadconnected", handleConnect);
-    window.addEventListener("gamepaddisconnected", handleDisconnect);
-
-    return () => {
-      window.removeEventListener("gamepadconnected", handleConnect);
-      window.removeEventListener("gamepaddisconnected", handleDisconnect);
-    };
-    }, []);   
-
+export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity }) {
   // Sends drive commands to server
   useEffect(() => {
     let driveCommands = {
@@ -73,6 +33,8 @@ export default function DriveManualInput() {
           justifyContent: "center",
           alignItems: "center",
           gap: 2,
+          height: 100,
+          marginBottom:5,
           marginTop: 2,
         }}
       >
@@ -88,6 +50,7 @@ export default function DriveManualInput() {
               height: "50px",
               borderRadius: 2,
               marginTop: 5,
+              marginBottom:10
             }}
           >
             <Typography variant="body1" sx={{ marginTop: 10 }}>
@@ -98,22 +61,6 @@ export default function DriveManualInput() {
             </Typography>
           </Box>
         ))}
-      </Box>
-      <Box
-      sx={{
-        marginTop:10,
-        display:'flex',
-        flexDirection:'column',
-        alignItems:'center',
-        justifyContent:'center'
-        }}
-      >
-      <SportsEsportsIcon sx={{color:gamepads.length>0?green[500]:"black", width:100,height:100}} id="gamepadicon"/> 
-      <Gamepad onVelocitiesChange={(vel)=>{
-                setForwardVelocity(vel.ly.toPrecision(2));
-                setRotationalVelocity(vel.rx.toPrecision(2));
-                setSidewaysVelocity(vel.lx.toPrecision(2));
-      }} gamepads={gamepads}></Gamepad>
       </Box>
     </Box>
   );
