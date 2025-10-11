@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
-import GamepadDiv from "./GamepadDiv";
+import GamepadDiv from "./drive/DriveGamepad";
 
 export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);

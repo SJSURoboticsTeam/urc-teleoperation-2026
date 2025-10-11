@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
-import GamepadPanel from './drive/GamepadPanel';
+import GamepadPanel from './GamepadPanel';
 import { orange } from '@mui/material/colors';
 
 export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView }) {
