@@ -12,11 +12,11 @@ dist
 dist-ssr
 *.local
 
-# Server
-server/bin
-server/lib
-server/gps/__pycache__
-server/pyvenv.cfg
+# Python Virtual Environment
+venv/
+.env/
+@.pyc
+__pycache__/
 
 
 # Editor directories and files
