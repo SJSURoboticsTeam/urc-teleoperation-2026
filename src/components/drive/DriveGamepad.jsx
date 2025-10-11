@@ -1,7 +1,7 @@
-import {Paper, Typography, Box, Button} from '@mui/material';
-export default function GamepadPaper({gpList, connectedOne, setConnectedOne}) {
-    return (<Paper sx={{textAlign:'center', maxHeight:150,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, marginTop: 1, padding: 2}}>
-          {gpList.length === 0 && <Typography>No gamepads connected</Typography>}
+import {Typography, Box, Button} from '@mui/material';
+export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name}) {
+    return (<div style={{padding:5, marginTop: 5}}>
+          {gpList.length === 0 && <Typography>No {name=="Drive"?'Xbox':'Logitech'} gamepads connected</Typography>}
           {gpList.map((gp) => (
             <Box
               key={gp.index}
@@ -27,5 +27,5 @@ export default function GamepadPaper({gpList, connectedOne, setConnectedOne}) {
               </Button>
             </Box>
           ))}
-    </Paper>);
+    </div>);
 }
