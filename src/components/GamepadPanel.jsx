@@ -131,7 +131,7 @@ useEffect(() => {
         GAMEPADS{info}
       </span>
       <Collapse in={open}>
-        <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
+        <Paper sx={{textAlign:'center',width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
           <Button
             size="small"
             sx={{textDecoration:page==='Drive'?'underline':'none',
