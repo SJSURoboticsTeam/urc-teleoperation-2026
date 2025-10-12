@@ -31,13 +31,15 @@ function App() {
   const [track,setTrack]=useState(0);
   const [roll, setRoll]=useState(0);
 
-  const handleVelocitiesChange = ({ lx, ly, rx, px, py }) => {
+  const handleVelocitiesChange = ({ lx, ly, rx  }) => {
     setSidewaysVelocity(lx.toFixed(2));
     setForwardVelocity(ly.toFixed(2));
     setRotationalVelocity(rx.toFixed(2));
+  };
+  const handlePanVelocitiesChange=({px,py})=>{
     setPanHeightVelocity(py.toFixed(2));
     setPanWidthVelocity(px.toFixed(2));
-  };
+  }
 
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
@@ -79,7 +81,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange }  />
+      <TopAppBar currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange } onPanVelocitiesChange= {handlePanVelocitiesChange} />
       <Box
         component="main"
         sx={{

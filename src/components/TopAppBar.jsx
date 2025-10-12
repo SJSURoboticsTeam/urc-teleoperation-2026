@@ -12,7 +12,7 @@ import NavConnectionStatus from './BackendConnectionManager';
 import GamepadPanel from './GamepadPanel';
 import { orange } from '@mui/material/colors';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView }) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, onPanVelocitiesChange }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -129,7 +129,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
 
-          <GamepadPanel name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
+          <GamepadPanel name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange}  onPanVelocitiesChange = {onPanVelocitiesChange} currentView={currentView}/>
           
 
           <NavConnectionStatus />
