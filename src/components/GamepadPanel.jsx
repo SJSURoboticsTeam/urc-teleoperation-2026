@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./drive/DriveGamepad";
 
-export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
+export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, onPanVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
+  const [panVelocities,setPanVelocities] = useState({px:0,py:0});
   const [open, setOpen] = useState(false);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page,setPage]=useState('Drive');
@@ -24,8 +25,14 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           ly: -(gp.axes[1] || 0),
           rx: gp.axes[2] || 0,
         };
+        const newPan = {
+          px: (gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0),
+          py: (gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0),
+        };
         setDriveVelocities(newVel);
+        setPanVelocities(newPan);
         onDriveVelocitiesChange?.(newVel);
+        onPanVelocitiesChange?.(newPan);
       }
       animationId=requestAnimationFrame(pollAxes);
     };
@@ -62,13 +69,15 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   }, [armConnectedOne, onArmVelocitiesChange])
 
 
-  console.log(driveGamepads) //dbg
+  //console.log(driveGamepads) //dbg
   const gpList = Object.values(driveGamepads);
-  console.log(gpList); //dbg
+  //console.log(gpList); //dbg
+  //console.log("VELOCITIES");
+  //console.log(panVelocities);
 
-  console.log(armGamepads) //dbg
+  //console.log(armGamepads) //dbg
   const armList=Object.values(armGamepads);
-  console.log(armList); //dbg
+  //console.log(armList); //dbg
 
   const [info, setInfo] = useState('');
 

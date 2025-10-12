@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
-export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity }) {
+export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity, panHeightVelocity, panWidthVelocity }) {
   // Sends drive commands to server
   useEffect(() => {
     let driveCommands = {
@@ -23,6 +23,8 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
     { id: sidewaysVelocity, name: "Sideways Velocity" },
     { id: forwardsVelocity, name: "Forward Velocity" },
     { id: rotationalVelocity, name: "Rotational Velocity" },
+    { id: panHeightVelocity, name: "Pan Height Velocity"},
+    { id: panWidthVelocity, name: "Pan Width Velocity"}
   ];
   return (
     <Box sx={{display:'flex',flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
