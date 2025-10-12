@@ -17,6 +17,15 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
     socket.emit("driveCommands", driveCommands);
   }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity]);
 
+    useEffect(() => {
+    let driveCommands = {
+      xVel: panHeightVelocity,
+      yVel: panWidthVelocity,
+
+    };
+    socket.emit("driveCommands", driveCommands);
+  }, [panHeightVelocity, panWidthVelocity]);
+  
   const handleClick = (event) => {
     socket.emit("driveHoming");
   };
