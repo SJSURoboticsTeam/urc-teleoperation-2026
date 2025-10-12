@@ -73,11 +73,19 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
             color='inherit'
             aria-label='menu'
             onClick={toggleDrawer(true)}
+            sx={{ mr: 1 }}
           >
             <MenuIcon />
           </IconButton>
           {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
-          <Typography variant='h6' component='div' sx={{ display: { xs: 'none', sm: 'none',  md: 'block' } }}>
+          <Typography
+            variant='h6'
+            component='div'
+            sx={{
+              display: { xs: 'none', sm: 'none', md: 'block' },
+              pr: 1, // add left padding to align with toolbar items
+            }}
+          >
             Teleoperations
           </Typography>
 
