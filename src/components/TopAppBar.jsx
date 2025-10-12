@@ -11,6 +11,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
 import GamepadPanel from './GamepadPanel';
 import { orange } from '@mui/material/colors';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
 
 export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, onPanVelocitiesChange }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -136,7 +137,22 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           onPanVelocitiesChange = {onPanVelocitiesChange} currentView={currentView}/>
 
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
+        <IconButton
+          edge='end'
+          color='inherit'
+          onClick={() => {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen(); // enter fullscreen
+            } else {
+              document.exitFullscreen(); // exit fullscreen
+            }
+          }}
+          sx={{ ml: 1 }}
+        >
+          <FullscreenIcon />
+        </IconButton>
         </Toolbar>
+
       </AppBar>
       {/* Drawer for side panel comopnents */}
       <Drawer anchor='left' open={drawerOpen} onClose={toggleDrawer(false)} sx={{
