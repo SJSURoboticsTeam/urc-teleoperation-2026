@@ -35,7 +35,10 @@ function App() {
     setSidewaysVelocity(lx.toFixed(2));
     setForwardVelocity(ly.toFixed(2));
     setRotationalVelocity(rx.toFixed(2));
+    //setPanHeightVelocity(py.toFixed(2));
+    //setPanWidthVelocity(px.toFixed(2));
   };
+
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
     console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
@@ -57,7 +60,7 @@ function App() {
       case 'ArmView':
         return <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/>
       case "DriveView":
-        return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity= {panHeightVelocity} panWidthVelocity= {panWidthVelocity}/>;
+        return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity}/>;
       case "SpeedTestView":
         return <SpeedTestView />;
       case "ScienceView":
@@ -76,7 +79,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} />
+      <TopAppBar currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange }  />
       <Box
         component="main"
         sx={{

@@ -12,6 +12,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
       rotVel: rotationalVelocity,
+
     };
     socket.emit("driveCommands", driveCommands);
   }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity]);
@@ -56,7 +57,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
             }}
           >
             <Typography variant="body1" sx={{ marginTop: 10 }}>
-              {velocity.id}
+              ={velocity.id}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 5 }}>
               {velocity.name}

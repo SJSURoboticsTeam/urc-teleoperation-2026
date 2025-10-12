@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./drive/DriveGamepad";
 
-export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, onPanVelocitiesChange, currentView }) {
+export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
   const [panVelocities,setPanVelocities] = useState({px:0,py:0});
@@ -24,15 +24,11 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           lx: gp.axes[0] || 0,
           ly: -(gp.axes[1] || 0),
           rx: gp.axes[2] || 0,
-        };
-        const newPan = {
           px: (gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0),
           py: (gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0),
         };
         setDriveVelocities(newVel);
-        setPanVelocities(newPan);
         onDriveVelocitiesChange?.(newVel);
-        onPanVelocitiesChange?.(newPan);
       }
       animationId=requestAnimationFrame(pollAxes);
     };
