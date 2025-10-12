@@ -86,31 +86,31 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
             color='inherit'
             onClick={() => handleViewChange('DriveView')}
           >
-            Drive View
+            Drive
           </Button>
           <Button
             color='inherit'
             onClick={() => handleViewChange('ArmView')}
           >
-            Arm View
+            Arm
           </Button>
           <Button
             color='inherit'
             onClick={() => handleViewChange('ScienceView')}
           >
-            Science View
+            Science
           </Button>
           <Button
             color='inherit'
             onClick={() => handleViewChange('AutonomyView')}
           >
-            Autonomy View
+            Autonomy
           </Button>
           <Button
             color='inherit'
             onClick={() => handleViewChange('MapView')}
           >
-            Map View
+            Map
           </Button>
 
           {  (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
