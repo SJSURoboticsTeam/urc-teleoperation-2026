@@ -18,14 +18,13 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
   }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity]);
 
     useEffect(() => {
-    let driveCommands = {
+    let panCommands = {
       xVel: panHeightVelocity,
       yVel: panWidthVelocity,
-
     };
-    socket.emit("driveCommands", driveCommands);
+    socket.emit("panCommands", panCommands);
   }, [panHeightVelocity, panWidthVelocity]);
-  
+
   const handleClick = (event) => {
     socket.emit("driveHoming");
   };
