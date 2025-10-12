@@ -24,8 +24,8 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
     { id: sidewaysVelocity, name: "Sideways Velocity" },
     { id: forwardsVelocity, name: "Forward Velocity" },
     { id: rotationalVelocity, name: "Rotational Velocity" },
-    { id: panHeightVelocity, name: "Pan Height Velocity"},
-    { id: panWidthVelocity, name: "Pan Width Velocity"}
+    { id: panHeightVelocity, name: "PanH Velocity"},
+    { id: panWidthVelocity, name: "PanW Velocity"}
   ];
   return (
     <Box sx={{display:'flex',flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
@@ -57,7 +57,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
             }}
           >
             <Typography variant="body1" sx={{ marginTop: 10 }}>
-              ={velocity.id}
+              {velocity.id}
             </Typography>
             <Typography variant="body2" sx={{ marginTop: 5 }}>
               {velocity.name}

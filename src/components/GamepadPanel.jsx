@@ -5,7 +5,6 @@ import GamepadDiv from "./drive/DriveGamepad";
 export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
-  const [panVelocities,setPanVelocities] = useState({px:0,py:0});
   const [open, setOpen] = useState(false);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page,setPage]=useState('Drive');
@@ -13,7 +12,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   useEffect(() => {
     if (driveConnectedOne == null) {
       setDriveVelocities({ lx: 0, ly: 0, rx: 0 });
-      onDriveVelocitiesChange?.({ lx: 0, ly: 0, rx: 0 });
+      onDriveVelocitiesChange?.({ lx: 0, ly: 0, rx: 0, px: 0, py: 0 });
       return;
     }
     let animationId;
@@ -68,8 +67,6 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   //console.log(driveGamepads) //dbg
   const gpList = Object.values(driveGamepads);
   //console.log(gpList); //dbg
-  //console.log("VELOCITIES");
-  //console.log(panVelocities);
 
   //console.log(armGamepads) //dbg
   const armList=Object.values(armGamepads);

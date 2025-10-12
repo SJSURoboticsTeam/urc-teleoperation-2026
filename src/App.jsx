@@ -31,12 +31,12 @@ function App() {
   const [track,setTrack]=useState(0);
   const [roll, setRoll]=useState(0);
 
-  const handleVelocitiesChange = ({ lx, ly, rx }) => {
+  const handleVelocitiesChange = ({ lx, ly, rx, px, py }) => {
     setSidewaysVelocity(lx.toFixed(2));
     setForwardVelocity(ly.toFixed(2));
     setRotationalVelocity(rx.toFixed(2));
-    //setPanHeightVelocity(py.toFixed(2));
-    //setPanWidthVelocity(px.toFixed(2));
+    setPanHeightVelocity(py.toFixed(2));
+    setPanWidthVelocity(px.toFixed(2));
   };
 
 
