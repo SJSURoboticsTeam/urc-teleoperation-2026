@@ -9,10 +9,10 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
 import NavConnectionStatus from './BackendConnectionManager';
-import GamepadPanel from './drive/GamepadPanel';
+import GamepadPanel from './GamepadPanel';
 import { orange } from '@mui/material/colors';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange }) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -129,7 +129,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange }) {
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
 
-          <GamepadPanel name="Drive" onVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} />
+          <GamepadPanel name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
           
 
           <NavConnectionStatus />
