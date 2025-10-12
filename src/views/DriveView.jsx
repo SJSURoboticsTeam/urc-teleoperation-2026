@@ -7,7 +7,7 @@ import Wheel from '../components/drive/Wheel'
 
 export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, panHeightVelocity, panWidthVelocity}) {
   const containerRef = useRef(null)
-  const [leftPct, setLeftPct] = useState(50) // left pane width percentage
+  const [leftPct, setLeftPct] = useState(60) // left pane width percentage
 
   const startDrag = useCallback((e) => {
     // Use pointer events so touch and mouse work
