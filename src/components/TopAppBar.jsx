@@ -26,6 +26,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
   useEffect(() => {
     const handleConnect = (e) => {
       const gp = e.gamepad;
+      // check if a gamepad is a drive or arm controller based on id containing "Standard" or "Extreme"
       if (/STANDARD/i.test(gp.id)) {
         setDriveGamepads((prev) => ({ ...prev, [gp.index]: gp }));
       } else if (/EXTREME/i.test(gp.id)) {
@@ -57,7 +58,6 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
 
   return (
     <>
-    {/*sx={{ bgcolor: orange[800] }} */}
       <AppBar 
         sx={{
     bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")

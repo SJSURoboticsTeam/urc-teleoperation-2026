@@ -4,11 +4,12 @@ import GamepadDiv from "./drive/DriveGamepad";
 
 export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
-  const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
+  const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0, px: 0, py: 0 });
   const [open, setOpen] = useState(false);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page,setPage]=useState('Drive');
   const [armVelocities, setArmVelocities]=useState({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
+  // controller polling for drive
   useEffect(() => {
     if (driveConnectedOne == null) {
       setDriveVelocities({ lx: 0, ly: 0, rx: 0 });
@@ -16,6 +17,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       return;
     }
     let animationId;
+    // poll for data
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
@@ -26,6 +28,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           px: (gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0),
           py: (gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0),
         };
+        // then set states
         setDriveVelocities(newVel);
         onDriveVelocitiesChange?.(newVel);
       }
@@ -35,7 +38,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     return () => cancelAnimationFrame(animationId);
   }, [driveConnectedOne, onDriveVelocitiesChange]);
 
-
+// arm gamepad polling
   useEffect(()=>{
     if (armConnectedOne==null) {
       setArmVelocities({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
