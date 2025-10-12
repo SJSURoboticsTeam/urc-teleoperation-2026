@@ -1,21 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./drive/DriveGamepad";
 
-export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
+export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView, onPanVelocitiesChange}) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
-  const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
+  const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0});
+  const [panVelocities, setPanVelocities]=useState({px:0, py:0});
   const [open, setOpen] = useState(false);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page,setPage]=useState('Drive');
   const [armVelocities, setArmVelocities]=useState({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
+  // controller polling for drive
   useEffect(() => {
     if (driveConnectedOne == null) {
       setDriveVelocities({ lx: 0, ly: 0, rx: 0 });
-      onDriveVelocitiesChange?.({ lx: 0, ly: 0, rx: 0 });
+      onDriveVelocitiesChange?.({ lx: 0, ly: 0, rx: 0, px: 0, py: 0 });
       return;
     }
     let animationId;
+    // poll for data
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
@@ -24,6 +27,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           ly: -(gp.axes[1] || 0),
           rx: gp.axes[2] || 0,
         };
+        // then set states
         setDriveVelocities(newVel);
         onDriveVelocitiesChange?.(newVel);
       }
@@ -33,7 +37,34 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     return () => cancelAnimationFrame(animationId);
   }, [driveConnectedOne, onDriveVelocitiesChange]);
 
+// pan controller polling for drive
+useEffect(() => {
+    if (driveConnectedOne == null) {
+      setPanVelocities({ px: 0, py: 0 });
+      onPanVelocitiesChange?.({ px: 0, py: 0 });
+      return;
+    }
+    let animationId;
+    // poll for data
+    const pollAxes = () => {
+      const gp = navigator.getGamepads()[driveConnectedOne];
+      if (gp) {
+        const newVel = {
 
+          px: (gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0),
+          py: (gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0),
+        };
+        // then set states
+        setPanVelocities(newVel);
+        onPanVelocitiesChange?.(newVel);
+      }
+      animationId=requestAnimationFrame(pollAxes);
+    };
+    pollAxes();
+    return () => cancelAnimationFrame(animationId);
+  }, [driveConnectedOne, onPanVelocitiesChange]);
+
+// arm gamepad polling
   useEffect(()=>{
     if (armConnectedOne==null) {
       setArmVelocities({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
@@ -62,13 +93,13 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   }, [armConnectedOne, onArmVelocitiesChange])
 
 
-  console.log(driveGamepads) //dbg
+  //console.log(driveGamepads) //dbg
   const gpList = Object.values(driveGamepads);
-  console.log(gpList); //dbg
+  //console.log(gpList); //dbg
 
-  console.log(armGamepads) //dbg
+  //console.log(armGamepads) //dbg
   const armList=Object.values(armGamepads);
-  console.log(armList); //dbg
+  //console.log(armList); //dbg
 
   const [info, setInfo] = useState('');
 
@@ -100,7 +131,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         GAMEPADS{info}
       </span>
       <Collapse in={open}>
-        <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
+        <Paper sx={{textAlign:'center',width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
           <Button
             size="small"
             sx={{textDecoration:page==='Drive'?'underline':'none',

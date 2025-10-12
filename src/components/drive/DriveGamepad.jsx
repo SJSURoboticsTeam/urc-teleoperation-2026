@@ -1,7 +1,10 @@
 import {Typography, Box, Button} from '@mui/material';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name}) {
     return (<div style={{padding:5, marginTop: 5}}>
-          {gpList.length === 0 && <Typography>No {name=="Drive"?'Xbox':'Logitech'} gamepads connected</Typography>}
+          {gpList.length === 0 && <Typography>No {name=="Drive"?'Xbox/PlayStation':'Logitech'} gamepads connected</Typography>}
+          {/* controller icon if no gamepads connected */}
+          {(gpList.length === 0 && name=="Drive") && <SportsEsportsIcon sx={{ width:100,height:100}} id="gamepadicon"/>}
           {gpList.map((gp) => (
             <Box
               key={gp.index}
