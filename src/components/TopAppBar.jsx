@@ -16,6 +16,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
+  const [openPane, setOpenPane] = useState("None");
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -128,11 +129,13 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
 
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
+          {/* Gamepad connection status and selection panel */}
+          <GamepadPanel openPane = {openPane} setOpenPane = {setOpenPane}
+          name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} 
+          armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange}  
+          onPanVelocitiesChange = {onPanVelocitiesChange} currentView={currentView}/>
 
-          <GamepadPanel name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange}  onPanVelocitiesChange = {onPanVelocitiesChange} currentView={currentView}/>
-          
-
-          <NavConnectionStatus />
+          <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
