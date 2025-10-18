@@ -8,6 +8,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   const [open, setOpen] = useState(false);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page,setPage]=useState('Drive');
+  const [prevTime,setPrevTime]=useState();
   const [armVelocities, setArmVelocities]=useState({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
   useEffect(() => {
     if (driveConnectedOne == null) {
