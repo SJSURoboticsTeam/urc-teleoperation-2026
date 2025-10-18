@@ -20,9 +20,9 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
         const newVel = {
-          lx: gp.axes[0] || 0,
-          ly: -(gp.axes[1] || 0),
-          rx: gp.axes[2] || 0,
+          lx: Number(gp.axes[0]) || 0,
+          ly: Number(-(gp.axes[1]) || 0),
+          rx: Number(gp.axes[2]) || 0,
         };
         setDriveVelocities(newVel);
         onDriveVelocitiesChange?.(newVel);
@@ -33,7 +33,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     return () => cancelAnimationFrame(animationId);
   }, [driveConnectedOne, onDriveVelocitiesChange]);
 
-
+ // every 200ms - constant
   useEffect(()=>{
     if (armConnectedOne==null) {
       setArmVelocities({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
