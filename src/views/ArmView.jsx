@@ -5,6 +5,9 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { Typography, Box, Slider, Grid, Button } from '@mui/material';
 import { FrameRateConstant } from "../components/drive/FrameRateConstant";
 import { socket } from "../socket";
+//TO DO:
+//PASS ARMCONNECTEDONE TO THIS COMPONENT
+//TRACK IT, EMIT MANUAL/CONTROLLER VALUES DEPENDENT ON IT
 
 export default function ArmView ({track: controllerTrack, effector: controllerEffector, pitch: controllerPitch, roll: controllerRoll, shoulder: controllerShoulder, elbow: controllerElbow, armConnectedOne}) {
     const [elbow, setElbow] = useState(0);
