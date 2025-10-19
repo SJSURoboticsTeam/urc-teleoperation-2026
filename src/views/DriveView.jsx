@@ -44,9 +44,9 @@ export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationa
         <DriveManualInput sidewaysVelocity={sidewaysVelocity}
                 forwardsVelocity={forwardsVelocity}
                 rotationalVelocity={rotationalVelocity}
-                moduleConflicts={moduleConflicts}/>
-                panHeightVelocity = {panHeightVelocity}
-                panWidthVelocity = {panWidthVelocity}/>
+                moduleConflicts={moduleConflicts}
+                panHeightVelocity= {panHeightVelocity}
+                panWidthVelocity= {panWidthVelocity} />
         <Map />
         <Wheel />
       </div>
