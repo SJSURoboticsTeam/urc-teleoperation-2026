@@ -53,7 +53,6 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       onArmVelocitiesChange?.({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0, armConnectedOne})
       return;
     }
-    let animationId;
     const pollAxes=()=>{
       const gp=navigator.getGamepads()[armConnectedOne];
       if (gp) {
