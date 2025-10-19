@@ -1,6 +1,6 @@
 import {Typography, Box, Button} from '@mui/material';
 import { useState } from 'react';
-export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name, setModuleConflicts}) {
+export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name, setModuleConflicts, setArmManualDisconnect}) {
     const [current,setCurrent]=useState('Module Conflicts: OFF')
     return (<div style={{padding:2, marginTop: 2}}>
           {name=="Drive"&&<div style={{marginBottom:5}}><button onClick={()=>{setModuleConflicts(prev=>!prev); current.includes("OFF")?setCurrent("Module Conflicts: ON"):setCurrent("Module Conflicts: OFF")}}>{current}</button></div>}
@@ -22,8 +22,10 @@ export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name,
                 variant="outlined"
                 size="small"
                 sx={{ marginTop: 1 }}
-                onClick={() =>
+                onClick={() => {
                   setConnectedOne(connectedOne == gp.index ? null : gp.index)
+                  setArmManualDisconnect(prev=>!prev)
+                }
                 }
               >
                 {connectedOne === gp.index ? "Disconnect" : "Select"}

@@ -47,8 +47,10 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     return () => clearInterval(intervalId);
   }, [driveConnectedOne]);
 
+  const [armManualDisconnect,setArmManualDisconnect]=useState(false)
+
   useEffect(()=>{
-    if (armConnectedOne==null) {
+    if (armManualDisconnect || armConnectedOne==null) {
       setArmVelocities({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
       onArmVelocitiesChange?.({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0, armConnectedOne})
       return;
@@ -84,7 +86,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     const intervalId = setInterval(pollAxes, FrameRateConstant);
     console.log(`Polling arm gamepad every ${FrameRateConstant}ms`);
     return () => clearInterval(intervalId);
-  }, [armConnectedOne])
+  }, [armConnectedOne, armManualDisconnect])
 
 
   //console.log(driveGamepads) //dbg
@@ -147,7 +149,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
             Arm 
           </Button>
           {page==='Drive'?<GamepadDiv setModuleConflicts={setModuleConflicts} gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name={page}/>:
-          <GamepadDiv gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name={page} />}
+          <GamepadDiv setArmManualDisconnect={setArmManualDisconnect} gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name={page} />}
         </Paper>
       </Collapse>
     </div>
