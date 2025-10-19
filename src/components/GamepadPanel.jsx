@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./drive/DriveGamepad";
 import {FrameRateConstant} from './drive/FrameRateConstant'
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import {green} from '@mui/material/colors'
 
 export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView, setModuleConflicts }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
@@ -97,9 +99,9 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
 
   useEffect(() => {
     if (currentView === 'DriveView') {
-      setInfo(driveConnectedOne != null ? ': CONNECTED' : ': DISCONNECTED');
+      setInfo(driveConnectedOne != null ? <SportsEsportsIcon sx={{color: green[500], fontSize:20}}/> : <SportsEsportsIcon sx={{ fontSize: 20}} />);
     } else if (currentView === 'ArmView') {
-      setInfo(armConnectedOne != null ? ': CONNECTED' : ': DISCONNECTED');
+      setInfo(armConnectedOne != null ? <SportsEsportsIcon sx={{color: green[500], fontSize:20}}/> : <SportsEsportsIcon sx={{ fontSize: 20}} />);
     } else {
       setInfo(''); // empty string if neither view
     }
@@ -119,7 +121,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       marginRight: 20
     }}
     >
-      <span style={{ whiteSpace: 'pre-wrap' }}>
+      <span style={{ whiteSpace: 'pre-wrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
         GAMEPADS{info}
       </span>
       <Collapse in={open}>
