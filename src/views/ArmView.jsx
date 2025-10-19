@@ -20,6 +20,13 @@ export default function ArmView ({track: controllerTrack, effector: controllerEf
             Arm_mode[0] = 1 = angles for base/shoulder/elbow
             Arm_mode[0] = 2 = angles for roll/pitch yaw
            */
+          Arm_mode:0,
+          elbow,
+          shoulder,
+          track,
+          pitch,
+          roll,
+          effector
         };
         socket.emit("armCommands", armCommands);
       }, FrameRateConstant);
