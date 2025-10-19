@@ -14,7 +14,12 @@ export default function ArmView ({track: controllerTrack, effector: controllerEf
 
     setInterval(() => {
         let armCommands = {
-          
+          /**
+           Arm_mode[0] = homing
+            // homing first
+            Arm_mode[0] = 1 = angles for base/shoulder/elbow
+            Arm_mode[0] = 2 = angles for roll/pitch yaw
+           */
         };
         socket.emit("armCommands", armCommands);
       }, FrameRateConstant);
