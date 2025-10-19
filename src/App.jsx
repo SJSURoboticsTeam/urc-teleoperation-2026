@@ -29,6 +29,8 @@ function App() {
   const [track,setTrack]=useState(0);
   const [roll, setRoll]=useState(0);
 
+  const [moduleConflicts,setModuleConflicts]=useState(false)
+
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx);
     setForwardVelocity(ly);
@@ -55,7 +57,7 @@ function App() {
       case 'ArmView':
         return <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/>
       case "DriveView":
-        return <DriveView sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
+        return <DriveView moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}/>;
       case "SpeedTestView":
         return <SpeedTestView />;
       case "ScienceView":
@@ -74,7 +76,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} />
+      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} />
       <Box
         component="main"
         sx={{

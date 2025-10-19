@@ -3,6 +3,7 @@ import { useState } from 'react';
 import 'react-resizable/css/styles.css'; 
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { Typography, Box, Slider, Grid, Button } from '@mui/material';
+import { FrameRateConstant } from "../components/drive/FrameRateConstant";
 
 export default function ArmView ({track: controllerTrack, effector: controllerEffector, pitch: controllerPitch, roll: controllerRoll, shoulder: controllerShoulder, elbow: controllerElbow, armConnectedOne}) {
     const [elbow, setElbow] = useState(0);
@@ -20,12 +21,12 @@ export default function ArmView ({track: controllerTrack, effector: controllerEf
             Arm_mode[0] = 1 = angles for base/shoulder/elbow
             Arm_mode[0] = 2 = angles for roll/pitch yaw
            */
-          elbow,
-          shoulder,
-          track,
-          pitch,
-          roll,
-          effector
+          controllerElbow,
+          controllerShoulder,
+          controllerTrack,
+          controllerPitch,
+          controllerRoll,
+          controllerEffector
         };
         socket.emit("armCommands", armCommands);
       }, FrameRateConstant);

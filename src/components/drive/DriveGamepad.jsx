@@ -1,7 +1,10 @@
 import {Typography, Box, Button} from '@mui/material';
-export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name}) {
-    return (<div style={{padding:5, marginTop: 5}}>
-          {gpList.length === 0 && <Typography>No {name=="Drive"?'Xbox':'Logitech'} gamepads connected</Typography>}
+import { useState } from 'react';
+export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name, setModuleConflicts}) {
+    const [current,setCurrent]=useState('Module Conflicts: OFF')
+    return (<div style={{padding:2, marginTop: 2}}>
+          {name=="Drive"&&<div style={{marginBottom:5}}><button onClick={()=>{setModuleConflicts(prev=>!prev); current.includes("OFF")?setCurrent("Module Conflicts: ON"):setCurrent("Module Conflicts: OFF")}}>{current}</button></div>}
+          {gpList.length === 0 && <Typography>No {name=="Drive"?'Xbox':'Logitech'} gamepads connected</Typography>}    
           {gpList.map((gp) => (
             <Box
               key={gp.index}

@@ -6,14 +6,14 @@ import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant";
-export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity }) {
+export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts}) {
   // Sends drive commands to server
   setInterval(() => {
     let driveCommands = {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
       rotVel: rotationalVelocity,
-      moduleConflicts: 0,
+      moduleConflicts,
     };
     socket.emit("driveCommands", driveCommands);
   }, FrameRateConstant);

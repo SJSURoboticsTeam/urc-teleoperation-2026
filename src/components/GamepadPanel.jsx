@@ -3,7 +3,7 @@ import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./drive/DriveGamepad";
 import {FrameRateConstant} from './drive/FrameRateConstant'
 
-export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
+export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView, setModuleConflicts }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
   const [open, setOpen] = useState(false);
@@ -119,7 +119,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         GAMEPADS{info}
       </span>
       <Collapse in={open}>
-        <Paper sx={{textAlign:'center', maxHeight:200,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
+        <Paper sx={{textAlign:'center', maxHeight:225,width:400,overflowX:'hidden',overflowY:'auto',left:'50%',transform: 'translateX(-50%)',position:'absolute',top:'100%', zIndex:1300, padding: 1}}>
           <Button
             size="small"
             sx={{textDecoration:page==='Drive'?'underline':'none',
@@ -140,7 +140,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           >
             Arm 
           </Button>
-          {page==='Drive'?<GamepadDiv gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name={page}/>:
+          {page==='Drive'?<GamepadDiv setModuleConflicts={setModuleConflicts} gpList={gpList} connectedOne={driveConnectedOne} setConnectedOne={setDriveConnectedOne} name={page}/>:
           <GamepadDiv gpList={armList} connectedOne={armConnectedOne} setConnectedOne={setArmConnectedOne} name={page} />}
         </Paper>
       </Collapse>
