@@ -39,7 +39,6 @@ function App() {
   };
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
-   // console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
     setArmConnectedOne(armConnectedOne)
     setEffector(Effector)
     setElbow(Elbow)
@@ -48,7 +47,7 @@ function App() {
     setTrack(Track)
     setShoulder(Shoulder)
   //  console.log(armConnectedOne)
-  console.log(effector,pitch,roll,elbow,shoulder,track)
+  console.log(Effector,Pitch,Roll,Elbow,Shoulder,Track)
   }
 
   // Select which view we want to display

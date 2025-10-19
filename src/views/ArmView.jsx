@@ -4,6 +4,7 @@ import 'react-resizable/css/styles.css';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { Typography, Box, Slider, Grid, Button } from '@mui/material';
 import { FrameRateConstant } from "../components/drive/FrameRateConstant";
+import { socket } from "../socket";
 
 export default function ArmView ({track: controllerTrack, effector: controllerEffector, pitch: controllerPitch, roll: controllerRoll, shoulder: controllerShoulder, elbow: controllerElbow, armConnectedOne}) {
     const [elbow, setElbow] = useState(0);

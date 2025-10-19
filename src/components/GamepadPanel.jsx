@@ -54,13 +54,17 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     const pollAxes=()=>{
       const gp=navigator.getGamepads()[armConnectedOne];
       if (gp) {
+        /**
+         * Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne
+         */
+        // rand mapping to test socket.emit and arm/drive ui
         const newVal= {
           'Elbow':gp.axes[9],
           'Shoulder':gp.axes[1],
-          'Track':gp.axes[3],//rand
-          'Pitch':gp.axes[2],//rand
+          'Track':gp.axes[3],
+          'Pitch':gp.axes[0],
           'Roll':gp.axes[5],
-          'Effector':gp.axes[6],//rand
+          'Effector':gp.axes[6],
           armConnectedOne}
         setArmVelocities((prev) => {
         const changed = Object.keys(newVal).some(
@@ -76,7 +80,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       }
     };
     const intervalId = setInterval(pollAxes, FrameRateConstant);
-    console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
+    console.log(`Polling arm gamepad every ${FrameRateConstant}ms`);
     return () => clearInterval(intervalId);
   }, [armConnectedOne])
 
