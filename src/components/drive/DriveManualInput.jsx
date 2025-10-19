@@ -12,6 +12,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
       rotVel: rotationalVelocity,
+      moduleConflicts: 0,
     };
     socket.emit("driveCommands", driveCommands);
   }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity]);

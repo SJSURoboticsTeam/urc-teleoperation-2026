@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./drive/DriveGamepad";
+import {FrameRateConstant} from './drive/FrameRateConstant'
 
 export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
@@ -10,6 +11,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
   const [page,setPage]=useState('Drive');
   const [prevTime,setPrevTime]=useState();
   const [armVelocities, setArmVelocities]=useState({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
+  
   useEffect(() => {
     if (driveConnectedOne == null) {
       setDriveVelocities({ lx: 0, ly: 0, rx: 0 });
@@ -22,19 +24,29 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       if (gp) {
         const newVel = {
           lx: Math.round(gp.axes[0]) || 0,
-          ly: Math.round(-(gp.axes[1]) || 0),
+          ly: -1* Math.round((gp.axes[1]) || 0),
           rx: Math.round(gp.axes[2]) || 0,
         };
-        setDriveVelocities(newVel);
-        onDriveVelocitiesChange?.(newVel);
+        setDriveVelocities((prev) => {
+        if (
+          prev.lx !== newVel.lx ||
+          prev.ly !== newVel.ly ||
+          prev.rx !== newVel.rx
+        ) {
+          onDriveVelocitiesChange?.(newVel);
+          console.log(newVel)
+          return newVel;
+        }
+        console.log(prev)
+        return prev; // no change = no re-render
+      });
       }
-      animationId=requestAnimationFrame(pollAxes);
     };
-    pollAxes();
-    return () => cancelAnimationFrame(animationId);
-  }, [driveConnectedOne, onDriveVelocitiesChange]);
+    const intervalId = setInterval(pollAxes, FrameRateConstant);
+    console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
+    return () => clearInterval(intervalId);
+  }, [driveConnectedOne]);
 
- // every 200ms - constant
   useEffect(()=>{
     if (armConnectedOne==null) {
       setArmVelocities({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})
@@ -48,28 +60,36 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
         const newVal= {
           'Elbow':gp.axes[9],
           'Shoulder':gp.axes[1],
-          'Track':gp.axes[],
-          'Pitch':gp.axes[],
+          'Track':gp.axes[3],//rand
+          'Pitch':gp.axes[2],//rand
           'Roll':gp.axes[5],
-          'Effector':gp.axes[],
+          'Effector':gp.axes[6],//rand
           armConnectedOne}
-        setArmVelocities(newVal);
-        onArmVelocitiesChange?.({...newVal, armConnectedOne});
+        setArmVelocities((prev) => {
+        const changed = Object.keys(newVal).some(
+          (key) => newVal[key] !== prev[key]
+        );
+        if (changed) {
+          onArmVelocitiesChange?.({ ...newVal, armConnectedOne });
+          return newVal;
+        }
+        return prev;
+        });
       }
-      animationId=requestAnimationFrame(pollAxes);
     };
-    pollAxes();
-    return ()=>cancelAnimationFrame(animationId);
-  }, [armConnectedOne, onArmVelocitiesChange])
+    const intervalId = setInterval(pollAxes, FrameRateConstant);
+    console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
+    return () => clearInterval(intervalId);
+  }, [armConnectedOne])
 
 
-  console.log(driveGamepads) //dbg
+  //console.log(driveGamepads) //dbg
   const gpList = Object.values(driveGamepads);
-  console.log(gpList); //dbg
+  //console.log(gpList); //dbg
 
-  console.log(armGamepads) //dbg
+  //console.log(armGamepads) //dbg
   const armList=Object.values(armGamepads);
-  console.log(armList); //dbg
+  //console.log(armList); //dbg
 
   const [info, setInfo] = useState('');
 

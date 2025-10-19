@@ -30,13 +30,13 @@ function App() {
   const [roll, setRoll]=useState(0);
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
-    setSidewaysVelocity(lx.toFixed(2));
-    setForwardVelocity(ly.toFixed(2));
-    setRotationalVelocity(rx.toFixed(2));
+    setSidewaysVelocity(lx);
+    setForwardVelocity(ly);
+    setRotationalVelocity(rx);
   };
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
-    console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
+   // console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
     setArmConnectedOne(armConnectedOne)
     setEffector(Effector)
     setElbow(Elbow)
@@ -44,8 +44,8 @@ function App() {
     setRoll(Roll)
     setTrack(Track)
     setShoulder(Shoulder)
-    console.log(armConnectedOne)
-    console.log(effector,pitch,roll,elbow,shoulder,track)
+  //  console.log(armConnectedOne)
+  // console.log(effector,pitch,roll,elbow,shoulder,track)
   }
 
   // Select which view we want to display
