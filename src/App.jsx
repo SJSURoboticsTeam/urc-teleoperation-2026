@@ -59,17 +59,6 @@ function App() {
   }
   
 
-  const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
-    setArmConnectedOne(armConnectedOne)
-    setEffector(Effector)
-    setElbow(Elbow)
-    setPitch(Pitch)
-    setRoll(Roll)
-    setTrack(Track)
-    setShoulder(Shoulder)
-  //  console.log(armConnectedOne)
-  console.log(Effector,Pitch,Roll,Elbow,Shoulder,Track)
-  }
 
   // Select which view we want to display
   function renderView() {
