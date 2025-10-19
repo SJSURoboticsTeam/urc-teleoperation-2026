@@ -70,6 +70,7 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           onArmVelocitiesChange?.({ ...newVal, armConnectedOne });
           return newVal;
         }
+        onArmVelocitiesChange?.({...prev,armConnectedOne})
         return prev;
         });
       }
