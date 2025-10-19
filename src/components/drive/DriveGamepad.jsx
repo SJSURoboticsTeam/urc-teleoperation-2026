@@ -24,7 +24,9 @@ export default function GamepadDiv({gpList, connectedOne, setConnectedOne, name,
                 sx={{ marginTop: 1 }}
                 onClick={() => {
                   setConnectedOne(connectedOne == gp.index ? null : gp.index)
-                  setArmManualDisconnect(prev=>!prev)
+                  if (connectedOne==gp.index) {
+                    setArmManualDisconnect(prev=>!prev)
+                  }
                 }
                 }
               >
