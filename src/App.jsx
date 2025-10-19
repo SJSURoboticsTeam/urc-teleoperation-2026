@@ -17,9 +17,9 @@ import RecordingsView from "./views/Recordings";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
-  const [sidewaysVelocity, setSidewaysVelocity] = useState("0");
-  const [forwardsVelocity, setForwardVelocity] = useState("0");
-  const [rotationalVelocity, setRotationalVelocity] = useState("0");
+  const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
+  const [forwardsVelocity, setForwardVelocity] = useState(0);
+  const [rotationalVelocity, setRotationalVelocity] = useState(0);
   const [armConnectedOne,setArmConnectedOne]=useState(null)
 
   const [effector,setEffector]=useState(0);
@@ -33,6 +33,7 @@ function App() {
     setSidewaysVelocity(lx);
     setForwardVelocity(ly);
     setRotationalVelocity(rx);
+    console.log(lx,ly,rx)
   };
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
@@ -45,7 +46,7 @@ function App() {
     setTrack(Track)
     setShoulder(Shoulder)
   //  console.log(armConnectedOne)
-  // console.log(effector,pitch,roll,elbow,shoulder,track)
+  console.log(effector,pitch,roll,elbow,shoulder,track)
   }
 
   // Select which view we want to display

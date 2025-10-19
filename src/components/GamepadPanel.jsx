@@ -18,7 +18,6 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
       onDriveVelocitiesChange?.({ lx: 0, ly: 0, rx: 0 });
       return;
     }
-    let animationId;
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
@@ -34,10 +33,9 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
           prev.rx !== newVel.rx
         ) {
           onDriveVelocitiesChange?.(newVel);
-          console.log(newVel)
           return newVel;
         }
-        console.log(prev)
+        onDriveVelocitiesChange?.(prev);
         return prev; // no change = no re-render
       });
       }
