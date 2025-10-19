@@ -12,6 +12,13 @@ export default function ArmView ({track: controllerTrack, effector: controllerEf
     const [roll, setRoll] = useState(0);
     const [effector, setEffector] = useState(0);
 
+    setInterval(() => {
+        let armCommands = {
+          
+        };
+        socket.emit("armCommands", armCommands);
+      }, FrameRateConstant);
+
 
     const handleManualUpdate = () => {
         console.log("Manual positions:", { elbow, shoulder, track, pitch, roll, effector });

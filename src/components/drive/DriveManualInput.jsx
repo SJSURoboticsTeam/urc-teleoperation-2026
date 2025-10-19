@@ -5,9 +5,10 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
+import { FrameRateConstant } from "./FrameRateConstant";
 export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity }) {
   // Sends drive commands to server
-  useEffect(() => {
+  setInterval(() => {
     let driveCommands = {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
@@ -15,11 +16,13 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
       moduleConflicts: 0,
     };
     socket.emit("driveCommands", driveCommands);
-  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity]);
+  }, FrameRateConstant);
 
   const handleClick = (event) => {
     socket.emit("driveHoming");
   };
+
+
   const velocities = [
     { id: sidewaysVelocity, name: "Sideways Velocity" },
     { id: forwardsVelocity, name: "Forward Velocity" },
