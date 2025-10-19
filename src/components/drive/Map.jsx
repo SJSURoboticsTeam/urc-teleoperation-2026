@@ -7,13 +7,15 @@ export default function Map() {
   const mapRef = useRef(null);
 
   useEffect(() => {
-    const target = [-121.875329832, 37.334665328]; // San Jose area
+    const target = [-121.881194, 37.336847]; // San Jose area
     //const target = [-110.768401, 38.372207]; // Utah
+    // https://www.gps-coordinates.net/ for coordinates
  
 
     const urls = (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
     ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+    // Use local tileserver in production, demo for off-network development
 
     if (mapRef.current) return;
 
@@ -40,8 +42,8 @@ export default function Map() {
       // Smooth camera fly-in
       map.flyTo({
         center: target,
-        zoom: 17,
-        speed: 3.0,
+        zoom: 18,
+        speed: 3,
         curve: 1,
         essential: true,
         pitch: 60,

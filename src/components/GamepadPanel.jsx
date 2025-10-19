@@ -5,10 +5,11 @@ import {FrameRateConstant} from './drive/FrameRateConstant'
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import {green} from '@mui/material/colors'
 
-export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView, setModuleConflicts }) {
+export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, armGamepads, onArmVelocitiesChange, currentView, setModuleConflicts, onPanVelocitiesChange }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
   const [open, setOpen] = useState(false);
+  const [panVelocities, setPanVelocities]=useState({px:0, py:0});
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page,setPage]=useState('Drive');
   const [prevTime,setPrevTime]=useState();
@@ -46,9 +47,36 @@ export default function GamepadPanel({ driveGamepads, onDriveVelocitiesChange, a
     console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
     return () => clearInterval(intervalId);
   }, [driveConnectedOne]);
+  
+  // pan controller polling for drive
+useEffect(() => {
+    if (driveConnectedOne == null) {
+      setPanVelocities({ px: 0, py: 0 });
+      onPanVelocitiesChange?.({ px: 0, py: 0 });
+      return;
+    }
+    let animationId;
+    // poll for data
+    const pollAxes = () => {
+      const gp = navigator.getGamepads()[driveConnectedOne];
+      if (gp) {
+        const newVel = {
 
+          px: (gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0),
+          py: (gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0),
+        };
+        // then set states
+        setPanVelocities(newVel);
+        onPanVelocitiesChange?.(newVel);
+      }
+      animationId=requestAnimationFrame(pollAxes);
+    };
+    pollAxes();
+    return () => cancelAnimationFrame(animationId);
+  }, [driveConnectedOne, onPanVelocitiesChange]);
+
+  // arm polling
   const [armManualDisconnect,setArmManualDisconnect]=useState(false)
-
   useEffect(()=>{
     if (armManualDisconnect || armConnectedOne==null) {
       setArmVelocities({'Elbow':0,'Shoulder':0,'Track':0,'Pitch':0,'Roll':0,'Effector':0})

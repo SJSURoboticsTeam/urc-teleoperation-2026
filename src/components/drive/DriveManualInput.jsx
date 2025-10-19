@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant";
-export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts}) {
+export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, panHeightVelocity, panWidthVelocity}) {
   // Sends drive commands to server
   setInterval(() => {
     let driveCommands = {
@@ -18,19 +18,35 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
     socket.emit("driveCommands", driveCommands);
   }, FrameRateConstant);
 
+    useEffect(() => {
+    let panCommands = {
+      xVel: panHeightVelocity,
+      yVel: panWidthVelocity,
+    };
+    socket.emit("panCommands", panCommands);
+  }, [panHeightVelocity, panWidthVelocity]);
+
   const handleClick = (event) => {
     socket.emit("driveHoming");
   };
 
 
   const velocities = [
-    { id: sidewaysVelocity, name: "Sideways Velocity" },
-    { id: forwardsVelocity, name: "Forward Velocity" },
-    { id: rotationalVelocity, name: "Rotational Velocity" },
+    { id: sidewaysVelocity, name: "X Vel" },
+    { id: forwardsVelocity, name: "Y Vel" },
+    { id: rotationalVelocity, name: "Rotational" },
+    { id: panWidthVelocity, name: "Pan W"},
+    { id: panHeightVelocity, name: "Pan H"}
   ];
   return (
     <Box sx={{display:'flex',flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
-      <Button onClick={handleClick}>Homing</Button>
+      <Button 
+        onClick={handleClick}
+        variant="contained"
+        sx={{ backgroundColor: '#1976d2', color: '#fff', '&:hover': { backgroundColor: '#115293' } }}
+      >
+        Homing
+      </Button>
       <Box
         sx={{
           display: "flex",
@@ -57,10 +73,10 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
               marginBottom:10
             }}
           >
-            <Typography variant="body1" sx={{ marginTop: 10 }}>
+            <Typography variant="body1" sx={{ marginTop: 6 }}>
               {velocity.id}
             </Typography>
-            <Typography variant="body2" sx={{ marginTop: 5 }}>
+            <Typography variant="body2" sx={{ marginTop: 3 }}>
               {velocity.name}
             </Typography>
           </Box>
