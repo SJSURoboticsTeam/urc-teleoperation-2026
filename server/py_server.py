@@ -1,4 +1,5 @@
 from can_serial import CanSerial
+from gps import ZEDF9P
 import threading
 import socketio
 from gevent.pywsgi import WSGIServer
@@ -24,6 +25,8 @@ sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
 
 drive_serial = CanSerial('/dev/ttyACM0')
+
+gps_module = ZEDF9P("/dev/tty.usbmodem14201", 57600)
 
 @sio.event
 def connect(sid, environ):
@@ -104,6 +107,17 @@ def parse_data(data):
 def parse_can_inputs():
     while (True):
         parse_data(drive_serial.read_can(None))
+
+def read_gps_data():
+    while (True):
+        if gps_module.has_gps_lock():
+        position = gps_module.get_position
+
+# Server Emits
+# sio.emit('my event', {'data': 'foobar'})
+# sio.emit('my event', {'data': 'foobar'}, to=user_sid) # to specified client
+# response = sio.call('my event', {'data': 'foobar'}, to=user_sid) # waits for client to acknowledge
+sio.emit('gpsData', {})
     
 can_thread = threading.Thread(target=parse_can_inputs)
 
