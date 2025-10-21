@@ -5,7 +5,7 @@ export default function RecordingsView () {
             <iframe 
                 sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}
                 style={{ height: "100vh" }}
-                src="https://drive.google.com/" 
+                src="http://192.168.1.114:80" 
                 title="Speed Test"
                 allow="fullscreen; autoplay"
             ></iframe>
