@@ -6,7 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 // Local imports
 //import "./App.css";
-import TopAppBar from "./components/core/TopAppBar";
+import TopAppBar from "./components/1-global/TopAppBar";
 import DriveView from "./views/DriveView";
 import ArmView from "./views/ArmView";
 import SpeedTestView from "./views/SpeedTestView";

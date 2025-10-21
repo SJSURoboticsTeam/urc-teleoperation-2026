@@ -1,7 +1,7 @@
 import 'react-resizable/css/styles.css' // Import default styles
 import { useRef, useState, useCallback } from 'react'
 import DriveManualInput from '../components/drive/DriveManualInput'
-import CameraPane from '../components/core/CameraPane'
+import CameraPane from '../components/1-global/CameraPane'
 import Map from '../components/drive/Map'
 import Wheel from '../components/drive/Wheel'
 
