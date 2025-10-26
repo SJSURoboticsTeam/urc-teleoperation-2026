@@ -4,6 +4,7 @@ import GamepadDiv from "./drive/DriveGamepad";
 import { FrameRateConstant } from "./drive/FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { green } from "@mui/material/colors";
+import {red} from '@mui/material/colors'
 //usecontext
 //move armview into own component in arm folder
 //socket.emit for manual
@@ -167,17 +168,17 @@ export default function GamepadPanel({
     if (currentView === "DriveView") {
       setInfo(
         driveConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 20 }} />
+          <SportsEsportsIcon sx={{ color: green[500], fontSize: 35 }} />
         ) : (
-          <SportsEsportsIcon sx={{ fontSize: 20 }} />
+          <SportsEsportsIcon sx={{ color: red[500], fontSize: 35 }} />
         )
       );
     } else if (currentView === "ArmView") {
       setInfo(
         armConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 20 }} />
+          <SportsEsportsIcon sx={{ color: green[500], fontSize: 35 }} />
         ) : (
-          <SportsEsportsIcon sx={{ fontSize: 20 }} />
+          <SportsEsportsIcon sx={{ color: red[500], fontSize: 35 }} />
         )
       );
     } else {
