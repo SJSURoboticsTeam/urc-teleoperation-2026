@@ -52,7 +52,7 @@ export default function Wheel() {
         <svg viewBox = "1.24 1.92 52.53 146.87" x="0" y="0" width="52.53" height="146.87" style={{overflow: 'visible'}}> 
           <g id="Front_Left" transform={`rotate(${wheelAngles.frontLeft} 27.505 98.385)`}>
             {/* wheel rectangle */}
-            <path d="M1.24 49.9h52.53v96.97H1.24z" />
+            <path d="M1.24 49.9h52.53v96.97H1.24z" className="wheel" />
             {/* vector */}
             <path
               id="Front_Left_Vector"

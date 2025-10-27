@@ -5,7 +5,7 @@ import CameraPane from '../components/drive/CameraPane'
 import Map from '../components/drive/Map'
 import Wheel from '../components/drive/Wheel'
 
-export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity}) {
+export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, panHeightVelocity, panWidthVelocity}) {
   const containerRef = useRef(null)
   const [leftPct, setLeftPct] = useState(50) // left pane width percentage
 
@@ -44,7 +44,9 @@ export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationa
         <div className="flex flex-row items-center gap-6">
           <DriveManualInput sidewaysVelocity={sidewaysVelocity}
                   forwardsVelocity={forwardsVelocity}
-                  rotationalVelocity={rotationalVelocity}/>
+                  rotationalVelocity={rotationalVelocity}
+                  panHeightVelocity={panHeightVelocity}
+                  panWidthVelocity={panWidthVelocity}/>
           <Wheel />
         </div>
         <Map />
