@@ -4,10 +4,9 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
-import { textAlign } from "@mui/system";
 
 
-export default function NavConnectionStatus() {
+export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [latency, setLatency] = useState(null);
@@ -78,17 +77,16 @@ useEffect(() => {
 
 
 
-  const [open, setOpen] = useState(false);
   return (
       
       <div
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={() => setOpenPane("Backend")}
+        onMouseLeave={() => setOpenPane("None")}
         // needed to detect hover and placement of popup
         style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
       >
         <span> { 'SERVER: ' + ConnectionDetails() } </span>
-        {open && (
+        {openPane == "Backend" && (
           <div
             style={{
               position: "absolute",
