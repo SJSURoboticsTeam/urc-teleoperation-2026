@@ -108,19 +108,51 @@ def parse_can_inputs():
     while (True):
         parse_data(drive_serial.read_can(None))
 
-def read_gps_data():
-    while (True):
-        if gps_module.has_gps_lock():
-        position = gps_module.get_position
-
 # Server Emits
 # sio.emit('my event', {'data': 'foobar'})
 # sio.emit('my event', {'data': 'foobar'}, to=user_sid) # to specified client
 # response = sio.call('my event', {'data': 'foobar'}, to=user_sid) # waits for client to acknowledge
-sio.emit('gpsData', {})
     
 can_thread = threading.Thread(target=parse_can_inputs)
 
 can_thread.start()
+
+run_evt = threading.Event()
+run_evt.set() = threading.Event()
+
+@sio.event
+def startGPS(sid):
+    run_evt.set()
+
+@sio.event
+def pauseGPS(sid):
+    run_evt.clear()
+
+@sio.event
+def resumeGPS(sid):
+    run_evt.set()
+
+reading_gps_thread = True
+
+def read_gps_data():
+    while reading_gps_thread:
+        if gps_module.has_gps_lock():
+            position = gps_module.get_position
+            position_payload = {'latitude': position.latitude,
+                                'longitude': position.longitude}
+            sio.emit('gpsData', position_payload)
+        else:
+            print("gps has no lock")
+
+gps_thread = threading.Thread(target=read_gps_data)
+
+
+
+# threads must be used in a memory safe way
+#thread-safe emits?
+gps_thread.start()
+
+# set this or see if I can just use a boolean flag
+
 
 WSGIServer(('localhost', 4000), app,handler_class=WebSocketHandler ).serve_forever()
