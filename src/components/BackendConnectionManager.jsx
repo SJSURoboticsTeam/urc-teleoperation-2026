@@ -6,7 +6,7 @@ import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 
 
-export default function NavConnectionStatus() {
+export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [latency, setLatency] = useState(null);
@@ -77,22 +77,22 @@ useEffect(() => {
 
 
 
-  const [open, setOpen] = useState(false);
   return (
       
       <div
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={() => setOpenPane("Backend")}
+        onMouseLeave={() => setOpenPane("None")}
         // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer" }}
+        style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
       >
         <span> { 'SERVER: ' + ConnectionDetails() } </span>
-        {open && (
+        {openPane == "Backend" && (
           <div
             style={{
               position: "absolute",
               top: "100%",
-              right: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
               background: "white",
               border: "1px solid gray",
               padding: "10px",
@@ -100,8 +100,8 @@ useEffect(() => {
           >
     
             <ButtonGroup variant="contained" aria-label="Basic button group">
-                <Button color="error" onClick={ disconnect } variant="contained">DISCONNECT</Button>
-                <Button color="success" onClick={ connect } variant="contained">CONNECT</Button>
+                <Button color="error" onClick={ disconnect } variant="contained" sx={{width:120}}>DISCONNECT</Button>
+                <Button color="success" onClick={ connect } variant="contained" sx={{width:120}}>CONNECT</Button>
             </ButtonGroup>
             {isConnected ? (
               <div>

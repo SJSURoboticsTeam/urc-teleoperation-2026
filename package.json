@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --open",
+    "lan": "vite --mode prod --open",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -15,15 +16,21 @@
     "@mui/icons-material": "^7.1.2",
     "@mui/material": "^7.1.2",
     "@mui/system": "^7.1.1",
+    "@rolldown/pluginutils": "^1.0.0-beta.42",
+    "@tailwindcss/vite": "^4.1.14",
+    "@vis.gl/react-maplibre": "^8.0.4",
     "express": "^4.21.2",
+    "maplibre-gl": "^5.8.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-resizable": "^3.0.5",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "tailwindcss": "^4.1.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
+    "@tailwindcss/vite": "^4.1.14",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",

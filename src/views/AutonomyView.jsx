@@ -8,7 +8,7 @@ export default function ArmView () {
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <span>This is the arm view!!</span>
+            <span>This is the autonomy view!!</span>
         </div>
     )
 }
