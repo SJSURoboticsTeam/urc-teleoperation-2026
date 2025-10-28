@@ -21,7 +21,7 @@ export default function Wheel() {
   });
 
   return (
-    <Box width={100} height={150} display = 'flex' justifyContent= "center">
+    <Box width={150} height={175} display = 'flex' sx={{ m: 1.5 }} justifyContent= "center" >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="-50 0 350 350"
