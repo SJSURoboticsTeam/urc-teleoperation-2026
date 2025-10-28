@@ -41,7 +41,7 @@ export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationa
     <div ref={containerRef} className="flex flex-1 h-full min-h-0" style={{ userSelect: 'none' }}>
       {/* left pane: width controlled by leftPct */}
       <div className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0" style={{ flex: `0 0 ${leftPct}%` }}>
-        <div className="flex flex-row items-center gap-6">
+        <div className="flex flex-row items-center justify-center gap-6">
           <DriveManualInput sidewaysVelocity={sidewaysVelocity}
                   forwardsVelocity={forwardsVelocity}
                   rotationalVelocity={rotationalVelocity}
