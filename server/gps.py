@@ -91,7 +91,7 @@ class ZEDF9P:
 
 if(__name__ == "__main__"):
     #TODO check for gps on port
-    gps = ZEDF9P("/dev/tty.usbmodem14201", 57600)
+    gps = ZEDF9P("/dev/tty.usbmodem14301", 57600)
     while(True):
         if gps.has_gps_lock():
             position = gps.get_position()
