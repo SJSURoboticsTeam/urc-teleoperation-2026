@@ -7,7 +7,7 @@ import Wheel from '../components/drive/Wheel'
 
 export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, panHeightVelocity, panWidthVelocity}) {
   const containerRef = useRef(null)
-  const [leftPct, setLeftPct] = useState(60) // left pane width percentage
+  const [leftPct, setLeftPct] = useState(50) // left pane width percentage
 
   const startDrag = useCallback((e) => {
     // Use pointer events so touch and mouse work
@@ -41,13 +41,15 @@ export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationa
     <div ref={containerRef} className="flex flex-1 h-full min-h-0" style={{ userSelect: 'none' }}>
       {/* left pane: width controlled by leftPct */}
       <div className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0" style={{ flex: `0 0 ${leftPct}%` }}>
-        <DriveManualInput sidewaysVelocity={sidewaysVelocity}
-                forwardsVelocity={forwardsVelocity}
-                rotationalVelocity={rotationalVelocity}
-                panHeightVelocity = {panHeightVelocity}
-                panWidthVelocity = {panWidthVelocity}/>
+        <div className="flex flex-row items-center justify-center gap-6">
+          <DriveManualInput sidewaysVelocity={sidewaysVelocity}
+                  forwardsVelocity={forwardsVelocity}
+                  rotationalVelocity={rotationalVelocity}
+                  panHeightVelocity={panHeightVelocity}
+                  panWidthVelocity={panWidthVelocity}/>
+          <Wheel />
+        </div>
         <Map />
-        <Wheel />
       </div>
 
       {/* draggable divider: larger hit area with visible thin line */}
