@@ -113,7 +113,7 @@ def connect(sid, environ):
 
 
 # GPS MODULE CODE
-gps_module = ZEDF9P("/dev/tty.usbmodem14301", 57600)
+gps_module = ZEDF9P("/dev/tty.usbmodem141101", 57600)
 
 def read_gps_data():
     while (True):

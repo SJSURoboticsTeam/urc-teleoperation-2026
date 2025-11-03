@@ -2,28 +2,35 @@ import React, { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-export default function Map() {
+export default function Map(target) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
-    const target = [-121.875329832, 37.334665328]; // San Jose area
+    // const target = [-121.875329832, 37.334665328]; // San Jose area
     //const target = [-110.768401, 38.372207]; // Utah
- 
+    const { latitude, longitude } = target;
 
-    const urls = (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
-    ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
-    : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+    // target is now [latitude, longitude]
+    if (!latitude || !longitude) {
+      console.log("Waiting for GPS coordinates...");
+      return;
+    }
+
+    const urls =
+      import.meta.env.MODE === "production" || import.meta.env.MODE === "prod"
+        ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
+        : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
 
     if (mapRef.current) return;
 
-  const container = mapContainer.current;
+    const container = mapContainer.current;
     if (!container) return;
 
     const map = new maplibregl.Map({
       container,
       style: urls,
-      center: target,
+      center: [longitude, latitude],
       zoom: 3,
       pitch: 0,
     });
@@ -32,11 +39,11 @@ export default function Map() {
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     new maplibregl.Marker({ color: "#ff0000" })
-      .setLngLat(target)
+      .setLngLat([longitude, latitude])
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
       .addTo(map);
 
-  const onLoad = () => {
+    const onLoad = () => {
       // Smooth camera fly-in
       map.flyTo({
         center: target,
@@ -96,5 +103,7 @@ export default function Map() {
   }, []);
 
   // Use flex utilities so this div can grow/shrink inside a flex column
-  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  return (
+    <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />
+  );
 }

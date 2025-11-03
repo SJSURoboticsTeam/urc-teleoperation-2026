@@ -13,8 +13,8 @@ export default function FullscreenMap() {
 
     useEffect(() => {
         function onGpsData(gpsData) {
-            console.log("lat:" + gpsData.latitude);
-            console.log("long:" + gpsData.longitude);
+            // console.log("lat:" + gpsData.latitude);
+            // console.log("long:" + gpsData.longitude);
             setGPS({ latitude: gpsData.latitude, longitude: gpsData.longitude });
         }
 
@@ -28,7 +28,7 @@ export default function FullscreenMap() {
     // Let the parent (App) control the viewport height. Use flex:1 so Map fills available space.
     return (
         <Box component="main" sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-            <Map />
+            <Map target={gps}/>
             <Card sx={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
                 <CardContent>
                     <Typography variant="h6">Coordinates</Typography>
