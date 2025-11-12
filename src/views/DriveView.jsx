@@ -5,7 +5,7 @@ import CameraPane from '../components/drive/CameraPane'
 import Map from '../components/drive/Map'
 import Wheel from '../components/drive/Wheel'
 
-export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, panHeightVelocity, panWidthVelocity}) {
+export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, panHeightVelocity, panWidthVelocity}) {
   const containerRef = useRef(null)
   const [leftPct, setLeftPct] = useState(50) // left pane width percentage
 

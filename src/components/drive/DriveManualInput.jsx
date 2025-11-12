@@ -5,19 +5,28 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
-export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, rotationalVelocity, panHeightVelocity, panWidthVelocity }) {
+import { FrameRateConstant } from "./FrameRateConstant";
+export default function DriveManualInput({
+  sidewaysVelocity,
+  forwardsVelocity,
+  rotationalVelocity,
+  moduleConflicts,
+  panHeightVelocity,
+  panWidthVelocity,
+}) {
   // Sends drive commands to server
-  useEffect(() => {
+  // constant + whenever it changes, emit
+  setInterval(() => {
     let driveCommands = {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
       rotVel: rotationalVelocity,
-
+      moduleConflicts: Number(moduleConflicts),
     };
     socket.emit("driveCommands", driveCommands);
-  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity]);
+  }, FrameRateConstant);
 
-    useEffect(() => {
+  useEffect(() => {
     let panCommands = {
       xVel: panHeightVelocity,
       yVel: panWidthVelocity,
@@ -28,19 +37,31 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
   const handleClick = (event) => {
     socket.emit("driveHoming");
   };
+
   const velocities = [
     { id: sidewaysVelocity, name: "X Vel" },
     { id: forwardsVelocity, name: "Y Vel" },
     { id: rotationalVelocity, name: "Rotational" },
-    { id: panWidthVelocity, name: "Pan W"},
-    { id: panHeightVelocity, name: "Pan H"}
+    { id: panWidthVelocity, name: "Pan W" },
+    { id: panHeightVelocity, name: "Pan H" },
   ];
   return (
-    <Box sx={{display:'flex',flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
-      <Button 
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Button
         onClick={handleClick}
         variant="contained"
-        sx={{ backgroundColor: '#1976d2', color: '#fff', '&:hover': { backgroundColor: '#115293' } }}
+        sx={{
+          backgroundColor: "#1976d2",
+          color: "#fff",
+          "&:hover": { backgroundColor: "#115293" },
+        }}
       >
         Homing
       </Button>
@@ -51,7 +72,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
           alignItems: "center",
           gap: 2,
           height: 100,
-          marginBottom:5,
+          marginBottom: 5,
           marginTop: 2,
         }}
       >
@@ -67,7 +88,7 @@ export default function DriveManualInput({ sidewaysVelocity, forwardsVelocity, r
               height: "50px",
               borderRadius: 2,
               marginTop: 5,
-              marginBottom:10
+              marginBottom: 10,
             }}
           >
             <Typography variant="body1" sx={{ marginTop: 6 }}>

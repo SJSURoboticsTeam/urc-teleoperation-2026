@@ -13,7 +13,7 @@ import GamepadPanel from './GamepadPanel';
 import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, onPanVelocitiesChange }) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -138,12 +138,10 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
 
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
-          {/* Gamepad connection status and selection panel */}
-          <GamepadPanel openPane = {openPane} setOpenPane = {setOpenPane}
-          name="Drive" onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} 
-          armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange}  
-          onPanVelocitiesChange = {onPanVelocitiesChange} currentView={currentView}/>
 
+          {/* Gamepad connection status and selection panel */}
+          <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
+          
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
         <IconButton
           edge='end'
