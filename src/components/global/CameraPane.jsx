@@ -11,11 +11,11 @@ export default function CameraPane(){
     };
     const cameras= [
     { value: 'Standby', mediatype: "image", name: 'Standby', url: '/mars.jpg'},
-    { value: 'Mast Cam', mediatype: "image", name: 'Mast Cam', url: 'http://192.168.1.204:8081/'},
-    { value: 'Under Chasis Cam', mediatype: "image", name: 'Under Chasis Cam', url: 'http://192.168.1.106:8081/'},
-    { value: 'Drive Cam', mediatype: "video", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
-    { value: 'Arm 1', mediatype: "video", name: 'Arm Base', url: "http://192.168.1.114:8889/one-720p"},
-    { value: 'Arm 2', mediatype: "video", name: 'Arm Front', url: "http://192.168.1.114:8889/two-720p/"}
+    { value: 'Mast Cam', mediatype: "iframe", name: 'Mast Cam', url: 'http://192.168.1.114:8889/mast-720p/'},
+    { value: 'Wheels Cam', mediatype: "iframe", name: 'Under Chasis Cam', url: 'http://192.168.1.114:8889/wheels-720p/'},
+    { value: 'Autonomy Cam', mediatype: "iframe", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
+    { value: 'Arm 1', mediatype: "iframe", name: 'Arm Base', url: "http://192.168.1.114:8889/one-720p"},
+    { value: 'Arm 2', mediatype: "iframe", name: 'Arm Front', url: "http://192.168.1.114:8889/two-720p/"}
     ];
 
     const selectedCamera = cameras.find((cam) => cam.value == camera);
@@ -37,7 +37,7 @@ export default function CameraPane(){
             iframeTimeoutRef.current = null;
         }
         // if selectedCamera is iframe/video, start a timeout to mark error if not loaded
-        if (selectedMediaType === 'video') {
+        if (selectedMediaType === 'iframe') {
             // for video/iframe style streams, give them up to 10s to load
             iframeTimeoutRef.current = setTimeout(() => {
                 setLoading(false);
