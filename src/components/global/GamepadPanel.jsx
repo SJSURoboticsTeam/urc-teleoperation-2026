@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
-import GamepadDiv from "../drive/DriveGamepad";
-import { FrameRateConstant } from "../drive/FrameRateConstant";
+import GamepadDiv from "./GamepadManager";
+import { FrameRateConstant } from "./FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'

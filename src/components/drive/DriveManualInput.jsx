@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../../socket";
 import Button from "@mui/material/Button";
-import { FrameRateConstant } from "./FrameRateConstant";
+import { FrameRateConstant } from "../global/FrameRateConstant.js";
 export default function DriveManualInput({
   sidewaysVelocity,
   forwardsVelocity,
