@@ -63,7 +63,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
       <AppBar 
         sx={{
     bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
-      ? orange[800]
+      ? orange[700]
       : undefined,
   }}
         >

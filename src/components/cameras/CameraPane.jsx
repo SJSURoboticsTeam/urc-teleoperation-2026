@@ -12,7 +12,7 @@ export default function CameraPane(){
     const cameras= [
     { value: 'Standby', mediatype: "image", name: 'Standby', url: '/mars.jpg'},
     { value: 'Mast Cam', mediatype: "iframe", name: 'Mast Cam', url: 'http://192.168.1.114:8889/mast-720p/'},
-    { value: 'Wheels Cam', mediatype: "iframe", name: 'Under Chasis Cam', url: 'http://192.168.1.114:8889/wheels-720p/'},
+    { value: 'Wheels Cam', mediatype: "iframe", name: 'Wheels Cam', url: 'http://192.168.1.114:8889/wheels-720p/'},
     { value: 'Autonomy Cam', mediatype: "iframe", name: 'Drive Cam', url: "http://192.168.1.114:8889/vision-720p/"},
     { value: 'Arm 1', mediatype: "iframe", name: 'Arm Base', url: "http://192.168.1.114:8889/one-720p"},
     { value: 'Arm 2', mediatype: "iframe", name: 'Arm Front', url: "http://192.168.1.114:8889/two-720p/"}

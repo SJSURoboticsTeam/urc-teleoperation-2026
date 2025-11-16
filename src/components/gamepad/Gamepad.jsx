@@ -168,17 +168,17 @@ export default function GamepadPanel({
     if (currentView === "DriveView") {
       setInfo(
         driveConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
-          <SportsEsportsIcon sx={{ color: red[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
         )
       );
     } else if (currentView === "ArmView") {
       setInfo(
         armConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
-          <SportsEsportsIcon sx={{ color: red[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
         )
       );
     } else {
