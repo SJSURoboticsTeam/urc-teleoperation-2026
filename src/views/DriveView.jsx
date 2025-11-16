@@ -1,9 +1,9 @@
 import 'react-resizable/css/styles.css' // Import default styles
 import { useRef, useState, useCallback } from 'react'
-import DriveManualInput from '../components/drive/DriveManualInput'
-import CameraPane from '../components/global/CameraPane'
-import Map from '../components/drive/Map'
-import Wheel from '../components/drive/Wheel'
+import DriveManualInput from '../components/gamepad/DriveManualInput'
+import CameraPane from '../components/cameras/CameraPane'
+import Map from '../components/ui/Map'
+import Wheel from '../components/ui/Wheel'
 
 export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, panHeightVelocity, panWidthVelocity}) {
   const containerRef = useRef(null)

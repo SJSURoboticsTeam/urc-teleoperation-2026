@@ -8,8 +8,8 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
-import NavConnectionStatus from './BackendConnectionManager';
-import GamepadPanel from './GamepadPanel';
+import NavConnectionStatus from '../global/BackendConnectionManager';
+import GamepadPanel from '../gamepad/Gamepad';
 import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 
