@@ -1,4 +1,4 @@
-import { socket } from "../../socket";
+import { socket } from "./socket";
 import React, { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';

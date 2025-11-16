@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { socket } from "../../socket.jsx";
+import { socket } from "../socket.io/socket.jsx";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
 export default function DriveManualInput({
