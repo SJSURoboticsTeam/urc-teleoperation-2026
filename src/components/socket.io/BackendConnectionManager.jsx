@@ -93,7 +93,17 @@ useEffect(() => {
         // needed to detect hover and placement of popup
         style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
       >
-        <span>  SERVER {connectedIcon} </span>
+        <span
+        style={{
+          whiteSpace: "pre-wrap",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        SERVER{connectedIcon}
+      </span>
+        
         {openPane == "Backend" && (
           <div
             style={{
