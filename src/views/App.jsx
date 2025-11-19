@@ -6,14 +6,14 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 // Local imports
 //import "./App.css";
-import TopAppBar from "./components/TopAppBar";
-import DriveView from "./views/DriveView";
-import ArmView from "./views/ArmView";
-import SpeedTestView from "./views/SpeedTestView";
-import ScienceView from "./views/ScienceView";
-import AutonomyView from "./views/AutonomyView";
-import FullscreenMap from "./views/MapView";
-import RecordingsView from "./views/Recordings";
+import TopAppBar from "../components/ui/TopAppBar";
+import DriveView from "./DriveView";
+import ArmView from "./ArmView";
+import SpeedTestView from "./SpeedTestView";
+import ScienceView from "./ScienceView";
+import AutonomyView from "./AutonomyView";
+import FullscreenMap from "./MapView";
+import RecordingsView from "./Recordings";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");

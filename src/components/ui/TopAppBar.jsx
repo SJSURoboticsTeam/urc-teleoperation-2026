@@ -8,8 +8,8 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button'
 import MenuIcon from '@mui/icons-material/Menu';
-import NavConnectionStatus from './BackendConnectionManager';
-import GamepadPanel from './GamepadPanel';
+import NavConnectionStatus from '../socket.io/BackendConnectionManager';
+import GamepadPanel from '../gamepad/Gamepad';
 import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 
@@ -63,7 +63,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
       <AppBar 
         sx={{
     bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
-      ? orange[800]
+      ? orange[700]
       : undefined,
   }}
         >

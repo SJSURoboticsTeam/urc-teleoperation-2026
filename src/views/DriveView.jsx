@@ -1,13 +1,13 @@
 import 'react-resizable/css/styles.css' // Import default styles
 import { useRef, useState, useCallback } from 'react'
-import DriveManualInput from '../components/drive/DriveManualInput'
-import CameraPane from '../components/drive/CameraPane'
-import Map from '../components/drive/Map'
-import Wheel from '../components/drive/Wheel'
+import DriveManualInput from '../components/gamepad/DriveWidget'
+import CameraPane from '../components/cameras/CameraPane'
+import Map from '../components/ui/Map'
+import Wheel from '../components/ui/Wheel'
 
 export default function DriveView({sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, panHeightVelocity, panWidthVelocity}) {
   const containerRef = useRef(null)
-  const [leftPct, setLeftPct] = useState(50) // left pane width percentage
+  const [leftPct, setLeftPct] = useState(60) // left pane width percentage
 
   const startDrag = useCallback((e) => {
     // Use pointer events so touch and mouse work

@@ -3,8 +3,8 @@ import { useState } from "react";
 import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
-import { FrameRateConstant } from "../components/drive/FrameRateConstant";
-import { socket } from "../socket";
+import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
+import { socket } from "../components/socket.io/socket";
 //TO DO:
 //PASS ARMCONNECTEDONE TO THIS COMPONENT
 //TRACK IT, EMIT MANUAL/CONTROLLER VALUES DEPENDENT ON IT

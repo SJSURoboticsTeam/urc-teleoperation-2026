@@ -1,9 +1,12 @@
-import { socket } from "../socket";
+import { socket } from "./socket";
 import React, { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
+import DnsIcon from '@mui/icons-material/Dns';
+import { green } from "@mui/material/colors";
+import {red} from '@mui/material/colors'
 
 
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
@@ -38,13 +41,18 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
   function disconnect() {
     socket.disconnect();
   }
-  function ConnectionDetails() {
-    if (isConnected) {
-      return "CONNECTED";
-    } else {  
-      return "DISCONNECTED";
-    }
-  }
+const [connectedIcon,setConnectedIcon] = useState("");
+
+useEffect( () => {
+  setConnectedIcon(
+    isConnected ? (
+      <DnsIcon sx={{ color: green[500], fontSize: 35 }} />
+    ) : (
+      <DnsIcon sx={{ color: red[500], fontSize: 35 }} />
+    )
+  );
+}, [isConnected] );
+
 
 useEffect(() => {
   let interval;
@@ -85,7 +93,17 @@ useEffect(() => {
         // needed to detect hover and placement of popup
         style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
       >
-        <span> { 'SERVER: ' + ConnectionDetails() } </span>
+        <span
+        style={{
+          whiteSpace: "pre-wrap",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        SERVER{connectedIcon}
+      </span>
+        
         {openPane == "Backend" && (
           <div
             style={{

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button, Collapse, Paper } from "@mui/material";
-import GamepadDiv from "./drive/DriveGamepad";
-import { FrameRateConstant } from "./drive/FrameRateConstant";
+import GamepadDiv from "./GamepadManager";
+import { FrameRateConstant } from "./FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
@@ -168,17 +168,17 @@ export default function GamepadPanel({
     if (currentView === "DriveView") {
       setInfo(
         driveConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
-          <SportsEsportsIcon sx={{ color: red[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
         )
       );
     } else if (currentView === "ArmView") {
       setInfo(
         armConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
-          <SportsEsportsIcon sx={{ color: red[500], fontSize: 35 }} />
+          <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
         )
       );
     } else {
