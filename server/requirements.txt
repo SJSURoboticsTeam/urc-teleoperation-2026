@@ -1,0 +1,7 @@
+# Requirements for mission control server
+# pip3 install -r requirements.txt
+
+pyserial
+python-socketio
+python3-gevent
+gevent-websocket
