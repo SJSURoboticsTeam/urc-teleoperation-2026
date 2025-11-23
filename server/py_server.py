@@ -197,5 +197,5 @@ async def connect(sid, environ):
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop)
 
-uvicorn.run(app, host='0.0.0.0', port=4000)
+uvicorn.run(app, host='0.0.0.0', port=4000, log_level="warning")
 print("Server Started!")
