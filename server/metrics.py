@@ -27,3 +27,6 @@ def register_metrics(sio):
     def getConnections(sid):
         global numClients
         return numClients
+    @sio.event
+    def pingCheck(sid):
+        return 1
