@@ -86,11 +86,11 @@ def register_metrics(sio):
     @sio.event
     def pingCheck(sid):
         return 1
-    @sio.event
-    def roverRSSI(sid):
-        global username, password
-        return (get_rssi("192.168.1.20",username,password))
-    @sio.event
-    def baseRSSI(sid):
-        global username, password
-        return(get_rssi("192.168.1.25",username,password))
+    #@sio.event
+    #def roverRSSI(sid):
+       # global username, password
+       # return (get_rssi("192.168.1.20",username,password))
+    #@sio.event
+    #def baseRSSI(sid):
+       # global username, password
+       # return(get_rssi("192.168.1.25",username,password))
