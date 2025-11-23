@@ -1,4 +1,5 @@
 from can_serial import CanSerial
+from metrics import register_metrics
 import threading
 import socketio
 from gevent.pywsgi import WSGIServer
@@ -29,18 +30,22 @@ sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
 
 # CAN buses
-drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
-# arm_serial = CanSerial('/dev/ttyACM1')
+print("Starting...")
+try:
+    drive_serial = CanSerial('/dev/ttyAMA0')
+    print("Drive connected.")
+except:
+    print("FAILURE TO CONNECT DRIVE!")
+try:
+    arm_serial = CanSerial('/dev/ttyACM1')
+    print("Arm connected.")
+except:
+    print("FAILURE TO CONNECT ARM!")
+
+# =================== Metrics Event Handlers ====================
+register_metrics(sio)
 
 # =================== Client Drive Event Handlers ====================
-@sio.event
-def connect(sid, environ):
-    print(f'Client connected: {sid}')
-
-@sio.event
-def disconnect(sid):
-    print(f'Client disconnected: {sid}')
-
 @sio.event
 def driveCommands(sid, data):
     try:
@@ -177,4 +182,6 @@ drive_thread.start()
 # arm_thread.start()
 
 # =================== Start Server ===================
-WSGIServer(('localhost', 4000), app,handler_class=WebSocketHandler ).serve_forever()
+print("Server Starting...")
+WSGIServer(('0.0.0.0', 4000), app,handler_class=WebSocketHandler ).serve_forever()
+print("Server Started!")
