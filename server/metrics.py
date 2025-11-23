@@ -61,7 +61,7 @@ def register_metrics(sio,silenceErrorSpamming):
     @sio.event
     async def connect(sid, environ):
         global numClients
-        print(f'Client connected: {sid}')
+        print(f"Client connected: {sid}")
         numClients += 1
 
     @sio.event

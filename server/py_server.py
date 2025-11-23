@@ -29,7 +29,7 @@ receive_ID = {
 #
 silenceErrorSpamming = True
 
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 app = socketio.ASGIApp(sio)
 
 # CAN buses

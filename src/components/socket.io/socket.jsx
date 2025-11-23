@@ -8,4 +8,7 @@ const host =
 
 const URL = `http://${host}:4000`;
 
-export const socket = io(URL);
+export const socket = io(URL, {
+  transports: ["websocket"],   // ← skip polling entirely
+  upgrade: false,              // optional: disable fallback logic
+});
