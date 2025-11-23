@@ -95,7 +95,7 @@ useEffect(() => {
     });
   }
 
-  interval = setInterval(numroverRSSI, 2000); 
+  interval = setInterval(numroverRSSI, 5000); 
   return () => clearInterval(interval);
 }, []);
 
@@ -108,7 +108,7 @@ useEffect(() => {
     });
   }
 
-  interval = setInterval(numbaseRSSI, 2000); 
+  interval = setInterval(numbaseRSSI, 5000); 
   return () => clearInterval(interval);
 }, []);
 

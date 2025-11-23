@@ -25,6 +25,7 @@ receive_ID = {
     "RETURN_ESTIMATED_CHASSIS_VELOCITIES": '115',
     "CONFIG_ACK": '11A',
 }
+silenceSerialErrors = True
 
 sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
@@ -68,7 +69,8 @@ def driveCommands(sid, data):
         drive_serial.write(can_msg.encode())
         print(f'[{sid}] Drive command sent: {can_msg}')
     except Exception as e:
-        print(f'Error in driveCommands: {e}')
+        if(silenceSerialErrors == False):
+            print(f'Error in driveCommands: {e}')
 
 @sio.event
 def driveHoming(sid):
