@@ -1,7 +1,8 @@
 
-import paramiko
+import asyncssh
 from dotenv import load_dotenv
 import os
+
 numClients = 0
 
 ## .env USAGE
@@ -14,83 +15,74 @@ username = os.getenv("SSH_USER")
 password = os.getenv("SSH_PASSWORD")
 
 
-def get_rssi(hostname, username="ubnt", password=None, key_filename=None, timeout=10):
+async def get_rssi(hostname, username="ubnt", password=None, key_filename=None, timeout=10):
     """
-    Connects to a Ubiquiti device via SSH and retrieves the signal strength value.
-    
-    Args:
-        hostname (str): IP or hostname of the device
-        username (str): SSH username (default: 'ubnt')
-        password (str, optional): SSH password
-        key_filename (str, optional): Path to SSH private key
-        timeout (int): SSH connection timeout in seconds
-    
-    Returns:
-        str: Signal strength in dBm, or None if command fails
-    """
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    Async SSH using asyncssh to retrieve signal strength from a Ubiquiti device.
 
+    Returns the signal string (trimmed) or None on error.
+    """
     try:
-        ssh.connect(
+        conn = await asyncssh.connect(
             hostname,
             username=username,
             password=password,
-            key_filename=key_filename,
-            timeout=timeout
+            client_keys=[key_filename] if key_filename else None,
+            known_hosts=None,
+            timeout=timeout,
         )
-
-        command = "mca-status | grep signal"
-        stdin, stdout, stderr = ssh.exec_command(command)
-        output = stdout.read().decode().strip()
-        error = stderr.read().decode().strip()
-
-        if error:
-            print(f"[{hostname}] Error: {error}")
-            return None
-        
-        return output[7:]
+        try:
+            result = await conn.run("mca-status | grep signal", check=False)
+            if result.stderr:
+                print(f"[{hostname}] Error: {result.stderr.strip()}")
+                return "ERROR"
+            output = result.stdout.strip()
+            return output[7:] if len(output) >= 7 else output
+        finally:
+            conn.close()
 
     except Exception as e:
         print(f"[{hostname}] Connection failed: {e}")
-        return None
+        return "ERROR"
 
-    finally:
-        ssh.close()
 
 def register_metrics(sio):
+    """Register metrics-related socket.io handlers.
+
+    `sio` is expected to be a `socketio.AsyncServer` (async handlers are supported).
+    """
+    global numClients
+
     @sio.event
-    def init():
+    async def init(sid):
         global numClients
         numClients = 0
+
     @sio.event
-    def connect(sid, environ):
+    async def connect(sid, environ):
         global numClients
         print(f'Client connected: {sid}')
-        numClients = numClients + 1
+        numClients += 1
 
     @sio.event
-    def disconnect(sid):
+    async def disconnect(sid):
         global numClients
         print(f'Client disconnected: {sid}')
-        numClients = numClients - 1
+        numClients -= 1
 
     @sio.event
-    def getConnections(sid):
-        global numClients
+    async def getConnections(sid):
         return numClients
+
     @sio.event
-    def getConnections(sid):
-        global numClients
-        return numClients
-    @sio.event
-    def pingCheck(sid):
+    async def pingCheck(sid):
         return 1
-    #@sio.event
-    #def roverRSSI(sid):
-       # global username, password
-       # return (get_rssi("192.168.1.20",username,password))
-    #@sio.event
-    #def baseRSSI(sid):
-       # global username, password
-       # return(get_rssi("192.168.1.25",username,password))
+
+    @sio.event
+    async def roverRSSI(sid):
+        global username, password
+        return await get_rssi("192.168.1.20", username, password)
+
+    @sio.event
+    async def baseRSSI(sid):
+        global username, password
+        return await get_rssi("192.168.1.25", username, password)

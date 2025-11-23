@@ -154,8 +154,8 @@ useEffect(() => {
               <div>
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
             <Typography  sx={{ color: 'black' }}>Clients Connected: {numConnections}</Typography>
-            <Typography  sx={{ color: 'black' }}>Rover RSSI: {roverRSSI}dB</Typography>
-            <Typography  sx={{ color: 'black' }}>Base RSSI: {baseRSSI}dB</Typography>
+            <Typography  sx={{ color: 'black' }}>Rover Antenna: {roverRSSI}</Typography>
+            <Typography  sx={{ color: 'black' }}>Base Antenna: {baseRSSI}</Typography>
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>you are offline :(</Typography>}
