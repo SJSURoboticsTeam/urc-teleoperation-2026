@@ -1,5 +1,5 @@
 from can_serial import CanSerial
-from metrics import register_metrics
+import metrics
 import asyncio
 import socketio
 import math
@@ -46,7 +46,7 @@ except Exception:
     print("FAILURE TO CONNECT ARM!")
 
 # =================== Metrics Event Handlers ====================
-register_metrics(sio,silenceErrorSpamming)
+metrics.register_metrics(sio, silenceErrorSpamming)
 
 # Background task guard
 drive_task_started = False
@@ -192,10 +192,21 @@ print("Server Starting...")
 async def connect(sid, environ):
     """On first client connect, start background CAN read loop."""
     global drive_task_started
-    # Other connect handling is in metrics.register_metrics; we only ensure background task runs
+    # Ensure we log connection and keep metrics' client count in sync
+    print(f"Client connected (py_server): {sid}")
+    try:
+        metrics.numClients += 1
+    except Exception:
+        pass
+
+    # Start background CAN loop once
     if not drive_task_started:
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop)
-
+@sio.event
+async def disconnect(sid):
+    global numClients
+    print(f'Client disconnected: {sid}')
+    metrics.numClients -= 1
 uvicorn.run(app, host='0.0.0.0', port=4000, log_level="warning")
 print("Server Started!")
