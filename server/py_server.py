@@ -26,7 +26,8 @@ receive_ID = {
 }
 
 #useful for running on another computer
-silenceSerialErrors = True
+#
+silenceErrorSpamming = True
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
 app = socketio.ASGIApp(sio)
@@ -45,7 +46,7 @@ except Exception:
     print("FAILURE TO CONNECT ARM!")
 
 # =================== Metrics Event Handlers ====================
-register_metrics(sio)
+register_metrics(sio,silenceErrorSpamming)
 
 # Background task guard
 drive_task_started = False
@@ -68,7 +69,7 @@ async def driveCommands(sid, data):
         print(f'[{sid}] Drive command sent: {can_msg}')
     except Exception as e:
         # if you are testing on a computer without serial, set the bool true to help your console
-        if silenceSerialErrors == False:
+        if silenceErrorSpamming == False:
             print(f'Error in driveCommands: {e}')
 
 @sio.event
