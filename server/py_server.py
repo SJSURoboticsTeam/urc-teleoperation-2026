@@ -27,7 +27,7 @@ receive_ID = {
 
 #useful for running on another computer
 #
-silenceErrorSpamming = True
+silenceErrorSpamming = False
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 app = socketio.ASGIApp(sio)

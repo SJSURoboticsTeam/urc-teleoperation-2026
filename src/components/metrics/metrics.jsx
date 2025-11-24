@@ -55,7 +55,7 @@ useEffect(() => {
     });
   }
 
-  interval = setInterval(numroverRSSI, 5000); 
+  interval = setInterval(numroverRSSI, 2000); 
   return () => clearInterval(interval);
 }, []);
 
@@ -68,7 +68,7 @@ useEffect(() => {
     });
   }
 
-  interval = setInterval(numbaseRSSI, 5000); 
+  interval = setInterval(numbaseRSSI, 2000); 
   return () => clearInterval(interval);
 }, []);
 
@@ -110,8 +110,12 @@ useEffect(() => {
     
             {isConnected ? (
               <div>
+            <Typography  sx={{ color: 'black' }} variant = "h6">ANTENNAS</Typography>
             <Typography  sx={{ color: 'black' }}>Rover Antenna: {roverRSSI}</Typography>
             <Typography  sx={{ color: 'black' }}>Base Antenna: {baseRSSI}</Typography>
+            <Typography  sx={{ color: 'black' }} variant = "h6">ROVER PI</Typography>
+            <Typography  sx={{ color: 'black' }}>CPU Temp:</Typography>
+            <Typography  sx={{ color: 'black' }}>CPU Utilization:</Typography>
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>No metrics when offline! :(</Typography>}

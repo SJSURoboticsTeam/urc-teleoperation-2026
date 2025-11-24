@@ -28,7 +28,6 @@ async def get_rssi(silenceErrorSpamming, hostname, username="ubnt", password=Non
             password=password,
             client_keys=[key_filename] if key_filename else None,
             known_hosts=None,
-            timeout=timeout,
         )
         try:
             result = await conn.run("mca-status | grep signal", check=False)
@@ -57,9 +56,6 @@ def register_metrics(sio,silenceErrorSpamming):
     async def init(sid):
         global numClients
         numClients = 0
-
-
-
 
     @sio.event
     async def getConnections(sid):
