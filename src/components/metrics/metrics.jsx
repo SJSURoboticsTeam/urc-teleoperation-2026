@@ -1,9 +1,6 @@
 import { socket } from "../socket.io/socket";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import ButtonGroup from '@mui/material/ButtonGroup';
 import InfoIcon from '@mui/icons-material/Info';
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
@@ -12,12 +9,11 @@ import {red} from '@mui/material/colors'
 export default function Metrics({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
-    const [latency, setLatency] = useState(null);
     const [roverRSSI, setroverRSSI] = useState(null);
     const [baseRSSI, setbaseRSSI] = useState(null);
-    const [numConnections, setNumConnections] = useState(0);
   
     // Handles connection to socket.io server
+    // this is still needed in this file since if the server goes down, so does all the metrics
     useEffect(() => {
       function onConnect() {
         setIsConnected(true);
@@ -36,10 +32,10 @@ export default function Metrics({ openPane, setOpenPane }) {
       }
     }, [])
   
-const [connectedIcon,setConnectedIcon] = useState("");
+const [infoStatus,setinfoStatus] = useState("");
 
 useEffect( () => {
-  setConnectedIcon(
+  setinfoStatus(
     isConnected ? (
       <InfoIcon sx={{ color: green[500], fontSize: 35 }} />
     ) : (
@@ -49,35 +45,6 @@ useEffect( () => {
 }, [isConnected] );
 
 
-useEffect(() => {
-  let interval;
-  // send a ping to the server every 750ms and measure latency
-  function checkLatency() {
-    const start = Date.now();
-    socket.emit("pingCheck", () => {
-      setLatency(Date.now() - start);
-    });
-  }
-
-  interval = setInterval(checkLatency, 750); 
-
-  return () => clearInterval(interval);
-}, []);
-
-
-
-useEffect(() => {
-  let interval;
-  // send a ping to the server every 2s to get number of connected clients from backend
-  function numClients() {
-    socket.emit("getConnections", (connections) => {
-      setNumConnections(connections);
-    });
-  }
-
-  interval = setInterval(numClients, 2000); 
-  return () => clearInterval(interval);
-}, []);
 
 useEffect(() => {
   let interval;
@@ -124,7 +91,7 @@ useEffect(() => {
           marginRight: 10,
         }}
       >
-        METRICS{connectedIcon}
+        METRICS{infoStatus}
       </span>
         
         {openPane == "Metrics" && (
@@ -148,7 +115,6 @@ useEffect(() => {
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>No metrics when offline! :(</Typography>}
-             {/* <TextField id="outlined-basic" label="Address Placeholder" variant="outlined" /> */}
             
           </div>
         )}
