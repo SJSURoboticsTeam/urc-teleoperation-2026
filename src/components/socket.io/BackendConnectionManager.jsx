@@ -13,6 +13,8 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [latency, setLatency] = useState(null);
+    const [roverRSSI, setroverRSSI] = useState(null);
+    const [baseRSSI, setbaseRSSI] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
   
     // Handles connection to socket.io server
@@ -99,6 +101,7 @@ useEffect(() => {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
+          marginRight: 20,
         }}
       >
         SERVER{connectedIcon}

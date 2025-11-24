@@ -3,5 +3,7 @@
 
 pyserial
 python-socketio
-python3-gevent
+gevent
 gevent-websocket
+asyncssh
+uvicorn
