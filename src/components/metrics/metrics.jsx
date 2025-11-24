@@ -112,10 +112,7 @@ useEffect(() => {
               <div>
             <Typography  sx={{ color: 'black' }} variant = "h6">ANTENNAS</Typography>
             <Typography  sx={{ color: 'black' }}>Rover Antenna: {roverRSSI}</Typography>
-            <Typography  sx={{ color: 'black' }}>Base Antenna: {baseRSSI}</Typography>
-            <Typography  sx={{ color: 'black' }} variant = "h6">ROVER PI</Typography>
-            <Typography  sx={{ color: 'black' }}>CPU Temp:</Typography>
-            <Typography  sx={{ color: 'black' }}>CPU Utilization:</Typography>
+            <Typography  sx={{ color: 'black' }}>Base Antenna: {baseRSSI}</Typography> 
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>No metrics when offline! :(</Typography>}

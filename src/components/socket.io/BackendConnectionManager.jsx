@@ -72,7 +72,6 @@ useEffect(() => {
 }, []);
 
 
-
 useEffect(() => {
   let interval;
   // send a ping to the server every 2s to get number of connected clients from backend
@@ -85,7 +84,6 @@ useEffect(() => {
   interval = setInterval(numClients, 2000); 
   return () => clearInterval(interval);
 }, []);
-
 
 
 
