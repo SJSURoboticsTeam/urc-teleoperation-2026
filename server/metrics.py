@@ -6,7 +6,10 @@ import config
 
 numClients = 0
 
-## .env USAGE
+# since ssh creds are being used, we use a secrets file
+# so make a file named ".env" and place in in the server/ dir
+
+## 
 ## SSH_USER=???
 ## SSH_PASSWORD=???
 ##
