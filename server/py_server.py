@@ -24,6 +24,21 @@ sio = socketio.Server(cors_allowed_origins='*')
 app = socketio.WSGIApp(sio)
 
 drive_serial = CanSerial('/dev/ttyACM0')
+wheelOffsets = {
+    frontLeft,
+    frontRight,
+    backLeft,
+    backRight
+}
+
+wheelAngles = {
+
+}
+
+# while true, sending motor [Steer motor CANID, 0x92, 00000000000]
+
+# validate wheelOffsets, if all are filled then we can proceed
+# now we ask for 
 
 @sio.event
 def connect(sid, environ):
@@ -37,8 +52,13 @@ def driveCommands(sid, data):
     drive_serial.write(f"t{ID['SET_CHASSIS_VELOCITIES']}6{x_vel}{y_vel}{rot_vel}\r")
 
 @sio.event
-def driveHoming(sid):
+def driveHoming(sid): 
     drive_serial.write((f"t{ID['HOMING_SEQUENCE']}80000000000000000\r").encode())
+    #getting offsets 
+    drive_serial.write((f"t{ID['GET_OFFSET']}100\r").encode()) #fLwheel
+    drive_serial.write((f"t{ID['GET_OFFSET']}101\r").encode()) #fRwheel
+    drive_serial.write((f"t{ID['GET_OFFSET']}102\r").encode()) #bLwheel
+    drive_serial.write((f"t{ID['GET_OFFSET']}103\r").encode()) #bRwheel
 
 def parse_data(data):
 
@@ -65,7 +85,7 @@ def parse_data(data):
             rot_vel = rot_vel - math.pow(2, 16)
 
         print(f"x vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
-    
+        
     elif address == ID['HEARTBEAT_REPLY']:
         print("Heartbeat Reply")
 
@@ -74,7 +94,29 @@ def parse_data(data):
 
     elif address == ID['RETURN_OFFSET']:
         angle_offset = int(string_data[5:13],16)
-        print(f"angle offset: {angle_offset} \nmodule position: {string_data[13:15]}")
+        module_position = int(string_data[4], 16)
+        print(f"angle offset: {angle_offset} \nmodule position: {module_position}")
+        #reading module position 
+        #return angle offsets to frontend/client 
+        #   frontLeft: data.fLAngle,
+        #   frontRight: data.fRAngle,
+        #   backLeft: data.bLAngle,
+        #   backRight: data.bRAngle,
+        if module_position == "100":
+            frontLeft = angle_offset
+        if module_position == "101":
+            frontRight = angle_offset
+        if module_position == "102":
+            backLeft = angle_offset
+        if module_position == "103": 
+            backRight = angle_offset 
+        sio.emit('wheelAngles', {
+            'frontLeft': frontLeft,
+            'frontRight': frontRight,
+            'backLeft': backLeft,
+            'backRight': backRight
+        })  
+            
 
     elif address == ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
         x_vel = int(string_data[5:9],16)
@@ -97,6 +139,13 @@ def parse_data(data):
     elif address == ID['CONFIG']:
         setting_data = int(string_data[5:13],16)
         print(f"setting data: {setting_data} \nsetting ID: {string_data[13:15]}")
+
+    # listen for [Steer motor CANID + 0x100, multi-turn angle data]
+    elif address == ID['READ_MULTI_TURN_ANGLE']:
+        steer_motor_id = int(string_data[4], 16) - 0x100
+        multi_turn_angle = int(string_data[5:13],16)
+        print(f"steer motor id: {steer_motor_id} \nmulti turn angle: {multi_turn_angle}")
+        # process multi-turn angle data as needed
     
 
     
