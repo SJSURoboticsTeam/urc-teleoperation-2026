@@ -1,5 +1,5 @@
 from can_serial import CanSerial
-import metrics
+import metrics, config
 import asyncio
 import socketio
 import math
@@ -25,9 +25,6 @@ receive_ID = {
     "CONFIG_ACK": '11A',
 }
 
-#useful for running on another computer
-#
-silenceErrorSpamming = False
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 app = socketio.ASGIApp(sio)
@@ -46,7 +43,7 @@ except Exception:
     print("FAILURE TO CONNECT ARM!")
 
 # =================== Metrics Event Handlers ====================
-metrics.register_metrics(sio, silenceErrorSpamming)
+metrics.register_metrics(sio)
 
 # Background task guard
 drive_task_started = False
@@ -73,7 +70,7 @@ async def driveCommands(sid, data):
         print(f'[{sid}] Drive command sent: {can_msg}')
     except Exception as e:
         # if you are testing on a computer without serial, set the bool true to help your console
-        if silenceErrorSpamming == False:
+        if config.silenceErrorSpamming == False:
             print(f'Error in driveCommands: {e}')
 
 @sio.event

@@ -2,6 +2,7 @@
 import asyncssh
 from dotenv import load_dotenv
 import os
+import config
 
 numClients = 0
 
@@ -15,7 +16,7 @@ username = os.getenv("SSH_USER")
 password = os.getenv("SSH_PASSWORD")
 
 
-async def get_rssi(silenceErrorSpamming, hostname, username="ubnt", password=None, key_filename=None, timeout=10):
+async def get_rssi(hostname, username="ubnt", password=None, key_filename=None, timeout=10):
     """
     Async SSH using asyncssh to retrieve signal strength from a Ubiquiti device.
 
@@ -40,12 +41,12 @@ async def get_rssi(silenceErrorSpamming, hostname, username="ubnt", password=Non
             conn.close()
 
     except Exception as e:
-        if silenceErrorSpamming == False:
+        if config.silenceErrorSpamming == False:
             print(f"[{hostname}] Connection failed (is the lan working???): {e}")
         return "OFFLINE"
 
 
-def register_metrics(sio,silenceErrorSpamming):
+def register_metrics(sio):
     """Register metrics-related socket.io handlers.
 
     `sio` is expected to be a `socketio.AsyncServer` (async handlers are supported).
@@ -68,9 +69,9 @@ def register_metrics(sio,silenceErrorSpamming):
     @sio.event
     async def roverRSSI(sid):
         global username, password
-        return await get_rssi(silenceErrorSpamming,"192.168.1.20", username, password)
+        return await get_rssi("192.168.1.20", username, password)
 
     @sio.event
     async def baseRSSI(sid):
         global username, password
-        return await get_rssi(silenceErrorSpamming,"192.168.1.25", username, password)
+        return await get_rssi("192.168.1.25", username, password)
