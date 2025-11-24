@@ -55,10 +55,14 @@ drive_task_started = False
 @sio.event
 async def driveCommands(sid, data):
     try:
+        # Equivalent RPMs into meters/sec (this will be a float)
+        # Convert float * 2^12, truncate or round
+        # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
         x_vel_scaled = int(data['xVel'] * (2 ** 12))
         y_vel_scaled = int(data['yVel'] * (2 ** 12))
+        # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
         rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
-
+         # Convert to 16-bit signed hex
         x_vel = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         y_vel = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
