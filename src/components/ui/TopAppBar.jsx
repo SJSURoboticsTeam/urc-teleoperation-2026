@@ -12,6 +12,7 @@ import NavConnectionStatus from '../socket.io/BackendConnectionManager';
 import GamepadPanel from '../gamepad/Gamepad';
 import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import Metrics from '../metrics/metrics';
 
 export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -143,6 +144,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
           
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
+          <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
         <IconButton
           edge='end'
           color='inherit'
@@ -153,7 +155,6 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
               document.exitFullscreen(); // exit fullscreen
             }
           }}
-          sx={{ ml: 1 }}
         >
           <FullscreenIcon />
         </IconButton>

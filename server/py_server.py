@@ -1,10 +1,10 @@
 from can_serial import CanSerial
-import threading
+import metrics, config
+import asyncio
 import socketio
-from gevent.pywsgi import WSGIServer
-from geventwebsocket.handler import WebSocketHandler
 import math
 import time
+import uvicorn
 
 send_ID = {
     "SET_CHASSIS_VELOCITIES": '00C',
@@ -25,24 +25,32 @@ receive_ID = {
     "CONFIG_ACK": '11A',
 }
 
-sio = socketio.Server(cors_allowed_origins='*')
-app = socketio.WSGIApp(sio)
+
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
+app = socketio.ASGIApp(sio)
 
 # CAN buses
-drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
-# arm_serial = CanSerial('/dev/ttyACM1')
+print("Starting...")
+try:
+    drive_serial = CanSerial('/dev/ttyAMA0')
+    print("Drive connected.")
+except Exception:
+    print("FAILURE TO CONNECT DRIVE!")
+try:
+    arm_serial = CanSerial('/dev/ttyACM1')
+    print("Arm connected.")
+except Exception:
+    print("FAILURE TO CONNECT ARM!")
+
+# =================== Metrics Event Handlers ====================
+metrics.register_metrics(sio)
+
+# Background task guard
+drive_task_started = False
 
 # =================== Client Drive Event Handlers ====================
 @sio.event
-def connect(sid, environ):
-    print(f'Client connected: {sid}')
-
-@sio.event
-def disconnect(sid):
-    print(f'Client disconnected: {sid}')
-
-@sio.event
-def driveCommands(sid, data):
+async def driveCommands(sid, data):
     try:
         # Equivalent RPMs into meters/sec (this will be a float)
         # Convert float * 2^12, truncate or round
@@ -50,26 +58,28 @@ def driveCommands(sid, data):
         # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
         x_vel_scaled = int(data['xVel'] * (2 ** 12))
         y_vel_scaled = int(data['yVel'] * (2 ** 12))
-
+        
         # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
         rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
-
         # Convert to 16-bit signed hex
         x_vel = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         y_vel = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
 
         can_msg = f't{send_ID["SET_CHASSIS_VELOCITIES"]}6{x_vel}{y_vel}{rot_vel}\r'
-        drive_serial.write(can_msg.encode())
+        # drive_serial.write is blocking, run in thread
+        await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Drive command sent: {can_msg}')
     except Exception as e:
-        print(f'Error in driveCommands: {e}')
+        # if you are testing on a computer without serial, set the bool true to help your console
+        if config.silenceErrorSpamming == False:
+            print(f'Error in driveCommands: {e}')
 
 @sio.event
-def driveHoming(sid):
+async def driveHoming(sid):
     try:
         can_msg = f't{send_ID["HOMING_SEQUENCE"]}80000000000000000\r'
-        drive_serial.write(can_msg.encode())
+        await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Homing initiated')
     except Exception as e:
         print(f'Error in driveHoming: {e}')
@@ -149,15 +159,16 @@ def parse_drive_data(data):
 #         print(f'Error parsing armr data: {e}')
 
 # =================== Background Threads ===================
-def read_drive_can_loop():
+async def read_drive_can_loop():
     try:
         while True:
-            data = drive_serial.read_can(None)
+            # read_can is blocking so run it in a thread
+            data = await asyncio.to_thread(drive_serial.read_can, None)
             if data:
                 parse_drive_data(data)
-            time.sleep(0.01)
+            await asyncio.sleep(0.01)
     except Exception as e:
-        print(f'Drive CAN thread error: {e}')
+        print(f'Drive CAN task error: {e}')
 
 # def read_arm_can_loop():
 #     try:
@@ -170,11 +181,35 @@ def read_drive_can_loop():
 #         print(f'Arm CAN thread error: {e}')
 
 # =================== Start Threads ===================
-drive_thread = threading.Thread(target=read_drive_can_loop, daemon=True)
-drive_thread.start()
+# The drive CAN loop will be started as a background task when the first client connects
+
 
 # arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
 # arm_thread.start()
 
 # =================== Start Server ===================
-WSGIServer(('localhost', 4000), app,handler_class=WebSocketHandler ).serve_forever()
+print("Server Starting...")
+
+
+@sio.event
+async def connect(sid, environ):
+    """On first client connect, start background CAN read loop."""
+    global drive_task_started
+    # Ensure we log connection and keep metrics' client count in sync
+    print(f"Client connected (py_server): {sid}")
+    try:
+        metrics.numClients += 1
+    except Exception:
+        pass
+
+    # Start background CAN loop once
+    if not drive_task_started:
+        drive_task_started = True
+        sio.start_background_task(read_drive_can_loop)
+@sio.event
+async def disconnect(sid):
+    global numClients
+    print(f'Client disconnected: {sid}')
+    metrics.numClients -= 1
+uvicorn.run(app, host='0.0.0.0', port=4000, log_level="warning")
+print("Server Started!")
