@@ -9,8 +9,12 @@ import {red} from '@mui/material/colors'
 export default function Metrics({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
+    // antenna telemtry
     const [roverRSSI, setroverRSSI] = useState(null);
-    const [baseRSSI, setbaseRSSI] = useState(null);
+    const [txrate, settxrate] = useState(null);
+    const [freq, setfreq] = useState(null);
+    const [freqw, setfreqw] = useState(null);
+    const[antennastatus, setantennastatus] = useState("NO DATA YET");
   
     // Handles connection to socket.io server
     // this is still needed in this file since if the server goes down, so does all the metrics
@@ -48,39 +52,19 @@ useEffect(() => {
   socket.on('antennastats', (data) => {
     console.log("Antenna Data");
     console.log(data)
+    setantennastatus(data.status);
+    if(data.status==1) {
+      setroverRSSI(data.dbm);
+      settxrate(data.txrate);
+      setfreq(data.freq);
+      setfreqw(data.freqw);
+    }
   });
 },[]);
-
-useEffect(() => {
-  let interval;
-  // send a ping to the server every 2s to get number of connected clients from backend
-  function numroverRSSI() {
-    socket.emit("roverRSSI", (connections) => {
-      setroverRSSI(connections);
-    });
-  }
-
-  interval = setInterval(numroverRSSI, 2000); 
-  return () => clearInterval(interval);
-}, []);
-
-useEffect(() => {
-  let interval;
-  // send a ping to the server every 2s to get number of connected clients from backend
-  function numbaseRSSI() {
-    socket.emit("baseRSSI", (connections) => {
-      setbaseRSSI(connections);
-    });
-  }
-
-  interval = setInterval(numbaseRSSI, 2000); 
-  return () => clearInterval(interval);
-}, []);
 
 
 
   return (
-      
       <div
         onMouseEnter={() => setOpenPane("Metrics")}
         onMouseLeave={() => setOpenPane("None")}
@@ -115,13 +99,26 @@ useEffect(() => {
     
             {isConnected ? (
               <div>
-            <Typography  sx={{ color: 'black' }} variant = "h6">ANTENNAS</Typography>
-            <Typography  sx={{ color: 'black' }}>Rover Antenna: {roverRSSI}</Typography>
-            <Typography  sx={{ color: 'black' }}>Base Antenna: {baseRSSI}</Typography> 
+            <Typography  sx={{ color: 'black' }} variant = "h6">ROVER ANTENNA</Typography>
+            
+            {(antennastatus === "GOOD") ? (
+              <div>
+            <Typography  sx={{ color: 'black' }}>Signal Strength: {roverRSSI} dBm</Typography>
+            <Typography  sx={{ color: 'black' }}>Transmit Rate: {txrate} Mbps</Typography>
+            <Typography  sx={{ color: 'black' }}>Frequency: {freq} MHz</Typography>
+            <Typography  sx={{ color: 'black' }}>Frequency Width: {freqw} MHz</Typography>
+              </div>
+            ) : (<Typography  sx={{ color: 'black' }}>{antennastatus} </Typography>)}
+              
+
+              <Typography  sx={{ color: 'black' }} variant = "h6">PI STATUS</Typography>
+              
               </div>
             ):
-              <Typography  sx={{ color: 'black' }}>No metrics when offline! :(</Typography>}
+              <Typography  sx={{ color: 'black' }}>You aren't connected to the server! :(</Typography>}
             
+
+
           </div>
         )}
       </div>

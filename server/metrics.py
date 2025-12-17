@@ -24,7 +24,7 @@ async def asyncsshloop(sio):
     while True:
         try:
             print("Testing ssh...")
-            async with asyncio.timeout(5):
+            async with asyncio.timeout(config.AntennaPolling):
                 async with asyncssh.connect("192.168.1.20", username=username, password=password) as conn:
                     try:
                         print("CONNECTED")
@@ -39,7 +39,7 @@ async def asyncsshloop(sio):
                         freqwidth = res.stdout.strip()  # 8
 
                         data = {
-                            'status': 1,
+                            'status': "GOOD",
                             'dbm': dbm[7:],
                             'txrate': txrate[7:],
                             'freq': freq[7:],
@@ -48,10 +48,9 @@ async def asyncsshloop(sio):
                         await sio.emit('antennastats', data)
                     except Exception as e:
                         print("Failed to get info:", e)
-                        await sio.emit('antennastats', {'status': -1})
         except Exception as e:
             print("SSH connection failed:", e)
-            await sio.emit('antennastats', {'status': -1})
+            await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
         print("Sleeping")
         await asyncio.sleep(config.AntennaPolling)
 
