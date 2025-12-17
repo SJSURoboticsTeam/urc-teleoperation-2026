@@ -19,7 +19,7 @@ username = os.getenv("SSH_USER")
 password = os.getenv("SSH_PASSWORD")
 
 
-async def get_rssi(hostname, username="ubnt", password=None, key_filename=None, timeout=10):
+async def get_rssi(hostname, username="ubnt", password=None):
     """
     Async SSH using asyncssh to retrieve signal strength from a Ubiquiti device.
 
@@ -30,7 +30,6 @@ async def get_rssi(hostname, username="ubnt", password=None, key_filename=None, 
             hostname,
             username=username,
             password=password,
-            client_keys=[key_filename] if key_filename else None,
             known_hosts=None,
         )
         try:
