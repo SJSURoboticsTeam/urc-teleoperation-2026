@@ -30,7 +30,6 @@ async def get_rssi(hostname, username="ubnt", password=None):
             hostname,
             username=username,
             password=password,
-            known_hosts=None,
         )
         try:
             result = await conn.run("mca-status | grep signal", check=False)
