@@ -21,37 +21,39 @@ password = os.getenv("SSH_PASSWORD")
 
 
 async def asyncsshloop(sio):
-    print("Testing ssh...")
-    try:
-        async with asyncssh.connect("192.168.1.20", username=username, password=password) as conn:
-            try:
-                print("CONNECTED")
-                res = await conn.run("mca-status | grep signal", check=False).stdout.strip()
-                dbm = res.stdout.strip()
-                res = await conn.run("mca-status | grep wlanTxRate", check=False)
-                txrate = res.stdout.strip()
-                # typical frequency is 924MHz with a channel width of 8, becoming 920-928MHz
-                res = await conn.run("mca-status | grep centerfreq", check=False)
-                freq = res.stdout.strip()  # 924
-                res = await conn.run("mca-status | grep chanbw", check=False)
-                freqwidth = res.stdout.strip()  # 8
+    while True:
+        try:
+            print("Testing ssh...")
+            async with asyncio.timeout(10):
+                async with asyncssh.connect("192.168.1.20", username=username, password=password) as conn:
+                    try:
+                        print("CONNECTED")
+                        res = await conn.run("mca-status | grep signal", check=False)
+                        dbm = res.stdout.strip()
+                        res = await conn.run("mca-status | grep wlanTxRate", check=False)
+                        txrate = res.stdout.strip()
+                        # typical frequency is 924MHz with a channel width of 8, becoming 920-928MHz
+                        res = await conn.run("mca-status | grep centerfreq", check=False)
+                        freq = res.stdout.strip()  # 924
+                        res = await conn.run("mca-status | grep chanbw", check=False)
+                        freqwidth = res.stdout.strip()  # 8
 
-                data = {
-                    'status': 1,
-                    'dbm': dbm[7:],
-                    'txrate': txrate[7:],
-                    'freq': freq[7:],
-                    'freqwidth': freqwidth[7:]
-                }
-                sio.emit('antennastats', data)
-            except Exception as e:
-                print("Failed to get info:", e)
-                sio.emit('antennastats', {'status': -1})
-    except Exception as e:
-        print("SSH connection failed:", e)
-        sio.emit('antennastats', {'status': -1})
-    print("Sleeping")
-    await asyncio.sleep(2)
+                        data = {
+                            'status': 1,
+                            'dbm': dbm[7:],
+                            'txrate': txrate[7:],
+                            'freq': freq[7:],
+                            'freqwidth': freqwidth[7:]
+                        }
+                        await sio.emit('antennastats', data)
+                    except Exception as e:
+                        print("Failed to get info:", e)
+                        await sio.emit('antennastats', {'status': -1})
+        except Exception as e:
+            print("SSH connection  to failed:", e)
+            await sio.emit('antennastats', {'status': -1})
+        print("Sleeping")
+        await asyncio.sleep(2)
 
 
 
