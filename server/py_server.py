@@ -74,7 +74,7 @@ async def driveCommands(sid, data):
         print(f'[{sid}] Drive command sent: {can_msg}')
     except Exception as e:
         # if you are testing on a computer without serial, set the bool true to help your console
-        if config.silenceErrorSpamming == False:
+        if config.silenceSerialErrors == False:
             print(f'Error in driveCommands: {e}')
 
 @sio.event
