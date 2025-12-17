@@ -44,7 +44,12 @@ useEffect( () => {
   );
 }, [isConnected] );
 
-
+useEffect(() => {
+  socket.on('antennastats', (data) => {
+    console.log("Antenna Data");
+    console.log(data)
+  });
+},[]);
 
 useEffect(() => {
   let interval;

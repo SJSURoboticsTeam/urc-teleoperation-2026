@@ -24,7 +24,7 @@ async def asyncsshloop(sio):
     while True:
         try:
             print("Testing ssh...")
-            async with asyncio.timeout(10):
+            async with asyncio.timeout(5):
                 async with asyncssh.connect("192.168.1.20", username=username, password=password) as conn:
                     try:
                         print("CONNECTED")
@@ -50,10 +50,10 @@ async def asyncsshloop(sio):
                         print("Failed to get info:", e)
                         await sio.emit('antennastats', {'status': -1})
         except Exception as e:
-            print("SSH connection  to failed:", e)
+            print("SSH connection failed:", e)
             await sio.emit('antennastats', {'status': -1})
         print("Sleeping")
-        await asyncio.sleep(2)
+        await asyncio.sleep(config.AntennaPolling)
 
 
 
