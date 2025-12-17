@@ -12,6 +12,7 @@ export default function Metrics({ openPane, setOpenPane }) {
     // antenna telemtry
     const [roverRSSI, setroverRSSI] = useState(null);
     const [txrate, settxrate] = useState(null);
+    const [rxrate, setrxrate] = useState(null);
     const [freq, setfreq] = useState(null);
     const [freqw, setfreqw] = useState(null);
     const[antennastatus, setantennastatus] = useState("NO DATA YET");
@@ -49,18 +50,27 @@ useEffect( () => {
 }, [isConnected] );
 
 useEffect(() => {
-  socket.on('antennastats', (data) => {
-    console.log("Antenna Data");
-    console.log(data)
+  const handler = (data) => {
+    console.log("antenna data:", data);
+
     setantennastatus(data.status);
-    if(data.status==1) {
+
+    if (data.status == "GOOD") {
+      //console.log("setting");
       setroverRSSI(data.dbm);
       settxrate(data.txrate);
+      setrxrate(data.rxrate);
       setfreq(data.freq);
-      setfreqw(data.freqw);
-    }
-  });
-},[]);
+      setfreqw(data.freqwidth);
+    } 
+  };
+
+  socket.on("antennastats", handler);
+
+  return () => {
+    socket.off("antennastats", handler); // cleanup so no duplicate listeners
+  };
+}, []);
 
 
 
@@ -93,7 +103,7 @@ useEffect(() => {
               background: "white",
               border: "1px solid gray",
               padding: "10px",
-              minWidth: "225px",
+              minWidth: "250px",
             }}
           >
     
@@ -104,7 +114,8 @@ useEffect(() => {
             {(antennastatus === "GOOD") ? (
               <div>
             <Typography  sx={{ color: 'black' }}>Signal Strength: {roverRSSI} dBm</Typography>
-            <Typography  sx={{ color: 'black' }}>Transmit Rate: {txrate} Mbps</Typography>
+            <Typography  sx={{ color: 'black' }}>TX Speed: {txrate} Mbps</Typography>
+            <Typography  sx={{ color: 'black' }}>RX Speed: {rxrate} Mbps</Typography>
             <Typography  sx={{ color: 'black' }}>Frequency: {freq} MHz</Typography>
             <Typography  sx={{ color: 'black' }}>Frequency Width: {freqw} MHz</Typography>
               </div>
@@ -112,7 +123,7 @@ useEffect(() => {
               
 
               <Typography  sx={{ color: 'black' }} variant = "h6">PI STATUS</Typography>
-              
+
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>You aren't connected to the server! :(</Typography>}
