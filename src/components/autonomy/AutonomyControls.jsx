@@ -5,6 +5,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import { Typography } from '@mui/material';
 
 export default function AutonomyControls() {
   const [autonomyEnabled, setAutonomyEnabled] = useState(false);
@@ -20,7 +21,7 @@ export default function AutonomyControls() {
 
   return (
       <div>
-      <h2 className="text-md font-semibold">Autonomy Controls</h2>
+      <Typography className="text-md font-semibold">Autonomy Controls</Typography>
       <StartPopup popupOpen = {startpopupOpen} setPopupOpen = {startsetPopupOpen} startAutonomy = {startAutonomy} />
       <EndPopup popupOpen = {endpopupOpen} setPopupOpen = {endsetPopupOpen} endAutonomy = {endAutonomy} />
       {(!autonomyEnabled ?
