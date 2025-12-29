@@ -145,8 +145,10 @@ useEffect(() => {
               </div>
             ) : (<Typography  sx={{ color: 'black' }}>{antenna.status} </Typography>)}
               
-
+              <hr className="divider" />
               <Typography  sx={{ color: 'black' }} variant = "h6">RPI STATUS</Typography>
+
+
               {(rpidata.status === "GOOD") ? (
               <div>
             <Typography  sx={{ color: 'black' }}>Cpu Utilization: {rpidata.cpupercent}%</Typography>
@@ -155,7 +157,10 @@ useEffect(() => {
               </div>
             ) : (<Typography  sx={{ color: 'black' }}>{rpidata.status} </Typography>)}
               
-              
+              <hr className="divider" />
+              <Typography  sx={{ color: 'black' }} variant = "h6">ROBOT</Typography>
+
+
               
               
               
