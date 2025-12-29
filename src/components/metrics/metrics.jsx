@@ -84,7 +84,7 @@ useEffect(() => {
     console.log("cpu data:", data);
       setrpidata({
         status: data.status,
-        cpupercent: data.cputemp,
+        cpupercent: data.cpupercent,
         rampercent: data.rampercent,
         cputemp: data.cputemp
       });
@@ -146,8 +146,19 @@ useEffect(() => {
             ) : (<Typography  sx={{ color: 'black' }}>{antenna.status} </Typography>)}
               
 
-              <Typography  sx={{ color: 'black' }} variant = "h6">PI STATUS</Typography>
-
+              <Typography  sx={{ color: 'black' }} variant = "h6">RPI STATUS</Typography>
+              {(rpidata.status === "GOOD") ? (
+              <div>
+            <Typography  sx={{ color: 'black' }}>Cpu Utilization: {rpidata.cpupercent}%</Typography>
+            <Typography  sx={{ color: 'black' }}>RAM Utilization: {rpidata.rampercent}%</Typography>
+            <Typography  sx={{ color: 'black' }}>Cpu Temp: {rpidata.cputemp}°F</Typography>
+              </div>
+            ) : (<Typography  sx={{ color: 'black' }}>{rpidata.status} </Typography>)}
+              
+              
+              
+              
+              
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>You aren't connected to the server! :(</Typography>}
