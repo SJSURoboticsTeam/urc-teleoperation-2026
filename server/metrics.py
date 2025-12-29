@@ -25,11 +25,11 @@ password = os.getenv("SSH_PASSWORD")
 async def asyncsshloop(sio):
     while True:
         try:
-            print("Testing ssh...")
+            #print("Testing ssh...")
             async with asyncio.timeout(config.AntennaPollingRate):
                 async with asyncssh.connect("192.168.1.25", username=username, password=password) as conn:
                     try:
-                        print("CONNECTED")
+                        #print("CONNECTED")
                         res = await conn.run("mca-status | grep signal", check=False)
                         dbm = res.stdout.strip()
                         res = await conn.run("mca-status | grep wlanTxRate", check=False)
@@ -51,18 +51,20 @@ async def asyncsshloop(sio):
                         }
                         await sio.emit('antennastats', data)
                     except Exception as e:
-                        print("Failed to get info:", e)
+                        if (config.silenceSSHErrors == False):
+                            print("ERROR RETRIEVING SSH DATA!:", e)
         except Exception as e:
-            print("SSH connection failed:", e)
+            if(config.silenceSSHErrors == False):
+                print("SSH connection failed:", e)
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
-        print("Sleeping")
+        #print("Sleeping")
         await asyncio.sleep(config.AntennaPollingRate)
 
 
 async def cpuloop(sio):
     while True:
         try:
-            print("Testing metrics.")
+            #print("Testing metrics.")
             cpu_percent = psutil.cpu_percent(interval=1)
             ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
             
@@ -77,7 +79,7 @@ async def cpuloop(sio):
         except Exception as e:
             print("Error with metrics!", e)
             await sio.emit('pistats', {'status': "ERROR"})
-        print("Sleeping")
+        #print("Sleeping")
         await asyncio.sleep(config.RpiPollingRate)
 
 

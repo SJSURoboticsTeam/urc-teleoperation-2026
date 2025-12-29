@@ -13,8 +13,6 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [latency, setLatency] = useState(null);
-    const [roverRSSI, setroverRSSI] = useState(null);
-    const [baseRSSI, setbaseRSSI] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
     const [conntype, setconntype] = useState("Checking...");
   
@@ -101,8 +99,6 @@ useEffect(() => {
 }, []);
 
 
-
-console.log(socket.io.engine.transport.name);
   return (
       
       <div
