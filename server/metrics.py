@@ -64,18 +64,21 @@ async def cpuloop(sio):
         try:
             print("Testing metrics.")
             cpu_percent = psutil.cpu_percent(interval=1)
-            ram = psutil.virtual_memory()
-            cputemp = 75 #PLACEHOLDER FOR NOW
+            ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
+            
+            cputemp = -1 #PLACEHOLDER FOR NOW
             data = {
                 'status': "GOOD",
                 'cpu': cpu_percent,
+                'ram': ram[2], # we want the percent
                 'cputemp': cputemp,
             }
+            await sio.emit('cpustats', data)
         except Exception as e:
             print("Error with metrics!", e)
             await sio.emit('pistats', {'status': "ERROR"})
         print("Sleeping")
-        await asyncio.sleep(config.CpuPollingRate)
+        await asyncio.sleep(config.RpiPollingRate)
 
 
 def register_metrics(sio):

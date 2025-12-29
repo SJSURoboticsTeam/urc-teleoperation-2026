@@ -72,6 +72,26 @@ useEffect(() => {
   };
 }, []);
 
+useEffect(() => {
+  const handler = (data) => {
+    console.log("cpu data:", data);
+    setantennastatus(data.status);
+    if (data.status == "GOOD") {
+      //console.log("setting");
+      setroverRSSI(data.dbm);
+      settxrate(data.txrate);
+      setrxrate(data.rxrate);
+      setfreq(data.freq);
+      setfreqw(data.freqwidth);
+    } 
+  };
+
+  socket.on("cpustats", handler);
+
+  return () => {
+    socket.off("cpustats", handler); // cleanup so no duplicate listeners
+  };
+}, []);
 
 
   return (
