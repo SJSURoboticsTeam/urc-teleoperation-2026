@@ -69,8 +69,8 @@ async def cpuloop(sio):
             cputemp = -1 #PLACEHOLDER FOR NOW
             data = {
                 'status': "GOOD",
-                'cpu': cpu_percent,
-                'ram': ram[2], # we want the percent
+                'cpupercent': cpu_percent,
+                'rampercent': ram[2], # we want the percent
                 'cputemp': cputemp,
             }
             await sio.emit('cpustats', data)

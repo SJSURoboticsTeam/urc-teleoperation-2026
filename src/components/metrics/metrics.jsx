@@ -10,12 +10,21 @@ export default function Metrics({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     // antenna telemtry
-    const [roverRSSI, setroverRSSI] = useState(null);
-    const [txrate, settxrate] = useState(null);
-    const [rxrate, setrxrate] = useState(null);
-    const [freq, setfreq] = useState(null);
-    const [freqw, setfreqw] = useState(null);
-    const[antennastatus, setantennastatus] = useState("NO DATA YET");
+    const[antenna, setantennadata] = useState({
+      status: "NO DATA YET",
+      roverRSSI : null,
+      txrate : null,
+      rxrate: null,
+      freq: null,
+      freqw: null
+    })
+    
+    const[rpidata, setrpidata] = useState({
+      status: "NO DATA YET",
+      cpupercent : null,
+      rampercent : null,
+      cputemp: null,
+    })
   
     // Handles connection to socket.io server
     // this is still needed in this file since if the server goes down, so does all the metrics
@@ -52,17 +61,15 @@ useEffect( () => {
 useEffect(() => {
   const handler = (data) => {
     console.log("antenna data:", data);
-
-    setantennastatus(data.status);
-
-    if (data.status == "GOOD") {
-      //console.log("setting");
-      setroverRSSI(data.dbm);
-      settxrate(data.txrate);
-      setrxrate(data.rxrate);
-      setfreq(data.freq);
-      setfreqw(data.freqwidth);
-    } 
+      setantennadata({
+        status: data.status,
+        roverRSSI: data.dbm,
+        txrate: data.txrate,
+        rxrate: data.rxrate,
+        freq: data.freq,
+        freqwidth: data.freqwidth
+      });
+ 
   };
 
   socket.on("antennastats", handler);
@@ -75,15 +82,12 @@ useEffect(() => {
 useEffect(() => {
   const handler = (data) => {
     console.log("cpu data:", data);
-    setantennastatus(data.status);
-    if (data.status == "GOOD") {
-      //console.log("setting");
-      setroverRSSI(data.dbm);
-      settxrate(data.txrate);
-      setrxrate(data.rxrate);
-      setfreq(data.freq);
-      setfreqw(data.freqwidth);
-    } 
+      setrpidata({
+        status: data.status,
+        cpupercent: data.cputemp,
+        rampercent: data.rampercent,
+        cputemp: data.cputemp
+      });
   };
 
   socket.on("cpustats", handler);
@@ -131,15 +135,15 @@ useEffect(() => {
               <div>
             <Typography  sx={{ color: 'black' }} variant = "h6">ROVER ANTENNA</Typography>
             
-            {(antennastatus === "GOOD") ? (
+            {(antenna.status === "GOOD") ? (
               <div>
-            <Typography  sx={{ color: 'black' }}>Signal Strength: {roverRSSI} dBm</Typography>
-            <Typography  sx={{ color: 'black' }}>TX Speed: {txrate} Mbps</Typography>
-            <Typography  sx={{ color: 'black' }}>RX Speed: {rxrate} Mbps</Typography>
-            <Typography  sx={{ color: 'black' }}>Frequency: {freq} MHz</Typography>
-            <Typography  sx={{ color: 'black' }}>Frequency Width: {freqw} MHz</Typography>
+            <Typography  sx={{ color: 'black' }}>Signal Strength: {antenna.roverRSSI} dBm</Typography>
+            <Typography  sx={{ color: 'black' }}>TX Speed: {antenna.txrate} Mbps</Typography>
+            <Typography  sx={{ color: 'black' }}>RX Speed: {antenna.rxrate} Mbps</Typography>
+            <Typography  sx={{ color: 'black' }}>Frequency: {antenna.freq} MHz</Typography>
+            <Typography  sx={{ color: 'black' }}>Frequency Width: {antenna.freqw} MHz</Typography>
               </div>
-            ) : (<Typography  sx={{ color: 'black' }}>{antennastatus} </Typography>)}
+            ) : (<Typography  sx={{ color: 'black' }}>{antenna.status} </Typography>)}
               
 
               <Typography  sx={{ color: 'black' }} variant = "h6">PI STATUS</Typography>
