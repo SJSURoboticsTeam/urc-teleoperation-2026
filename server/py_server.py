@@ -49,6 +49,7 @@ metrics.register_metrics(sio)
 # Background task guard
 drive_task_started = False
 async_ssh_started = False
+cpu_started = False
 
 # =================== Client Drive Event Handlers ====================
 @sio.event
@@ -198,6 +199,7 @@ async def connect(sid, environ):
     """On first client connect, start background CAN read loop."""
     global drive_task_started
     global async_ssh_started
+    global cpu_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -210,7 +212,10 @@ async def connect(sid, environ):
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop)
     if not async_ssh_started:
-        async_ssh_started = False
+        async_ssh_started = True
+        sio.start_background_task(asyncsshloop,sio)
+    if not cpu_started:
+        cpu_started = True
         sio.start_background_task(asyncsshloop,sio)
 @sio.event
 async def disconnect(sid):

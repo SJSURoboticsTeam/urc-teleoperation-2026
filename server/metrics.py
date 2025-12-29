@@ -3,7 +3,8 @@ import asyncssh
 from dotenv import load_dotenv
 import os
 import asyncio
-import config
+import config # holds config values
+import psutil
 
 numClients = 0
 
@@ -14,6 +15,7 @@ numClients = 0
 ## SSH_USER=???
 ## SSH_PASSWORD=???
 ##
+
 # get data from secrets
 load_dotenv()  # loads from .env
 username = os.getenv("SSH_USER")
@@ -24,7 +26,7 @@ async def asyncsshloop(sio):
     while True:
         try:
             print("Testing ssh...")
-            async with asyncio.timeout(config.AntennaPolling):
+            async with asyncio.timeout(config.AntennaPollingRate):
                 async with asyncssh.connect("192.168.1.25", username=username, password=password) as conn:
                     try:
                         print("CONNECTED")
@@ -54,8 +56,26 @@ async def asyncsshloop(sio):
             print("SSH connection failed:", e)
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
         print("Sleeping")
-        await asyncio.sleep(config.AntennaPolling)
+        await asyncio.sleep(config.AntennaPollingRate)
 
+
+async def cpuloop(sio):
+    while True:
+        try:
+            print("Testing metrics.")
+            cpu_percent = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory()
+            cputemp = 75 #PLACEHOLDER FOR NOW
+            data = {
+                'status': "GOOD",
+                'cpu': cpu_percent,
+                'cputemp': cputemp,
+            }
+        except Exception as e:
+            print("Error with metrics!", e)
+            await sio.emit('pistats', {'status': "ERROR"})
+        print("Sleeping")
+        await asyncio.sleep(config.CpuPollingRate)
 
 
 def register_metrics(sio):

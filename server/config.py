@@ -3,5 +3,6 @@
 silenceSerialErrors = True
 silenceSSHErrors = False
 # how often should metrics be broadcast?
-AntennaPolling = 3 #SECONDS
-metricsFrequency = 2000
+# ALL ARE IN SECONDS
+AntennaPollingRate = 3
+PiPollingRate = 3
