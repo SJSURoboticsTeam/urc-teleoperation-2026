@@ -67,7 +67,7 @@ useEffect(() => {
         txrate: data.txrate,
         rxrate: data.rxrate,
         freq: data.freq,
-        freqwidth: data.freqwidth
+        freqw: data.freqwidth
       });
  
   };
