@@ -153,7 +153,7 @@ useEffect(() => {
               <div>
             <Typography  sx={{ color: 'black' }}>Cpu Utilization: {rpidata.cpupercent}%</Typography>
             <Typography  sx={{ color: 'black' }}>RAM Utilization: {rpidata.rampercent}%</Typography>
-            <Typography  sx={{ color: 'black' }}>Cpu Temp: {rpidata.cputemp}°F</Typography>
+            <Typography  sx={{ color: 'black' }}>Cpu Temp: {rpidata.cputemp}°C</Typography>
               </div>
             ) : (<Typography  sx={{ color: 'black' }}>{rpidata.status} </Typography>)}
               
