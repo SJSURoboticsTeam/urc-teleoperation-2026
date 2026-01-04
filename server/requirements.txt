@@ -13,3 +13,4 @@ uvicorn
 psutil
 asyncssh
 dotenv
+pathlib

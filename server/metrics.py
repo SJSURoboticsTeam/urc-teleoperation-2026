@@ -5,6 +5,7 @@ import os
 import asyncio
 import config # holds config values
 import psutil
+from pathlib import Path
 
 numClients = 0
 
@@ -42,7 +43,7 @@ async def asyncsshloop(sio):
         try:
             #print("Testing ssh...")
             async with asyncio.timeout(config.AntennaPollingRate):
-                async with asyncssh.connect("192.168.1.25", username=username, password=password) as conn:
+                async with asyncssh.connect("192.168.1.25", username=username, password=password):
                     try:
                         #print("CONNECTED")
                         res = await conn.run("mca-status | grep signal", check=False)
@@ -83,12 +84,22 @@ async def cpuloop(sio):
             cpu_percent = psutil.cpu_percent(interval=1)
             ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
             
-            cputemp = -1 #PLACEHOLDER FOR NOW
+
+            def get_cpu_temperature():
+                with open("/sys/class/thermal/thermal_zone0/temp") as f:
+                    return int(f.read()) / 1000.0
+            model_path = Path("/proc/device-tree/model")
+            if "Raspberry Pi" in model_path.read_text(errors="ignore").strip("\x00"):
+                temp = round(get_cpu_temperature(),1)
+            else:
+                print("No RPI, instead: " + str(model_path))
+                temp = -1
+
             data = {
                 'status': "GOOD",
                 'cpupercent': cpu_percent,
                 'rampercent': ram[2], # we want the percent
-                'cputemp': cputemp,
+                'cputemp': temp,
             }
             await sio.emit('cpustats', data)
         except Exception as e:
