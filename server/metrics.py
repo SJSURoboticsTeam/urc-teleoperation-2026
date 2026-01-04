@@ -16,6 +16,18 @@ numClients = 0
 ## SSH_PASSWORD=???
 ##
 
+
+## THEN PUT THIS IN YOUR ~/.ssh/config FILE ON THE SERVER
+## THEN ACCEPT THE FINGERPRINTS FOR BOTH HOSTS
+
+##Host 192.168.1.20
+##    HostKeyAlgorithms +ssh-rsa
+##    PubkeyAcceptedAlgorithms +ssh-rsa
+##Host 192.168.1.25
+##    HostKeyAlgorithms +ssh-rsa
+##    PubkeyAcceptedAlgorithms +ssh-rsa
+
+
 # get data from secrets
 load_dotenv()  # loads from .env
 username = os.getenv("SSH_USER")
@@ -24,6 +36,9 @@ password = os.getenv("SSH_PASSWORD")
 
 async def asyncsshloop(sio):
     while True:
+        if not username:
+            await sio.emit('antennastats', {'status': "ERROR: NO SSH CREDS"})
+            continue
         try:
             #print("Testing ssh...")
             async with asyncio.timeout(config.AntennaPollingRate):
