@@ -9,24 +9,8 @@ from pathlib import Path
 
 numClients = 0
 
-# since ssh creds are being used, we use a secrets file
-# so make a file named ".env" and place in in the server/ dir
-
-## 
-## SSH_USER=???
-## SSH_PASSWORD=???
-##
 
 
-## THEN PUT THIS IN YOUR ~/.ssh/config FILE ON THE SERVER
-## THEN ACCEPT THE FINGERPRINTS FOR BOTH HOSTS
-
-##Host 192.168.1.20
-##    HostKeyAlgorithms +ssh-rsa
-##    PubkeyAcceptedAlgorithms +ssh-rsa
-##Host 192.168.1.25
-##    HostKeyAlgorithms +ssh-rsa
-##    PubkeyAcceptedAlgorithms +ssh-rsa
 
 
 # get data from secrets

@@ -1,8 +1,3 @@
-# Requirements for mission control server
-# TO INSTALL RUN THE SCRIPTS BELOW(MAC/PI):
-# 
-#  INSTALL:  ./reqinstall.sh
-#  UPDATE: ./update.sh
 
 pyserial
 python-socketio
