@@ -3,15 +3,16 @@
 ## Dependencies Install(To Run)
 Since pip packages work best when virtually installed, you have to keep referencing a virtual enviroment. Scripts are provided below to do exactly this.
 
-TO INSTALL RUN THE SCRIPTS BELOW(MAC/PI), in server/ directory:
+TO INSTALL RUN THE SCRIPTS BELOW (MAC/PI), in server/ directory:
   
 INSTALL:  ./install.sh  
 UPDATE: ./update.sh  
 RUN: ./run.sh  
   
-OR DIRECT INSTALL(RISKY!):
-pip install -r requirements.txt
+OR DIRECT INSTALL(RISKY!):  
 
+pip install -r requirements.txt  
+  
 ## SSH requires three things (For Antenna Metrics)
 
 ### Secrets Install
