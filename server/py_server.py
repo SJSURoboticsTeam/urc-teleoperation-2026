@@ -40,8 +40,8 @@ except Exception as e:
 try:
     arm_serial = CanSerial('/dev/ttyACM1')
     print("Arm connected.")
-except Exception:
-    print("FAILURE TO CONNECT ARM!")
+except Exception as e:
+    print("FAILURE TO CONNECT ARM!" + str(e))
 
 # =================== Metrics Event Handlers ====================
 metrics.register_metrics(sio)

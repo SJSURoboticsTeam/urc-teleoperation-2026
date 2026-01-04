@@ -43,7 +43,7 @@ async def asyncsshloop(sio):
         try:
             #print("Testing ssh...")
             async with asyncio.timeout(config.AntennaPollingRate):
-                async with asyncssh.connect("192.168.1.25", username=username, password=password):
+                async with asyncssh.connect("192.168.1.25", username=username, password=password) as conn:
                     try:
                         #print("CONNECTED")
                         res = await conn.run("mca-status | grep signal", check=False)
@@ -71,7 +71,7 @@ async def asyncsshloop(sio):
                             print("ERROR RETRIEVING SSH DATA!:", e)
         except Exception as e:
             if(config.silenceSSHErrors == False):
-                print("SSH connection failed:", e)
+                print("SSH connection failed:" + str(e))
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
         #print("Sleeping")
         await asyncio.sleep(config.AntennaPollingRate)
