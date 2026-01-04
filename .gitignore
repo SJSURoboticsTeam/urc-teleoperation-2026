@@ -14,9 +14,11 @@ dist-ssr
 
 # Python Virtual Environment
 venv/
+.venv
 .env/
 @.pyc
 __pycache__/
+__pycache__*
 
 
 # Editor directories and files

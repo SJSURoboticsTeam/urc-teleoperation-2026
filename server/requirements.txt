@@ -1,5 +1,8 @@
 # Requirements for mission control server
-# pip3 install -r requirements.txt
+# TO INSTALL RUN THE SCRIPTS BELOW(MAC/PI):
+# 
+#  INSTALL:  ./reqinstall.sh
+#  UPDATE: ./update.sh
 
 pyserial
 python-socketio
@@ -8,3 +11,5 @@ gevent-websocket
 asyncssh
 uvicorn
 psutil
+asyncssh
+dotenv
