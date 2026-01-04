@@ -33,10 +33,10 @@ app = socketio.ASGIApp(sio)
 # CAN buses
 print("Starting...")
 try:
-    drive_serial = CanSerial('/dev/ttyAMA0')
+    drive_serial = CanSerial('/dev/ttyAMA10')
     print("Drive connected.")
-except Exception:
-    print("FAILURE TO CONNECT DRIVE!")
+except Exception as e:
+    print("FAILURE TO CONNECT DRIVE: " + str(e))
 try:
     arm_serial = CanSerial('/dev/ttyACM1')
     print("Arm connected.")

@@ -1,7 +1,7 @@
 # silence errors about no serial and ssh connections?
 # VERY useful when testing off-prem
-silenceSerialErrors = True
-silenceSSHErrors = True
+silenceSerialErrors = False
+silenceSSHErrors = False
 # how often should metrics be broadcast?
 # ALL ARE IN SECONDS
 AntennaPollingRate = 3
