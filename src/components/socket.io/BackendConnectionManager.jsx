@@ -13,9 +13,8 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [latency, setLatency] = useState(null);
-    const [roverRSSI, setroverRSSI] = useState(null);
-    const [baseRSSI, setbaseRSSI] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
+    const [conntype, setconntype] = useState("Checking...");
   
     // Handles connection to socket.io server
     useEffect(() => {
@@ -85,6 +84,19 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
+useEffect(() => {
+  let interval;
+  // send a ping to the server every 2s to get number of connected clients from backend
+  function getConnType() {
+      if(socket.io.engine.transport.name == "websocket") {
+        setconntype("Yes")
+      } else {
+        setconntype("No")
+      }
+  }
+  interval = setInterval(getConnType, 2000); 
+  return () => clearInterval(interval);
+}, []);
 
 
   return (
@@ -128,6 +140,7 @@ useEffect(() => {
               <div>
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
             <Typography  sx={{ color: 'black' }}>Clients Connected: {numConnections}</Typography>
+            <Typography  sx={{ color: 'black' }}>Websockets: {conntype}</Typography>
               </div>
             ):
               <Typography  sx={{ color: 'black' }}>you are offline :(</Typography>}

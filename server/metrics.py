@@ -2,51 +2,95 @@
 import asyncssh
 from dotenv import load_dotenv
 import os
-import config
+import asyncio
+import config # holds config values
+import psutil
+from pathlib import Path
 
 numClients = 0
 
-# since ssh creds are being used, we use a secrets file
-# so make a file named ".env" and place in in the server/ dir
 
-## 
-## SSH_USER=???
-## SSH_PASSWORD=???
-##
+
+
+
+# get data from secrets
 load_dotenv()  # loads from .env
-
 username = os.getenv("SSH_USER")
 password = os.getenv("SSH_PASSWORD")
 
 
-async def get_rssi(hostname, username="ubnt", password=None, key_filename=None, timeout=10):
-    """
-    Async SSH using asyncssh to retrieve signal strength from a Ubiquiti device.
-
-    Returns the signal string (trimmed) or None on error.
-    """
-    try:
-        conn = await asyncssh.connect(
-            hostname,
-            username=username,
-            password=password,
-            client_keys=[key_filename] if key_filename else None,
-            known_hosts=None,
-        )
+async def asyncsshloop(sio):
+    while True:
+        if not username:
+            await sio.emit('antennastats', {'status': "ERROR: NO SSH CREDS"})
+            continue
         try:
-            result = await conn.run("mca-status | grep signal", check=False)
-            if result.stderr:
-                print(f"[{hostname}] Error: {result.stderr.strip()}")
-                return "ERROR"
-            output = result.stdout.strip()
-            return output[7:] if len(output) >= 7 else output
-        finally:
-            conn.close()
+            #print("Testing ssh...")
+            async with asyncio.timeout(config.AntennaPollingRate):
+                async with asyncssh.connect("192.168.1.25", username=username, password=password) as conn:
+                    try:
+                        #print("CONNECTED")
+                        res = await conn.run("mca-status | grep signal", check=False)
+                        dbm = res.stdout.strip()
+                        res = await conn.run("mca-status | grep wlanTxRate", check=False)
+                        txrate = res.stdout.strip()
+                        res = await conn.run("mca-status | grep wlanRxRate", check=False)
+                        rxrate = res.stdout.strip()
+                        # typical frequency is 924MHz with a channel width of 8, becoming 920-928MHz
+                        res = await conn.run("mca-status | grep centerFreq", check=False)
+                        freq = res.stdout.strip()  # 924
+                        res = await conn.run("mca-status | grep chanbw", check=False)
+                        freqwidth = res.stdout.strip()  # 8
+                        data = {
+                            'status': "GOOD",
+                            'dbm': dbm[7:],
+                            'txrate': txrate[11:],
+                            'rxrate': rxrate[11:],
+                            'freq': freq[11:],
+                            'freqwidth': freqwidth[7:]
+                        }
+                        await sio.emit('antennastats', data)
+                    except Exception as e:
+                        if (config.silenceSSHErrors == False):
+                            print("ERROR RETRIEVING SSH DATA!:", e)
+        except Exception as e:
+            if(config.silenceSSHErrors == False):
+                print("SSH connection failed:" + str(e))
+            await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
+        #print("Sleeping")
+        await asyncio.sleep(config.AntennaPollingRate)
 
-    except Exception as e:
-        if config.silenceErrorSpamming == False:
-            print(f"[{hostname}] Connection failed (is the lan working???): {e}")
-        return "OFFLINE"
+
+async def cpuloop(sio):
+    while True:
+        try:
+            #print("Testing metrics.")
+            cpu_percent = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
+            
+
+            def get_cpu_temperature():
+                with open("/sys/class/thermal/thermal_zone0/temp") as f:
+                    return int(f.read()) / 1000.0
+            model_path = Path("/proc/device-tree/model")
+            if "Raspberry Pi" in model_path.read_text(errors="ignore").strip("\x00"):
+                temp = round(get_cpu_temperature(),1)
+            else:
+                print("No RPI, instead: " + str(model_path))
+                temp = -1
+
+            data = {
+                'status': "GOOD",
+                'cpupercent': cpu_percent,
+                'rampercent': ram[2], # we want the percent
+                'cputemp': temp,
+            }
+            await sio.emit('cpustats', data)
+        except Exception as e:
+            print("Error with metrics!", e)
+            await sio.emit('pistats', {'status': "ERROR"})
+        #print("Sleeping")
+        await asyncio.sleep(config.RpiPollingRate)
 
 
 def register_metrics(sio):
@@ -67,14 +111,6 @@ def register_metrics(sio):
 
     @sio.event
     async def pingCheck(sid):
+        #unlike the others ping works better as a query and respond than otherwise
         return 1
 
-    @sio.event
-    async def roverRSSI(sid):
-        global username, password
-        return await get_rssi("192.168.1.20", username, password)
-
-    @sio.event
-    async def baseRSSI(sid):
-        global username, password
-        return await get_rssi("192.168.1.25", username, password)

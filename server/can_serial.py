@@ -19,22 +19,24 @@ class CanSerial(serial.Serial):
         time.sleep(0.2)
 
         self.write(('\r\r\r\r').encode())
+        resp = self.read_can(0.2)
+        print("REPONSE:" + repr(resp))
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found")
+            raise ValueError("Carriage Return Not Found-1")
 
         self.write(('V\r').encode())
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found")
+            raise ValueError("Carriage Return Not Found-2")
 
 
         self.write(('S8\r').encode())
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found")
+            raise ValueError("Carriage Return Not Found-3")
 
 
         self.write(('O\r').encode())
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found")
+            raise ValueError("Carriage Return Not Found-4")
 
     def read_can(self, timeout):
         self.timeout = timeout
