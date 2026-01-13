@@ -16,15 +16,39 @@ export default function DriveManualInput({
 }) {
   // Sends drive commands to server
   // constant + whenever it changes, emit
-  setInterval(() => {
+  // setInterval(() => {
+  //   let driveCommands = {
+  //     xVel: sidewaysVelocity,
+  //     yVel: forwardsVelocity,
+  //     rotVel: rotationalVelocity,
+  //     moduleConflicts: Number(moduleConflicts),
+  //   };
+  //   socket.emit("driveCommands", driveCommands);
+  // }, FrameRateConstant);
+  const handleSendVelClick = (event) => {
     let driveCommands = {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
       rotVel: rotationalVelocity,
       moduleConflicts: Number(moduleConflicts),
     };
-    socket.emit("driveCommands", driveCommands);
-  }, FrameRateConstant);
+    socket.emit("driveCommands", driveCommands)
+  }
+
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     let driveCommands = {
+  //       xVel: sidewaysVelocity,
+  //       yVel: forwardsVelocity,
+  //       rotVel: rotationalVelocity,
+  //       moduleConflicts: Number(moduleConflicts),
+  //     };
+  //     socket.emit("driveCommands", driveCommands);
+  //   }, FrameRateConstant)
+
+  //   return () => clearInterval(interval);
+  // }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts]);
+
 
   useEffect(() => {
     let panCommands = {
@@ -64,6 +88,17 @@ export default function DriveManualInput({
         }}
       >
         Homing
+      </Button>
+      <Button
+        onClick={handleSendVelClick}
+        variant="contained"
+        sx={{
+          backgroundColor: "#1976d2",
+          color: "#fff",
+          "&:hover": { backgroundColor: "#115293" },
+        }}
+      >
+        Send Vel
       </Button>
       <Box
         sx={{

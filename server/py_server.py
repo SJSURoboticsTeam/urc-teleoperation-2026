@@ -33,15 +33,15 @@ app = socketio.ASGIApp(sio)
 # CAN buses
 print("Starting...")
 try:
-    drive_serial = CanSerial('/dev/ttyAMA10')
+    drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
-try:
-    arm_serial = CanSerial('/dev/ttyACM1')
-    print("Arm connected.")
-except Exception as e:
-    print("FAILURE TO CONNECT ARM!" + str(e))
+# try:
+#     arm_serial = CanSerial('/dev/ttyACM1')
+#     print("Arm connected.")
+# except Exception as e:
+#     print("FAILURE TO CONNECT ARM!" + str(e))
 
 # =================== Metrics Event Handlers ====================
 metrics.register_metrics(sio)
@@ -61,15 +61,23 @@ async def driveCommands(sid, data):
         # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
         x_vel_scaled = int(data['xVel'] * (2 ** 12))
         y_vel_scaled = int(data['yVel'] * (2 ** 12))
+        # x_vel_scaled = int(data['xVel'] * (2 ** 12)) & 0xFFFF
+        # y_vel_scaled = int(data['yVel'] * (2 ** 12)) & 0xFFFF
+
+        # print(x_vel_scaled)
+        # print(y_vel_scaled)
         
         # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
         rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
+
         # Convert to 16-bit signed hex
         x_vel = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         y_vel = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
+        mod_conf = data['moduleConflicts']
 
-        can_msg = f't{send_ID["SET_CHASSIS_VELOCITIES"]}6{x_vel}{y_vel}{rot_vel}\r'
+        can_msg = f't{send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}01\r'
+        # can_msg = 't00C700112233445501\r'
         # drive_serial.write is blocking, run in thread
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Drive command sent: {can_msg}')
@@ -81,7 +89,7 @@ async def driveCommands(sid, data):
 @sio.event
 async def driveHoming(sid):
     try:
-        can_msg = f't{send_ID["HOMING_SEQUENCE"]}80000000000000000\r'
+        can_msg = f't{send_ID["HOMING_SEQUENCE"]}0\r'
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Homing initiated')
     except Exception as e:
@@ -117,7 +125,7 @@ def parse_drive_data(data):
             if string_data[13] in "89ABCDEF":
                 rot_vel = rot_vel - math.pow(2, 16)
 
-            print(f"x vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
+            print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
         
         elif address == receive_ID['HEARTBEAT_REPLY']:
             print("Heartbeat Reply")
@@ -147,9 +155,9 @@ def parse_drive_data(data):
 
             print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
         
-        elif address == receive_ID['CONFIG']:
-            setting_data = int(string_data[5:13],16)
-            print(f"setting data: {setting_data} \nsetting ID: {string_data[13:15]}")
+        # elif address == receive_ID['CONFIG']:
+        #     setting_data = int(string_data[5:13],16)
+        #     print(f"setting data: {setting_data} \nsetting ID: {string_data[13:15]}")
 
     except Exception as e:
         print(f'Error parsing drive data: {e}')

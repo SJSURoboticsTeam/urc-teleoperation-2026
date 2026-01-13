@@ -22,21 +22,21 @@ class CanSerial(serial.Serial):
         resp = self.read_can(0.2)
         print("REPONSE:" + repr(resp))
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-1")
+            raise ValueError("Carriage Return Not Found-RESPONSE")
 
         self.write(('V\r').encode())
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-2")
+            raise ValueError("Carriage Return Not Found-VERSION")
 
 
         self.write(('S8\r').encode())
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-3")
+            raise ValueError("Carriage Return Not Found-SPEED")
 
 
         self.write(('O\r').encode())
         if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-4")
+            raise ValueError("Carriage Return Not Found-PORT OPEN")
 
     def read_can(self, timeout):
         self.timeout = timeout

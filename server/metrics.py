@@ -87,7 +87,7 @@ async def cpuloop(sio):
             }
             await sio.emit('cpustats', data)
         except Exception as e:
-            print("Error with metrics!", e)
+            # print("Error with metrics!", e)
             await sio.emit('pistats', {'status': "ERROR"})
         #print("Sleeping")
         await asyncio.sleep(config.RpiPollingRate)

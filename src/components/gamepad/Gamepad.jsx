@@ -48,9 +48,9 @@ export default function GamepadPanel({
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
         const newVel = {
-          lx: Math.round(gp.axes[0]) || 0,
-          ly: -1 * Math.round(gp.axes[1] || 0),
-          rx: Math.round(gp.axes[2]) || 0,
+          lx: Math.round(4 * gp.axes[0] * 100) / 100 || 0,
+          ly: - Math.round(4 * gp.axes[1] * 100) / 100 || 0,
+          rx: Math.round(4 * gp.axes[2] * 100) / 100 || 0,
         };
         setDriveVelocities((prev) => {
           if (
