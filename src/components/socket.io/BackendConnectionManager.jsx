@@ -1,5 +1,5 @@
 import { socket } from "./socket";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -7,33 +7,15 @@ import ButtonGroup from '@mui/material/ButtonGroup';
 import DnsIcon from '@mui/icons-material/Dns';
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
+import { useSocketStatus } from './socket';
 
 
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
-    const [isConnected, setIsConnected] = useState(socket.connected)
+    const isConnected = useSocketStatus();
     const [latency, setLatency] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
     const [conntype, setconntype] = useState("Checking...");
-  
-    // Handles connection to socket.io server
-    useEffect(() => {
-      function onConnect() {
-        setIsConnected(true);
-      }
-  
-      function onDisconnect() {
-      setIsConnected(false);
-  }
-  
-      socket.on('connect', onConnect)
-      socket.on('disconnect', onDisconnect);
-  
-      return () => {
-        socket.off('connect', onConnect)
-        socket.off('disconnect', onDisconnect);
-      }
-    }, [])
   
   function connect() {
     socket.connect();
