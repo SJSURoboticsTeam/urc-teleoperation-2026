@@ -68,21 +68,19 @@ async def cpuloop(sio):
             cpu_percent = psutil.cpu_percent(interval=1)
             ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
             
-
-            def get_cpu_temperature():
-                with open("/sys/class/thermal/thermal_zone0/temp") as f:
-                    return int(f.read()) / 1000.0
             model_path = Path("/proc/device-tree/model")
-            if "Raspberry Pi" in model_path.read_text(errors="ignore").strip("\x00"):
-                temp = round(get_cpu_temperature(),1)
-            else:
-                print("No RPI, instead: " + str(model_path))
-                temp = -1
+            temp = -1
+            try:
+                if "Raspberry Pi" in model_path.read_text(errors="ignore").strip("\x00"):
+                    with open("/sys/class/thermal/thermal_zone0/temp") as f:
+                        temp = int(f.read()) / 1000.0
+            except:
+                print("No RPI found, using dev mode ignore")
 
             data = {
                 'status': "GOOD",
                 'cpupercent': cpu_percent,
-                'rampercent': ram[2], # we want the percent
+                'rampercent': ram[2], # we want the percent, see comment above for full info set
                 'cputemp': temp,
             }
             await sio.emit('cpustats', data)
