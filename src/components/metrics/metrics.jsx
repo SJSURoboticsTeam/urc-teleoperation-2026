@@ -4,11 +4,12 @@ import Typography from '@mui/material/Typography';
 import InfoIcon from '@mui/icons-material/Info';
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
+import { useSocketStatus } from '../socket.io/socket';
 
 
 export default function Metrics({ openPane, setOpenPane }) {
   
-    const [isConnected, setIsConnected] = useState(socket.connected)
+    const isConnected = useSocketStatus();
     // antenna telemtry
     const[antenna, setantennadata] = useState({
       status: "NO DATA YET",
@@ -25,26 +26,7 @@ export default function Metrics({ openPane, setOpenPane }) {
       rampercent : null,
       cputemp: null,
     })
-  
-    // Handles connection to socket.io server
-    // this is still needed in this file since if the server goes down, so does all the metrics
-    useEffect(() => {
-      function onConnect() {
-        setIsConnected(true);
-      }
-  
-      function onDisconnect() {
-      setIsConnected(false);
-  }
-  
-      socket.on('connect', onConnect)
-      socket.on('disconnect', onDisconnect);
-  
-      return () => {
-        socket.off('connect', onConnect)
-        socket.off('disconnect', onDisconnect);
-      }
-    }, [])
+
   
 const [infoStatus,setinfoStatus] = useState("");
 
@@ -60,7 +42,7 @@ useEffect( () => {
 
 useEffect(() => {
   const handler = (data) => {
-    // console.log("antenna data:", data);
+    console.log("antenna data:", data);
       setantennadata({
         status: data.status,
         roverRSSI: data.dbm,
