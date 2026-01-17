@@ -31,7 +31,7 @@ function App() {
   const [track,setTrack]=useState(0);
   const [roll, setRoll]=useState(0);
 
-  const [moduleConflicts,setModuleConflicts]=useState(false)
+  const [moduleConflicts,setModuleConflicts]=useState(0)
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx);

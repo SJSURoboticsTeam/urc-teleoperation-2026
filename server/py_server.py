@@ -55,17 +55,9 @@ cpu_started = False
 @sio.event
 async def driveCommands(sid, data):
     try:
-        # Equivalent RPMs into meters/sec (this will be a float)
-        # Convert float * 2^12, truncate or round
-
         # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
         x_vel_scaled = int(data['xVel'] * (2 ** 12))
         y_vel_scaled = int(data['yVel'] * (2 ** 12))
-        # x_vel_scaled = int(data['xVel'] * (2 ** 12)) & 0xFFFF
-        # y_vel_scaled = int(data['yVel'] * (2 ** 12)) & 0xFFFF
-
-        # print(x_vel_scaled)
-        # print(y_vel_scaled)
         
         # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
         rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
@@ -76,8 +68,8 @@ async def driveCommands(sid, data):
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         mod_conf = data['moduleConflicts']
 
-        can_msg = f't{send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}01\r'
-        # can_msg = 't00C700112233445501\r'
+        can_msg = f't{send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
+
         # drive_serial.write is blocking, run in thread
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Drive command sent: {can_msg}')
@@ -200,7 +192,6 @@ async def read_drive_can_loop():
 
 # =================== Start Server ===================
 print("Server Starting...")
-
 
 @sio.event
 async def connect(sid, environ):
