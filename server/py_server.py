@@ -7,7 +7,7 @@ import time
 import uvicorn
 from metrics import asyncsshloop, cpuloop
 
-send_ID = {
+drive_send_ID = {
     "SET_CHASSIS_VELOCITIES": '00C',
     "HEARTBEAT": '00E',
     "HOMING_SEQUENCE": '110',
@@ -17,7 +17,7 @@ send_ID = {
     "SET_MAST_GIMBAL_OFFSET": '300',
 }
 
-receive_ID = {
+drive_receive_ID = {
     "SET_VELOCITIES_RESPONSE": '00D',
     "HEARTBEAT_REPLY": '00F',
     "HOMING_SEQUENCE_RESPONSE": '111',
@@ -26,6 +26,38 @@ receive_ID = {
     "CONFIG_ACK": '11A',
 }
 
+# Track Servo Address: 0x120 
+# Shoulder Servo Address: 0x121,
+# Elbow Servo Address: 0x122,
+# Wrist EF1 Servo Address: 0x123,
+# Wrist EF2 Servo Address: 0x124,
+# Clamp Servo Address: 0x125
+
+# Receive = Servo Address + 0x100
+arm_send_ID = {
+    "STOP": '00C',
+    "HEARTBEAT": '00E',
+    "HOMING_SEQUENCE": '111',
+    # Will handle set and read servo position and velocity
+    # PID (send in case defaults are wrong) when getting pid constants, if the defaults are not good, we can callibrate
+    "TRACK": '120',
+    "SHOULDER": '121',
+    "ELBOW": '122',
+    "WRIST_EF1": '123',
+    "WRIST_EF2": '124',
+    "CLAMP": '125',
+}
+
+arm_receive_ID = {
+    "RECEIVE_STOP": "00D",
+    # Heartbeat response, Homing response, return ack, position, velocity, PID acks
+    "TRACK": '220',
+    "SHOULDER": '221',
+    "ELBOW": '222',
+    "WRIST_EF1": '223',
+    "WRIST_EF2": '224',
+    "CLAMP": '225',
+}
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 app = socketio.ASGIApp(sio)
@@ -68,7 +100,7 @@ async def driveCommands(sid, data):
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         mod_conf = data['moduleConflicts']
 
-        can_msg = f't{send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
+        can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
 
         # drive_serial.write is blocking, run in thread
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
@@ -81,7 +113,7 @@ async def driveCommands(sid, data):
 @sio.event
 async def driveHoming(sid):
     try:
-        can_msg = f't{send_ID["HOMING_SEQUENCE"]}0\r'
+        can_msg = f't{drive_send_ID["HOMING_SEQUENCE"]}0\r'
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Homing initiated')
     except Exception as e:
@@ -101,7 +133,7 @@ def parse_drive_data(data):
             return
         address = string_data[1:4]
 
-        if address == receive_ID['SET_VELOCITIES_RESPONSE']:
+        if address == drive_receive_ID['SET_VELOCITIES_RESPONSE']:
             x_vel = int(string_data[5:9],16)
             
             if string_data[5] in "89ABCDEF":
@@ -119,17 +151,17 @@ def parse_drive_data(data):
 
             print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
         
-        elif address == receive_ID['HEARTBEAT_REPLY']:
+        elif address == drive_receive_ID['HEARTBEAT_REPLY']:
             print("Heartbeat Reply")
 
-        elif address == receive_ID['HOMING_SEQUENCE_RESPONSE']:
+        elif address == drive_receive_ID['HOMING_SEQUENCE_RESPONSE']:
             print("Homing Reply")
 
-        elif address == receive_ID['RETURN_OFFSET']:
+        elif address == drive_receive_ID['RETURN_OFFSET']:
             angle_offset = int(string_data[5:13],16)
             print(f"angle offset: {angle_offset} \nmodule position: {string_data[13:15]}")
 
-        elif address == receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
+        elif address == drive_receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
             x_vel = int(string_data[5:9],16)
             
             if string_data[5] in "89ABCDEF":
@@ -147,7 +179,7 @@ def parse_drive_data(data):
 
             print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
         
-        # elif address == receive_ID['CONFIG']:
+        # elif address == drive_receive_ID['CONFIG']:
         #     setting_data = int(string_data[5:13],16)
         #     print(f"setting data: {setting_data} \nsetting ID: {string_data[13:15]}")
 
