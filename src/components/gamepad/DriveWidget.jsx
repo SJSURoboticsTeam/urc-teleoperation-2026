@@ -1,5 +1,5 @@
 import "react-resizable/css/styles.css"; // Import default styles
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -15,6 +15,8 @@ export default function DriveManualInput({
   panHeightVelocity,
   panWidthVelocity,
 }) {
+
+  // const prevDriveCommandsRef = useRef(null);
   // Sends drive commands to server at the frame rate constant
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,6 +26,15 @@ export default function DriveManualInput({
         rotVel: rotationalVelocity,
         moduleConflicts: Number(moduleConflicts),
       };
+      // console.log("in interval")
+      // console.log(prevDriveCommandsRef.current)
+      // console.log(driveCommands)
+      // // Only emit if the values change
+      // if (JSON.stringify(prevDriveCommandsRef.current) !== JSON.stringify(driveCommands)) {
+      //   console.log("emitting")
+      //   socket.emit("driveCommands", driveCommands);
+      //   prevDriveCommandsRef.current = driveCommands;
+      // }
       socket.emit("driveCommands", driveCommands);
     }, FrameRateConstant)
 
@@ -42,6 +53,16 @@ export default function DriveManualInput({
   const handleClick = (event) => {
     socket.emit("driveHoming");
   };
+
+  const handleManualClick = (event) => {
+    let driveCommands = {
+        xVel: sidewaysVelocity,
+        yVel: forwardsVelocity,
+        rotVel: rotationalVelocity,
+        moduleConflicts: Number(moduleConflicts),
+      };
+      socket.emit("driveCommands", driveCommands);
+  }
 
   const velocities = [
     { id: forwardsVelocity, name: "X Vel" },
@@ -69,6 +90,17 @@ export default function DriveManualInput({
         }}
       >
         Homing
+      </Button>
+      <Button
+        onClick={handleManualClick}
+        variant="contained"
+        sx={{
+          backgroundColor: "#1976d2",
+          color: "#fff",
+          "&:hover": { backgroundColor: "#115293" },
+        }}
+      >
+        Manual
       </Button>
       <Box
         sx={{

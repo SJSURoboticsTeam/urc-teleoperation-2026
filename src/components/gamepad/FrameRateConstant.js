@@ -1,1 +1,1 @@
-export const FrameRateConstant = 500; // every 200ms
+export const FrameRateConstant = 2000; // every 200ms

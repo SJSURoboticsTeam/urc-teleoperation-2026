@@ -12,6 +12,7 @@ time.sleep(5)
 
 while(1):
     try:
+        print("sending")
         can_msg = f't00C70000000000000\r'
         drive_serial.write(can_msg.encode())
     except Exception as e:

@@ -5,7 +5,7 @@ import socketio
 import math
 import time
 import uvicorn
-from metrics import asyncsshloop, cpuloop
+# from metrics import asyncsshloop, cpuloop
 
 drive_send_ID = {
     "SET_CHASSIS_VELOCITIES": '00C',
@@ -62,13 +62,22 @@ arm_receive_ID = {
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 app = socketio.ASGIApp(sio)
 
+@sio.event
+serialDropDown():
+
 # CAN buses
+@sio.event
+startDrive():
 print("Starting...")
 try:
-    drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
+    drive_serial = CanSerial('/dev/tty.usbserial-59760082351')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
+
+@sio.event
+startArm():
+
 # try:
 #     arm_serial = CanSerial('/dev/ttyACM1')
 #     print("Arm connected.")
@@ -76,7 +85,7 @@ except Exception as e:
 #     print("FAILURE TO CONNECT ARM!" + str(e))
 
 # =================== Metrics Event Handlers ====================
-metrics.register_metrics(sio)
+# metrics.register_metrics(sio)
 
 # Background task guard
 drive_task_started = False
@@ -87,6 +96,7 @@ cpu_started = False
 @sio.event
 async def driveCommands(sid, data):
     try:
+        print(data)
         # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
         x_vel_scaled = int(data['xVel'] * (2 ** 12))
         y_vel_scaled = int(data['yVel'] * (2 ** 12))
@@ -100,7 +110,7 @@ async def driveCommands(sid, data):
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         mod_conf = data['moduleConflicts']
 
-        can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
+        can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}01\r'
 
         # drive_serial.write is blocking, run in thread
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
@@ -229,7 +239,7 @@ print("Server Starting...")
 async def connect(sid, environ):
     """On first client connect, start background CAN read loop."""
     global drive_task_started
-    global async_ssh_started
+    # global async_ssh_started
     global cpu_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -242,12 +252,12 @@ async def connect(sid, environ):
     if not drive_task_started:
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop)
-    if not async_ssh_started:
-        async_ssh_started = True
-        sio.start_background_task(asyncsshloop,sio)
-    if not cpu_started:
-        cpu_started = True
-        sio.start_background_task(cpuloop,sio)
+    # if not async_ssh_started:
+    #     async_ssh_started = True
+    #     sio.start_background_task(asyncsshloop,sio)
+    # if not cpu_started:
+    #     cpu_started = True
+    #     sio.start_background_task(cpuloop,sio)
 @sio.event
 async def disconnect(sid):
     global numClients
