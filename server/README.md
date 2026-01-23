@@ -1,4 +1,4 @@
-#SERVER INSTALL INSTRUCTIONS
+# SERVER INSTALL INSTRUCTIONS
 
 ## Dependencies Install(To Run)
 Since pip packages work best when virtually installed, you have to keep referencing a virtual enviroment. Scripts are provided below to do exactly this.
@@ -52,3 +52,16 @@ ssh robo@192.168.1.20
 ssh robo@192.168.1.25  
 ```
   
+## CAN Things to Keep track of
+if receiving buffer overload when testing CAN, this means that there is no one ACKing the messages that you are sending, filling up the buffer on the CAN bus.
+- to fix this, have a receiving CAN opener that can hear the messages on the bus
+
+resistor in "1" position on rover
+
+resistor in "on" position off rover
+
+```ls /dev/tty.*``` to check serial port
+
+can bit rate of 1Mbit
+
+make sure CAN ids are correct

@@ -31,13 +31,13 @@ function App() {
   const [track,setTrack]=useState(0);
   const [roll, setRoll]=useState(0);
 
-  const [moduleConflicts,setModuleConflicts]=useState(false)
+  const [moduleConflicts,setModuleConflicts]=useState(0)
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx);
     setForwardVelocity(ly);
     setRotationalVelocity(rx);
-    console.log(lx,ly,rx)
+    // console.log(lx,ly,rx)
   };
   const handlePanVelocitiesChange=({px,py})=>{
     setPanHeightVelocity(py.toFixed(2));
@@ -46,7 +46,7 @@ function App() {
 
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
-    console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
+    // console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
     setArmConnectedOne(armConnectedOne)
     setEffector(Effector)
     setElbow(Elbow)

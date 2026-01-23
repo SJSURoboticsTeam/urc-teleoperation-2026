@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import { socket } from "../socket.io/socket.jsx";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
+
 export default function DriveManualInput({
   sidewaysVelocity,
   forwardsVelocity,
@@ -14,17 +15,21 @@ export default function DriveManualInput({
   panHeightVelocity,
   panWidthVelocity,
 }) {
-  // Sends drive commands to server
-  // constant + whenever it changes, emit
-  setInterval(() => {
-    let driveCommands = {
-      xVel: sidewaysVelocity,
-      yVel: forwardsVelocity,
-      rotVel: rotationalVelocity,
-      moduleConflicts: Number(moduleConflicts),
-    };
-    socket.emit("driveCommands", driveCommands);
-  }, FrameRateConstant);
+  // Sends drive commands to server at the frame rate constant
+  useEffect(() => {
+    const interval = setInterval(() => {
+      let driveCommands = {
+        xVel: sidewaysVelocity,
+        yVel: forwardsVelocity,
+        rotVel: rotationalVelocity,
+        moduleConflicts: Number(moduleConflicts),
+      };
+      socket.emit("driveCommands", driveCommands);
+    }, FrameRateConstant)
+
+    return () => clearInterval(interval);
+  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts]);
+
 
   useEffect(() => {
     let panCommands = {
@@ -39,8 +44,8 @@ export default function DriveManualInput({
   };
 
   const velocities = [
-    { id: sidewaysVelocity, name: "X Vel" },
-    { id: forwardsVelocity, name: "Y Vel" },
+    { id: forwardsVelocity, name: "X Vel" },
+    { id: sidewaysVelocity, name: "Y Vel" },
     { id: rotationalVelocity, name: "Rotational" },
     { id: panWidthVelocity, name: "Pan W" },
     { id: panHeightVelocity, name: "Pan H" },
