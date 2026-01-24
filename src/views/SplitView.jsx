@@ -5,7 +5,7 @@ import CameraPane from '../components/cameras/CameraPane'
 
 export default function DriveView({CurrentView}) {
   const containerRef = useRef(null)
-  const [leftPct, setLeftPct] = useState(60) // left pane width percentage
+  const [leftPct, setLeftPct] = useState(65) // left pane width percentage
 
   const startDrag = useCallback((e) => {
     // Use pointer events so touch and mouse work

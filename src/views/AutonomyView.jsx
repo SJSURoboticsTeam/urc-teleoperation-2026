@@ -11,7 +11,9 @@ export default function AutonomyView() {
       {/* left pane: width controlled by leftPct */}
       {/* right pane: takes remaining space */}
       <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
-        <AutonomyControls />
+        <div className="flex flex-row items-center justify-center gap-6">
+          <AutonomyControls />
+          </div>
         <Map />
       </div>
     </div>

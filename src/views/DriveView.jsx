@@ -8,8 +8,6 @@ export default function DriveComponents({sidewaysVelocity, forwardsVelocity, rot
     return (
       // top-level flex row that fills available height
       <div ref={containerRef} className="flex flex-1 h-full min-h-0" style={{ userSelect: 'none' }}>
-        {/* left pane: width controlled by leftPct */}
-        {/* right pane: takes remaining space */}
         <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
             <div className="flex flex-row items-center justify-center gap-6">
               <DriveManualInput sidewaysVelocity={sidewaysVelocity}

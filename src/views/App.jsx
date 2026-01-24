@@ -64,14 +64,14 @@ function App() {
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
-      case 'ArmView':
-        return <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/>
+      case "ArmView":
+        return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } />;
       case "DriveView":
         return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} /> } />;
       case "SpeedTestView":
         return <SpeedTestView />;
       case "ScienceView":
-        return <ScienceView />;
+        return <SplitView CurrentView={<ScienceView /> } />;
       case "AutonomyView":
         return <SplitView CurrentView={<AutonomyView/> } />;
       case "MapView":
