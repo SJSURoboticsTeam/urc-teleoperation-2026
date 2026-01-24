@@ -73,7 +73,7 @@ function App() {
       case "ScienceView":
         return <ScienceView />;
       case "AutonomyView":
-        return <AutonomyView />;
+        return <SplitView CurrentView={<AutonomyView/> } />;
       case "MapView":
         return <FullscreenMap />;
       case "RecordingsView":

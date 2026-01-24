@@ -97,6 +97,6 @@ export default function Map() {
     };
   }, []);
 
-  // Use flex utilities so this div can grow/shrink inside a flex column
-  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  // Use full height so the map fills any explicit-height parent container
+  return <div ref={mapContainer} className="w-full h-full bg-gray-200" />;
 }
