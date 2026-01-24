@@ -1,5 +1,5 @@
 import 'react-resizable/css/styles.css' // Import default styles
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, isValidElement } from 'react'
 import DriveManualInput from '../components/gamepad/DriveWidget'
 import CameraPane from '../components/cameras/CameraPane'
 import Map from '../components/ui/Map'
@@ -41,7 +41,11 @@ export default function DriveView({CurrentView}) {
     <div ref={containerRef} className="flex flex-1 h-full min-h-0" style={{ userSelect: 'none' }}>
       {/* left pane: width controlled by leftPct */}
       <div className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0" style={{ flex: `0 0 ${leftPct}%` }}>
-        <CurrentView/>
+        {isValidElement(CurrentView) ? (
+          CurrentView
+        ) : typeof CurrentView === 'function' ? (
+          <CurrentView />
+        ) : null}
 
       </div>
 

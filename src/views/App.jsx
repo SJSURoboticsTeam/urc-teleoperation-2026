@@ -1,5 +1,5 @@
 // React imports
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
