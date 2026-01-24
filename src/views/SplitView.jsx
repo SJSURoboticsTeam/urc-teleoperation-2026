@@ -1,9 +1,7 @@
 import 'react-resizable/css/styles.css' // Import default styles
 import { useRef, useState, useCallback, isValidElement } from 'react'
-import DriveManualInput from '../components/gamepad/DriveWidget'
 import CameraPane from '../components/cameras/CameraPane'
-import Map from '../components/ui/Map'
-import Wheel from '../components/ui/Wheel'
+
 
 export default function DriveView({CurrentView}) {
   const containerRef = useRef(null)
@@ -46,8 +44,10 @@ export default function DriveView({CurrentView}) {
         ) : typeof CurrentView === 'function' ? (
           <CurrentView />
         ) : null}
+        </div>
 
-      </div>
+
+
 
       {/* draggable divider: larger hit area with visible thin line */}
       <div
