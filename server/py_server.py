@@ -67,7 +67,7 @@ print("Starting...")
 try:
     # RX TESTER /dev/tty.usbserial-59760082211
     # ROBOT /dev/tty.usbserial-59760073491
-    drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
+    drive_serial = CanSerial('/dev/tty.usbserial-59760082211')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
@@ -96,7 +96,7 @@ async def driveCommands(sid, data):
         
         # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
         rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
-        mod_conf_scaled = int(1)
+        mod_conf_scaled = int(data['moduleConflicts'])
 
         # Convert to 16-bit signed hex
         x_vel = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
