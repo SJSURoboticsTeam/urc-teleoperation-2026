@@ -55,8 +55,8 @@ function App() {
     setRoll(Roll)
     setTrack(Track)
     setShoulder(Shoulder)
-    console.log(armConnectedOne)
-    console.log(effector,pitch,roll,elbow,shoulder,track)
+    //console.log(armConnectedOne)
+    //console.log(effector,pitch,roll,elbow,shoulder,track)
   }
   
 
