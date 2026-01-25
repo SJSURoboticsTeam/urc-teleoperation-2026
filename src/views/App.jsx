@@ -1,5 +1,5 @@
 // React imports
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -7,13 +7,14 @@ import CssBaseline from "@mui/material/CssBaseline";
 // Local imports
 //import "./App.css";
 import TopAppBar from "../components/ui/TopAppBar";
-import DriveView from "./DriveView";
+import DriveComponents from "./DriveView";
 import ArmView from "./ArmView";
 import SpeedTestView from "./SpeedTestView";
 import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
 import FullscreenMap from "./MapView";
 import RecordingsView from "./Recordings";
+import SplitView from "./SplitView"
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
@@ -54,8 +55,8 @@ function App() {
     setRoll(Roll)
     setTrack(Track)
     setShoulder(Shoulder)
-    console.log(armConnectedOne)
-    console.log(effector,pitch,roll,elbow,shoulder,track)
+    //console.log(armConnectedOne)
+    //console.log(effector,pitch,roll,elbow,shoulder,track)
   }
   
 
@@ -63,16 +64,16 @@ function App() {
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
-      case 'ArmView':
-        return <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/>
+      case "ArmView":
+        return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } />;
       case "DriveView":
-        return <DriveView moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity}/>;
+        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} /> } />;
       case "SpeedTestView":
         return <SpeedTestView />;
       case "ScienceView":
-        return <ScienceView />;
+        return <SplitView CurrentView={<ScienceView /> } />;
       case "AutonomyView":
-        return <AutonomyView />;
+        return <SplitView CurrentView={<AutonomyView/> } />;
       case "MapView":
         return <FullscreenMap />;
       case "RecordingsView":
