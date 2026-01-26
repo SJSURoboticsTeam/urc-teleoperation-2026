@@ -26,6 +26,7 @@ drive_receive_ID = {
     "CONFIG_ACK": '11A',
 }
 
+
 # Track Servo Address: 0x120 
 # Shoulder Servo Address: 0x121,
 # Elbow Servo Address: 0x122,
@@ -122,8 +123,98 @@ async def driveHoming(sid):
 
 # =================== Client Arm Event Handlers =====================
 
+@sio.event
+async def armCommands(sid, data):
+    
+    elbow = int(data.controllerElbow).to_bytes(4, 'big', signed=True).hex()
+    shoulder = int(data.controllerShoulder).to_bytes(4, 'big', signed=True).hex()
+    track = int(data.controllerTrack).to_bytes(4, 'big', signed=True).hex()
+    pitch = int(data.controllerPitch).to_bytes(4, 'big', signed=True).hex()
+    roll = int(data.controllerRoll).to_bytes(4, 'big', signed=True).hex()
+    effector = int(data.controllerEffector).to_bytes(4, 'big', signed=True).hex()
 
-# =================== CAN Data Parsing & Emit =======================
+    can_msg = f't{arm_send_ID["ELBOW"]}312{elbow}\r'
+    await asyncio.to_thread(drive_serial.write, can_msg.encode())
+    
+    can_msg = f't{arm_send_ID["SHOULDER"]}312{shoulder}\r'
+    await asyncio.to_thread(drive_serial.write, can_msg.encode())
+
+    can_msg = f't{arm_send_ID["TRACK"]}312{track}\r'
+    await asyncio.to_thread(drive_serial.write, can_msg.encode())
+
+# =================== DRIVE CAN Data Parsing & Emit =======================
+
+drive_parse_functions = {
+    drive_receive_ID['SET_VELOCITIES_RESPONSE']:                lambda data: parse_drive_set_velocities_response(data),
+    drive_receive_ID['HEARTBEAT_REPLY']:                        lambda _: parse_heartbeat_reply(),
+    drive_receive_ID['HOMING_SEQUENCE_RESPONSE']:               lambda _: parse_homing_response(),
+    drive_receive_ID['RETURN_OFFSET']:                          lambda data: parse_return_offset(data),
+    drive_receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:    lambda data: parse_return_estimated_chassis_velocities(data),
+    drive_receive_ID['CONFIG_ACK']:                             lambda data: parse_config_ack(data)
+}
+
+def parse_drive_set_velocities_response(data):
+    x_vel = int(data[5:9],16)
+            
+    if x_vel & 0x8000:
+        x_vel = x_vel - 2 ** 16
+
+    y_vel = int(data[9:13],16)
+    
+    if y_vel & 0x8000:
+        y_vel = y_vel - 2 ** 16
+
+    rot_vel = int(data[13:17],16)
+    
+    if rot_vel & 0x8000:
+        rot_vel = rot_vel - 2 ** 16
+
+    print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel: {rot_vel} \ntransition type: {data[17:]}")
+
+def parse_heartbeat_reply():
+    print("Heartbeat Reply")
+
+def parse_homing_response():
+    print('Homing Reply')
+
+def parse_return_offset(data):
+    angle_offset = int(data[5:13],16)
+    print(f"angle offset: {angle_offset} \nmodule position: {data[13:15]}")
+
+def parse_return_estimated_chassis_velocities(data):
+    x_vel = int(data[5:9],16)
+            
+    if x_vel & 0x8000:
+        x_vel = x_vel - 2 ** 16
+
+    y_vel = int(data[9:13],16)
+    
+    if y_vel & 0x8000:
+        y_vel = y_vel - 2 ** 16
+
+    rot_vel = int(data[13:],16)
+    
+    if rot_vel & 0x8000:
+        rot_vel = rot_vel - 2 ** 16
+
+    print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel: {rot_vel}")
+
+def parse_config_ack(data):
+    setting_ID = data[13:]
+    setting_data = int(data[5:13],16)
+
+    if setting_ID == '00':
+        print(f'Setting ID: {setting_ID}\nMicroseconds: {setting_data}')
+
+    elif setting_ID == '01':
+        print(f'Setting ID: {setting_ID}\nAngel Tolerance: {setting_data / 2 ** 22}')
+
+    elif setting_ID == '02':
+        print(f'Setting ID: {setting_ID}\nPredicted Max Time Interpolating: {setting_data}')
+
+    elif setting_ID == '03':
+        print(f'Setting ID: {setting_ID}\nMax Difference in Angle to Try and Interpolate: {setting_data / 2 ** 22}')
+
 
 def parse_drive_data(data):
     try:
@@ -131,67 +222,54 @@ def parse_drive_data(data):
 
         if len(string_data) < 5:
             return
+        
         address = string_data[1:4]
-
-        if address == drive_receive_ID['SET_VELOCITIES_RESPONSE']:
-            x_vel = int(string_data[5:9],16)
-            
-            if string_data[5] in "89ABCDEF":
-                x_vel = x_vel - math.pow(2, 16)
-
-            y_vel = int(string_data[9:13],16)
-            
-            if string_data[9] in "89ABCDEF":
-                y_vel = y_vel - math.pow(2, 16)
-
-            rot_vel = int(string_data[13:],16)
-            
-            if string_data[13] in "89ABCDEF":
-                rot_vel = rot_vel - math.pow(2, 16)
-
-            print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
+        drive_parse_functions[address](string_data)
         
-        elif address == drive_receive_ID['HEARTBEAT_REPLY']:
-            print("Heartbeat Reply")
-
-        elif address == drive_receive_ID['HOMING_SEQUENCE_RESPONSE']:
-            print("Homing Reply")
-
-        elif address == drive_receive_ID['RETURN_OFFSET']:
-            angle_offset = int(string_data[5:13],16)
-            print(f"angle offset: {angle_offset} \nmodule position: {string_data[13:15]}")
-
-        elif address == drive_receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
-            x_vel = int(string_data[5:9],16)
-            
-            if string_data[5] in "89ABCDEF":
-                x_vel = x_vel - math.pow(2, 16)
-
-            y_vel = int(string_data[9:13],16)
-            
-            if string_data[9] in "89ABCDEF":
-                y_vel = y_vel - math.pow(2, 16)
-
-            rot_vel = int(string_data[13:],16)
-            
-            if string_data[13] in "89ABCDEF":
-                rot_vel = rot_vel - math.pow(2, 16)
-
-            print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
-        
-        # elif address == drive_receive_ID['CONFIG']:
-        #     setting_data = int(string_data[5:13],16)
-        #     print(f"setting data: {setting_data} \nsetting ID: {string_data[13:15]}")
-
     except Exception as e:
         print(f'Error parsing drive data: {e}')
 
-# def parse_arm_data(data):
-#     try:
-#         payload = {"armStatus": "example"}
-#         sio.emit('armUpdate', payload)
-#     except Exception as e:
-#         print(f'Error parsing armr data: {e}')
+# =================== ARM CAN Data Parsing & Emit =======================
+
+arm_parse_functions = {
+    arm_receive_ID['RECEIVE_STOP']: lambda _: parse_receive_stop(),
+    arm_receive_ID['TRACK']:        lambda data: parse_arm_servo(data),
+    arm_receive_ID['ELBOW']:        lambda data: parse_arm_servo(data),
+    arm_receive_ID['WRIST_EF1']:    lambda data: parse_arm_servo(data),
+    arm_receive_ID['WRIST_EF2']:    lambda data: parse_arm_servo(data),
+    arm_receive_ID['CLAMP']:        lambda data: parse_arm_servo(data)
+}
+
+def parse_receive_stop():
+    print("Received Arm Stop")
+
+def parse_arm_servo(data):
+
+    address_map = {
+        "220": 'Track',
+        "221": 'Shoulder',
+        "222": 'Elbow',
+        "223": 'Wrist EF1',
+        "224": 'Wrist EF2',
+        "225": 'Clamp'
+    }
+
+    print(f'{address_map[data[1:4]]} servo position set reply')
+    
+
+def parse_arm_data(data):
+    try:
+        string_data = data.decode()
+
+        if len(string_data) < 5:
+            return
+
+        address = string_data[1:4]
+        arm_parse_functions[address](data)
+    except Exception as e:
+        print(f'Error parsing arm data: {e}')
+    
+
 
 # =================== Background Threads ===================
 async def read_drive_can_loop():
