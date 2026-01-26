@@ -66,7 +66,9 @@ app = socketio.ASGIApp(sio)
 # CAN buses
 print("Starting...")
 try:
-    drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
+    # RX TESTER /dev/tty.usbserial-59760082211
+    # ROBOT /dev/tty.usbserial-59760073491
+    drive_serial = CanSerial('/dev/tty.usbserial-59760082211')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
@@ -83,6 +85,7 @@ metrics.register_metrics(sio)
 drive_task_started = False
 async_ssh_started = False
 cpu_started = False
+can_msg_count = 0
 
 # =================== Client Drive Event Handlers ====================
 @sio.event
@@ -94,18 +97,22 @@ async def driveCommands(sid, data):
         
         # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
         rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
+        mod_conf_scaled = int(data['moduleConflicts'])
 
         # Convert to 16-bit signed hex
         x_vel = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         y_vel = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
         rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
-        mod_conf = data['moduleConflicts']
+        mod_conf = mod_conf_scaled.to_bytes(1, 'big', signed=True).hex()
 
         can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
 
         # drive_serial.write is blocking, run in thread
         await asyncio.to_thread(drive_serial.write, can_msg.encode())
         print(f'[{sid}] Drive command sent: {can_msg}')
+        global can_msg_count
+        can_msg_count = can_msg_count + 1
+        print("CAN MESSAGE NUMBER " + str(can_msg_count))
     except Exception as e:
         # if you are testing on a computer without serial, set the bool true to help your console
         if config.silenceSerialErrors == False:
@@ -322,10 +329,10 @@ async def connect(sid, environ):
         sio.start_background_task(read_drive_can_loop)
     if not async_ssh_started:
         async_ssh_started = True
-        sio.start_background_task(asyncsshloop,sio)
+        #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
-        sio.start_background_task(cpuloop,sio)
+        #sio.start_background_task(cpuloop,sio)
 @sio.event
 async def disconnect(sid):
     global numClients
