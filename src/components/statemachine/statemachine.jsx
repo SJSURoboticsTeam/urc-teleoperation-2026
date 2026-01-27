@@ -1,4 +1,5 @@
-
+import { Typography } from "@mui/material";
+import InfoIcon from '@mui/icons-material/Info';
 
 export default function StateMachine({ openPane, setOpenPane }) {
 
@@ -18,7 +19,7 @@ export default function StateMachine({ openPane, setOpenPane }) {
           marginRight: 10,
         }}
       >
-        STATUS
+        STATUS<InfoIcon sx={{fontSize: 35 }}/>
       </span>
         
         {openPane == "StateMachine" && (
@@ -35,7 +36,7 @@ export default function StateMachine({ openPane, setOpenPane }) {
             }}
           >
     
-            This is the state machine!
+            <Typography  sx={{ color: 'black' }} variant = "h6">STATE MACHINE</Typography>
             
 
 

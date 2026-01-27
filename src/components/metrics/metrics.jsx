@@ -1,9 +1,9 @@
 import { socket } from "../socket.io/socket";
 import { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
-import InfoIcon from '@mui/icons-material/Info';
-import { green } from "@mui/material/colors";
-import {red} from '@mui/material/colors'
+
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import { green, red } from "@mui/material/colors";
 import { useSocketStatus } from '../socket.io/socket';
 
 
@@ -33,9 +33,9 @@ const [infoStatus,setinfoStatus] = useState("");
 useEffect( () => {
   setinfoStatus(
     isConnected ? (
-      <InfoIcon sx={{ color: green[500], fontSize: 35 }} />
+      <AnalyticsIcon sx={{ color: green[500], fontSize: 35 }} />
     ) : (
-      <InfoIcon sx={{ color: red[500], fontSize: 35 }} />
+      <AnalyticsIcon sx={{ color: red[500], fontSize: 35 }} />
     )
   );
 }, [isConnected] );
