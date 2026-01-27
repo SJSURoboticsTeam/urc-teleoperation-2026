@@ -62,21 +62,13 @@ arm_receive_ID = {
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 app = socketio.ASGIApp(sio)
 
-@sio.event
-serialDropDown():
-
 # CAN buses
-@sio.event
-startDrive():
 print("Starting...")
 try:
-    drive_serial = CanSerial('/dev/tty.usbserial-59760082351')
+    drive_serial = CanSerial('/dev/tty.usbserial-59760073491')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
-
-@sio.event
-startArm():
 
 # try:
 #     arm_serial = CanSerial('/dev/ttyACM1')

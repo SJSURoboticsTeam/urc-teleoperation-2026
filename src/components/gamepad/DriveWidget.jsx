@@ -18,28 +18,28 @@ export default function DriveManualInput({
 
   // const prevDriveCommandsRef = useRef(null);
   // Sends drive commands to server at the frame rate constant
-  useEffect(() => {
-    const interval = setInterval(() => {
-      let driveCommands = {
-        xVel: sidewaysVelocity,
-        yVel: forwardsVelocity,
-        rotVel: rotationalVelocity,
-        moduleConflicts: Number(moduleConflicts),
-      };
-      // console.log("in interval")
-      // console.log(prevDriveCommandsRef.current)
-      // console.log(driveCommands)
-      // // Only emit if the values change
-      // if (JSON.stringify(prevDriveCommandsRef.current) !== JSON.stringify(driveCommands)) {
-      //   console.log("emitting")
-      //   socket.emit("driveCommands", driveCommands);
-      //   prevDriveCommandsRef.current = driveCommands;
-      // }
-      socket.emit("driveCommands", driveCommands);
-    }, FrameRateConstant)
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     let driveCommands = {
+  //       xVel: sidewaysVelocity,
+  //       yVel: forwardsVelocity,
+  //       rotVel: rotationalVelocity,
+  //       moduleConflicts: Number(moduleConflicts),
+  //     };
+  //     // console.log("in interval")
+  //     // console.log(prevDriveCommandsRef.current)
+  //     // console.log(driveCommands)
+  //     // // Only emit if the values change
+  //     // if (JSON.stringify(prevDriveCommandsRef.current) !== JSON.stringify(driveCommands)) {
+  //     //   console.log("emitting")
+  //     //   socket.emit("driveCommands", driveCommands);
+  //     //   prevDriveCommandsRef.current = driveCommands;
+  //     // }
+  //     socket.emit("driveCommands", driveCommands);
+  //   }, FrameRateConstant)
 
-    return () => clearInterval(interval);
-  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts]);
+  //   return () => clearInterval(interval);
+  // }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts]);
 
 
   useEffect(() => {
