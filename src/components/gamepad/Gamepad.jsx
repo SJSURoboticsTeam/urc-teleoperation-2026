@@ -16,9 +16,11 @@ export default function GamepadPanel({
   onArmVelocitiesChange,
   currentView,
   setModuleConflicts,
-  onPanVelocitiesChange
+  onPanVelocitiesChange, 
+  driveConnectedOne, 
+  setDriveConnectedOne
 }) {
-  const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+  //const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({
     lx: 0,
     ly: 0,
@@ -39,11 +41,7 @@ export default function GamepadPanel({
   });
 
   useEffect(() => {
-    if (driveConnectedOne == null) {
-      setDriveVelocities({ lx: 0, ly: 0, rx: 0 });
-      onDriveVelocitiesChange?.({ lx: 0, ly: 0, rx: 0 });
-      return;
-    }
+    let intervalId;
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
@@ -66,10 +64,16 @@ export default function GamepadPanel({
         });
       }
     };
-    const intervalId = setInterval(pollAxes, FrameRateConstant);
+    if (driveConnectedOne != null) {
+   intervalId = setInterval(pollAxes, FrameRateConstant);
+ } else {
+   const zero = { lx: 0, ly: 0, rx: 0 };
+   setDriveVelocities(zero);
+   onDriveVelocitiesChange?.(zero);
+ }
     console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
-    return () => clearInterval(intervalId);
-  }, [driveConnectedOne]);
+    return () => intervalId && clearInterval(intervalId);
+}, [driveConnectedOne, onDriveVelocitiesChange]);
 
   // pan controller polling for drive
   useEffect(() => {

@@ -22,6 +22,7 @@ function App() {
   const [panHeightVelocity, setPanHeightVelocity]=useState("0");
   const [panWidthVelocity, setPanWidthVelocity]=useState("0");
   const [armConnectedOne,setArmConnectedOne]=useState(null)
+  const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 
   const [effector,setEffector]=useState(0);
   const [elbow,setElbow]=useState(0);
@@ -65,7 +66,7 @@ function App() {
       case "ArmView":
         return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } />;
       case "DriveView":
-        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} /> } />;
+        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } />;
       case "ExtrasView":
         return <ExtrasView />;
       case "ScienceView":
@@ -80,7 +81,8 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange= {handlePanVelocitiesChange}/>
+      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
+      
       <Box
         component="main"
         sx={{

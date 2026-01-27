@@ -15,7 +15,7 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import Metrics from '../metrics/metrics';
 import StateMachine from "../statemachine/statemachine"
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange}) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -130,7 +130,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           {/* Gamepad connection status and selection panel */}
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
           <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
-          <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
+          <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           
         <IconButton
