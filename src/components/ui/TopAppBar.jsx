@@ -13,6 +13,7 @@ import GamepadPanel from '../gamepad/Gamepad';
 import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import Metrics from '../metrics/metrics';
+import StateMachine from "../statemachine/statemachine"
 
 export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -127,6 +128,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           <div style={{ flexGrow: 1 }} />
 
           {/* Gamepad connection status and selection panel */}
+          <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
           <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
