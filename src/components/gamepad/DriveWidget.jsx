@@ -6,6 +6,7 @@ import { socket } from "../socket.io/socket.jsx";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
 import { useSocketStatus } from '../socket.io/socket';
+import GamepadPanel from './Gamepad'
 
 
 
@@ -29,7 +30,7 @@ export default function DriveManualInput({
         rotVel: rotationalVelocity,
         moduleConflicts: Number(moduleConflicts),
       };
-      if(serverConnected) {
+      if(serverConnected && (GamepadPanel.drive)) {
       socket.emit("driveCommands", driveCommands);
       }
     }, FrameRateConstant)
@@ -43,8 +44,10 @@ export default function DriveManualInput({
       xVel: panHeightVelocity,
       yVel: panWidthVelocity,
     };
+    if(serverConnected && (true)) {
     socket.emit("panCommands", panCommands);
-  }, [panHeightVelocity, panWidthVelocity]);
+    }
+  }, [panHeightVelocity, panWidthVelocity, serverConnected]);
 
   const handleClick = (event) => {
     socket.emit("driveHoming");

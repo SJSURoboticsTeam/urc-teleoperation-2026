@@ -16,7 +16,7 @@ export default function GamepadPanel({
   onArmVelocitiesChange,
   currentView,
   setModuleConflicts,
-  onPanVelocitiesChange,
+  onPanVelocitiesChange
 }) {
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({
