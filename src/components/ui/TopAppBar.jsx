@@ -119,22 +119,8 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
             color='inherit'
             onClick={() => handleViewChange('MapView')}
           >
-            Map
+            Extras
           </Button>
-
-          {  (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
-            color='inherit'
-            onClick={() => handleViewChange('RecordingsView')}
-          >
-            RECORDINGS
-          </Button>  }
-
-          { (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
-            color='inherit'
-            onClick={() => handleViewChange('SpeedTestView')}
-          >
-            SPEEDTEST
-          </Button> }
           
 
           { /* fill the space between the buttons and the connection status */ }
@@ -142,7 +128,6 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
 
           {/* Gamepad connection status and selection panel */}
           <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
-          
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
         <IconButton

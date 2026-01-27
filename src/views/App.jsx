@@ -9,12 +9,11 @@ import CssBaseline from "@mui/material/CssBaseline";
 import TopAppBar from "../components/ui/TopAppBar";
 import DriveComponents from "./DriveView";
 import ArmView from "./ArmView";
-import SpeedTestView from "./SpeedTestView";
 import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
 import FullscreenMap from "./MapView";
-import RecordingsView from "./Recordings";
 import SplitView from "./SplitView"
+import ExtrasView from "./ExtrasView"
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
@@ -68,8 +67,8 @@ function App() {
         return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } />;
       case "DriveView":
         return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} /> } />;
-      case "SpeedTestView":
-        return <SpeedTestView />;
+      case "ExtrasView":
+        return <ExtrasView />;
       case "ScienceView":
         return <SplitView CurrentView={<ScienceView /> } />;
       case "AutonomyView":
