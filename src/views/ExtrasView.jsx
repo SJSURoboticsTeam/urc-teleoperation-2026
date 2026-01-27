@@ -12,7 +12,7 @@ export default function ExtrasView() {
     if (currentView == "Files") {
         return <RecordingsView/>
     } else if (currentView == "SpeedTest") {
-        return <SpeedTestEmbed/>
+        return <SpeedTestView/>
     } else if (currentView == "Map") {
         return <Map/>
     } else {
@@ -23,9 +23,9 @@ export default function ExtrasView() {
   return (
           <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
             <div className="flex flex-row items-center justify-center gap-6">
-              <Button variant="contained">Files</Button>
-              <Button variant="contained">SpeedTest</Button>
-              <Button variant="contained">Map</Button>
+              <Button onClick={() => setcurrentView("Files")} variant="contained">Files</Button>
+              <Button onClick={() => setcurrentView("SpeedTest")} variant="contained">SpeedTest</Button>
+              <Button onClick={() => setcurrentView("Map")} variant="contained">Map</Button>
               </div>
             {switcher()}
           </div>
