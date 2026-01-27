@@ -17,6 +17,8 @@ export default function DriveManualInput({
   moduleConflicts,
   panHeightVelocity,
   panWidthVelocity,
+  setDriveConnectedOne,
+  driveConnectedOne
 }) {
  
   const serverConnected = useSocketStatus()
@@ -30,13 +32,13 @@ export default function DriveManualInput({
         rotVel: rotationalVelocity,
         moduleConflicts: Number(moduleConflicts),
       };
-      if(serverConnected && (GamepadPanel.drive)) {
+      if(serverConnected && (driveConnectedOne != null)) {
       socket.emit("driveCommands", driveCommands);
       }
     }, FrameRateConstant)
 
     return () => clearInterval(interval);
-  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, serverConnected]);
+  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, serverConnected,driveConnectedOne]);
 
 
   useEffect(() => {
@@ -44,10 +46,10 @@ export default function DriveManualInput({
       xVel: panHeightVelocity,
       yVel: panWidthVelocity,
     };
-    if(serverConnected && (true)) {
+    if(serverConnected && (driveConnectedOne != null)) {
     socket.emit("panCommands", panCommands);
     }
-  }, [panHeightVelocity, panWidthVelocity, serverConnected]);
+  }, [panHeightVelocity, panWidthVelocity, serverConnected,driveConnectedOne]);
 
   const handleClick = (event) => {
     socket.emit("driveHoming");
@@ -80,6 +82,7 @@ export default function DriveManualInput({
       >
         Homing
       </Button>
+      
       <Box
         sx={{
           display: "flex",
