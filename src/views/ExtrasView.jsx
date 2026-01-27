@@ -1,25 +1,35 @@
 import "react-resizable/css/styles.css"; // keep global resizable styles if used elsewhere
 import Box from "@mui/material/Box";
 import Map from "../components/ui/Map";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Button from '@mui/material/Button';
 
 // Fullscreen map view — map should receive its full height from the parent Box
-export default function ExtrasPane() {
-  const [currentView, setCurrentView] = useState("Files")
+export default function ExtrasView() {
+  const [currentView, setcurrentView] = useState("Map");
 
   function switcher() {
     if (currentView == "Files") {
         return <RecordingsView/>
     } else if (currentView == "SpeedTest") {
         return <SpeedTestEmbed/>
+    } else if (currentView == "Map") {
+        return <Map/>
     } else {
         return "No pane selected."
     }
-}
+    }
     // Let the parent (App) control the viewport height. Use flex:1 so Map fills available space.
   return (
-    {switcher}
-  );
+          <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
+            <div className="flex flex-row items-center justify-center gap-6">
+              <Button variant="contained">Files</Button>
+              <Button variant="contained">SpeedTest</Button>
+              <Button variant="contained">Map</Button>
+              </div>
+            {switcher()}
+          </div>
+        );
 }
 
 export function SpeedTestView () {

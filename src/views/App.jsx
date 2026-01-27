@@ -11,7 +11,6 @@ import DriveComponents from "./DriveView";
 import ArmView from "./ArmView";
 import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
-import FullscreenMap from "./MapView";
 import SplitView from "./SplitView"
 import ExtrasView from "./ExtrasView"
 
@@ -73,10 +72,6 @@ function App() {
         return <SplitView CurrentView={<ScienceView /> } />;
       case "AutonomyView":
         return <SplitView CurrentView={<AutonomyView/> } />;
-      case "MapView":
-        return <FullscreenMap />;
-      case "RecordingsView":
-        return <RecordingsView />;  
       default:
         return <div>Select a view</div>;
     }

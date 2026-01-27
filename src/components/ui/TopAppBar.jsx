@@ -117,7 +117,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           </Button>
           <Button
             color='inherit'
-            onClick={() => handleViewChange('MapView')}
+            onClick={() => handleViewChange('ExtrasView')}
           >
             Extras
           </Button>
