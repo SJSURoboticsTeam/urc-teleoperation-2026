@@ -4,10 +4,12 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
-import DnsIcon from '@mui/icons-material/Dns';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
 import { useSocketStatus } from './socket';
+import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
+
 
 
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
@@ -24,17 +26,30 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
   function disconnect() {
     socket.disconnect();
   }
-const [connectedIcon,setConnectedIcon] = useState("");
+const [robotconnectedIcon,setrobotConnectedIcon] = useState("");
 
 useEffect( () => {
-  setConnectedIcon(
+  setrobotConnectedIcon(
     isConnected ? (
-      <DnsIcon sx={{ color: green[500], fontSize: 35 }} />
+      <PrecisionManufacturingIcon sx={{ color: green[500], fontSize: 35 }} />
     ) : (
-      <DnsIcon sx={{ color: red[500], fontSize: 35 }} />
+      <PrecisionManufacturingIcon sx={{ color: red[500], fontSize: 35 }} />
     )
   );
 }, [isConnected] );
+
+const [baseconnectedIcon,setbaseConnectedIcon] = useState("");
+
+useEffect( () => {
+  setbaseConnectedIcon(
+    isConnected ? (
+      <MapsHomeWorkIcon sx={{ color: green[500], fontSize: 35 }} />
+    ) : (
+      <MapsHomeWorkIcon sx={{ color: red[500], fontSize: 35 }} />
+    )
+  );
+}, [isConnected] );
+
 
 
 useEffect(() => {
@@ -98,7 +113,7 @@ useEffect(() => {
           marginRight: 0,
         }}
       >
-        SERVER{connectedIcon}{connectedIcon}
+        SERVER{robotconnectedIcon}{baseconnectedIcon}
       </span>
         
         {openPane == "Backend" && (
