@@ -28,17 +28,8 @@ export default function Metrics({ openPane, setOpenPane }) {
     })
 
   
-const [infoStatus,setinfoStatus] = useState("");
 
-useEffect( () => {
-  setinfoStatus(
-    isConnected ? (
-      <AnalyticsIcon sx={{ color: green[500], fontSize: 35 }} />
-    ) : (
-      <AnalyticsIcon sx={{ color: red[500], fontSize: 35 }} />
-    )
-  );
-}, [isConnected] );
+
 
 useEffect(() => {
   const handler = (data) => {
@@ -96,7 +87,7 @@ useEffect(() => {
           marginRight: 10,
         }}
       >
-        METRICS{infoStatus}
+        METRICS<AnalyticsIcon sx={{ fontSize: 35 }} />
       </span>
         
         {openPane == "Metrics" && (

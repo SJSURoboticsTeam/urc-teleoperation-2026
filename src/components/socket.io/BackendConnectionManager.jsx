@@ -95,10 +95,10 @@ useEffect(() => {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 20,
+          marginRight: 0,
         }}
       >
-        SERVER{connectedIcon}
+        SERVER{connectedIcon}{connectedIcon}
       </span>
         
         {openPane == "Backend" && (
