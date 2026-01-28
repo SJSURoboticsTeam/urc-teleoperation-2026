@@ -1,9 +1,7 @@
 import { socket } from "../socket.io/socket";
 import { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
-
 import AnalyticsIcon from '@mui/icons-material/Analytics';
-import { green, red } from "@mui/material/colors";
 import { useSocketStatus } from '../socket.io/socket';
 
 
