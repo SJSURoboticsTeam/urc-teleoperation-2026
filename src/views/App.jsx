@@ -40,8 +40,8 @@ function App() {
     // console.log(lx,ly,rx)
   };
   const handlePanVelocitiesChange=({px,py})=>{
-    setPanHeightVelocity(py.toFixed(2));
-    setPanWidthVelocity(px.toFixed(2));
+    setPanHeightVelocity(py);
+    setPanWidthVelocity(px);
   }
 
 

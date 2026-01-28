@@ -6,7 +6,6 @@ import { socket } from "../socket.io/socket.jsx";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
 import { useSocketStatus } from '../socket.io/socket';
-import GamepadPanel from './Gamepad'
 
 
 
@@ -92,8 +91,7 @@ export default function DriveManualInput({
           height: 100,
           marginBottom: 5,
           marginTop: 2,
-        }}
-      >
+        }}>
         {velocities.map((velocity) => (
           <Box
             sx={{

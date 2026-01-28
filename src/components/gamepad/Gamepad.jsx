@@ -27,7 +27,10 @@ export default function GamepadPanel({
     rx: 0,
   });
   const [open, setOpen] = useState(false);
-  const [panVelocities, setPanVelocities] = useState({ px: 0, py: 0 });
+  const [panVelocities, setPanVelocities] = useState({ 
+    px: 0, 
+    py: 0 
+  });
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page, setPage] = useState("Drive");
   const [prevTime, setPrevTime] = useState();
