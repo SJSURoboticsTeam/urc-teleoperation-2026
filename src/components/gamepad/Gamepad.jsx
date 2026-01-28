@@ -45,13 +45,16 @@ export default function GamepadPanel({
 
   useEffect(() => {
     let intervalId;
+    const deadZone = (v, threshold = 0.15) =>
+      Math.abs(v) <= threshold ? 0 : v;
+
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (gp) {
         const newVel = {
-          lx: Math.round(4 * gp.axes[0] * 100) / 100 || 0,
-          ly: - Math.round(4 * gp.axes[1] * 100) / 100 || 0,
-          rx: Math.round(4 * gp.axes[2] * 100) / 100 || 0,
+          lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
+          ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
+          rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
         };
         setDriveVelocities((prev) => {
           if (
