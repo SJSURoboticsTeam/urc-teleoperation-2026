@@ -16,7 +16,6 @@ import Metrics from '../metrics/metrics';
 import StateMachine from "../statemachine/statemachine"
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import { ListItemText } from '@mui/material';
 
 export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -162,7 +161,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
       }}>
         <List>
           <ListItem>
-            <ListItemText primary="Settings" />
+            <Typography  sx={{ color: 'black' }} variant = "h6">SETTINGS</Typography>
           </ListItem>
           <ListItem>
   <FormControlLabel
