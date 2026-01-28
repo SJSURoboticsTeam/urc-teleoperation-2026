@@ -14,8 +14,11 @@ import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import Metrics from '../metrics/metrics';
 import StateMachine from "../statemachine/statemachine"
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import { ListItemText } from '@mui/material';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne}) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -158,11 +161,20 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           },
       }}>
         <List>
-          <ListItem disablePadding>
-            <Typography>
-              Side bar placeholder
-            </Typography>
+          <ListItem>
+            <ListItemText primary="Settings" />
           </ListItem>
+          <ListItem>
+  <FormControlLabel
+    control={
+      <Checkbox
+        checked={camsVisibility}
+        onChange={(e) => setcamsVisibility(e.target.checked)}
+      />
+    }
+    label="Show Cameras"
+  />
+</ListItem>
         </List>
       </Drawer>
     </>

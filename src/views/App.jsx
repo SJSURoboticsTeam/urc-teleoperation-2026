@@ -32,6 +32,7 @@ function App() {
   const [roll, setRoll]=useState(0);
 
   const [moduleConflicts,setModuleConflicts]=useState(0)
+  const [camsVisibility, setcamsVisibility] = useState(true)
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx);
@@ -64,15 +65,15 @@ function App() {
   function renderView() {
     switch (currentView) {
       case "ArmView":
-        return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } />;
+        return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } showCameras={camsVisibility} />;
       case "DriveView":
-        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } />;
+        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
       case "ExtrasView":
-        return <ExtrasView />;
+        return <SplitView CurrentView={<ExtrasView /> } showCameras={camsVisibility} />;
       case "ScienceView":
-        return <SplitView CurrentView={<ScienceView /> } />;
+        return <SplitView CurrentView={<ScienceView /> } showCameras={camsVisibility} />;
       case "AutonomyView":
-        return <SplitView CurrentView={<AutonomyView/> } />;
+        return <SplitView CurrentView={<AutonomyView/> } showCameras={camsVisibility} />;
       default:
         return <div>Select a view</div>;
     }
@@ -81,7 +82,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
+      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
       
       <Box
         component="main"
