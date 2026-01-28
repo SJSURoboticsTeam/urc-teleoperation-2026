@@ -19,8 +19,8 @@ function App() {
   const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
   const [forwardsVelocity, setForwardVelocity] = useState(0);
   const [rotationalVelocity, setRotationalVelocity] = useState(0);
-  const [panHeightVelocity, setPanHeightVelocity]=useState("0");
-  const [panWidthVelocity, setPanWidthVelocity]=useState("0");
+  const [panHeightVelocity, setPanHeightVelocity]=useState(0);
+  const [panWidthVelocity, setPanWidthVelocity]=useState(0);
   const [armConnectedOne,setArmConnectedOne]=useState(null)
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 
