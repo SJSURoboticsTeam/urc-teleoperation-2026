@@ -20,7 +20,6 @@ export default function GamepadPanel({
   driveConnectedOne, 
   setDriveConnectedOne
 }) {
-  //const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [driveVelocities, setDriveVelocities] = useState({
     lx: 0,
     ly: 0,
