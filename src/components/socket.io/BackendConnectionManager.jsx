@@ -4,11 +4,11 @@ import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
 import { useSocketStatus } from './socket';
 import MapsHomeWorkIcon from '@mui/icons-material/MapsHomeWork';
+import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
 
 
 
@@ -31,9 +31,9 @@ const [robotconnectedIcon,setrobotConnectedIcon] = useState("");
 useEffect( () => {
   setrobotConnectedIcon(
     isConnected ? (
-      <PrecisionManufacturingIcon sx={{ color: green[500], fontSize: 35 }} />
+      <SettingsRemoteIcon sx={{ color: green[500], fontSize: 35 }} />
     ) : (
-      <PrecisionManufacturingIcon sx={{ color: red[500], fontSize: 35 }} />
+      <SettingsRemoteIcon sx={{ color: red[500], fontSize: 35 }} />
     )
   );
 }, [isConnected] );
@@ -110,7 +110,7 @@ useEffect(() => {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 0,
+          marginRight: 20,
         }}
       >
         SERVER{robotconnectedIcon}{baseconnectedIcon}
