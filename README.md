@@ -15,7 +15,7 @@ Make sure you have the following installed on your machine:
 
 ### 1. Navigate to your desired folder and Clone the Repository
 ```bash
-git clone <https://github.com/SJSURoboticsTeam/urc-teleoperation-2026.git>
+git clone https://github.com/SJSURoboticsTeam/urc-teleoperation-2026.git
 cd urc-teleoperation-2026
 ```
 

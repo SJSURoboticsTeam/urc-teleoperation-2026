@@ -3,7 +3,7 @@ import Map from "../components/ui/Map"
 import DriveManualInput from "../components/gamepad/DriveWidget"
 import { useRef} from 'react'
 
-export default function DriveComponents({sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, panHeightVelocity, panWidthVelocity, leftPct}) {
+export default function DriveComponents({sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, panHeightVelocity, panWidthVelocity,driveConnectedOne,setDriveConnectedOne}) {
     const containerRef = useRef(null)
     return (
       // top-level flex row that fills available height
@@ -15,7 +15,9 @@ export default function DriveComponents({sidewaysVelocity, forwardsVelocity, rot
                       rotationalVelocity={rotationalVelocity}
                       moduleConflicts={moduleConflicts}
                       panHeightVelocity={panHeightVelocity}
-                      panWidthVelocity={panWidthVelocity}/>
+                      panWidthVelocity={panWidthVelocity}
+                      driveConnectedOne={driveConnectedOne} 
+                      setDriveConnectedOne={setDriveConnectedOne}/>
             <Wheel />
             </div>
             <Map/>

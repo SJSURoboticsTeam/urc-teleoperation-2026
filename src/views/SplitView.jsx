@@ -1,31 +1,27 @@
-import 'react-resizable/css/styles.css' // Import default styles
+import 'react-resizable/css/styles.css'
 import { useRef, useState, useCallback, isValidElement } from 'react'
 import CameraPane from '../components/cameras/CameraPane'
 
-
-export default function DriveView({CurrentView}) {
+export default function DriveView({ CurrentView, showCameras}) {
   const containerRef = useRef(null)
-  const [leftPct, setLeftPct] = useState(65) // left pane width percentage
+  const [leftPct, setLeftPct] = useState(65)
 
   const startDrag = useCallback((e) => {
-    // Use pointer events so touch and mouse work
     const pointerId = e.pointerId
     const container = containerRef.current
     if (!container) return
 
-    container.setPointerCapture && container.setPointerCapture(pointerId)
+    container.setPointerCapture?.(pointerId)
 
     const onPointerMove = (ev) => {
       const rect = container.getBoundingClientRect()
-      const x = ev.clientX
-      let pct = ((x - rect.left) / rect.width) * 100
-      if (pct < 5) pct = 5
-      if (pct > 95) pct = 95
+      let pct = ((ev.clientX - rect.left) / rect.width) * 100
+      pct = Math.min(95, Math.max(5, pct))
       setLeftPct(pct)
     }
 
     const onPointerUp = () => {
-      container.releasePointerCapture && container.releasePointerCapture(pointerId)
+      container.releasePointerCapture?.(pointerId)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerup', onPointerUp)
     }
@@ -34,37 +30,63 @@ export default function DriveView({CurrentView}) {
     window.addEventListener('pointerup', onPointerUp)
   }, [])
 
+  const effectiveLeftPct = (!showCameras) ? 100 : leftPct
+
   return (
-    // top-level flex row that fills available height
-    <div ref={containerRef} className="flex flex-1 h-full min-h-0" style={{ userSelect: 'none' }}>
-      {/* left pane: width controlled by leftPct */}
-      <div className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0" style={{ flex: `0 0 ${leftPct}%` }}>
-        {isValidElement(CurrentView) ? (
-          CurrentView
-        ) : typeof CurrentView === 'function' ? (
-          <CurrentView />
-        ) : null}
-        </div>
-
-
-
-
-      {/* draggable divider: larger hit area with visible thin line */}
+    <div
+      ref={containerRef}
+      className="flex flex-1 h-full min-h-0"
+      style={{ userSelect: 'none' }}
+    >
+      {/* left pane */}
       <div
-        role="separator"
-        aria-orientation="vertical"
-        onPointerDown={startDrag}
-        className="flex items-stretch justify-center"
-        style={{ width: 24, cursor: 'col-resize', touchAction: 'none' }}
+        className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
+        style={{ flex: `0 0 ${effectiveLeftPct}%` }}
       >
-        <div style={{ width: 3, background: 'rgba(156,163,175,1)', height: '100%' }} />
+        {isValidElement(CurrentView)
+          ? CurrentView
+          : typeof CurrentView === 'function'
+          ? <CurrentView />
+          : null}
       </div>
 
-      {/* right pane: takes remaining space */}
-      <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
+      {/* divider (gone when cameras hidden) */}
+      {showCameras && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          onPointerDown={startDrag}
+          className="flex items-stretch justify-center"
+          style={{ width: 24, cursor: 'col-resize', touchAction: 'none' }}
+        >
+          <div
+            style={{
+              width: 3,
+              background: 'rgba(156,163,175,1)',
+              height: '100%',
+            }}
+          />
+        </div>
+      )}
+
+      {/* right pane (still rendered, visually hidden) */}
+      <div
+        className="relative flex-1 flex flex-col gap-2 p-2 min-h-0"
+        style={{
+          display: (!showCameras) ? 'none' : 'flex',
+        }}
+      >
         <CameraPane />
         <CameraPane />
       </div>
+
+      {/* fullscreen click layer to restore cameras */}
+      {(!showCameras) && (
+        <div
+          className="absolute inset-0 cursor-pointer"
+          style={{ background: 'transparent' }}
+        />
+      )}
     </div>
   )
 }
