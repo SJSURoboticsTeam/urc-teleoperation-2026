@@ -1,11 +1,13 @@
 import "react-resizable/css/styles.css"; // Import default styles
 import { useEffect } from "react";
-import { useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../socket.io/socket.jsx";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
+import { useSocketStatus } from '../socket.io/socket';
+
+
 
 export default function DriveManualInput({
   sidewaysVelocity,
@@ -14,7 +16,12 @@ export default function DriveManualInput({
   moduleConflicts,
   panHeightVelocity,
   panWidthVelocity,
+  setDriveConnectedOne,
+  driveConnectedOne
 }) {
+ 
+  const serverConnected = useSocketStatus()
+
   // Sends drive commands to server at the frame rate constant
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,11 +31,13 @@ export default function DriveManualInput({
         rotVel: rotationalVelocity,
         moduleConflicts: Number(moduleConflicts),
       };
+      if(serverConnected && (driveConnectedOne != null)) {
       socket.emit("driveCommands", driveCommands);
+      }
     }, FrameRateConstant)
 
     return () => clearInterval(interval);
-  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts]);
+  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, serverConnected,driveConnectedOne]);
 
 
   useEffect(() => {
@@ -36,8 +45,10 @@ export default function DriveManualInput({
       xVel: panHeightVelocity,
       yVel: panWidthVelocity,
     };
+    if(serverConnected && (driveConnectedOne != null)) {
     socket.emit("panCommands", panCommands);
-  }, [panHeightVelocity, panWidthVelocity]);
+    }
+  }, [panHeightVelocity, panWidthVelocity, serverConnected,driveConnectedOne]);
 
   const handleClick = (event) => {
     socket.emit("driveHoming");
@@ -70,6 +81,7 @@ export default function DriveManualInput({
       >
         Homing
       </Button>
+      
       <Box
         sx={{
           display: "flex",
@@ -79,8 +91,7 @@ export default function DriveManualInput({
           height: 100,
           marginBottom: 5,
           marginTop: 2,
-        }}
-      >
+        }}>
         {velocities.map((velocity) => (
           <Box
             sx={{

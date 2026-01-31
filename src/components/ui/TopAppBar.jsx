@@ -13,8 +13,11 @@ import GamepadPanel from '../gamepad/Gamepad';
 import { orange } from '@mui/material/colors';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import Metrics from '../metrics/metrics';
+import StateMachine from "../statemachine/statemachine"
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts , onPanVelocitiesChange}) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -117,34 +120,23 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           </Button>
           <Button
             color='inherit'
-            onClick={() => handleViewChange('MapView')}
+            onClick={() => handleViewChange('ExtrasView')}
           >
-            Map
+            Extras
           </Button>
-
-          {  (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
-            color='inherit'
-            onClick={() => handleViewChange('RecordingsView')}
-          >
-            RECORDINGS
-          </Button>  }
-
-          { (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod") && <Button
-            color='inherit'
-            onClick={() => handleViewChange('SpeedTestView')}
-          >
-            SPEEDTEST
-          </Button> }
           
 
           { /* fill the space between the buttons and the connection status */ }
           <div style={{ flexGrow: 1 }} />
 
           {/* Gamepad connection status and selection panel */}
-          <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView}/>
           
+          
+          <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
+          <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
+          
         <IconButton
           edge='end'
           color='inherit'
@@ -168,11 +160,20 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           },
       }}>
         <List>
-          <ListItem disablePadding>
-            <Typography>
-              Side bar placeholder
-            </Typography>
+          <ListItem>
+            <Typography  sx={{ color: 'black' }} variant = "h6">SETTINGS</Typography>
           </ListItem>
+          <ListItem>
+  <FormControlLabel
+    control={
+      <Checkbox
+        checked={camsVisibility}
+        onChange={(e) => setcamsVisibility(e.target.checked)}
+      />
+    }
+    label="Show Cameras"
+  />
+</ListItem>
         </List>
       </Drawer>
     </>
