@@ -1,9 +1,7 @@
 import { socket } from "../socket.io/socket";
 import { useState, useEffect } from "react";
 import Typography from '@mui/material/Typography';
-import InfoIcon from '@mui/icons-material/Info';
-import { green } from "@mui/material/colors";
-import {red} from '@mui/material/colors'
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 import { useSocketStatus } from '../socket.io/socket';
 
 
@@ -28,17 +26,8 @@ export default function Metrics({ openPane, setOpenPane }) {
     })
 
   
-const [infoStatus,setinfoStatus] = useState("");
 
-useEffect( () => {
-  setinfoStatus(
-    isConnected ? (
-      <InfoIcon sx={{ color: green[500], fontSize: 35 }} />
-    ) : (
-      <InfoIcon sx={{ color: red[500], fontSize: 35 }} />
-    )
-  );
-}, [isConnected] );
+
 
 useEffect(() => {
   const handler = (data) => {
@@ -96,7 +85,7 @@ useEffect(() => {
           marginRight: 10,
         }}
       >
-        METRICS{infoStatus}
+        METRICS<AnalyticsIcon sx={{ fontSize: 35 }} />
       </span>
         
         {openPane == "Metrics" && (
