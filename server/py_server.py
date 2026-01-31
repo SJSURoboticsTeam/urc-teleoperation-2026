@@ -219,6 +219,7 @@ async def parse_drive_data(data):
 
 # =================== Background Threads ===================
 # Background task guard
+can_error_message_started = False
 drive_task_started = False
 async_ssh_started = False
 cpu_started = False
@@ -230,7 +231,7 @@ async def read_drive_can_loop():
             # read_can is blocking so run it in a thread
             data = await asyncio.to_thread(drive_serial.read_can, None)
             if data:
-                parse_drive_data(data)
+                await parse_drive_data(data)
             await asyncio.sleep(0.01)
     except Exception as e:
         print(f'Drive CAN task error: {e}')
@@ -243,7 +244,8 @@ async def send_drive_status_request():
             can_msg = 'F\r'
             await asyncio.to_thread(drive_serial.write, can_msg.encode())
             print('Reading drive status flags')
-            await asyncio.sleep(1) # waiting 1000 ms
+            await asyncio.sleep(5)
+            # await asyncio.sleep(1) # waiting 1000 ms
     except Exception as e:
         print(f'Read drive status flag error: {e}')
 
@@ -270,6 +272,7 @@ print("Server Starting...")
 @sio.event
 async def connect(sid, environ):
     """On first client connect, start background CAN read loop."""
+    global can_error_message_started
     global drive_task_started
     # global async_ssh_started
     global cpu_started
@@ -284,6 +287,9 @@ async def connect(sid, environ):
     if not drive_task_started:
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop)
+    if not can_error_message_started:
+        can_error_message_started = True
+        sio.start_background_task(send_drive_status_request)
     # if not async_ssh_started:
     #     async_ssh_started = True
     #     sio.start_background_task(asyncsshloop,sio)
