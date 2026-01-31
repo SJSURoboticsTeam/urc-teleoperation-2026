@@ -54,6 +54,16 @@ export default function DriveManualInput({
     socket.emit("driveHoming");
   };
 
+  const handleManualClick = (event) => {
+    let driveCommands = {
+        xVel: sidewaysVelocity,
+        yVel: forwardsVelocity,
+        rotVel: rotationalVelocity,
+        moduleConflicts: Number(moduleConflicts),
+      };
+      socket.emit("driveCommands", driveCommands);
+  }
+
   const velocities = [
     { id: forwardsVelocity, name: "X Vel" },
     { id: sidewaysVelocity, name: "Y Vel" },
@@ -81,7 +91,17 @@ export default function DriveManualInput({
       >
         Homing
       </Button>
-      
+      <Button
+        onClick={handleManualClick}
+        variant="contained"
+        sx={{
+          backgroundColor: "#1976d2",
+          color: "#fff",
+          "&:hover": { backgroundColor: "#115293" },
+        }}
+      >
+        Manual
+      </Button>
       <Box
         sx={{
           display: "flex",

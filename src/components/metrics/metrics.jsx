@@ -31,7 +31,7 @@ export default function Metrics({ openPane, setOpenPane }) {
 
 useEffect(() => {
   const handler = (data) => {
-    console.log("antenna data:", data);
+    // console.log("antenna data:", data);
       setantennadata({
         status: data.status,
         roverRSSI: data.dbm,

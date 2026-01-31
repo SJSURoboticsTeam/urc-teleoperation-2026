@@ -19,11 +19,12 @@ class CanSerial(serial.Serial):
         self.rts = False
         time.sleep(0.2)
 
-        # Carriage returns to empty any priorr command or queued character in the CANUSB
+        # Carriage returns to empty any prior command or queued character in the CANUSB
         self.write(('\r\r\r\r').encode())
         resp = self.read_can(0.2)
-        print("REPONSE:" + repr(resp))
-        if b"\r" not in self.read_can(0.2):
+        print("RESPONSE:" + repr(resp))
+        # if b"\r" not in self.read_can(0.2):
+        if b"\r" not in resp:
             raise ValueError("Carriage Return Not Found-RESPONSE")
 
         # Check the CAN version to ensure communication with the unit

@@ -5,7 +5,7 @@ import socketio
 import math
 import time
 import uvicorn
-from metrics import asyncsshloop, cpuloop
+# from metrics import asyncsshloop, cpuloop
 
 drive_send_ID = {
     "SET_CHASSIS_VELOCITIES": '00C',
@@ -83,13 +83,7 @@ except Exception as e:
 #     print("FAILURE TO CONNECT ARM!" + str(e))
 
 # =================== Metrics Event Handlers ====================
-metrics.register_metrics(sio)
-
-# Background task guard
-drive_task_started = False
-async_ssh_started = False
-cpu_started = False
-can_msg_count = 0
+# metrics.register_metrics(sio)
 
 # =================== Client Drive Event Handlers ====================
 @sio.event
@@ -136,10 +130,33 @@ async def driveHoming(sid):
 
 
 # =================== CAN Data Parsing & Emit =======================
+status_flags = {
+    0: "CAN receive FIFO queue full",
+    1: "CAN transmit FIFO queue full",
+    2: "Error warning (EI), see SJA1000 datasheet",
+    3: "Data Overrun (DOI), see SJA1000 datasheet",
+    4: "Not used.",
+    5: "Error Passive (EPI), see SJA1000 datasheet",
+    6: "Arbitration Lost (ALI), see SJA1000 datasheet",
+    7: "Bus Error (BEI), see SJA1000 datasheet"
+}
 
-def parse_drive_data(data):
+async def parse_drive_data(data):
     try:
         string_data = data.decode()
+
+        # Reading status flag - 8 bits of data
+        if string_data[0] in "F":
+            # convert data into bits to parse errors
+            binary_string_padded = format(int(string_data[1:3], 16), '08b')
+            print(f"Error bits: {binary_string_padded}")
+            for i, bit in enumerate(binary_string_padded):
+                if bit == 1:
+                    print(status_flags[i])
+                    match i:
+                        case 6, 7:
+                            can_msg = '\r\r\r\r'
+                            await asyncio.to_thread(drive_serial.write, can_msg.encode())
 
         if len(string_data) < 5:
             return
@@ -206,16 +223,36 @@ def parse_drive_data(data):
 #         print(f'Error parsing armr data: {e}')
 
 # =================== Background Threads ===================
+# Background task guard
+can_error_message_started = False
+drive_task_started = False
+async_ssh_started = False
+cpu_started = False
+can_msg_count = 0
+
 async def read_drive_can_loop():
     try:
         while True:
             # read_can is blocking so run it in a thread
             data = await asyncio.to_thread(drive_serial.read_can, None)
             if data:
-                parse_drive_data(data)
+                await parse_drive_data(data)
             await asyncio.sleep(0.01)
     except Exception as e:
         print(f'Drive CAN task error: {e}')
+
+# Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
+# If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
+async def send_drive_status_request():
+    try:
+        while True:
+            can_msg = 'F\r'
+            await asyncio.to_thread(drive_serial.write, can_msg.encode())
+            print('Reading drive status flags')
+            await asyncio.sleep(5)
+            # await asyncio.sleep(1) # waiting 1000 ms
+    except Exception as e:
+        print(f'Read drive status flag error: {e}')
 
 # def read_arm_can_loop():
 #     try:
@@ -240,8 +277,9 @@ print("Server Starting...")
 @sio.event
 async def connect(sid, environ):
     """On first client connect, start background CAN read loop."""
+    global can_error_message_started
     global drive_task_started
-    global async_ssh_started
+    # global async_ssh_started
     global cpu_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -254,12 +292,15 @@ async def connect(sid, environ):
     if not drive_task_started:
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop)
-    if not async_ssh_started:
-        async_ssh_started = True
-        #sio.start_background_task(asyncsshloop,sio)
-    if not cpu_started:
-        cpu_started = True
-        #sio.start_background_task(cpuloop,sio)
+    if not can_error_message_started:
+        can_error_message_started = True
+        sio.start_background_task(send_drive_status_request)
+    # if not async_ssh_started:
+    #     async_ssh_started = True
+    #     sio.start_background_task(asyncsshloop,sio)
+    # if not cpu_started:
+    #     cpu_started = True
+    #     sio.start_background_task(cpuloop,sio)
 @sio.event
 async def disconnect(sid):
     global numClients
