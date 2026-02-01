@@ -142,7 +142,7 @@ async def parse_drive_data(data):
     except Exception as e:
         print(f'Error parsing drive data: {e}')
 
-async def read_drive_can_loop():
+async def read_drive_can_loop(drive_serial):
     try:
         while True:
             # read_can is blocking so run it in a thread
@@ -155,7 +155,7 @@ async def read_drive_can_loop():
 
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
-async def send_drive_status_request():
+async def send_drive_status_request(drive_serial):
     try:
         while True:
             can_msg = 'F\r'
