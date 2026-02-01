@@ -95,11 +95,6 @@ def register_metric_events(sio):
     global numClients
 
     @sio.event
-    async def init(sid):
-        global numClients
-        numClients = 0
-
-    @sio.event
     async def getConnections(sid):
         return numClients
 

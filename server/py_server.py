@@ -1,7 +1,8 @@
 from can_serial import CanSerial
 import socketio
 import uvicorn
-from metrics import asyncsshloop, cpuloop, register_metric_events, numClients
+import metrics
+from metrics import asyncsshloop, cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 
 
@@ -57,10 +58,11 @@ async def connect(sid,environ):
     global drive_task_started
     global async_ssh_started
     global cpu_started
+    global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
-        numClients += 1
+        metrics.numClients += 1
     except Exception:
         pass
 
@@ -81,9 +83,8 @@ async def connect(sid,environ):
 
 @sio.event
 async def disconnect(sid):
-    global numClients
     print(f'Client disconnected: {sid}')
-    numClients -= 1
+    metrics.numClients -= 1
 
 
 uvicorn.run(app, host='0.0.0.0', port=4000, log_level="warning")
