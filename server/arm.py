@@ -1,3 +1,4 @@
+
 # Track Servo Address: 0x120 
 # Shoulder Servo Address: 0x121,
 # Elbow Servo Address: 0x122,
@@ -31,23 +32,24 @@ arm_receive_ID = {
     "CLAMP": '225',
 }
 
+def parse_arm_data(data):
+    try:
+        payload = {"armStatus": "example"}
+        sio.emit('armUpdate', payload)
+    except Exception as e:
+        print(f'Error parsing armr data: {e}')
 
 
+def read_arm_can_loop():
+    try:
+        while True:
+            data = arm_serial.read_can(None)
+            if data:
+                parse_arm_data(data)
+            time.sleep(0.01)
+    except Exception as e:
+        print(f'Arm CAN thread error: {e}')
 
-# def parse_arm_data(data):
-#     try:
-#         payload = {"armStatus": "example"}
-#         sio.emit('armUpdate', payload)
-#     except Exception as e:
-#         print(f'Error parsing armr data: {e}')
 
+def register_arm_events(sio):
 
-# def read_arm_can_loop():
-#     try:
-#         while True:
-#             data = arm_serial.read_can(None)
-#             if data:
-#                 parse_arm_data(data)
-#             time.sleep(0.01)
-#     except Exception as e:
-#         print(f'Arm CAN thread error: {e}')

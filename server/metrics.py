@@ -86,7 +86,7 @@ async def cpuloop(sio):
         await asyncio.sleep(config.RpiPollingRate)
 
 
-def register_socket_commands(sio):
+def register_metric_events(sio):
     """Register metrics-related socket.io handlers.
 
     `sio` is expected to be a `socketio.AsyncServer` (async handlers are supported).
