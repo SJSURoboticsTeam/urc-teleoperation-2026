@@ -7,6 +7,7 @@ import config # holds config values
 import psutil
 from pathlib import Path
 
+numClients = 0
 
 # get data from secrets
 load_dotenv()  # loads from .env

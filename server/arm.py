@@ -51,5 +51,5 @@ def read_arm_can_loop():
         print(f'Arm CAN thread error: {e}')
 
 
-def register_arm_events(sio):
+#def register_arm_events(sio):
 

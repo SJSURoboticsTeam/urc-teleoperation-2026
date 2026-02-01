@@ -1,7 +1,7 @@
 from can_serial import CanSerial
 import socketio
 import uvicorn
-from metrics import asyncsshloop, cpuloop, register_metric_events
+from metrics import asyncsshloop, cpuloop, register_metric_events, numClients
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 
 
@@ -15,6 +15,8 @@ app = socketio.ASGIApp(sio)
 
 # CAN buses
 print("Starting...")
+drive_serial = None
+arm_serial = None
 try:
     # RX TESTER /dev/tty.usbserial-59760082211
     # ROBOT /dev/tty.usbserial-59760073491
@@ -30,7 +32,7 @@ except Exception as e:
 
 
 register_metric_events(sio)
-register_drive_events(sio)
+register_drive_events(sio,drive_serial)
 
 
 # =================== Initialization ===================
@@ -39,8 +41,7 @@ can_error_message_started = False
 drive_task_started = False
 async_ssh_started = False
 cpu_started = False
-can_msg_count = 0
-numClients = 0
+
 
 
 # arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
@@ -50,7 +51,7 @@ numClients = 0
 print("Server Starting...")
 
 @sio.event
-async def connect(sid, environ):
+async def connect(sid,environ):
     """On first client connect, start background CAN read loop."""
     global can_error_message_started
     global drive_task_started
@@ -66,10 +67,10 @@ async def connect(sid, environ):
     # Start background CAN loop once
     if not drive_task_started:
         drive_task_started = True
-        sio.start_background_task(read_drive_can_loop(drive_serial))
+        sio.start_background_task(read_drive_can_loop,drive_serial)
     if not can_error_message_started:
         can_error_message_started = True
-        sio.start_background_task(send_drive_status_request(drive_serial))
+        sio.start_background_task(send_drive_status_request,drive_serial)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)

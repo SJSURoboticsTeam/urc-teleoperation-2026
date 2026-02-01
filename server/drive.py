@@ -22,12 +22,13 @@ drive_receive_ID = {
     "RETURN_ESTIMATED_CHASSIS_VELOCITIES": '115',
     "CONFIG_ACK": '11A',
 }
+can_msg_count = 0
 
 
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio):
+def register_drive_events(sio,drive_serial):
     @sio.event
     async def driveCommands(sid, data):
         try:
