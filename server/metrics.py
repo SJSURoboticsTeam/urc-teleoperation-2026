@@ -7,11 +7,6 @@ import config # holds config values
 import psutil
 from pathlib import Path
 
-numClients = 0
-
-
-
-
 
 # get data from secrets
 load_dotenv()  # loads from .env
@@ -91,7 +86,7 @@ async def cpuloop(sio):
         await asyncio.sleep(config.RpiPollingRate)
 
 
-def register_metrics(sio):
+def register_socket_commands(sio):
     """Register metrics-related socket.io handlers.
 
     `sio` is expected to be a `socketio.AsyncServer` (async handlers are supported).
