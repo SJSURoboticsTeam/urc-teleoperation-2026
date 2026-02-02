@@ -22,7 +22,7 @@ export default function ExtrasView() {
     // Let the parent (App) control the viewport height. Use flex:1 so Map fills available space.
   return (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex flex-row items-center justify-center gap-6">
+            <div className="flex flex-row items-center justify-center">
               <Button style={{marginRight: 5,marginLeft: 5}} onClick={() => setcurrentView("Map")} variant="contained">Large Map</Button>
               <Button style={{marginRight: 5,marginLeft: 5}} onClick={() => setcurrentView("Files")} variant="contained">Files</Button>
               <Button style={{marginRight: 5,marginLeft: 5}} onClick={() => setcurrentView("SpeedTest")} variant="contained">SpeedTest</Button>
