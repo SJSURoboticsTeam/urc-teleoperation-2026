@@ -2,9 +2,46 @@ from can_serial import CanSerial
 import socketio
 import uvicorn
 import metrics
+import asyncio
+import signal
+import sys
 from metrics import asyncsshloop, cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 
+# =================== Clean Shutdown ===================
+# tell python how to shutdown the program cleanly
+signal.signal(signal.SIGINT, lambda s, f: shutdown())
+signal.signal(signal.SIGTERM, lambda s, f: shutdown())
+shutting_down = False
+
+def shutdown():
+    # both the SIGINT and SIGTERM may both call the shutdown at the same time and run twice.
+    # checking makes it run only once
+    global shutting_down
+    if shutting_down:
+        return
+    shutting_down = True
+    print("\nShutting down... ")
+    try:
+        if drive_serial:
+            drive_serial.close()
+            print("Drive serial closed.")
+        else:
+            print("Drive was never connected.")
+    except Exception:
+        print("DRIVE WAS NOT DISCONNECTED!!!")
+        pass
+    try:
+        if arm_serial:
+            arm_serial.close()
+            print("Arm serial closed.")
+        else:
+            print("Arm was never connected.")
+    except Exception:
+        print("ARM WAS NOT DISCONNECTED!!!")
+        pass
+    sys.exit(0)
+# =================== Setup, CAN connections ===================
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 #uncomment to use the debug admin ui
@@ -15,7 +52,7 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upg
 app = socketio.ASGIApp(sio)
 
 # CAN buses
-print("Starting...")
+print("Preparing for CAN...")
 drive_serial = None
 arm_serial = None
 try:
@@ -48,8 +85,9 @@ cpu_started = False
 # arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
 # arm_thread.start()
 
+
+
 # =================== Start Server ===================
-print("Server Starting...")
 
 @sio.event
 async def connect(sid,environ):
@@ -87,5 +125,15 @@ async def disconnect(sid):
     metrics.numClients -= 1
 
 
-uvicorn.run(app, host='0.0.0.0', port=4000, log_level="warning")
-print("Server Started!")
+config = uvicorn.Config(
+    app,
+    host="0.0.0.0",
+    port=4000,
+    log_level="warning",
+)
+server = uvicorn.Server(config)
+try:
+    print("Server Starting...")
+    server.run()
+finally:
+    shutdown()
