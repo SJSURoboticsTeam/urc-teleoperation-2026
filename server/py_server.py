@@ -46,10 +46,10 @@ def shutdown():
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 #uncomment to use the debug admin ui
-#sio.instrument(auth={
-#    'username': 'admin',
-#    'password': 'admin',
-#})
+# sio.instrument(auth={
+#     'username': 'admin',
+#     'password': 'admin',
+# })
 app = socketio.ASGIApp(sio)
 
 # CAN buses
