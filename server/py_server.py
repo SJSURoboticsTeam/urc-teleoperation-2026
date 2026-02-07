@@ -7,6 +7,7 @@ import signal
 import sys
 from metrics import asyncsshloop, cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
+from camera_pt import register_camera_pt_events
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -69,8 +70,6 @@ except Exception as e:
     print("FAILURE TO CONNECT ARM!" + str(e))
 
 
-register_metric_events(sio)
-register_drive_events(sio,drive_serial)
 
 
 # =================== Initialization ===================
@@ -81,6 +80,9 @@ async_ssh_started = False
 cpu_started = False
 
 
+register_metric_events(sio)
+register_drive_events(sio,drive_serial)
+register_camera_pt_events(sio,drive_serial)
 
 # arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
 # arm_thread.start()

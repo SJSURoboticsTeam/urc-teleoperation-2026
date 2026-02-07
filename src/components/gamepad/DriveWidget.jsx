@@ -64,7 +64,12 @@ export default function DriveManualInput({
         rotVel: rotationalVelocity,
         moduleConflicts: Number(moduleConflicts),
       };
-      socket.emit("driveCommands", driveCommands);
+    socket.emit("driveCommands", driveCommands);
+    let panCommands = {
+        xVel: panHeightVelocity,
+        yVel: panWidthVelocity,
+      };
+    socket.emit("panCommands", panCommands);
   }
 
   const velocities = [
