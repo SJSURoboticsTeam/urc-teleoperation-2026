@@ -1,16 +1,16 @@
-import "react-resizable/css/styles.css"; // Import default styles
+import "react-resizable/css/styles.css";
 import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../socket.io/socket.jsx";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
-import { useSocketStatus } from '../socket.io/socket';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import Slider from '@mui/material/Slider';
+import { useSocketStatus } from "../socket.io/socket";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import Slider from "@mui/material/Slider";
 
-
+const HEADER_HEIGHT = 56;
 
 export default function DriveManualInput({
   sidewaysVelocity,
@@ -20,201 +20,181 @@ export default function DriveManualInput({
   panHeightVelocity,
   panWidthVelocity,
   setDriveConnectedOne,
-  driveConnectedOne
+  driveConnectedOne,
 }) {
- 
-  const serverConnected = useSocketStatus()
-  const [txon,settxon] = useState(false)
+  const serverConnected = useSocketStatus();
+  const [txon, settxon] = useState(false);
 
-  // Sends drive commands to server at the frame rate constant
   useEffect(() => {
     const interval = setInterval(() => {
-      let driveCommands = {
+      if (!serverConnected || driveConnectedOne == null || !txon) return;
+
+      socket.emit("driveCommands", {
         xVel: sidewaysVelocity,
         yVel: forwardsVelocity,
         rotVel: rotationalVelocity,
         moduleConflicts: Number(moduleConflicts),
-      };
-      if(serverConnected && (driveConnectedOne != null) && txon) {
-      socket.emit("driveCommands", driveCommands);
-      }
-    }, FrameRateConstant)
+      });
+    }, FrameRateConstant);
 
     return () => clearInterval(interval);
-  }, [sidewaysVelocity, forwardsVelocity, rotationalVelocity, moduleConflicts, serverConnected,driveConnectedOne,txon]);
-
+  }, [
+    sidewaysVelocity,
+    forwardsVelocity,
+    rotationalVelocity,
+    moduleConflicts,
+    serverConnected,
+    driveConnectedOne,
+    txon,
+  ]);
 
   useEffect(() => {
-    let panCommands = {
+    if (!serverConnected || driveConnectedOne == null || !txon) return;
+
+    socket.emit("panCommands", {
       xVel: panHeightVelocity,
       yVel: panWidthVelocity,
-    };
-    if(serverConnected && (driveConnectedOne != null) && txon) {
-    socket.emit("panCommands", panCommands);
-    }
-  }, [panHeightVelocity, panWidthVelocity, serverConnected,driveConnectedOne,txon]);
+    });
+  }, [
+    panHeightVelocity,
+    panWidthVelocity,
+    serverConnected,
+    driveConnectedOne,
+    txon,
+  ]);
 
-  const handleClick = (event) => {
-    socket.emit("driveHoming");
+  const handleHoming = () => socket.emit("driveHoming");
+
+  const handleManualTx = () => {
+    socket.emit("driveCommands", {
+      xVel: sidewaysVelocity,
+      yVel: forwardsVelocity,
+      rotVel: rotationalVelocity,
+      moduleConflicts: Number(moduleConflicts),
+    });
+
+    socket.emit("panCommands", {
+      xVel: panHeightVelocity,
+      yVel: panWidthVelocity,
+    });
   };
 
-  const handleManualClick = (event) => {
-    let driveCommands = {
-        xVel: sidewaysVelocity,
-        yVel: forwardsVelocity,
-        rotVel: rotationalVelocity,
-        moduleConflicts: Number(moduleConflicts),
-      };
-    socket.emit("driveCommands", driveCommands);
-    let panCommands = {
-        xVel: panHeightVelocity,
-        yVel: panWidthVelocity,
-      };
-    socket.emit("panCommands", panCommands);
-  }
-
-  const drivevelocities = [
-    { id: forwardsVelocity, name: "X Vel" },
-    { id: sidewaysVelocity, name: "Y Vel" },
-    { id: rotationalVelocity, name: "Rotational" },
-  ];
-
-  const panvelocities = [
-    { id: panWidthVelocity, name: "Pan W" },
-    { id: panHeightVelocity, name: "Pan H" },
-  ];
+  const VelocityItem = ({ value, label }) => (
+    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <Box
+        sx={{
+          width: 75,
+          height: 50,
+          border: "2px solid black",
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography variant="body1">{value}</Typography>
+      </Box>
+      <Typography variant="body2" sx={{ marginTop: 0.5 }}>
+        {label}
+      </Typography>
+    </Box>
+  );
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-  <Box
-  sx={{
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: 3,
-  }}
->
-
-      <Box sx={{ border: '1px solid', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className='flex flex-row items-center justify-center'>
-      <FormControlLabel control={<Switch checked={txon} onChange={(e) => settxon(e.target.checked)} />} label="AUTO TX" />
-      <Button
-        onClick={handleClick}
-        variant="contained"
-        style={{marginRight: 5,marginLeft: 5}}
-        sx={{
-          backgroundColor: "#1976d2",
-          color: "#fff",
-          "&:hover": { backgroundColor: "#115293" },
-        }}
-      >
-        Homing
-      </Button>
-      <Button
-        onClick={handleManualClick}
-        variant="contained"
-        style={{marginRight: 5,marginLeft: 5}}
-        sx={{
-          backgroundColor: "#1976d2",
-          color: "#fff",
-          "&:hover": { backgroundColor: "#115293" },
-        }}
-      >
-        MANUAL TX
-      </Button>
-      </div>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 2,
-          height: 100,
-          marginBottom: 5,
-          marginTop: 2,
-        }}>
-        {drivevelocities.map((velocity) => (
+    <Box sx={{ display: "flex", justifyContent: "center" }}>
+      <Box sx={{ display: "flex", gap: 3 }}>
+        {/* LEFT COLUMN */}
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          {/* HEADER */}
           <Box
             sx={{
+              height: HEADER_HEIGHT,
               display: "flex",
-              justifyContent: "center",
-              flexDirection: "column",
               alignItems: "center",
-              border: "2px solid #000000",
-              width: "75px",
-              height: "50px",
-              borderRadius: 2,
-              marginTop: 5,
-              marginBottom: 10,
+              justifyContent: "center",
+              gap: 1,
             }}
           >
-            <Typography variant="body1" sx={{ marginTop: 6 }}>
-              {velocity.id}
-            </Typography>
-            <Typography variant="body2" sx={{ marginTop: 3 }}>
-              {velocity.name}
-            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={txon}
+                  onChange={(e) => settxon(e.target.checked)}
+                />
+              }
+              label="AUTO TX"
+              componentsProps={{
+                typography: {
+                  sx: { whiteSpace: "nowrap" },
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleHoming}
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              Homing
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleManualTx}
+              sx={{ whiteSpace: "nowrap" }}
+            >
+              MANUAL TX
+            </Button>
           </Box>
-        ))}
-      </Box>
-      </Box>
 
-
-      <Box sx={{ border: '1px solid', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div className='flex flex-row items-center justify-center'>
-<div className="h-9 flex items-center">
-  <Slider
-    sx={{
-      width: 200,
-      '& .MuiSlider-thumb': { width: 20, height: 20 },
-    }}
-  />
-</div>
-      
-      </div>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 2,
-          height: 100,
-          marginBottom: 5,
-          marginTop: 2,
-        }}>
-        {panvelocities.map((velocity) => (
+          {/* CONTENT */}
           <Box
             sx={{
+              height: 120,
               display: "flex",
               justifyContent: "center",
-              flexDirection: "column",
               alignItems: "center",
-              border: "2px solid #000000",
-              width: "75px",
-              height: "50px",
-              borderRadius: 2,
-              marginTop: 5,
-              marginBottom: 10,
+              gap: 2,
             }}
           >
-            <Typography variant="body1" sx={{ marginTop: 6 }}>
-              {velocity.id}
-            </Typography>
-            <Typography variant="body2" sx={{ marginTop: 3 }}>
-              {velocity.name}
-            </Typography>
+            <VelocityItem value={forwardsVelocity} label="X Vel" />
+            <VelocityItem value={sidewaysVelocity} label="Y Vel" />
+            <VelocityItem value={rotationalVelocity} label="Rotational" />
           </Box>
-        ))}
-      </Box>
-      </Box>
+        </Box>
 
+        {/* RIGHT COLUMN */}
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          {/* HEADER */}
+          <Box
+            sx={{
+              height: HEADER_HEIGHT,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Slider 
+            step={1}
+            marks
+            min={1}
+            max={8}
+            valueLabelDisplay="auto"
+            sx={{ width: 150 }} />
+          </Box>
+
+          {/* CONTENT */}
+          <Box
+            sx={{
+              height: 120,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <VelocityItem value={panWidthVelocity} label="Pan W" />
+            <VelocityItem value={panHeightVelocity} label="Pan H" />
+          </Box>
+        </Box>
       </Box>
     </Box>
   );
