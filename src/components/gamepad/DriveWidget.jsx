@@ -8,6 +8,7 @@ import { FrameRateConstant } from "./FrameRateConstant.js";
 import { useSocketStatus } from '../socket.io/socket';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import Slider from '@mui/material/Slider';
 
 
 
@@ -72,13 +73,17 @@ export default function DriveManualInput({
     socket.emit("panCommands", panCommands);
   }
 
-  const velocities = [
+  const drivevelocities = [
     { id: forwardsVelocity, name: "X Vel" },
     { id: sidewaysVelocity, name: "Y Vel" },
     { id: rotationalVelocity, name: "Rotational" },
+  ];
+
+  const panvelocities = [
     { id: panWidthVelocity, name: "Pan W" },
     { id: panHeightVelocity, name: "Pan H" },
   ];
+
   return (
     <Box
       sx={{
@@ -88,6 +93,9 @@ export default function DriveManualInput({
         justifyContent: "center",
       }}
     >
+  <div className='flex flex-row items-center justify-center'>
+
+      <div className='border'>
       <div className='flex flex-row items-center justify-center'>
       <FormControlLabel control={<Switch checked={txon} onChange={(e) => settxon(e.target.checked)} />} label="AUTO TX" />
       <Button
@@ -125,7 +133,7 @@ export default function DriveManualInput({
           marginBottom: 5,
           marginTop: 2,
         }}>
-        {velocities.map((velocity) => (
+        {drivevelocities.map((velocity) => (
           <Box
             sx={{
               display: "flex",
@@ -149,6 +157,60 @@ export default function DriveManualInput({
           </Box>
         ))}
       </Box>
+      </div >
+
+
+      <div className='border'>
+      <div className='flex flex-row items-center justify-center'>
+        <Slider
+  aria-label="Temperature"
+  defaultValue={30}
+  valueLabelDisplay="auto"
+  shiftStep={30}
+  step={10}
+  marks
+  min={10}
+  max={110}
+/>
+      
+      </div>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+          height: 100,
+          marginBottom: 5,
+          marginTop: 2,
+        }}>
+        {panvelocities.map((velocity) => (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              flexDirection: "column",
+              alignItems: "center",
+              border: "2px solid #000000",
+              width: "75px",
+              height: "50px",
+              borderRadius: 2,
+              marginTop: 5,
+              marginBottom: 10,
+            }}
+          >
+            <Typography variant="body1" sx={{ marginTop: 6 }}>
+              {velocity.id}
+            </Typography>
+            <Typography variant="body2" sx={{ marginTop: 3 }}>
+              {velocity.name}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      </div>
+
+      </div>
     </Box>
   );
 }
