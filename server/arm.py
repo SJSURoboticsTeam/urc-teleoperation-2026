@@ -1,3 +1,4 @@
+import asyncio
 
 # Track Servo Address: 0x120 
 # Shoulder Servo Address: 0x121,
@@ -32,24 +33,75 @@ arm_receive_ID = {
     "CLAMP": '225',
 }
 
+# =================== ARM CAN Data Parsing & Emit =======================
+arm_parse_functions = {
+    arm_receive_ID['RECEIVE_STOP']: lambda _: parse_receive_stop(),
+    arm_receive_ID['TRACK']:        lambda data: parse_arm_servo(data),
+    arm_receive_ID['ELBOW']:        lambda data: parse_arm_servo(data),
+    arm_receive_ID['WRIST_EF1']:    lambda data: parse_arm_servo(data),
+    arm_receive_ID['WRIST_EF2']:    lambda data: parse_arm_servo(data),
+    arm_receive_ID['CLAMP']:        lambda data: parse_arm_servo(data)
+}
+
+def register_arm_events(sio, arm_serial):
+    @sio.event
+    async def armCommands(sid, data):
+        # 8 bit signed integer correlating to 2^6x
+        elbow_scaled = int(data['elbow'] * (2**6))
+        elbow = elbow_scaled.to_bytes(2, 'big', signed=True).hex()
+        # shoulder = int(data.controllerShoulder).to_bytes(4, 'big', signed=True).hex()
+        # track = int(data.controllerTrack).to_bytes(4, 'big', signed=True).hex()
+        # pitch = int(data.controllerPitch).to_bytes(4, 'big', signed=True).hex()
+        # roll = int(data.controllerRoll).to_bytes(4, 'big', signed=True).hex()
+        # effector = int(data.controllerEffector).to_bytes(4, 'big', signed=True).hex()
+
+        can_msg = f't{arm_send_ID["ELBOW"]}312{elbow}\r'
+        await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        
+        # can_msg = f't{arm_send_ID["SHOULDER"]}312{shoulder}\r'
+        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        
+        # can_msg = f't{arm_send_ID["TRACK"]}312{track}\r'
+        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
+
+        print(f'[{sid}] Arm command sent: {can_msg}')
+
+def parse_receive_stop():
+    print("Received Arm Stop")
+
+def parse_arm_servo(data):
+
+    address_map = {
+        "220": 'Track',
+        "221": 'Shoulder',
+        "222": 'Elbow',
+        "223": 'Wrist EF1',
+        "224": 'Wrist EF2',
+        "225": 'Clamp'
+    }
+
+    print(f'{address_map[data[1:4]]} servo position set reply')
+
 def parse_arm_data(data):
     try:
-        payload = {"armStatus": "example"}
-        sio.emit('armUpdate', payload)
+        string_data = data.decode()
+        print(string_data)
+        if len(string_data) < 5:
+            return
+
+        address = string_data[1:4]
+        arm_parse_functions[address](data)
     except Exception as e:
-        print(f'Error parsing armr data: {e}')
+        print(f'Error parsing arm data: {e}')
 
-
-def read_arm_can_loop():
+async def read_arm_can_loop(arm_serial):
     try:
         while True:
-            data = arm_serial.read_can(None)
+            # data = arm_serial.read_can(None)
+            data = await asyncio.to_thread(arm_serial.read_can, None)
             if data:
                 parse_arm_data(data)
-            time.sleep(0.01)
+            # time.sleep(0.01)
+            await asyncio.sleep(0.01)
     except Exception as e:
         print(f'Arm CAN thread error: {e}')
-
-
-#def register_arm_events(sio):
-

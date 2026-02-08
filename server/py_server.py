@@ -7,6 +7,7 @@ import signal
 import sys
 from metrics import asyncsshloop, cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
+from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 
 # =================== Clean Shutdown ===================
@@ -64,7 +65,7 @@ try:
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
 try:
-    arm_serial = CanSerial('/dev/ttyACM1')
+    arm_serial = CanSerial('/dev/tty.usbserial-59760073211')
     print("Arm connected.")
 except Exception as e:
     print("FAILURE TO CONNECT ARM!" + str(e))
@@ -76,18 +77,15 @@ except Exception as e:
 # Background task guard
 can_error_message_started = False
 drive_task_started = False
+arm_task_started = False
 async_ssh_started = False
 cpu_started = False
 
 
 register_metric_events(sio)
 register_drive_events(sio,drive_serial)
+register_arm_events(sio, arm_serial)
 register_camera_pt_events(sio,drive_serial)
-
-# arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
-# arm_thread.start()
-
-
 
 # =================== Start Server ===================
 
@@ -96,6 +94,7 @@ async def connect(sid,environ):
     """On first client connect, start background CAN read loop."""
     global can_error_message_started
     global drive_task_started
+    global arm_task_started
     global async_ssh_started
     global cpu_started
     global numClients
@@ -110,6 +109,9 @@ async def connect(sid,environ):
     if not drive_task_started:
         drive_task_started = True
         sio.start_background_task(read_drive_can_loop,drive_serial)
+    if not arm_task_started:
+        arm_task_started = True
+        sio.start_background_task(read_arm_can_loop, arm_serial)
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request,drive_serial)

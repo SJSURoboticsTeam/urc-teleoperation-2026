@@ -25,33 +25,42 @@ export default function ArmView({
   const [roll, setRoll] = useState(0);
   const [effector, setEffector] = useState(0);
 
-  setInterval(() => {
-    let armCommands = {
-      /**
-           Arm_mode[0] = homing
-            // homing first
-            Arm_mode[0] = 1 = angles for base/shoulder/elbow
-            Arm_mode[0] = 2 = angles for roll/pitch yaw
-           */
-      controllerElbow,
-      controllerShoulder,
-      controllerTrack,
-      controllerPitch,
-      controllerRoll,
-      controllerEffector,
-    };
-    socket.emit("armCommands", armCommands);
-  }, FrameRateConstant);
+  // setInterval(() => {
+  //   let armCommands = {
+  //     /**
+  //          Arm_mode[0] = homing
+  //           // homing first
+  //           Arm_mode[0] = 1 = angles for base/shoulder/elbow
+  //           Arm_mode[0] = 2 = angles for roll/pitch yaw
+  //          */
+  //     controllerElbow,
+  //     controllerShoulder,
+  //     controllerTrack,
+  //     controllerPitch,
+  //     controllerRoll,
+  //     controllerEffector,
+  //   };
+  //   socket.emit("armCommands", armCommands);
+  // }, FrameRateConstant);
 
   const handleManualUpdate = () => {
-    console.log("Manual positions:", {
+    let armCommands = {
       elbow,
       shoulder,
       track,
       pitch,
       roll,
       effector,
-    });
+    };
+    socket.emit("armCommands", armCommands);
+    // console.log("Manual positions:", {
+    //   elbow,
+    //   shoulder,
+    //   track,
+    //   pitch,
+    //   roll,
+    //   effector,
+    // });
   };
 
   return (
