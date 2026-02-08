@@ -56,21 +56,35 @@ export default function GamepadPanel({
           lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
           ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
           rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
+          
         };
+        console.log(newVel.lx);
         setDriveVelocities((prev) => {
+            const changed =
+          prev.lx !== newVel.lx ||
+          prev.ly !== newVel.ly ||
+          prev.rx !== newVel.rx;
+
+        if (changed) {
           onDriveVelocitiesChange?.(newVel);
           return newVel;
+        }
+
+        return prev;
         });
       }
     };
     if (driveConnectedOne != null) {
-   intervalId = setInterval(pollAxes, FrameRateConstant);
+ const loop = () => {
+   pollAxes();
+   animationIdRef.current = requestAnimationFrame(loop);
+ };
+ animationIdRef.current = requestAnimationFrame(loop);
  } else {
    const zero = { lx: 0, ly: 0, rx: 0 };
    setDriveVelocities(zero);
    onDriveVelocitiesChange?.(zero);
  }
-    console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
     return () => intervalId && clearInterval(intervalId);
 }, [driveConnectedOne, onDriveVelocitiesChange]);
 
@@ -133,7 +147,7 @@ useEffect(() => {
     animationIdRef.current = null;
     lastTimeRef.current = null;
   };
-}, [driveConnectedOne,panSpeed]);
+}, [driveConnectedOne,panSpeed,setPanAngles]);
 
 
   // arm polling
