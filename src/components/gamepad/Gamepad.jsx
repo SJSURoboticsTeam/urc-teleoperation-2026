@@ -58,16 +58,8 @@ export default function GamepadPanel({
           rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
         };
         setDriveVelocities((prev) => {
-          if (
-            prev.lx !== newVel.lx ||
-            prev.ly !== newVel.ly ||
-            prev.rx !== newVel.rx
-          ) {
-            onDriveVelocitiesChange?.(newVel);
-            return newVel;
-          }
-          onDriveVelocitiesChange?.(prev);
-          return prev; // no change = no re-render
+          onDriveVelocitiesChange?.(newVel);
+          return newVel;
         });
       }
     };
