@@ -19,8 +19,11 @@ function App() {
   const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
   const [forwardsVelocity, setForwardVelocity] = useState(0);
   const [rotationalVelocity, setRotationalVelocity] = useState(0);
-  const [panHeightVelocity, setPanHeightVelocity]=useState(0);
-  const [panWidthVelocity, setPanWidthVelocity]=useState(0);
+  const [panAngles, setPanAngles]=useState({
+    px: 0,
+    py: 0,
+  });
+  const [panSpeed,setPanSpeed] = useState(0);
   const [armConnectedOne,setArmConnectedOne]=useState(null)
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 
@@ -40,10 +43,6 @@ function App() {
     setRotationalVelocity(rx);
     // console.log(lx,ly,rx)
   };
-  const handlePanVelocitiesChange=({px,py})=>{
-    setPanHeightVelocity(py);
-    setPanWidthVelocity(px);
-  }
 
 
   const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
@@ -67,7 +66,7 @@ function App() {
       case "ArmView":
         return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } showCameras={camsVisibility} />;
       case "DriveView":
-        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={ <DriveComponents panAngles={panAngles} moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}   driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
       case "ExtrasView":
         return <SplitView CurrentView={<ExtrasView /> } showCameras={camsVisibility} />;
       case "ScienceView":
@@ -82,7 +81,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
+      <TopAppBar panSpeed={panSpeed} setPanSpeed={setPanSpeed} panAngles={panAngles} setPanAngles={setPanAngles} setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
       
       <Box
         component="main"

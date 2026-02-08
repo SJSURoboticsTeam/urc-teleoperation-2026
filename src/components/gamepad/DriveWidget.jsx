@@ -18,8 +18,7 @@ export default function DriveManualInput({
   forwardsVelocity,
   rotationalVelocity,
   moduleConflicts,
-  panHeightVelocity,
-  panWidthVelocity,
+  panAngles,
   setDriveConnectedOne,
   driveConnectedOne,
 }) {
@@ -53,12 +52,11 @@ export default function DriveManualInput({
     if (!serverConnected || driveConnectedOne == null || !txon) return;
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   }, [
-    panHeightVelocity,
-    panWidthVelocity,
+    panAngles,
     serverConnected,
     driveConnectedOne,
     txon,
@@ -75,8 +73,8 @@ export default function DriveManualInput({
     });
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   };
 
@@ -192,8 +190,8 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={panWidthVelocity} label="Pan W" />
-            <VelocityItem value={panHeightVelocity} label="Pan H" />
+            <VelocityItem value={panAngles.px} label="Pan W" />
+            <VelocityItem value={panAngles.py} label="Pan H" />
           </Box>
         </Box>
         <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>
