@@ -3,12 +3,8 @@ import { Button, Collapse, Paper } from "@mui/material";
 import GamepadDiv from "./GamepadManager";
 import { FrameRateConstant } from "./FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import { green } from "@mui/material/colors";
-import {red} from '@mui/material/colors'
-//usecontext
-//move armview into own component in arm folder
-//socket.emit for manual
-//prettier formatter
+import { green, red } from "@mui/material/colors";
+
 export default function GamepadPanel({
   driveGamepads,
   onDriveVelocitiesChange,
@@ -16,25 +12,15 @@ export default function GamepadPanel({
   onArmVelocitiesChange,
   currentView,
   setModuleConflicts,
-  panAngles,
   panSpeed,
   setPanAngles,
-  driveConnectedOne, 
-  setDriveConnectedOne
+  driveConnectedOne,
+  setDriveConnectedOne,
 }) {
-  const [driveVelocities, setDriveVelocities] = useState({
-    lx: 0,
-    ly: 0,
-    rx: 0,
-  });
-  const [open, setOpen] = useState(false);
-  const [panVelocities, setPanVelocities] = useState({ 
-    px: 0, 
-    py: 0 
-  });
-  const [armConnectedOne, setArmConnectedOne] = useState(null);
-  const [page, setPage] = useState("Drive");
-  const [prevTime, setPrevTime] = useState();
+  /* -------------------- state -------------------- */
+
+  const [driveVelocities, setDriveVelocities] = useState({ lx: 0, ly: 0, rx: 0 });
+  const [panVelocities, setPanVelocities] = useState({ px: 0, py: 0 });
   const [armVelocities, setArmVelocities] = useState({
     Elbow: 0,
     Shoulder: 0,
@@ -44,125 +30,117 @@ export default function GamepadPanel({
     Effector: 0,
   });
 
+  const [armConnectedOne, setArmConnectedOne] = useState(null);
+  const [armManualDisconnect, setArmManualDisconnect] = useState(false);
+
+  const [open, setOpen] = useState(false);
+  const [page, setPage] = useState("Drive");
+  const [info, setInfo] = useState("");
+
+  /* -------------------- refs -------------------- */
+
+  const driveRafRef = useRef(null);
+  const panRafRef = useRef(null);
+  const lastTimeRef = useRef(null);
+  const panAnglesRef = useRef({ px: 0, py: 0 });
+
+  /* -------------------- drive polling -------------------- */
+
   useEffect(() => {
-    let intervalId;
-    const deadZone = (v, threshold = 0.15) =>
-      Math.abs(v) <= threshold ? 0 : v;
+    if (driveConnectedOne == null) {
+      const zero = { lx: 0, ly: 0, rx: 0 };
+      setDriveVelocities(zero);
+      onDriveVelocitiesChange?.(zero);
+      return;
+    }
+
+    const deadZone = (v, t = 0.15) => (Math.abs(v) <= t ? 0 : v);
 
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
-      if (gp) {
-        const newVel = {
-          lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
-          ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
-          rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
-          
-        };
-        console.log(newVel.lx);
-        setDriveVelocities((prev) => {
-            const changed =
-          prev.lx !== newVel.lx ||
-          prev.ly !== newVel.ly ||
-          prev.rx !== newVel.rx;
+      if (!gp) return;
 
-        if (changed) {
-          onDriveVelocitiesChange?.(newVel);
-          return newVel;
-        }
-
-        return prev;
-        });
-      }
-    };
-    if (driveConnectedOne != null) {
- const loop = () => {
-   pollAxes();
-   animationIdRef.current = requestAnimationFrame(loop);
- };
- animationIdRef.current = requestAnimationFrame(loop);
- } else {
-   const zero = { lx: 0, ly: 0, rx: 0 };
-   setDriveVelocities(zero);
-   onDriveVelocitiesChange?.(zero);
- }
-    return () => intervalId && clearInterval(intervalId);
-}, [driveConnectedOne, onDriveVelocitiesChange]);
-
-
-  // pan controller polling for drive
-
-  const lastTimeRef = useRef(null);
-  const animationIdRef = useRef(null);
-
-  // pan
-  const panAnglesRef = useRef({ px: 0, py: 0 });
-
-useEffect(() => {
-  if (driveConnectedOne == null) {
-    setPanVelocities({ px: 0, py: 0 });
-    return;
-  }
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-
-  const pollAxes = (time) => {
-    if (lastTimeRef.current == null) {
-      lastTimeRef.current = time;
-    }
-
-    const deltaTime = (time - lastTimeRef.current) / 1000;
-    lastTimeRef.current = time;
-
-    const gp = navigator.getGamepads()[driveConnectedOne];
-
-    if (gp?.buttons) {
-      const newVel = {
-        px: gp.buttons[15]?.pressed ? 1 :
-            gp.buttons[14]?.pressed ? -1 : 0,
-        py: gp.buttons[12]?.pressed ? 1 :
-            gp.buttons[13]?.pressed ? -1 : 0,
+      const next = {
+        lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100),
+        ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100),
+        rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100),
       };
 
-      // integrate in ref (real-time domain)
-      panAnglesRef.current.px += newVel.px * deltaTime * panSpeed;
-      panAnglesRef.current.py += newVel.py * deltaTime * panSpeed;
-      
-      panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
-      panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
-
-      // publish to React (UI domain)
-      setPanAngles({
-        px: Math.round(panAnglesRef.current.px ),
-        py: Math.round(panAnglesRef.current.py ),
+      setDriveVelocities((prev) => {
+        if (
+          prev.lx !== next.lx ||
+          prev.ly !== next.ly ||
+          prev.rx !== next.rx
+        ) {
+          onDriveVelocitiesChange?.(next);
+          return next;
+        }
+        return prev;
       });
-      setPanVelocities(newVel);
+
+      driveRafRef.current = requestAnimationFrame(pollAxes);
+    };
+
+    driveRafRef.current = requestAnimationFrame(pollAxes);
+
+    return () => cancelAnimationFrame(driveRafRef.current);
+  }, [driveConnectedOne, onDriveVelocitiesChange]);
+
+  /* -------------------- pan polling -------------------- */
+
+  useEffect(() => {
+    if (driveConnectedOne == null) {
+      setPanVelocities({ px: 0, py: 0 });
+      return;
     }
 
-    animationIdRef.current = requestAnimationFrame(pollAxes);
-  };
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
-  animationIdRef.current = requestAnimationFrame(pollAxes);
+    const pollAxes = (time) => {
+      if (lastTimeRef.current == null) {
+        lastTimeRef.current = time;
+      }
 
-  return () => {
-    cancelAnimationFrame(animationIdRef.current);
-    animationIdRef.current = null;
-    lastTimeRef.current = null;
-  };
-}, [driveConnectedOne,panSpeed,setPanAngles]);
+      const dt = (time - lastTimeRef.current) / 1000;
+      lastTimeRef.current = time;
 
+      const gp = navigator.getGamepads()[driveConnectedOne];
+      if (gp?.buttons) {
+        const vel = {
+          px: gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0,
+          py: gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0,
+        };
 
-  // arm polling
-  const [armManualDisconnect, setArmManualDisconnect] = useState(false);
+        panAnglesRef.current.px += vel.px * dt * panSpeed;
+        panAnglesRef.current.py += vel.py * dt * panSpeed;
+
+        panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
+        panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
+
+        setPanAngles({
+          px: Math.round(panAnglesRef.current.px),
+          py: Math.round(panAnglesRef.current.py),
+        });
+
+        setPanVelocities(vel);
+      }
+
+      panRafRef.current = requestAnimationFrame(pollAxes);
+    };
+
+    panRafRef.current = requestAnimationFrame(pollAxes);
+
+    return () => {
+      cancelAnimationFrame(panRafRef.current);
+      lastTimeRef.current = null;
+    };
+  }, [driveConnectedOne, panSpeed, setPanAngles]);
+
+  /* -------------------- arm polling -------------------- */
+
   useEffect(() => {
     if (armManualDisconnect || armConnectedOne == null) {
-      setArmVelocities({
-        Elbow: 0,
-        Shoulder: 0,
-        Track: 0,
-        Pitch: 0,
-        Roll: 0,
-        Effector: 0,
-      });
-      onArmVelocitiesChange?.({
+      const zero = {
         Elbow: 0,
         Shoulder: 0,
         Track: 0,
@@ -170,74 +148,67 @@ useEffect(() => {
         Roll: 0,
         Effector: 0,
         armConnectedOne,
-      });
+      };
+      setArmVelocities(zero);
+      onArmVelocitiesChange?.(zero);
       return;
     }
+
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
-      if (gp) {
-        /**
-         * Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne
-         */
-        // rand mapping to test socket.emit and arm/drive ui
-        const newVal = {
-          Elbow: gp.axes[9],
-          Shoulder: gp.axes[1],
-          Track: gp.axes[3],
-          Pitch: gp.axes[0],
-          Roll: gp.axes[5],
-          Effector: gp.axes[6],
-          armConnectedOne,
-        };
-        setArmVelocities((prev) => {
-          const changed = Object.keys(newVal).some(
-            (key) => newVal[key] !== prev[key]
-          );
-          if (changed) {
-            onArmVelocitiesChange?.({ ...newVal, armConnectedOne });
-            return newVal;
-          }
-          onArmVelocitiesChange?.({ ...prev, armConnectedOne });
-          return prev;
-        });
-      }
+      if (!gp) return;
+
+      const next = {
+        Elbow: gp.axes[9],
+        Shoulder: gp.axes[1],
+        Track: gp.axes[3],
+        Pitch: gp.axes[0],
+        Roll: gp.axes[5],
+        Effector: gp.axes[6],
+        armConnectedOne,
+      };
+
+      setArmVelocities((prev) => {
+        const changed = Object.keys(next).some((k) => next[k] !== prev[k]);
+        onArmVelocitiesChange?.(changed ? next : prev);
+        return changed ? next : prev;
+      });
     };
-    const intervalId = setInterval(pollAxes, FrameRateConstant);
-    console.log(`Polling arm gamepad every ${FrameRateConstant}ms`);
-    return () => clearInterval(intervalId);
-  }, [armConnectedOne, armManualDisconnect]);
 
-  //console.log(driveGamepads) //dbg
-  const gpList = Object.values(driveGamepads);
-  //console.log(gpList); //dbg
+    const id = setInterval(pollAxes, FrameRateConstant);
+    return () => clearInterval(id);
+  }, [armConnectedOne, armManualDisconnect, onArmVelocitiesChange]);
 
-  //console.log(armGamepads) //dbg
-  const armList = Object.values(armGamepads);
-  //console.log(armList); //dbg
-
-  const [info, setInfo] = useState("");
+  /* -------------------- UI status icon -------------------- */
 
   useEffect(() => {
     if (currentView === "DriveView") {
       setInfo(
-        driveConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
-        ) : (
-          <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
-        )
+        <SportsEsportsIcon
+          sx={{
+            color: driveConnectedOne != null ? green[500] : red[500],
+            fontSize: 40,
+          }}
+        />
       );
     } else if (currentView === "ArmView") {
       setInfo(
-        armConnectedOne != null ? (
-          <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
-        ) : (
-          <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
-        )
+        <SportsEsportsIcon
+          sx={{
+            color: armConnectedOne != null ? green[500] : red[500],
+            fontSize: 40,
+          }}
+        />
       );
     } else {
-      setInfo(""); // empty string if neither view
+      setInfo("");
     }
   }, [currentView, driveConnectedOne, armConnectedOne]);
+
+  /* -------------------- render -------------------- */
+
+  const gpList = Object.values(driveGamepads);
+  const armList = Object.values(armGamepads);
 
   return (
     <div
@@ -252,65 +223,46 @@ useEffect(() => {
         marginRight: 20,
       }}
     >
-      <span
-        style={{
-          whiteSpace: "pre-wrap",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
         GAMEPADS{info}
       </span>
+
       <Collapse in={open}>
         <Paper
           sx={{
-            textAlign: "center",
             maxHeight: 225,
             width: 400,
-            overflowX: "hidden",
             overflowY: "auto",
-            left: "50%",
-            transform: "translateX(-50%)",
             position: "absolute",
             top: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
             zIndex: 1300,
-            padding: 1,
+            p: 1,
           }}
         >
           <Button
             size="small"
-            sx={{
-              textDecoration: page === "Drive" ? "underline" : "none",
-              color: page === "Drive" ? "black" : "gray",
-              "&:hover": {
-                textDecoration: page === "Drive" ? "underline" : "none",
-              },
-            }}
+            sx={{ textDecoration: page === "Drive" ? "underline" : "none" }}
             onClick={() => setPage("Drive")}
           >
             Drive
           </Button>
           <Button
             size="small"
-            sx={{
-              textDecoration: page === "Arm" ? "underline" : "none",
-              color: page === "Arm" ? "black" : "gray",
-              "&:hover": {
-                textDecoration: page === "Arm" ? "underline" : "none",
-              },
-            }}
+            sx={{ textDecoration: page === "Arm" ? "underline" : "none" }}
             onClick={() => setPage("Arm")}
           >
             Arm
           </Button>
+
           {page === "Drive" ? (
             <GamepadDiv
               setModuleConflicts={setModuleConflicts}
               gpList={gpList}
               connectedOne={driveConnectedOne}
               setConnectedOne={setDriveConnectedOne}
-              name={page}
+              name="Drive"
             />
           ) : (
             <GamepadDiv
@@ -318,7 +270,7 @@ useEffect(() => {
               gpList={armList}
               connectedOne={armConnectedOne}
               setConnectedOne={setArmConnectedOne}
-              name={page}
+              name="Arm"
             />
           )}
         </Paper>
@@ -326,4 +278,3 @@ useEffect(() => {
     </div>
   );
 }
-
