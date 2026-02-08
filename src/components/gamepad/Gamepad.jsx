@@ -87,51 +87,56 @@ export default function GamepadPanel({
   const lastTimeRef = useRef(null);
   const animationIdRef = useRef(null);
 
-  // pan controller polling for drive
-  useEffect(() => {
-    if (driveConnectedOne == null) {
-      setPanVelocities({ px: 0, py: 0 });
-      return;
-    }
+  // pan
+  const panAnglesRef = useRef({ px: 0, py: 0 });
 
-    const pollAxes = (time) => {
-      if (lastTimeRef.current == null) {
-        lastTimeRef.current = time;
-      }
-
-      const deltaTime = (time - lastTimeRef.current) / 1000;
-      lastTimeRef.current = time;
-
-      const gp = navigator.getGamepads()[driveConnectedOne];
-
-      if (gp) {
-        const newVel = {
-          px: gp.buttons[15]?.pressed ? 1 :
-              gp.buttons[14]?.pressed ? -1 : 0,
-          py: gp.buttons[12]?.pressed ? 1 :
-              gp.buttons[13]?.pressed ? -1 : 0,
-        };
-
-
-      setPanAngles(prev => ({
-        px: prev.px + newVel.px * deltaTime,
-        py: prev.py + newVel.py * deltaTime,
-      }));
-
-        setPanVelocities(newVel);
-
-      animationIdRef.current = requestAnimationFrame(pollAxes);
-    };
+useEffect(() => {
+  if (driveConnectedOne == null) {
+    setPanVelocities({ px: 0, py: 0 });
+    return;
   }
 
-    animationIdRef.current = requestAnimationFrame(pollAxes);
+  const pollAxes = (time) => {
+    if (lastTimeRef.current == null) {
+      lastTimeRef.current = time;
+    }
 
-    return () => {
-      cancelAnimationFrame(animationIdRef.current);
-      animationIdRef.current = null;
-      lastTimeRef.current = null;
-    };
-  }, [driveConnectedOne,panAngles,setPanAngles]);
+    const deltaTime = (time - lastTimeRef.current) / 1000;
+    lastTimeRef.current = time;
+
+    const gp = navigator.getGamepads()[driveConnectedOne];
+
+    if (gp?.buttons) {
+      const newVel = {
+        px: gp.buttons[15]?.pressed ? 1 :
+            gp.buttons[14]?.pressed ? -1 : 0,
+        py: gp.buttons[12]?.pressed ? 1 :
+            gp.buttons[13]?.pressed ? -1 : 0,
+      };
+
+      // integrate in ref (real-time domain)
+      panAnglesRef.current.px += newVel.px * deltaTime;
+      panAnglesRef.current.py += newVel.py * deltaTime;
+
+      // publish to React (UI domain)
+      setPanAngles({
+        px: Math.round(panAnglesRef.current.px * 10) / 10,
+        py: Math.round(panAnglesRef.current.py * 10) / 10,
+      });
+      setPanVelocities(newVel);
+    }
+
+    animationIdRef.current = requestAnimationFrame(pollAxes);
+  };
+
+  animationIdRef.current = requestAnimationFrame(pollAxes);
+
+  return () => {
+    cancelAnimationFrame(animationIdRef.current);
+    animationIdRef.current = null;
+    lastTimeRef.current = null;
+  };
+}, [driveConnectedOne]);
 
 
   // arm polling
