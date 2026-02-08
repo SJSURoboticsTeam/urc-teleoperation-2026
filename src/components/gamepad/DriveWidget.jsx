@@ -101,10 +101,10 @@ export default function DriveManualInput({
   );
 
   return (
-    <Box sx={{ display: "flex", justifyContent: "center" }}>
-      <Box sx={{ display: "flex", gap: 3 }}>
+    <Box sx={{  display: "flex", justifyContent: "center" }}>
+      <Box sx={{ display: "flex", gap: 1 }}>
         {/* LEFT COLUMN */}
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
+        <Box sx={{ border: 1.5, borderRadius: '8px', display: "flex", flexDirection: "column" }}>
           {/* HEADER */}
           <Box
             sx={{
@@ -162,7 +162,7 @@ export default function DriveManualInput({
         </Box>
 
         {/* RIGHT COLUMN */}
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
+        <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column" }}>
           {/* HEADER */}
           <Box
             sx={{
