@@ -17,6 +17,7 @@ export default function GamepadPanel({
   currentView,
   setModuleConflicts,
   panAngles,
+  setPanAngles,
   driveConnectedOne, 
   setDriveConnectedOne
 }) {
@@ -112,8 +113,10 @@ export default function GamepadPanel({
         };
 
 
-        panAngles.current.x += newVel.px * deltaTime;
-        panAngles.current.y += newVel.py * deltaTime;
+      setPanAngles(prev => ({
+        px: prev.px + newVel.px * deltaTime,
+        py: prev.py + newVel.py * deltaTime,
+      }));
 
         setPanVelocities(newVel);
 
@@ -128,7 +131,7 @@ export default function GamepadPanel({
       animationIdRef.current = null;
       lastTimeRef.current = null;
     };
-  }, [driveConnectedOne,panAngles]);
+  }, [driveConnectedOne,panAngles,setPanAngles]);
 
 
   // arm polling
