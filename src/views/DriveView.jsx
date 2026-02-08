@@ -18,7 +18,7 @@ export default function DriveComponents({sidewaysVelocity, forwardsVelocity, rot
                       panWidthVelocity={panWidthVelocity}
                       driveConnectedOne={driveConnectedOne} 
                       setDriveConnectedOne={setDriveConnectedOne}/>
-            <Wheel />
+            
             </div>
             <Map/>
         </div>
