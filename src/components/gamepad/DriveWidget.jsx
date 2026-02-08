@@ -93,9 +93,16 @@ export default function DriveManualInput({
         justifyContent: "center",
       }}
     >
-  <div className='flex flex-row items-center justify-center'>
+  <Box
+  sx={{
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 3,
+  }}
+>
 
-      <div className='border'>
+      <Box sx={{ border: '1px solid', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className='flex flex-row items-center justify-center'>
       <FormControlLabel control={<Switch checked={txon} onChange={(e) => settxon(e.target.checked)} />} label="AUTO TX" />
       <Button
@@ -157,21 +164,19 @@ export default function DriveManualInput({
           </Box>
         ))}
       </Box>
-      </div >
+      </Box>
 
 
-      <div className='border'>
+      <Box sx={{ border: '1px solid', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className='flex flex-row items-center justify-center'>
-        <Slider
-  aria-label="Temperature"
-  defaultValue={30}
-  valueLabelDisplay="auto"
-  shiftStep={30}
-  step={10}
-  marks
-  min={10}
-  max={110}
-/>
+<div className="h-9 flex items-center">
+  <Slider
+    sx={{
+      width: 200,
+      '& .MuiSlider-thumb': { width: 20, height: 20 },
+    }}
+  />
+</div>
       
       </div>
       <Box
@@ -208,9 +213,9 @@ export default function DriveManualInput({
           </Box>
         ))}
       </Box>
-      </div>
+      </Box>
 
-      </div>
+      </Box>
     </Box>
   );
 }
