@@ -174,12 +174,12 @@ export default function DriveManualInput({
             }}
           >
             <Slider 
-            step={1}
+            step={10}
             marks
             value={panSpeed}
             onChange={(_, value) => setPanSpeed(value)}
-            min={1}
-            max={8}
+            min={10}
+            max={100}
             valueLabelDisplay="auto"
             sx={{ width: 150 }} />
           </Box>

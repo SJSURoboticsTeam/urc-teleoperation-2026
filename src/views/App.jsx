@@ -23,7 +23,7 @@ function App() {
     px: 0,
     py: 0,
   });
-  const [panSpeed,setPanSpeed] = useState(8);
+  const [panSpeed,setPanSpeed] = useState(30);
   const [armConnectedOne,setArmConnectedOne]=useState(null)
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 

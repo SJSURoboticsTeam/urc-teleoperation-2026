@@ -96,6 +96,7 @@ useEffect(() => {
     setPanVelocities({ px: 0, py: 0 });
     return;
   }
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
   const pollAxes = (time) => {
     if (lastTimeRef.current == null) {
@@ -118,11 +119,14 @@ useEffect(() => {
       // integrate in ref (real-time domain)
       panAnglesRef.current.px += newVel.px * deltaTime * panSpeed;
       panAnglesRef.current.py += newVel.py * deltaTime * panSpeed;
+      
+      panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
+      panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
 
       // publish to React (UI domain)
       setPanAngles({
-        px: Math.round(panAnglesRef.current.px * 10) / 10,
-        py: Math.round(panAnglesRef.current.py * 10) / 10,
+        px: Math.round(panAnglesRef.current.px ),
+        py: Math.round(panAnglesRef.current.py ),
       });
       setPanVelocities(newVel);
     }
@@ -137,7 +141,7 @@ useEffect(() => {
     animationIdRef.current = null;
     lastTimeRef.current = null;
   };
-}, [driveConnectedOne]);
+}, [driveConnectedOne,panSpeed]);
 
 
   // arm polling
