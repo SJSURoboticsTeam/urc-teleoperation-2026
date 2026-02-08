@@ -17,6 +17,7 @@ export default function GamepadPanel({
   currentView,
   setModuleConflicts,
   panAngles,
+  panSpeed,
   setPanAngles,
   driveConnectedOne, 
   setDriveConnectedOne
@@ -115,8 +116,8 @@ useEffect(() => {
       };
 
       // integrate in ref (real-time domain)
-      panAnglesRef.current.px += newVel.px * deltaTime;
-      panAnglesRef.current.py += newVel.py * deltaTime;
+      panAnglesRef.current.px += newVel.px * deltaTime * panSpeed;
+      panAnglesRef.current.py += newVel.py * deltaTime * panSpeed;
 
       // publish to React (UI domain)
       setPanAngles({

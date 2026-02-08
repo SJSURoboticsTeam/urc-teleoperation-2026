@@ -19,6 +19,8 @@ export default function DriveManualInput({
   rotationalVelocity,
   moduleConflicts,
   panAngles,
+  panSpeed,
+  setPanSpeed,
   setDriveConnectedOne,
   driveConnectedOne,
 }) {
@@ -174,6 +176,8 @@ export default function DriveManualInput({
             <Slider 
             step={1}
             marks
+            value={panSpeed}
+            onChange={(_, value) => setPanSpeed(value)}
             min={1}
             max={8}
             valueLabelDisplay="auto"

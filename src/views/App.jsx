@@ -23,7 +23,7 @@ function App() {
     px: 0,
     py: 0,
   });
-  const [panSpeed,setPanSpeed] = useState(0);
+  const [panSpeed,setPanSpeed] = useState(8);
   const [armConnectedOne,setArmConnectedOne]=useState(null)
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 
@@ -66,7 +66,7 @@ function App() {
       case "ArmView":
         return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } showCameras={camsVisibility} />;
       case "DriveView":
-        return <SplitView CurrentView={ <DriveComponents panAngles={panAngles} moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}   driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={ <DriveComponents panSpeed={panSpeed} setPanSpeed={setPanSpeed} panAngles={panAngles} moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}   driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
       case "ExtrasView":
         return <SplitView CurrentView={<ExtrasView /> } showCameras={camsVisibility} />;
       case "ScienceView":
@@ -81,7 +81,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar panSpeed={panSpeed} setPanSpeed={setPanSpeed} panAngles={panAngles} setPanAngles={setPanAngles} setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
+      <TopAppBar panSpeed={panSpeed} panAngles={panAngles} setPanAngles={setPanAngles} setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
       
       <Box
         component="main"

@@ -17,7 +17,7 @@ import StateMachine from "../statemachine/statemachine"
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility,panAngles, setPanAngles}) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility,panAngles, setPanAngles, panSpeed}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -132,7 +132,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           {/* Gamepad connection status and selection panel */}
           
           
-          <GamepadPanel panAngles={panAngles} setPanAngles={setPanAngles} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
+          <GamepadPanel panAngles={panAngles} setPanAngles={setPanAngles} panSpeed={panSpeed} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
           <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
