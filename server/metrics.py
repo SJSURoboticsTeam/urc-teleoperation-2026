@@ -9,10 +9,6 @@ from pathlib import Path
 
 numClients = 0
 
-
-
-
-
 # get data from secrets
 load_dotenv()  # loads from .env
 username = os.getenv("SSH_USER")
@@ -91,17 +87,12 @@ async def cpuloop(sio):
         await asyncio.sleep(config.RpiPollingRate)
 
 
-def register_metrics(sio):
+def register_metric_events(sio):
     """Register metrics-related socket.io handlers.
 
     `sio` is expected to be a `socketio.AsyncServer` (async handlers are supported).
     """
     global numClients
-
-    @sio.event
-    async def init(sid):
-        global numClients
-        numClients = 0
 
     @sio.event
     async def getConnections(sid):
