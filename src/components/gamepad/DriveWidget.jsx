@@ -156,9 +156,9 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={forwardsVelocity} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity} label="Y Vel" />
-            <VelocityItem value={rotationalVelocity} label="Rotational" />
+      <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
+      <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+      <VelocityItem value={rotationalVelocity.toFixed(1)} label="Rotational" />
           </Box>
         </Box>
 
