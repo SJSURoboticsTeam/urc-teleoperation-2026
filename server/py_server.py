@@ -65,7 +65,7 @@ try:
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
 try:
-    arm_serial = CanSerial('/dev/tty.usbserial-59760073211')
+    arm_serial = CanSerial('/dev/ttyACM1')
     print("Arm connected.")
 except Exception as e:
     print("FAILURE TO CONNECT ARM!" + str(e))
