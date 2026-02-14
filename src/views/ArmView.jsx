@@ -3,64 +3,28 @@ import { useState } from "react";
 import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
-import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
+// import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
 import { socket } from "../components/socket.io/socket";
-//TO DO:
-//PASS ARMCONNECTEDONE TO THIS COMPONENT
-//TRACK IT, EMIT MANUAL/CONTROLLER VALUES DEPENDENT ON IT
+import { useArmCommands } from '../contexts/ArmCommandContext'
 
+// View for arm controls, handles both manual slider input and gamepad input (if connected)
 export default function ArmView({
-  track: controllerTrack,
-  effector: controllerEffector,
-  pitch: controllerPitch,
-  roll: controllerRoll,
-  shoulder: controllerShoulder,
-  elbow: controllerElbow,
   armConnectedOne,
 }) {
-  const [elbow, setElbow] = useState(0);
-  const [shoulder, setShoulder] = useState(0);
-  const [track, setTrack] = useState(0);
-  const [pitch, setPitch] = useState(0);
-  const [roll, setRoll] = useState(0);
-  const [effector, setEffector] = useState(0);
+  const [armCommands, setArmCommands] = useArmCommands();
 
-  // setInterval(() => {
-  //   let armCommands = {
-  //     /**
-  //          Arm_mode[0] = homing
-  //           // homing first
-  //           Arm_mode[0] = 1 = angles for base/shoulder/elbow
-  //           Arm_mode[0] = 2 = angles for roll/pitch yaw
-  //          */
-  //     controllerElbow,
-  //     controllerShoulder,
-  //     controllerTrack,
-  //     controllerPitch,
-  //     controllerRoll,
-  //     controllerEffector,
-  //   };
-  //   socket.emit("armCommands", armCommands);
-  // }, FrameRateConstant);
+  // When sliders are used, update armCommands state
+  const handleSliderChange = (key, value) => {
+    setArmCommands(prev => ({
+      ...prev,
+      [key]: Number(value)
+    }))
+  }
 
+  // Test transmission manually
   const handleManualUpdate = () => {
-    let armCommands = {
-      elbow,
-      shoulder,
-      track,
-      pitch,
-      roll,
-      effector,
-    };
     socket.emit("armCommands", armCommands);
-    // console.log("Manual positions:", {
-    //   elbow,
-    //   shoulder,
-    //   track,
-    //   pitch,
-    //   roll,
-    //   effector,
-    // });
+    console.log("Manual arm commands sent:", JSON.stringify(armCommands));
   };
 
   return (
@@ -73,6 +37,7 @@ export default function ArmView({
         overflowY: "auto",
       }}
     >
+      {/* If arm controller is not connected, use sliders -- else use controllers */}
       {armConnectedOne == null ? (
         <>
           <Box sx={{ mt: 4 }}>
@@ -81,23 +46,12 @@ export default function ArmView({
             </Typography>
             <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
               {[
-                { label: "Elbow", value: elbow, set: setElbow, max: 90 },
-                {
-                  label: "Shoulder",
-                  value: shoulder,
-                  set: setShoulder,
-                  max: 110,
-                },
-                { label: "Track (cm)", value: track, set: setTrack, max: 45 },
-                { label: "Pitch", value: pitch, set: setPitch, max: 150 },
-                { label: "Roll", value: roll, set: setRoll, max: 360 },
-                {
-                  label: "Effector (cm)",
-                  value: effector,
-                  set: setEffector,
-                  max: 20,
-                },
-              ].map(({ label, value, set, max }) => (
+                { label: "Elbow", key: "elbow", max: 90 },
+                { label: "Shoulder", key: "shoulder", max: 110 },
+                { label: "Track (cm)", key: "track", max: 45 },
+                { label: "Pitch", key: "pitch", max: 150 },
+                { label: "Roll", key: "roll", max: 360 },
+              ].map(({ label, key, max }) => (
                 <Grid
                   item
                   xs={12}
@@ -114,15 +68,15 @@ export default function ArmView({
                 >
                   <Typography gutterBottom>{label}</Typography>
                   <Slider
-                    value={value}
-                    onChange={(_, v) => set(Number(v))}
+                    value={armCommands[key] || 0}
+                    onChange={(_, v) => handleSliderChange(key, v)}
                     min={0}
                     max={max}
                     step={1}
                     sx={{ width: 200 }}
                     valueLabelDisplay="auto"
                   />
-                  <Typography variant="body2">{value}</Typography>
+                  <Typography variant="body2">{armCommands[key] || 0}</Typography>
                 </Grid>
               ))}
             </Grid>
@@ -131,7 +85,7 @@ export default function ArmView({
               variant="contained"
               onClick={handleManualUpdate}
             >
-              Update
+              Manual TX
             </Button>
           </Box>
         </>
@@ -149,13 +103,13 @@ export default function ArmView({
           </Box>
           <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
             {[
-              { label: "elbow", value: controllerElbow },
-              { label: "shoulder", value: controllerShoulder },
-              { label: "track", value: controllerTrack },
-              { label: "pitch", value: controllerPitch },
-              { label: "roll", value: controllerRoll },
-              { label: "effector", value: controllerEffector },
-            ].map(({ label, value }) => (
+              { label: "elbow", key: "elbow" },
+              { label: "shoulder", key: "shoulder" },
+              { label: "track", key: "track" },
+              { label: "pitch", key: "pitch" },
+              { label: "roll", key: "roll" },
+              { label: "effector", key: "effector" },
+            ].map(({ label, key }) => (
               <Grid
                 item
                 xs={12}
@@ -178,7 +132,7 @@ export default function ArmView({
                   {label}
                 </Typography>
                 <Typography variant="h6">
-                  {Math.round(value * 100) / 100}
+                  {Math.round(key * 100) / 100}
                 </Typography>
               </Grid>
             ))}
