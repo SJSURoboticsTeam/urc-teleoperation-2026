@@ -17,7 +17,7 @@ import StateMachine from "../statemachine/statemachine"
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility}) {
+export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility, missionMode, syncToMissionState, setSyncToMissionState }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -135,7 +135,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
-          <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
+          <StateMachine openPane = {openPane} setOpenPane = {setOpenPane} missionMode={missionMode} />
           
         <IconButton
           edge='end'
@@ -163,7 +163,7 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           <ListItem>
             <Typography  sx={{ color: 'black' }} variant = "h6">SETTINGS</Typography>
           </ListItem>
-          <ListItem>
+        <ListItem>
   <FormControlLabel
     control={
       <Checkbox
@@ -174,6 +174,17 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
     label="Show Cameras"
   />
 </ListItem>
+        <ListItem>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={syncToMissionState}
+                onChange={(e) => setSyncToMissionState(e.target.checked)}
+              />
+            }
+            label="Sync view to mission state"
+          />
+        </ListItem>
         </List>
       </Drawer>
     </>

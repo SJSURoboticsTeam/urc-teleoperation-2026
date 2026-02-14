@@ -78,6 +78,16 @@ can_error_message_started = False
 drive_task_started = False
 async_ssh_started = False
 cpu_started = False
+mock_state_started = False
+
+async def mock_state_loop():
+    # simulate mission state updates
+    modes = ["DriveView", "ArmView", "ScienceView", "AutonomyView", "ExtrasView"]
+    index = 0
+    while True:
+        await sio.emit("missionState", {"mode": modes[index], "source": "mock"})
+        index = (index + 1) % len(modes)
+        await asyncio.sleep(5)
 
 
 register_metric_events(sio)
@@ -98,6 +108,7 @@ async def connect(sid,environ):
     global drive_task_started
     global async_ssh_started
     global cpu_started
+    global mock_state_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -119,6 +130,9 @@ async def connect(sid,environ):
     if not cpu_started:
         cpu_started = True
         #sio.start_background_task(cpuloop,sio)
+    if not mock_state_started:
+        mock_state_started = True
+        sio.start_background_task(mock_state_loop)
 
 
 @sio.event

@@ -1,10 +1,23 @@
 import 'react-resizable/css/styles.css'
-import { useRef, useState, useCallback, isValidElement } from 'react'
+import { useRef, useState, useCallback, isValidElement, useEffect } from 'react'
 import CameraPane from '../components/cameras/CameraPane'
+import Button from '@mui/material/Button';
 
-export default function DriveView({ CurrentView, showCameras}) {
+const DEFAULT_CAMERA = 'Standby'
+const DEFAULT_CAMERA_NUM = 2
+const STORAGE_KEY = 'missionControl.cameraViewConfigs'
+
+export default function DriveView({ CurrentView, showCameras, viewKey = "default" }) {
   const containerRef = useRef(null)
   const [leftPct, setLeftPct] = useState(65)
+  const [viewConfigs, setViewConfigs] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      return raw ? JSON.parse(raw) : {}
+    } catch {
+      return {}
+    }
+  })
 
   const startDrag = useCallback((e) => {
     const pointerId = e.pointerId
@@ -31,6 +44,65 @@ export default function DriveView({ CurrentView, showCameras}) {
   }, [])
 
   const effectiveLeftPct = (!showCameras) ? 100 : leftPct
+
+  useEffect(() => {
+    setViewConfigs((prev) => {
+      if (prev[viewKey]) return prev
+      return {
+        ...prev,
+        [viewKey]: {
+          cameraNum: DEFAULT_CAMERA_NUM,
+          cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
+        },
+      }
+    })
+  }, [viewKey])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(viewConfigs))
+    } catch {
+      // ignore errors
+    }
+  }, [viewConfigs])
+
+  const activeConfig =
+    viewConfigs[viewKey] ?? {
+      cameraNum: DEFAULT_CAMERA_NUM,
+      cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
+    }
+  const { cameraNum, cameraModes } = activeConfig
+
+  const updateCameraNum = (nextNum) => {
+    setViewConfigs((prev) => {
+      const current =
+        prev[viewKey] ?? {
+          cameraNum: DEFAULT_CAMERA_NUM,
+          cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
+        }
+      const cameraNum = Math.max(1, nextNum)
+      let cameraModes = current.cameraModes.slice(0, cameraNum)
+      if (cameraModes.length < cameraNum) {
+        cameraModes = cameraModes.concat(
+          Array(cameraNum - cameraModes.length).fill(DEFAULT_CAMERA)
+        )
+      }
+      return { ...prev, [viewKey]: { cameraNum, cameraModes } }
+    })
+  }
+
+  const updateCameraMode = (index, nextMode) => {
+    setViewConfigs((prev) => {
+      const current =
+        prev[viewKey] ?? {
+          cameraNum: DEFAULT_CAMERA_NUM,
+          cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
+        }
+      const cameraModes = current.cameraModes.slice()
+      cameraModes[index] = nextMode
+      return { ...prev, [viewKey]: { ...current, cameraModes } }
+    })
+  }
 
   return (
     <div
@@ -76,9 +148,32 @@ export default function DriveView({ CurrentView, showCameras}) {
           display: (!showCameras) ? 'none' : 'flex',
         }}
       >
-        <CameraPane />
-        <CameraPane />
-      </div>
+        <div>
+          <Button onClick={() => updateCameraNum(cameraNum + 1)}>Add Camera</Button>
+          <Button onClick={() => updateCameraNum(cameraNum - 1)}>Remove Camera</Button>
+        </div>
+        <div
+          className="flex-1 min-h-0 overflow-auto"
+          style={
+            cameraNum <= 3
+              ? { display: 'flex', flexDirection: 'column', gap: '16px' }
+              : {
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '16px',
+                }
+          }
+        >
+          {[...Array(cameraNum)].map((_, index) => (
+            <div key={index} className="flex w-full h-full min-h-0">
+              <CameraPane
+                cameraValue={cameraModes[index] ?? DEFAULT_CAMERA}
+                onCameraChange={(nextMode) => updateCameraMode(index, nextMode)}
+              />
+            </div>
+          ))}
+        </div>
+        </div>
 
       {/* fullscreen click layer to restore cameras */}
       {(!showCameras) && (

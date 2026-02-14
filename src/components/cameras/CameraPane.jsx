@@ -3,11 +3,21 @@ import Box from '@mui/material/Box';
 import { useState, useEffect, useRef } from 'react';
 import { Select, MenuItem, FormControl, InputLabel, CircularProgress, Typography, Button } from "@mui/material";
 
-export default function CameraPane(){
-    const [camera, setCamera] = useState('Standby');
+export default function CameraPane({ cameraValue, onCameraChange }){
+    const [camera, setCamera] = useState(cameraValue ?? 'Standby');
+
+    useEffect(() => {
+        if (cameraValue !== undefined) {
+            setCamera(cameraValue);
+        }
+    }, [cameraValue]);
 
     const handleChange = (event) => {
-    setCamera(event.target.value);
+    const nextValue = event.target.value;
+    setCamera(nextValue);
+    if (onCameraChange) {
+        onCameraChange(nextValue);
+    }
     };
     const cameras= [
     { value: 'Standby', mediatype: "image", name: 'Standby', url: '/mars.jpg'},
@@ -54,9 +64,10 @@ export default function CameraPane(){
     }, [selectedUrl, selectedMediaType]);
     return(
         // Root Box is flexible so CameraPane can grow inside a column
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1}}>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
             <FormControl fullWidth sx={{ mb: 0.5, minHeight: 40, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <InputLabel id="camera-select-label" sx={{ position: 'static', transform: 'none', mb: 0, fontSize: '0.875rem' }}>Camera</InputLabel>
+            <InputLabel id="camera-select-label" sx={{ position: 'static', transform: 'none', mb: 0, fontSize: '0.875rem' }}>Camera</InputLabel>
                 <Select
                     labelId="camera-select-label"
                     value={camera}

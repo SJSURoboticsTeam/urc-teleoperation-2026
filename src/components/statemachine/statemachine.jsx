@@ -1,7 +1,7 @@
 import { Typography } from "@mui/material";
 import InfoIcon from '@mui/icons-material/Info';
 
-export default function StateMachine({ openPane, setOpenPane }) {
+export default function StateMachine({ openPane, setOpenPane, missionMode }) {
 
   return (
       <div
@@ -37,7 +37,9 @@ export default function StateMachine({ openPane, setOpenPane }) {
           >
     
             <Typography  sx={{ color: 'black' }} variant = "h6">STATE MACHINE</Typography>
-            
+            <Typography  sx={{ color: 'black' }}>
+              Current Mode: {missionMode ?? "UNKNOWN"}
+            </Typography>
 
 
           </div>
