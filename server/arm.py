@@ -47,13 +47,19 @@ def register_arm_events(sio, arm_serial):
     @sio.event
     async def armCommands(sid, data):
         # 8 bit signed integer correlating to 2^6x
+        shoulder_scaled = int(data['shoulder'] * (2**6))
         elbow_scaled = int(data['elbow'] * (2**6))
+        pitch_scaled = int(data['pitch'] * (2**6))
+        roll_scaled = int(data['roll'] * (2**6))
+        track_scaled = int(data['track'] * (2**6))
+        clamp_scaled = int(data['clamp'] * (2**6))
+
+        shoulder = shoulder_scaled.to_bytes(2, 'big', signed=True).hex()
         elbow = elbow_scaled.to_bytes(2, 'big', signed=True).hex()
-        # shoulder = int(data.controllerShoulder).to_bytes(4, 'big', signed=True).hex()
-        # track = int(data.controllerTrack).to_bytes(4, 'big', signed=True).hex()
-        # pitch = int(data.controllerPitch).to_bytes(4, 'big', signed=True).hex()
-        # roll = int(data.controllerRoll).to_bytes(4, 'big', signed=True).hex()
-        # effector = int(data.controllerEffector).to_bytes(4, 'big', signed=True).hex()
+        pitch = pitch_scaled.to_bytes(2, 'big', signed=True).hex()
+        roll = roll_scaled.to_bytes(2, 'big', signed=True).hex()
+        track = track_scaled.to_bytes(2, 'big', signed=True).hex()
+        clamp = clamp_scaled.to_bytes(2, 'big', signed=True).hex()
 
         can_msg = f't{arm_send_ID["ELBOW"]}312{elbow}\r'
         await asyncio.to_thread(arm_serial.write, can_msg.encode())
