@@ -30,5 +30,39 @@ export function useSocketStatus() {
   return isConnected;
 }
 
+// set of listeners for client command notifications
+const _cmdListeners = new Set();
 
+// trigger notifications to any listeners whenever a client command is sent via socket.emit
+export function notifyClientCommandSent(info = {}) {
+  _cmdListeners.forEach((cb) => {
+    try { cb(info); } catch (e) { console.warn(e); }
+  });
+}
 
+// add a listener for client command notifications
+export function onClientCommandSent(cb) {
+  _cmdListeners.add(cb);
+  // return a function to remove the listener
+  return () => _cmdListeners.delete(cb);
+}
+
+// automatically notify whenever any client command is sent via socket.emit
+const originalEmit = socket.emit.bind(socket);
+
+// list of events that are considered "client commands" that are tracked for health monitoring
+const COMMAND_EVENTS = new Set([
+  "driveCommands",
+  "panCommands",
+  "driveHoming",
+  "armCommands",
+]);
+
+socket.emit = (event, ...args) => {
+  // if this is a known client command event, trigger notifications to any listeners
+  if (COMMAND_EVENTS.has(event)) {
+    notifyClientCommandSent({ type: event });
+  }
+  // otherwise, just call the original emit function
+  return originalEmit(event, ...args);
+};

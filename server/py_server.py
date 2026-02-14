@@ -46,10 +46,10 @@ def shutdown():
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
 #uncomment to use the debug admin ui
-# sio.instrument(auth={
-#     'username': 'admin',
-#     'password': 'admin',
-# })
+sio.instrument(auth={
+    'username': 'admin',
+    'password': 'admin',
+})
 app = socketio.ASGIApp(sio)
 
 # CAN buses
@@ -84,8 +84,8 @@ register_metric_events(sio)
 register_drive_events(sio,drive_serial)
 register_camera_pt_events(sio,drive_serial)
 
-# arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
-# arm_thread.start()
+arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
+arm_thread.start()
 
 
 
@@ -115,10 +115,10 @@ async def connect(sid,environ):
         sio.start_background_task(send_drive_status_request,drive_serial)
     if not async_ssh_started:
        async_ssh_started = True
-       #sio.start_background_task(asyncsshloop,sio)
+       sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
-        #sio.start_background_task(cpuloop,sio)
+        sio.start_background_task(cpuloop,sio)
 
 
 @sio.event

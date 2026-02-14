@@ -16,12 +16,15 @@ import Metrics from '../metrics/metrics';
 import StateMachine from "../statemachine/statemachine"
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import HealthIndicator from '../healthindicator/HealthIndicator';
 
 export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
   const [openPane, setOpenPane] = useState("None");
+  const [healthDemoMode, setHealthDemoMode] = useState(true);
+  const [mockPeriodMs, setMockPeriodMs] = useState(12000); // 2000 GOOD, 6000 WARN, 12000 LOST
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -136,6 +139,13 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
           <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
           <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
+          {/* Health indicator that shows green/yellow/red based on how recently client commands have been sent, with options to enable demo mode and adjust mock timing for testing */}
+          <HealthIndicator 
+            openPane = {openPane} 
+            setOpenPane = {setOpenPane} 
+            demoMode={healthDemoMode}
+            mockPeriodMs={mockPeriodMs}
+          />
           
         <IconButton
           edge='end'
@@ -174,6 +184,18 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
     label="Show Cameras"
   />
 </ListItem>
+          {/* toggle demo mode for health indicator */ }
+          <ListItem>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={healthDemoMode}
+                  onChange={(e) => setHealthDemoMode(e.target.checked)}
+                />
+              }
+              label="Health Demo Mode"
+            />
+          </ListItem>
         </List>
       </Drawer>
     </>
