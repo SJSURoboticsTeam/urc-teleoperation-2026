@@ -5,6 +5,8 @@ import { FrameRateConstant } from "./FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { green } from "@mui/material/colors";
 import {red} from '@mui/material/colors'
+import { useArmCommands } from "../../contexts/ArmCommandContext";
+
 //usecontext
 //move armview into own component in arm folder
 //socket.emit for manual
@@ -13,7 +15,6 @@ export default function GamepadPanel({
   driveGamepads,
   onDriveVelocitiesChange,
   armGamepads,
-  onArmVelocitiesChange,
   currentView,
   setModuleConflicts,
   onPanVelocitiesChange, 
@@ -33,14 +34,15 @@ export default function GamepadPanel({
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page, setPage] = useState("Drive");
   const [prevTime, setPrevTime] = useState();
-  const [armVelocities, setArmVelocities] = useState({
-    Elbow: 0,
-    Shoulder: 0,
-    Track: 0,
-    Pitch: 0,
-    Roll: 0,
-    Effector: 0,
-  });
+  // const [armVelocities, setArmVelocities] = useState({
+  //   Elbow: 0,
+  //   Shoulder: 0,
+  //   Track: 0,
+  //   Pitch: 0,
+  //   Roll: 0,
+  //   Effector: 0,
+  // });
+  const [armCommands, setArmCommands] = useArmCommands();
 
   useEffect(() => {
     let intervalId;
@@ -110,25 +112,26 @@ export default function GamepadPanel({
   const [armManualDisconnect, setArmManualDisconnect] = useState(false);
   useEffect(() => {
     if (armManualDisconnect || armConnectedOne == null) {
-      setArmVelocities({
-        Elbow: 0,
-        Shoulder: 0,
-        Track: 0,
-        Pitch: 0,
-        Roll: 0,
-        Effector: 0,
-      });
-      onArmVelocitiesChange?.({
-        Elbow: 0,
-        Shoulder: 0,
-        Track: 0,
-        Pitch: 0,
-        Roll: 0,
-        Effector: 0,
-        armConnectedOne,
+      // onArmVelocitiesChange?.({
+      //   Elbow: 0,
+      //   Shoulder: 0,
+      //   Track: 0,
+      //   Pitch: 0,
+      //   Roll: 0,
+      //   Effector: 0,
+      //   armConnectedOne,
+      // });
+      setArmCommands({
+        track: 0,
+        shoulder: 0,
+        elbow: 0,
+        pitch: 0,
+        roll: 0,
+        clamp: 0,
       });
       return;
     }
+    
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
       if (gp) {
@@ -142,20 +145,19 @@ export default function GamepadPanel({
           Track: gp.axes[3],
           Pitch: gp.axes[0],
           Roll: gp.axes[5],
-          Effector: gp.axes[6],
+          Clamp: gp.axes[6],
           armConnectedOne,
         };
-        setArmVelocities((prev) => {
-          const changed = Object.keys(newVal).some(
-            (key) => newVal[key] !== prev[key]
-          );
-          if (changed) {
-            onArmVelocitiesChange?.({ ...newVal, armConnectedOne });
-            return newVal;
-          }
-          onArmVelocitiesChange?.({ ...prev, armConnectedOne });
-          return prev;
-        });
+
+        const changed = Object.keys(newVal).some(
+          (key) => newVal[key] !== prev[key]
+        );
+        if (changed) {
+          setArmCommands?.({ ...newVal, armConnectedOne });
+          return newVal;
+        }
+        setArmCommands?.({ ...prev, armConnectedOne });
+        return prev;
       }
     };
     const intervalId = setInterval(pollAxes, FrameRateConstant);

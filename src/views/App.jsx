@@ -14,7 +14,7 @@ import SplitView from "./SplitView";
 import ExtrasView from "./ExtrasView";
 
 // Context imports
-import ArmContext from "../contexts/ArmCommandContext";
+import ArmCommandContext from "../contexts/ArmCommandContext";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
@@ -26,18 +26,13 @@ function App() {
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 
-  // const [effector,setEffector]=useState(0);
-  // const [elbow,setElbow]=useState(0);
-  // const [shoulder,setShoulder]=useState(0);
-  // const [pitch,setPitch]=useState(0);
-  // const [track,setTrack]=useState(0);
-  // const [roll, setRoll]=useState(0);
   const [armCommands, setArmCommands] = useState({
     track: 0,
     shoulder: 0,
     elbow: 0,
     pitch: 0,
     roll: 0,
+    clamp: 0,
   });
 
   const [moduleConflicts, setModuleConflicts] = useState(0);
@@ -54,27 +49,6 @@ function App() {
     setPanWidthVelocity(px);
   };
 
-  const handleArmVelocitiesChange = ({
-    Effector,
-    Elbow,
-    Shoulder,
-    Track,
-    Pitch,
-    Roll,
-    armConnectedOne,
-  }) => {
-    // console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
-    setArmConnectedOne(armConnectedOne);
-    setEffector(Effector);
-    setElbow(Elbow);
-    setPitch(Pitch);
-    setRoll(Roll);
-    setTrack(Track);
-    setShoulder(Shoulder);
-    //console.log(armConnectedOne)
-    //console.log(effector,pitch,roll,elbow,shoulder,track)
-  };
-
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
@@ -83,12 +57,6 @@ function App() {
           <SplitView
             CurrentView={
               <ArmView
-                // effector={effector}
-                // pitch={pitch}
-                // roll={roll}
-                // shoulder={shoulder}
-                // elbow={elbow}
-                // track={track}
                 armConnectedOne={armConnectedOne}
               />
             }
@@ -149,6 +117,10 @@ function App() {
         overflow: "hidden",
       }}
     >
+      <ArmCommandContext 
+        commands={armCommands}
+        setArmCommands={setArmCommands}
+      >
       <CssBaseline />
       {/* Normalizes styles */}
       <TopAppBar
@@ -156,7 +128,6 @@ function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         onVelocitiesChange={handleVelocitiesChange}
-        onArmVelocitiesChange={handleArmVelocitiesChange}
         onPanVelocitiesChange={handlePanVelocitiesChange}
         driveConnectedOne={driveConnectedOne}
         setDriveConnectedOne={setDriveConnectedOne}
@@ -178,6 +149,7 @@ function App() {
       >
         {renderView()}
       </Box>
+      </ArmCommandContext>
     </Box>
   );
 }

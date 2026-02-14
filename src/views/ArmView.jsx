@@ -3,7 +3,7 @@ import { useState } from "react";
 import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
-// import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
+import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
 import { socket } from "../components/socket.io/socket";
 import { useArmCommands } from '../contexts/ArmCommandContext'
 
@@ -13,6 +13,17 @@ export default function ArmView({
 }) {
   const [armCommands, setArmCommands] = useArmCommands();
 
+  // Continuously transmit arm commands
+  setInterval(() => {
+    socket.emit("armCommands", armCommands);
+  }, FrameRateConstant);
+
+  // Test transmission manually
+  const handleManualUpdate = () => {
+    socket.emit("armCommands", armCommands);
+    console.log("Manual arm commands sent:", JSON.stringify(armCommands));
+  };
+
   // When sliders are used, update armCommands state
   const handleSliderChange = (key, value) => {
     setArmCommands(prev => ({
@@ -20,12 +31,6 @@ export default function ArmView({
       [key]: Number(value)
     }))
   }
-
-  // Test transmission manually
-  const handleManualUpdate = () => {
-    socket.emit("armCommands", armCommands);
-    console.log("Manual arm commands sent:", JSON.stringify(armCommands));
-  };
 
   return (
     <Box

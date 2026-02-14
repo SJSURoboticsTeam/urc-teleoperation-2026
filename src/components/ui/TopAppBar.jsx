@@ -1,23 +1,35 @@
-import { useState, useEffect } from 'react'
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button'
-import MenuIcon from '@mui/icons-material/Menu';
-import NavConnectionStatus from '../socket.io/BackendConnectionManager';
-import GamepadPanel from '../gamepad/Gamepad';
-import { orange } from '@mui/material/colors';
-import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import Metrics from '../metrics/metrics';
-import StateMachine from "../statemachine/statemachine"
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
+import { useState, useEffect } from "react";
+import {
+  AppBar,
+  Toolbar,
+  Drawer,
+  List,
+  ListItem,
+  Typography,
+  IconButton,
+  Button,
+  FormControlLabel,
+  Checkbox,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import { orange } from "@mui/material/colors";
+import NavConnectionStatus from "../socket.io/BackendConnectionManager";
+import GamepadPanel from "../gamepad/Gamepad";
+import Metrics from "../metrics/metrics";
+import StateMachine from "../statemachine/statemachine";
 
-export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,onPanVelocitiesChange,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility}) {
+export default function TopAppBar({
+  setCurrentView,
+  onVelocitiesChange,
+  currentView,
+  setModuleConflicts,
+  onPanVelocitiesChange,
+  driveConnectedOne,
+  setDriveConnectedOne,
+  camsVisibility,
+  setcamsVisibility,
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -46,11 +58,11 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
         delete copy[e.gamepad.index];
         return copy;
       });
-      setArmGamepads((prev)=> {
-        const copy={...prev};
+      setArmGamepads((prev) => {
+        const copy = { ...prev };
         delete copy[e.gamepad.index];
         return copy;
-      })
+      });
     };
 
     window.addEventListener("gamepadconnected", handleConnect);
@@ -64,18 +76,20 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
 
   return (
     <>
-      <AppBar 
+      <AppBar
         sx={{
-    bgcolor: (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
-      ? orange[700]
-      : undefined,
-  }}
-        >
-      <Toolbar>
+          bgcolor:
+            import.meta.env.MODE === "production" ||
+            import.meta.env.MODE === "prod"
+              ? orange[700]
+              : undefined,
+        }}
+      >
+        <Toolbar>
           <IconButton
-            edge='start'
-            color='inherit'
-            aria-label='menu'
+            edge="start"
+            color="inherit"
+            aria-label="menu"
             onClick={toggleDrawer(true)}
             sx={{ mr: 1 }}
           >
@@ -83,10 +97,10 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           </IconButton>
           {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
           <Typography
-            variant='h6'
-            component='div'
+            variant="h6"
+            component="div"
             sx={{
-              display: { xs: 'none', sm: 'none', md: 'block' },
+              display: { xs: "none", sm: "none", md: "block" },
               pr: 1, // add left padding to align with toolbar items
             }}
           >
@@ -94,86 +108,96 @@ export default function TopAppBar({ setCurrentView, onVelocitiesChange, onArmVel
           </Typography>
 
           {/* Buttons to change between views */}
-          <Button
-            color='inherit'
-            onClick={() => handleViewChange('DriveView')}
-          >
+          <Button color="inherit" onClick={() => handleViewChange("DriveView")}>
             Drive
           </Button>
-          <Button
-            color='inherit'
-            onClick={() => handleViewChange('ArmView')}
-          >
+          <Button color="inherit" onClick={() => handleViewChange("ArmView")}>
             Arm
           </Button>
           <Button
-            color='inherit'
-            onClick={() => handleViewChange('ScienceView')}
+            color="inherit"
+            onClick={() => handleViewChange("ScienceView")}
           >
             Science
           </Button>
           <Button
-            color='inherit'
-            onClick={() => handleViewChange('AutonomyView')}
+            color="inherit"
+            onClick={() => handleViewChange("AutonomyView")}
           >
             Autonomy
           </Button>
           <Button
-            color='inherit'
-            onClick={() => handleViewChange('ExtrasView')}
+            color="inherit"
+            onClick={() => handleViewChange("ExtrasView")}
           >
             Extras
           </Button>
-          
 
-          { /* fill the space between the buttons and the connection status */ }
+          {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
 
           {/* Gamepad connection status and selection panel */}
-          
-          
-          <GamepadPanel onPanVelocitiesChange = {onPanVelocitiesChange} openPane = {openPane} setOpenPane = {setOpenPane} name="Drive" setModuleConflicts={setModuleConflicts} onDriveVelocitiesChange={onVelocitiesChange} driveGamepads={driveGamepads} armGamepads={armGamepads} onArmVelocitiesChange={onArmVelocitiesChange} currentView={currentView} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne}/>
-          <NavConnectionStatus openPane = {openPane} setOpenPane = {setOpenPane}/>
-          <Metrics openPane = {openPane} setOpenPane = {setOpenPane}/>
-          <StateMachine openPane = {openPane} setOpenPane = {setOpenPane}/>
-          
-        <IconButton
-          edge='end'
-          color='inherit'
-          onClick={() => {
-            if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen(); // enter fullscreen
-            } else {
-              document.exitFullscreen(); // exit fullscreen
-            }
-          }}
-        >
-          <FullscreenIcon />
-        </IconButton>
-        </Toolbar>
 
+          <GamepadPanel
+            onPanVelocitiesChange={onPanVelocitiesChange}
+            openPane={openPane}
+            setOpenPane={setOpenPane}
+            name="Drive"
+            setModuleConflicts={setModuleConflicts}
+            onDriveVelocitiesChange={onVelocitiesChange}
+            driveGamepads={driveGamepads}
+            armGamepads={armGamepads}
+            currentView={currentView}
+            driveConnectedOne={driveConnectedOne}
+            setDriveConnectedOne={setDriveConnectedOne}
+          />
+          <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
+          <Metrics openPane={openPane} setOpenPane={setOpenPane} />
+          <StateMachine openPane={openPane} setOpenPane={setOpenPane} />
+
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen(); // enter fullscreen
+              } else {
+                document.exitFullscreen(); // exit fullscreen
+              }
+            }}
+          >
+            <FullscreenIcon />
+          </IconButton>
+        </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
-      <Drawer anchor='left' open={drawerOpen} onClose={toggleDrawer(false)} sx={{
-        '& .MuiDrawer-paper': {
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
+        sx={{
+          "& .MuiDrawer-paper": {
             width: 240,
           },
-      }}>
+        }}
+      >
         <List>
           <ListItem>
-            <Typography  sx={{ color: 'black' }} variant = "h6">SETTINGS</Typography>
+            <Typography sx={{ color: "black" }} variant="h6">
+              SETTINGS
+            </Typography>
           </ListItem>
           <ListItem>
-  <FormControlLabel
-    control={
-      <Checkbox
-        checked={camsVisibility}
-        onChange={(e) => setcamsVisibility(e.target.checked)}
-      />
-    }
-    label="Show Cameras"
-  />
-</ListItem>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={camsVisibility}
+                  onChange={(e) => setcamsVisibility(e.target.checked)}
+                />
+              }
+              label="Show Cameras"
+            />
+          </ListItem>
         </List>
       </Drawer>
     </>

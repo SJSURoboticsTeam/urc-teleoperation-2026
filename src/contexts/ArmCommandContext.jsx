@@ -3,7 +3,7 @@ import { createContext, useContext } from "react"
 const armCommandContext = createContext(null)
 
 // Import in App.jsx and wrap around components that need access to it
-export function ArmCommandContext ({ armCommands, setArmCommands, children }) {
+export default function ArmCommandContext ({ armCommands, setArmCommands, children }) {
     return (
         <armCommandContext.Provider
             value={{ armCommands, setArmCommands }}
