@@ -12,12 +12,16 @@ import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
 
 
 
+
+
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
     const isConnected = useSocketStatus();
     const [latency, setLatency] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
     const [conntype, setconntype] = useState("Checking...");
+    const [age, setAge] = useState('');
+
   
   function connect() {
     socket.connect();
@@ -129,6 +133,7 @@ useEffect(() => {
             }}
           >
     
+            
             <ButtonGroup variant="contained" aria-label="Basic button group">
                 <Button color="error" onClick={ disconnect } variant="contained" sx={{width:120}}>DISCONNECT</Button>
                 <Button color="success" onClick={ connect } variant="contained" sx={{width:120}}>CONNECT</Button>
@@ -138,7 +143,12 @@ useEffect(() => {
             <Typography  sx={{ color: 'black' }}>Latency: {latency} ms</Typography>
             <Typography  sx={{ color: 'black' }}>Clients Connected: {numConnections}</Typography>
             <Typography  sx={{ color: 'black' }}>Websockets: {conntype}</Typography>
-              </div>
+            <hr className="divider" />
+            <Typography  sx={{ color: 'black' }} variant = "h6">DRIVE</Typography>
+
+            </div>
+              
+              
             ):
               <Typography  sx={{ color: 'black' }}>you are offline :(</Typography>}
              {/* <TextField id="outlined-basic" label="Address Placeholder" variant="outlined" /> */}
