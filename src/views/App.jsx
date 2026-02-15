@@ -118,7 +118,7 @@ function App() {
       }}
     >
       <ArmCommandContext 
-        commands={armCommands}
+        armCommands={armCommands}
         setArmCommands={setArmCommands}
       >
       <CssBaseline />

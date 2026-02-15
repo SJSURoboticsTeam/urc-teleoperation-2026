@@ -1,5 +1,5 @@
 import { green } from "@mui/material/colors";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
@@ -14,9 +14,12 @@ export default function ArmView({
   const [armCommands, setArmCommands] = useArmCommands();
 
   // Continuously transmit arm commands
-  setInterval(() => {
-    socket.emit("armCommands", armCommands);
-  }, FrameRateConstant);
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      socket.emit("armCommands", armCommands);
+    }, FrameRateConstant);
+    return () => clearInterval(intervalId);
+  }, [armCommands])
 
   // Test transmission manually
   const handleManualUpdate = () => {
@@ -56,6 +59,7 @@ export default function ArmView({
                 { label: "Track (cm)", key: "track", max: 45 },
                 { label: "Pitch", key: "pitch", max: 150 },
                 { label: "Roll", key: "roll", max: 360 },
+                { label: "Clamp (cm)", key: "clamp", max: 20 }
               ].map(({ label, key, max }) => (
                 <Grid
                   item
@@ -113,7 +117,7 @@ export default function ArmView({
               { label: "track", key: "track" },
               { label: "pitch", key: "pitch" },
               { label: "roll", key: "roll" },
-              { label: "effector", key: "effector" },
+              { label: "clamp", key: "clamp" },
             ].map(({ label, key }) => (
               <Grid
                 item
