@@ -25,12 +25,16 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
     const [latency, setLatency] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
     const [conntype, setconntype] = useState("Checking...");
-    const [canIds, setcanIds] = useState(null);
-      const [age, setAge] = useState('');
+    const[canState, setcanState] = useState({
+      driveState : "idle",
+      armState : "idle",
+      canIds : [],
+      driveId: null,
+      armId: null,
+      loading: false
+    })
 
-  const handleChange = (event) => {
-    setAge(event.target.value);
-  };
+
 
   
   function connect() {
@@ -110,9 +114,12 @@ useEffect(() => {
 }, []);
 
 function requestcanIds() {
-  socket.emit("getcanIds", (canIds) => {
-    console.log(canIds);
-    setcanIds(canIds);
+  socket.emit("getcanIds", (canIdsList) => {
+    console.log(canIdsList);
+    setcanState( (prev) => ({
+      ...prev,
+      canIds: canIdsList,
+    }));
     });
 }
 
@@ -175,18 +182,20 @@ function requestcanIds() {
               <FormControl sx={{flex:1}} size="small">
                 <InputLabel id="demo-simple-select-label">DRIVE</InputLabel>
                 <Select
-                  labelId="demo-simple-select-label"
-                  id="demo-simple-select"
-                  value={age}
+                  value={canState.driveId}
                   label="DRIVE"
-                  onChange={handleChange}
+                  onChange={(event) =>
+                    setcanState((prev) => ({
+                      ...prev,
+                      driveId: event.target.value,
+                    }))
+                  }
                   fullWidth
-                  
                 >
-                  <MenuItem value={-10}>Disconnect</MenuItem>
-                        {canIds && canIds.map( (canId,index) => (
-                      <MenuItem value={index}>{canId}</MenuItem>
-                    ))}
+                  <MenuItem value={0}>Disconnect</MenuItem>
+                  {canState.canIds && canState.canIds.map( (canId,index) => (
+                <MenuItem value={index +1}>{canId}</MenuItem>
+              ))}
                 </Select>
               </FormControl>
             </Box>
@@ -196,18 +205,20 @@ function requestcanIds() {
               <FormControl sx={{flex:1}} size="small">
                 <InputLabel id="demo-simple-select-label">ARM</InputLabel>
                 <Select
-                  labelId="demo-simple-select-label"
-                  id="demo-simple-select"
-                  value={age}
+                  value={canState.Id}
                   label="ARM"
-                  onChange={handleChange}
+                  onChange={(event) =>
+                        setcanState((prev) => ({
+                          ...prev,
+                          armId: event.target.value,
+                        }))
+                      }
                   fullWidth
-                  
                 >
-                  <MenuItem value={-10}>Disconnect</MenuItem>
-                        {canIds && canIds.map( (canId,index) => (
-                      <MenuItem value={index}>{canId}</MenuItem>
-                    ))}
+                  <MenuItem value={0}>Disconnect</MenuItem>
+                  {canState.canIds && canState.canIds.map( (canId,index) => (
+                <MenuItem value={index +1}>{canId}</MenuItem>
+              ))}
                 </Select>
               </FormControl>
             </Box>
