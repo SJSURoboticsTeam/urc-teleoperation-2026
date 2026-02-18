@@ -17,13 +17,15 @@ export default function GamepadDiv({
         <div style={{ marginBottom: 5 }}>
             <FormControlLabel
               sx={{ color: 'black' }}
+              
               control={
                 <Switch
                   checked={moduleConflicts}
+                  color="error"
                   onChange={(e) => setModuleConflicts(e.target.checked)}
                 />
               }
-              label="Module Protection"
+              label="Autofix Safety Issues"
             />
         </div>
       )}

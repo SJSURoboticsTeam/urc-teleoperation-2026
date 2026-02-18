@@ -72,12 +72,12 @@ arm_serial = None
 try:
     # RX TESTER /dev/tty.usbserial-59760082211
     # ROBOT /dev/tty.usbserial-59760073491
-    drive_serial = CanSerial('/dev/TTYAMA1')
+    drive_serial = CanSerial('/dev/tty.usbserial-59760082211')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
 try:
-    arm_serial = CanSerial('/dev/tty.usbserial-59760082211')
+    arm_serial = CanSerial('/dev/TTYAMA1')
     print("Arm connected.")
 except Exception as e:
     print("FAILURE TO CONNECT ARM!" + str(e))
