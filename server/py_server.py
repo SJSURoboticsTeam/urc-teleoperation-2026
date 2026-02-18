@@ -57,8 +57,15 @@ app = socketio.ASGIApp(sio)
 # CAN buses
 print("Preparing for CAN...")
 
-for port in list_ports.comports():
-    print(f"{port.device} | {port.description} | {port.vid}:{port.pid}")
+
+
+@sio.event
+async def getcanIds(sid):
+    canIds_arr = []
+    for port in list_ports.comports():
+        print(f"{port.device} ")
+        canIds_arr.append(port.device)
+    return canIds_arr
     
 drive_serial = None
 arm_serial = None

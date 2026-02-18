@@ -25,6 +25,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
     const [latency, setLatency] = useState(null);
     const [numConnections, setNumConnections] = useState(0);
     const [conntype, setconntype] = useState("Checking...");
+    const [canIds, setcanIds] = useState(null);
       const [age, setAge] = useState('');
 
   const handleChange = (event) => {
@@ -108,6 +109,13 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
+function requestcanIds() {
+  socket.emit("getcanIds", (canIds) => {
+    console.log(canIds);
+    setcanIds(canIds);
+    });
+}
+
 
   return (
       
@@ -158,7 +166,7 @@ useEffect(() => {
 
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
               <Button color="success" sx={{width:90}} onClick={ connect } variant="contained">DRIVE <ElectricalServicesIcon/></Button>
-              <Button   variant="contained" sx={{width:90}}>REFRESH</Button>
+              <Button   variant="contained" onClick={requestcanIds} sx={{width:90}}>REFRESH</Button>
               <Button color="success" sx={{width:90}} onClick={ connect } variant="contained">ARM <ElectricalServicesIcon/></Button>
             </Box>
 
@@ -175,12 +183,10 @@ useEffect(() => {
                   fullWidth
                   
                 >
-                  <MenuItem value={10}>Idle</MenuItem>
-                  <MenuItem value={20}>DRIVE[878]</MenuItem>
-                  <MenuItem value={20}>ARM[878]</MenuItem>
-                  <MenuItem value={30}>usbserial-59760082211</MenuItem>
-                  <MenuItem value={100}>cu.usbserial-59760082211</MenuItem>
-                  <MenuItem value={40}>/dev/cu.usbserial-59760082211</MenuItem>
+                  <MenuItem value={-10}>Disconnect</MenuItem>
+                        {canIds && canIds.map( (canId,index) => (
+                      <MenuItem value={index}>{canId}</MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             </Box>
@@ -198,12 +204,10 @@ useEffect(() => {
                   fullWidth
                   
                 >
-                  <MenuItem value={10}>Idle</MenuItem>
-                  <MenuItem value={20}>DRIVE[878]</MenuItem>
-                  <MenuItem value={20}>ARM[878]</MenuItem>
-                  <MenuItem value={30}>usbserial-59760082211</MenuItem>
-                  <MenuItem value={100}>cu.usbserial-59760082211</MenuItem>
-                  <MenuItem value={40}>/dev/cu.usbserial-59760082211</MenuItem>
+                  <MenuItem value={-10}>Disconnect</MenuItem>
+                        {canIds && canIds.map( (canId,index) => (
+                      <MenuItem value={index}>{canId}</MenuItem>
+                    ))}
                 </Select>
               </FormControl>
             </Box>
