@@ -220,22 +220,20 @@ export default function GamepadPanel({
       >
         GAMEPADS{info}
       </span>
-      <Collapse in={open}>
-        <Paper
-          sx={{
-            textAlign: "center",
-            maxHeight: 225,
-            width: 400,
-            overflowX: "hidden",
-            overflowY: "auto",
-            left: "50%",
-            transform: "translateX(-50%)",
-            position: "absolute",
-            top: "100%",
-            zIndex: 1300,
-            padding: 1,
-          }}
-        >
+      
+        {open == true && (
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "white",
+              border: "1px solid gray",
+              padding: "10px",
+              width: "300px"
+            }}
+          >
           <Button
             size="small"
             sx={{
@@ -279,8 +277,8 @@ export default function GamepadPanel({
               name={page}
             />
           )}
-        </Paper>
-      </Collapse>
-    </div>
+     </div>
+        )}
+        </div>
   );
 }

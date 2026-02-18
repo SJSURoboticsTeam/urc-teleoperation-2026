@@ -14,6 +14,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
+import ElectricalServicesIcon from '@mui/icons-material/ElectricalServices';
 
 
 
@@ -138,7 +139,7 @@ useEffect(() => {
               background: "white",
               border: "1px solid gray",
               padding: "10px",
-              width: "280px"
+              width: "300px"
             }}
           >
     
@@ -154,8 +155,15 @@ useEffect(() => {
             <Typography  sx={{ color: 'black' }}>Websockets: {conntype}</Typography>
             <hr className="divider" />
             <Typography  sx={{ color: 'black' }} variant = "h6">CAN CONNECTIONS</Typography>
-            {/* DRIVE CAN CONNECTION */}
+
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
+              <Button color="success" sx={{width:90}} onClick={ connect } variant="contained">DRIVE <ElectricalServicesIcon/></Button>
+              <Button   variant="contained" sx={{width:90}}>REFRESH</Button>
+              <Button color="success" sx={{width:90}} onClick={ connect } variant="contained">ARM <ElectricalServicesIcon/></Button>
+            </Box>
+
+            {/* DRIVE CAN CONNECTION */}
+            <Box sx={{display: "flex",flexDirection: "row",gap: 1,mt:1}}>
               <FormControl sx={{flex:1}} size="small">
                 <InputLabel id="demo-simple-select-label">DRIVE</InputLabel>
                 <Select
@@ -164,22 +172,21 @@ useEffect(() => {
                   value={age}
                   label="DRIVE"
                   onChange={handleChange}
-                  fullwidth
+                  fullWidth
+                  
                 >
                   <MenuItem value={10}>Idle</MenuItem>
                   <MenuItem value={20}>DRIVE[878]</MenuItem>
                   <MenuItem value={20}>ARM[878]</MenuItem>
-                  <MenuItem value={30}>DEV_1[89989]</MenuItem>
-                  <MenuItem value={100}>PRI_D[89988]</MenuItem>
-                  <MenuItem value={40}>/dev.usbserial.8998989323</MenuItem>
+                  <MenuItem value={30}>usbserial-59760082211</MenuItem>
+                  <MenuItem value={100}>cu.usbserial-59760082211</MenuItem>
+                  <MenuItem value={40}>/dev/cu.usbserial-59760082211</MenuItem>
                 </Select>
               </FormControl>
-              <Button color="success" onClick={ connect } variant="contained" sx={{width:90}}>CONNECT</Button>
             </Box>
-            <p></p>
             
             {/* ARM CAN CONNECTION */}
-            <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
+            <Box sx={{display: "flex",flexDirection: "row",gap: 1,mt:1}}>
               <FormControl sx={{flex:1}} size="small">
                 <InputLabel id="demo-simple-select-label">ARM</InputLabel>
                 <Select
@@ -188,17 +195,19 @@ useEffect(() => {
                   value={age}
                   label="ARM"
                   onChange={handleChange}
-                  fullwidth
+                  fullWidth
+                  
                 >
                   <MenuItem value={10}>Idle</MenuItem>
                   <MenuItem value={20}>DRIVE[878]</MenuItem>
-                  <MenuItem value={50}>ARM[878]</MenuItem>
-                  <MenuItem value={30}>CAN[89988]</MenuItem>
-                  <MenuItem value={40}>/dev.usbserial.8998989323</MenuItem>
+                  <MenuItem value={20}>ARM[878]</MenuItem>
+                  <MenuItem value={30}>usbserial-59760082211</MenuItem>
+                  <MenuItem value={100}>cu.usbserial-59760082211</MenuItem>
+                  <MenuItem value={40}>/dev/cu.usbserial-59760082211</MenuItem>
                 </Select>
               </FormControl>
-              <Button color="success" onClick={ connect } variant="contained" sx={{width:90}}>CONNECT</Button>
             </Box>
+
             <hr className="divider" />
             <Typography  sx={{ color: 'black' }} variant = "h6">FEATURE TOGGLES</Typography>
             <Box sx={{display: "flex",flexDirection: "col",gap: 1}}>

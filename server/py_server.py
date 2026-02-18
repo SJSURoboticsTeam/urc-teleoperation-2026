@@ -1,4 +1,5 @@
 from can_serial import CanSerial
+from serial.tools import list_ports
 import socketio
 import uvicorn
 import metrics
@@ -55,17 +56,21 @@ app = socketio.ASGIApp(sio)
 
 # CAN buses
 print("Preparing for CAN...")
+
+for port in list_ports.comports():
+    print(f"{port.device} | {port.description} | {port.vid}:{port.pid}")
+    
 drive_serial = None
 arm_serial = None
 try:
     # RX TESTER /dev/tty.usbserial-59760082211
     # ROBOT /dev/tty.usbserial-59760073491
-    drive_serial = CanSerial('/dev/tty.usbserial-59760082211')
+    drive_serial = CanSerial('/dev/TTYAMA1')
     print("Drive connected.")
 except Exception as e:
     print("FAILURE TO CONNECT DRIVE: " + str(e))
 try:
-    arm_serial = CanSerial('/dev/ttyACM1')
+    arm_serial = CanSerial('/dev/tty.usbserial-59760082211')
     print("Arm connected.")
 except Exception as e:
     print("FAILURE TO CONNECT ARM!" + str(e))

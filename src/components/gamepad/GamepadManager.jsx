@@ -26,7 +26,7 @@ export default function GamepadDiv({
         </div>
       )}
       {gpList.length === 0 && (
-        <Typography>
+        <Typography >
           No {name == "Drive" ? "Xbox" : "Logitech"} gamepads connected
         </Typography>
       )}
@@ -34,15 +34,15 @@ export default function GamepadDiv({
         <Box
           key={gp.index}
           sx={{
-            border: "1px solid #ccc",
+            border: "1px solid #0d0000",
             borderRadius: 1,
             padding: 1,
             marginBottom: 1,
             backgroundColor: connectedOne === gp.index ? "#e0f7fa" : "#f9f9f9",
           }}
         >
-          <Typography variant="subtitle1">Gamepad {gp.index}</Typography>
-          <Typography variant="body2">ID: {gp.id}</Typography>
+          <Typography sx={{ color: 'black' }} variant="subtitle1">Gamepad {gp.index}</Typography>
+          <Typography sx={{ color: 'black' }} variant="body2">ID: {gp.id}</Typography>
           <Button
             variant="outlined"
             size="small"
