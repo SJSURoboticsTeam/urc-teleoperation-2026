@@ -26,7 +26,7 @@ export default function GamepadDiv({
         </div>
       )}
       {gpList.length === 0 && (
-        <Typography >
+        <Typography sx={{ color: 'black' }}>
           No {name == "Drive" ? "Xbox" : "Logitech"} gamepads connected
         </Typography>
       )}
