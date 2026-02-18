@@ -125,6 +125,7 @@ function App() {
       {/* Normalizes styles */}
       <TopAppBar
         setModuleConflicts={setModuleConflicts}
+        moduleConflicts={moduleConflicts}
         currentView={currentView}
         setCurrentView={setCurrentView}
         onVelocitiesChange={handleVelocitiesChange}

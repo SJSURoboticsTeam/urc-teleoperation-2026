@@ -29,6 +29,7 @@ export default function TopAppBar({
   setDriveConnectedOne,
   camsVisibility,
   setcamsVisibility,
+  moduleConflicts,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
@@ -150,6 +151,7 @@ export default function TopAppBar({
             currentView={currentView}
             driveConnectedOne={driveConnectedOne}
             setDriveConnectedOne={setDriveConnectedOne}
+            moduleConflicts={moduleConflicts}
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />

@@ -17,6 +17,7 @@ export default function GamepadPanel({
   armGamepads,
   currentView,
   setModuleConflicts,
+  moduleConflicts,
   onPanVelocitiesChange, 
   driveConnectedOne, 
   setDriveConnectedOne
@@ -266,6 +267,7 @@ export default function GamepadPanel({
               gpList={gpList}
               connectedOne={driveConnectedOne}
               setConnectedOne={setDriveConnectedOne}
+              moduleConflicts={moduleConflicts}
               name={page}
             />
           ) : (
@@ -274,6 +276,7 @@ export default function GamepadPanel({
               gpList={armList}
               connectedOne={armConnectedOne}
               setConnectedOne={setArmConnectedOne}
+              moduleConflicts={moduleConflicts}
               name={page}
             />
           )}

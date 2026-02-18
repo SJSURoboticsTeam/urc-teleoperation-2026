@@ -1,28 +1,30 @@
-import { Typography, Box, Button } from "@mui/material";
+import { Typography, Box, Button, ListItem, FormControlLabel, Switch } from "@mui/material";
 import { useState } from "react";
+
+
 export default function GamepadDiv({
   gpList,
   connectedOne,
   setConnectedOne,
   name,
+  moduleConflicts,
   setModuleConflicts,
   setArmManualDisconnect,
 }) {
-  const [current, setCurrent] = useState("Module Conflicts: OFF");
   return (
     <div style={{ padding: 2, marginTop: 2 }}>
       {name == "Drive" && (
         <div style={{ marginBottom: 5 }}>
-          <button
-            onClick={() => {
-              setModuleConflicts((prev) => !prev);
-              current.includes("OFF")
-                ? setCurrent("Module Conflicts: ON")
-                : setCurrent("Module Conflicts: OFF");
-            }}
-          >
-            {current}
-          </button>
+            <FormControlLabel
+              sx={{ color: 'black' }}
+              control={
+                <Switch
+                  checked={moduleConflicts}
+                  onChange={(e) => setModuleConflicts(e.target.checked)}
+                />
+              }
+              label="Module Protection"
+            />
         </div>
       )}
       {gpList.length === 0 && (
