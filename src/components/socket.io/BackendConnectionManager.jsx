@@ -29,8 +29,8 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
       driveState : "idle",
       armState : "idle",
       canIds : [],
-      driveId: null,
-      armId: null,
+      driveId: 0,
+      armId: 0,
       loading: false
     })
 
@@ -193,9 +193,11 @@ function requestcanIds() {
                   fullWidth
                 >
                   <MenuItem value={0}>Disconnect</MenuItem>
-                  {canState.canIds && canState.canIds.map( (canId,index) => (
-                <MenuItem value={index +1}>{canId}</MenuItem>
-              ))}
+                {canState.canIds?.map((canId) => (
+                  <MenuItem key={canId} value={canId}>
+                    {canId}
+                  </MenuItem>
+                ))}
                 </Select>
               </FormControl>
             </Box>
@@ -205,7 +207,7 @@ function requestcanIds() {
               <FormControl sx={{flex:1}} size="small">
                 <InputLabel id="demo-simple-select-label">ARM</InputLabel>
                 <Select
-                  value={canState.Id}
+                  value={canState.armId}
                   label="ARM"
                   onChange={(event) =>
                         setcanState((prev) => ({
@@ -215,10 +217,12 @@ function requestcanIds() {
                       }
                   fullWidth
                 >
-                  <MenuItem value={0}>Disconnect</MenuItem>
-                  {canState.canIds && canState.canIds.map( (canId,index) => (
-                <MenuItem value={index +1}>{canId}</MenuItem>
-              ))}
+                <MenuItem value={0}>Disconnect</MenuItem>
+                {canState.canIds?.map((canId) => (
+                  <MenuItem key={canId} value={canId}>
+                    {canId}
+                  </MenuItem>
+                ))}
                 </Select>
               </FormControl>
             </Box>
