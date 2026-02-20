@@ -27,6 +27,8 @@ export default function TopAppBar({
   onPanVelocitiesChange,
   driveConnectedOne,
   setDriveConnectedOne,
+  armConnectedOne,
+  setArmConnectedOne,
   camsVisibility,
   setcamsVisibility,
 }) {
@@ -150,6 +152,8 @@ export default function TopAppBar({
             currentView={currentView}
             driveConnectedOne={driveConnectedOne}
             setDriveConnectedOne={setDriveConnectedOne}
+            armConnectedOne={armConnectedOne}
+            setArmConnectedOne={setArmConnectedOne}
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />

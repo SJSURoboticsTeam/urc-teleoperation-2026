@@ -15,16 +15,24 @@ import ExtrasView from "./ExtrasView";
 
 // Context imports
 import ArmCommandContext from "../contexts/ArmCommandContext";
+import GamepadContext from "../contexts/GamepadContext";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
+
   const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
   const [forwardsVelocity, setForwardVelocity] = useState(0);
   const [rotationalVelocity, setRotationalVelocity] = useState(0);
   const [panHeightVelocity, setPanHeightVelocity] = useState(0);
   const [panWidthVelocity, setPanWidthVelocity] = useState(0);
-  const [armConnectedOne, setArmConnectedOne] = useState(null);
-  const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+
+  // const [armConnectedOne, setArmConnectedOne] = useState(null);
+  // const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+
+  const [connectedGamepads, setConnectedGamepads] = useState({
+    drive: null,
+    arm: null,
+  });
 
   const [armCommands, setArmCommands] = useState({
     track: 0,
@@ -34,6 +42,17 @@ function App() {
     roll: 0,
     clamp: 0,
   });
+
+  const [driveCommands, setDriveCommands] = useState({
+    sidewaysVelocity: 0,
+    forwardsVelocity: 0,
+    rotationalVelocity: 0,
+  })
+  
+  const [mastCommands, setMastCommands] = useState({
+    panHeightVelocity: 0,
+    panWidthVelocity: 0,
+  })
 
   const [moduleConflicts, setModuleConflicts] = useState(0);
   const [camsVisibility, setcamsVisibility] = useState(true);
@@ -55,11 +74,7 @@ function App() {
       case "ArmView":
         return (
           <SplitView
-            CurrentView={
-              <ArmView
-                armConnectedOne={armConnectedOne}
-              />
-            }
+            CurrentView={<ArmView/>}
             showCameras={camsVisibility}
           />
         );
@@ -74,8 +89,8 @@ function App() {
                 rotationalVelocity={rotationalVelocity}
                 panHeightVelocity={panHeightVelocity}
                 panWidthVelocity={panWidthVelocity}
-                driveConnectedOne={driveConnectedOne}
-                setDriveConnectedOne={setDriveConnectedOne}
+                // driveConnectedOne={driveConnectedOne}
+                // setDriveConnectedOne={setDriveConnectedOne}
               />
             }
             showCameras={camsVisibility}
@@ -121,34 +136,41 @@ function App() {
         armCommands={armCommands}
         setArmCommands={setArmCommands}
       >
-      <CssBaseline />
-      {/* Normalizes styles */}
-      <TopAppBar
-        setModuleConflicts={setModuleConflicts}
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        onVelocitiesChange={handleVelocitiesChange}
-        onPanVelocitiesChange={handlePanVelocitiesChange}
-        driveConnectedOne={driveConnectedOne}
-        setDriveConnectedOne={setDriveConnectedOne}
-        camsVisibility={camsVisibility}
-        setcamsVisibility={setcamsVisibility}
-      />
+        <GamepadContext
+          connectedGamepads={connectedGamepads}
+          setConnectedGamepads={setConnectedGamepads}
+        >
+          <CssBaseline />
+          {/* Normalizes styles */}
+          <TopAppBar
+            setModuleConflicts={setModuleConflicts}
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            onVelocitiesChange={handleVelocitiesChange}
+            onPanVelocitiesChange={handlePanVelocitiesChange}
+            driveConnectedOne={driveConnectedOne}
+            setDriveConnectedOne={setDriveConnectedOne}
+            armConnectedOne={armConnectedOne}
+            setArmConnectedOne={setArmConnectedOne}
+            camsVisibility={camsVisibility}
+            setcamsVisibility={setcamsVisibility}
+          />
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          minHeight: 0,
-          marginTop: "64px",
-        }}
-      >
-        {renderView()}
-      </Box>
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 2,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              minHeight: 0,
+              marginTop: "64px",
+            }}
+          >
+            {renderView()}
+          </Box>
+        </GamepadContext>
       </ArmCommandContext>
     </Box>
   );

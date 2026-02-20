@@ -19,7 +19,9 @@ export default function GamepadPanel({
   setModuleConflicts,
   onPanVelocitiesChange, 
   driveConnectedOne, 
-  setDriveConnectedOne
+  setDriveConnectedOne,
+  armConnectedOne,
+  setArmConnectedOne
 }) {
   const [driveVelocities, setDriveVelocities] = useState({
     lx: 0,
@@ -31,7 +33,7 @@ export default function GamepadPanel({
     px: 0, 
     py: 0 
   });
-  const [armConnectedOne, setArmConnectedOne] = useState(null);
+  // const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page, setPage] = useState("Drive");
   const [prevTime, setPrevTime] = useState();
   // const [armVelocities, setArmVelocities] = useState({
@@ -131,6 +133,15 @@ export default function GamepadPanel({
       });
       return;
     }
+
+    let prevVal = {
+      track: 0,
+      shoulder: 0,
+      elbow: 0,
+      pitch: 0,
+      roll: 0,
+      clamp: 0,
+    };
     
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
@@ -150,28 +161,26 @@ export default function GamepadPanel({
         };
 
         const changed = Object.keys(newVal).some(
-          (key) => newVal[key] !== prev[key]
+          (key) => newVal[key] !== prevVal[key]
         );
         if (changed) {
           setArmCommands?.({ ...newVal, armConnectedOne });
-          return newVal;
+          prevVal = newVal;
         }
-        setArmCommands?.({ ...prev, armConnectedOne });
-        return prev;
       }
     };
     const intervalId = setInterval(pollAxes, FrameRateConstant);
     console.log(`Polling arm gamepad every ${FrameRateConstant}ms`);
     return () => clearInterval(intervalId);
-  }, [armConnectedOne, armManualDisconnect]);
+  }, [armConnectedOne, armManualDisconnect, setArmCommands]);
 
   //console.log(driveGamepads) //dbg
   const gpList = Object.values(driveGamepads);
   //console.log(gpList); //dbg
 
-  //console.log(armGamepads) //dbg
+  console.log(armGamepads) //dbg
   const armList = Object.values(armGamepads);
-  //console.log(armList); //dbg
+  console.log(armList); //dbg
 
   const [info, setInfo] = useState("");
 
