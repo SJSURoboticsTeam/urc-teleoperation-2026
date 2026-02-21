@@ -58,29 +58,53 @@ app = socketio.ASGIApp(sio)
 print("Preparing for CAN...")
 
 
-
+# =================== CAN connections ===================
 @sio.event
 async def getcanIds(sid):
+    # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
         print(f"{port.device} ")
         canIds_arr.append(port.device)
     return canIds_arr
-    
+
+@sio.event
+async def connectDrive(sid,data):
+    # connects to can and returns OK or ERROR
+    try:
+        drive_serial = CanSerial(data['canId'])
+        print("Drive connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectDrive(sid,data):
+    # disconnects can and returns OK or ERROR
+    try:
+        if drive_serial:
+            drive_serial.close()
+            print("Drive serial closed.")
+            return("OK")
+        else:
+            print("Drive was never connected.")
+            return("ERROR")
+    except Exception:
+        print("DRIVE WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
+
+# define here, and be referenced elsewhere    
 drive_serial = None
 arm_serial = None
-try:
-    # RX TESTER /dev/tty.usbserial-59760082211
-    # ROBOT /dev/tty.usbserial-59760073491
-    drive_serial = CanSerial('/dev/tty.usbserial-59760082211')
-    print("Drive connected.")
-except Exception as e:
-    print("FAILURE TO CONNECT DRIVE: " + str(e))
-try:
-    arm_serial = CanSerial('/dev/TTYAMA1')
-    print("Arm connected.")
-except Exception as e:
-    print("FAILURE TO CONNECT ARM!" + str(e))
+
+
+# try:
+#     arm_serial = CanSerial('/dev/TTYAMA1')
+#     print("Arm connected.")
+# except Exception as e:
+#     print("FAILURE TO CONNECT ARM!" + str(e))
 
 
 
