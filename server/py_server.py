@@ -75,6 +75,7 @@ async def connectDrive(sid,data):
     print("Connecting to " + str(data))
     try:
         drive_serial = CanSerial(data)
+
         print("Drive connected.")
         return("OK")
     except Exception as e:
@@ -88,6 +89,7 @@ async def disconnectDrive(sid):
     try:
         if drive_serial:
             drive_serial.close()
+            drive_serial = None
             print("Drive serial closed.")
             return("OK")
         else:
@@ -98,19 +100,41 @@ async def disconnectDrive(sid):
         return("ERROR")
         pass
 
+@sio.event
+async def connectArm(sid,data):
+    # connects to can and returns OK or ERROR
+    global arm_serial
+    print("Connecting to " + str(data))
+    try:
+        arm_serial = CanSerial(data)
+        print("Arm connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectArm(sid):
+    # disconnects can and returns OK or ERROR
+    global arm_serial
+    try:
+        if arm_serial:
+            arm_serial.close()
+            arm_serial = None
+            print("Arm serial closed.")
+            return("OK")
+        else:
+            print("Arm was never connected.")
+            return("ERROR")
+    except Exception:
+        print("ARM WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
+
+
 # define here, and be referenced elsewhere    
 drive_serial = None
 arm_serial = None
-
-
-# try:
-#     arm_serial = CanSerial('/dev/TTYAMA1')
-#     print("Arm connected.")
-# except Exception as e:
-#     print("FAILURE TO CONNECT ARM!" + str(e))
-
-
-
 
 # =================== Initialization ===================
 # Background task guard

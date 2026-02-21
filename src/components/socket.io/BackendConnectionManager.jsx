@@ -175,6 +175,49 @@ function disconnectDrive() {
   })
 }
 
+function connectArm() {
+      setcanState( (prev) => ({
+      ...prev,
+      armState: "connecting"
+    }));
+    console.log("Connecting, Sending id " + canState.armId)
+  socket.emit("connectArm", canState.driveId, (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            armState: "active"
+          }));
+  } else {
+          setcanState( (prev) => ({
+            ...prev,
+            armState: "idle"
+          }));
+  }
+  })
+}
+function disconnectArm() {
+      setcanState( (prev) => ({
+      ...prev,
+      armState: "connecting"
+    }));
+    console.log("Disconnecting");
+  socket.emit("disconnectArm", (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            armState: "idle"
+          }));
+  } else {
+          setcanState( (prev) => ({
+            ...prev,
+            armState: "active"
+          }));
+  }
+  })
+}
+
 
 
   return (
@@ -228,7 +271,8 @@ function disconnectDrive() {
               <Button disabled={canState.loading} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
                { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
               <Button   variant="contained" onClick={requestcanIds} sx={{width:90}}>REFRESH</Button>
-              <Button disabled={canState.loading} color="success" sx={{width:90}} onClick={ connect } variant="contained">ARM <ElectricalServicesIcon/></Button>
+              <Button disabled={canState.loading} loading={canState.armState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
+               { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
 
             {/* DRIVE CAN CONNECTION */}
@@ -264,7 +308,7 @@ function disconnectDrive() {
                 <Select
                   value={canState.armId}
                   label="ARM"
-                  disabled={canState.loading}
+                  disabled={canState.loading || canState.armState != "idle"}
                   onChange={(event) =>
                         setcanState((prev) => ({
                           ...prev,
