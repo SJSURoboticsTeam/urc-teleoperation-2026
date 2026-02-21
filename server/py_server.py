@@ -71,8 +71,10 @@ async def getcanIds(sid):
 @sio.event
 async def connectDrive(sid,data):
     # connects to can and returns OK or ERROR
+    global drive_serial
+    print("Connecting to " + str(data))
     try:
-        drive_serial = CanSerial(data['canId'])
+        drive_serial = CanSerial(data)
         print("Drive connected.")
         return("OK")
     except Exception as e:
@@ -80,8 +82,9 @@ async def connectDrive(sid,data):
         return("ERROR")
 
 @sio.event
-async def disconnectDrive(sid,data):
+async def disconnectDrive(sid):
     # disconnects can and returns OK or ERROR
+    global drive_serial
     try:
         if drive_serial:
             drive_serial.close()

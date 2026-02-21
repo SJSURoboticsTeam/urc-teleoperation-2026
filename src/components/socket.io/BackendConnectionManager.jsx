@@ -15,6 +15,7 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import ElectricalServicesIcon from '@mui/icons-material/ElectricalServices';
+import EjectIcon from '@mui/icons-material/Eject';
 
 
 
@@ -26,17 +27,18 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
     const [numConnections, setNumConnections] = useState(0);
     const [conntype, setconntype] = useState("Checking...");
     const[canState, setcanState] = useState({
-      driveState : "idle",
-      armState : "idle",
-      canIds : [],
-      driveId: 0,
-      armId: 0,
-      loading: false
+      driveState : "idle", // idle, connecting, active
+      armState : "idle", // idle, connecting, active
+      loading: true, // lock buttons when refreshing can data
+      canIds : [], // array with can data
+      driveId: "", // selected can id in dropdown
+      armId: "", // selected can id in dropdown
+
     })
 
 
 
-  
+  // server connect, disconnect
   function connect() {
     socket.connect();
   }
@@ -46,6 +48,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
   }
 const [robotconnectedIcon,setrobotConnectedIcon] = useState("");
 
+//icons and if connected
 useEffect( () => {
   setrobotConnectedIcon(
     isConnected ? (
@@ -101,7 +104,7 @@ useEffect(() => {
 
 useEffect(() => {
   let interval;
-  // send a ping to the server every 2s to get number of connected clients from backend
+  // see if client is connected optimally (websockets) or not
   function getConnType() {
       if(socket.io.engine.transport.name == "websocket") {
         setconntype("Yes")
@@ -114,14 +117,64 @@ useEffect(() => {
 }, []);
 
 function requestcanIds() {
+    // lock the ui so user can't do anything while loading
+  setcanState( (prev) => ({
+      ...prev,
+      loading: true
+    }));
   socket.emit("getcanIds", (canIdsList) => {
     console.log(canIdsList);
     setcanState( (prev) => ({
       ...prev,
       canIds: canIdsList,
+      loading: false
     }));
     });
 }
+
+function connectDrive() {
+      setcanState( (prev) => ({
+      ...prev,
+      driveState: "connecting"
+    }));
+    console.log("Connecting, Sending id " + canState.driveId)
+  socket.emit("connectDrive", canState.driveId, (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            driveState: "active"
+          }));
+  } else {
+          setcanState( (prev) => ({
+            ...prev,
+            driveState: "idle"
+          }));
+  }
+  })
+}
+function disconnectDrive() {
+      setcanState( (prev) => ({
+      ...prev,
+      driveState: "connecting"
+    }));
+    console.log("Disconnecting");
+  socket.emit("disconnectDrive", (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            driveState: "idle"
+          }));
+  } else {
+          setcanState( (prev) => ({
+            ...prev,
+            driveState: "active"
+          }));
+  }
+  })
+}
+
 
 
   return (
@@ -172,9 +225,10 @@ function requestcanIds() {
             <Typography  sx={{ color: 'black' }} variant = "h6">CAN CONNECTIONS</Typography>
 
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
-              <Button color="success" sx={{width:90}} onClick={ connect } variant="contained">DRIVE <ElectricalServicesIcon/></Button>
+              <Button disabled={canState.loading} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
+               { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
               <Button   variant="contained" onClick={requestcanIds} sx={{width:90}}>REFRESH</Button>
-              <Button color="success" sx={{width:90}} onClick={ connect } variant="contained">ARM <ElectricalServicesIcon/></Button>
+              <Button disabled={canState.loading} color="success" sx={{width:90}} onClick={ connect } variant="contained">ARM <ElectricalServicesIcon/></Button>
             </Box>
 
             {/* DRIVE CAN CONNECTION */}
@@ -184,6 +238,7 @@ function requestcanIds() {
                 <Select
                   value={canState.driveId}
                   label="DRIVE"
+                  disabled={canState.loading || canState.driveState != "idle"}
                   onChange={(event) =>
                     setcanState((prev) => ({
                       ...prev,
@@ -209,6 +264,7 @@ function requestcanIds() {
                 <Select
                   value={canState.armId}
                   label="ARM"
+                  disabled={canState.loading}
                   onChange={(event) =>
                         setcanState((prev) => ({
                           ...prev,
