@@ -43,7 +43,7 @@ arm_parse_functions = {
     arm_receive_ID['CLAMP']:        lambda data: parse_arm_servo(data)
 }
 
-def register_arm_events(sio, arm_serial):
+def register_arm_events(sio, serial_ports):
     @sio.event
     async def armCommands(sid, data):
         # 8 bit signed integer correlating to 2^6x
@@ -62,13 +62,13 @@ def register_arm_events(sio, arm_serial):
         clamp = clamp_scaled.to_bytes(2, 'big', signed=True).hex()
 
         can_msg = f't{arm_send_ID["ELBOW"]}312{elbow}\r'
-        await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
         
         # can_msg = f't{arm_send_ID["SHOULDER"]}312{shoulder}\r'
-        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        # await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
         
         # can_msg = f't{arm_send_ID["TRACK"]}312{track}\r'
-        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        # await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
 
         print(f'[{sid}] Arm command sent: {can_msg}')
 
@@ -100,11 +100,11 @@ def parse_arm_data(data):
     except Exception as e:
         print(f'Error parsing arm data: {e}')
 
-async def read_arm_can_loop(arm_serial):
+async def read_arm_can_loop(serial_ports):
     try:
         while True:
-            # data = arm_serial.read_can(None)
-            data = await asyncio.to_thread(arm_serial.read_can, None)
+            # data = serial_ports["arm"].read_can(None)
+            data = await asyncio.to_thread(serial_ports["arm"].read_can, None)
             if data:
                 parse_arm_data(data)
             # time.sleep(0.01)

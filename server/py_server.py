@@ -11,6 +11,13 @@ from drive import read_drive_can_loop, send_drive_status_request, register_drive
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 
+serial_ports = {
+    "drive": None,
+    "arm": None
+}
+
+
+
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
 signal.signal(signal.SIGINT, lambda s, f: shutdown())
@@ -26,8 +33,8 @@ def shutdown():
     shutting_down = True
     print("\nShutting down... ")
     try:
-        if drive_serial:
-            drive_serial.close()
+        if serial_ports["drive"]:
+            serial_ports["drive"].close()
             print("Drive serial closed.")
         else:
             print("Drive was never connected.")
@@ -35,8 +42,8 @@ def shutdown():
         print("DRIVE WAS NOT DISCONNECTED!!!")
         pass
     try:
-        if arm_serial:
-            arm_serial.close()
+        if serial_ports["drive"]:
+            serial_ports["drive"].close()
             print("Arm serial closed.")
         else:
             print("Arm was never connected.")
@@ -71,10 +78,10 @@ async def getcanIds(sid):
 @sio.event
 async def connectDrive(sid,data):
     # connects to can and returns OK or ERROR
-    global drive_serial
+    global serial_ports
     print("Connecting to " + str(data))
     try:
-        drive_serial = CanSerial(data)
+        serial_ports["drive"] = CanSerial(data)
 
         print("Drive connected.")
         return("OK")
@@ -85,11 +92,11 @@ async def connectDrive(sid,data):
 @sio.event
 async def disconnectDrive(sid):
     # disconnects can and returns OK or ERROR
-    global drive_serial
+    global serial_ports
     try:
-        if drive_serial:
-            drive_serial.close()
-            drive_serial = None
+        if serial_ports["drive"]:
+            serial_ports["drive"].close()
+            serial_ports["drive"] = None
             print("Drive serial closed.")
             return("OK")
         else:
@@ -103,10 +110,10 @@ async def disconnectDrive(sid):
 @sio.event
 async def connectArm(sid,data):
     # connects to can and returns OK or ERROR
-    global arm_serial
+    global serial_ports
     print("Connecting to " + str(data))
     try:
-        arm_serial = CanSerial(data)
+        serial_ports["arm"] = CanSerial(data)
         print("Arm connected.")
         return("OK")
     except Exception as e:
@@ -116,11 +123,11 @@ async def connectArm(sid,data):
 @sio.event
 async def disconnectArm(sid):
     # disconnects can and returns OK or ERROR
-    global arm_serial
+    global serial_ports
     try:
-        if arm_serial:
-            arm_serial.close()
-            arm_serial = None
+        if serial_ports["arm"]:
+            serial_ports["arm"].close()
+            serial_ports["arm"] = None
             print("Arm serial closed.")
             return("OK")
         else:
@@ -132,10 +139,6 @@ async def disconnectArm(sid):
         pass
 
 
-# define here, and be referenced elsewhere    
-drive_serial = None
-arm_serial = None
-
 # =================== Initialization ===================
 # Background task guard
 can_error_message_started = False
@@ -146,9 +149,9 @@ cpu_started = False
 
 
 register_metric_events(sio)
-register_drive_events(sio,drive_serial)
-register_arm_events(sio, arm_serial)
-register_camera_pt_events(sio,drive_serial)
+register_drive_events(sio,serial_ports)
+register_arm_events(sio, serial_ports)
+register_camera_pt_events(sio,serial_ports)
 
 # =================== Start Server ===================
 
@@ -171,13 +174,13 @@ async def connect(sid,environ):
     # Start background CAN loop once
     if not drive_task_started:
         drive_task_started = True
-        sio.start_background_task(read_drive_can_loop,drive_serial)
+        sio.start_background_task(read_drive_can_loop,serial_ports)
     if not arm_task_started:
         arm_task_started = True
-        sio.start_background_task(read_arm_can_loop, arm_serial)
+        sio.start_background_task(read_arm_can_loop, serial_ports)
     if not can_error_message_started:
         can_error_message_started = True
-        sio.start_background_task(send_drive_status_request,drive_serial)
+        sio.start_background_task(send_drive_status_request,serial_ports)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)
