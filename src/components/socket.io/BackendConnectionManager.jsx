@@ -31,8 +31,8 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
       armState : "idle", // idle, connecting, active
       loading: true, // lock buttons when refreshing can data
       canIds : [], // array with can data
-      driveId: "", // selected can id in dropdown
-      armId: "", // selected can id in dropdown
+      driveId: "Disconnect", // selected can id in dropdown
+      armId: "Disconnect", // selected can id in dropdown
 
     })
 
@@ -268,10 +268,10 @@ function disconnectArm() {
             <Typography  sx={{ color: 'black' }} variant = "h6">CAN CONNECTIONS</Typography>
 
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
-              <Button disabled={canState.loading} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
+              <Button disabled={canState.loading || canState.driveId=="Disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
                { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
               <Button   variant="contained" onClick={requestcanIds} sx={{width:90}}>REFRESH</Button>
-              <Button disabled={canState.loading} loading={canState.armState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
+              <Button disabled={canState.loading || canState.armId=="Disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
                { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
 
@@ -291,7 +291,7 @@ function disconnectArm() {
                   }
                   fullWidth
                 >
-                  <MenuItem value={0}>Disconnect</MenuItem>
+                  <MenuItem value={"Disconnect"}>Disconnect</MenuItem>
                 {canState.canIds?.map((canId) => (
                   <MenuItem key={canId} value={canId}>
                     {canId}
@@ -317,7 +317,7 @@ function disconnectArm() {
                       }
                   fullWidth
                 >
-                <MenuItem value={0}>Disconnect</MenuItem>
+                <MenuItem value={"Disconnect"}>Disconnect</MenuItem>
                 {canState.canIds?.map((canId) => (
                   <MenuItem key={canId} value={canId}>
                     {canId}
