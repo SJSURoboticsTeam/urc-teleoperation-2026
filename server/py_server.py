@@ -13,7 +13,9 @@ from camera_pt import register_camera_pt_events
 
 serial_ports = {
     "drive": None,
-    "arm": None
+    "driveId" : "Disconnect",
+    "arm": None,
+    "armId" : "Disconnect"
 }
 
 
@@ -73,7 +75,13 @@ async def getcanIds(sid):
     for port in list_ports.comports():
         print(f"{port.device} ")
         canIds_arr.append(port.device)
-    return canIds_arr
+        data = {
+        'status': "OK",
+        'canIds' : canIds_arr,
+        'driveId' : serial_ports["driveId"],
+        'armId' : serial_ports["armId"]
+        }
+    return data
 
 @sio.event
 async def connectDrive(sid,data):
@@ -82,7 +90,7 @@ async def connectDrive(sid,data):
     print("Connecting to " + str(data))
     try:
         serial_ports["drive"] = CanSerial(data)
-
+        serial_ports["driveId"] = data
         print("Drive connected.")
         return("OK")
     except Exception as e:
@@ -97,6 +105,7 @@ async def disconnectDrive(sid):
         if serial_ports["drive"]:
             serial_ports["drive"].close()
             serial_ports["drive"] = None
+            serial_ports["driveId"] = "Disconnect"
             print("Drive serial closed.")
             return("OK")
         else:
@@ -114,6 +123,7 @@ async def connectArm(sid,data):
     print("Connecting to " + str(data))
     try:
         serial_ports["arm"] = CanSerial(data)
+        serial_ports["armId"] = data
         print("Arm connected.")
         return("OK")
     except Exception as e:
@@ -128,6 +138,7 @@ async def disconnectArm(sid):
         if serial_ports["arm"]:
             serial_ports["arm"].close()
             serial_ports["arm"] = None
+            serial_ports["driveId"] = "Disconnect"
             print("Arm serial closed.")
             return("OK")
         else:

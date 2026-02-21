@@ -122,11 +122,15 @@ function requestcanIds() {
       ...prev,
       loading: true
     }));
-  socket.emit("getcanIds", (canIdsList) => {
-    console.log(canIdsList);
+  socket.emit("getcanIds", (data) => {
+    console.log(data);
     setcanState( (prev) => ({
       ...prev,
-      canIds: canIdsList,
+      canIds: data["canIds"],
+      driveId: data["driveId"],
+      armId: data["armId"],
+      driveState: ( data["driveId"] !== "Disconnect") ?  "active" : "idle",
+      armState: ( data["armId"] !== "Disconnect") ?  "active" : "idle",
       loading: false
     }));
     });
