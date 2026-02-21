@@ -27,11 +27,14 @@ function App() {
   const [panWidthVelocity, setPanWidthVelocity] = useState(0);
 
   // const [armConnectedOne, setArmConnectedOne] = useState(null);
-  // const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+  const [driveConnectedOne, setDriveConnectedOne] = useState(null);
 
+  // list of gamepads and the connected one for drive and arm
   const [connectedGamepads, setConnectedGamepads] = useState({
-    drive: null,
-    arm: null,
+    driveGPList: [],  // list of drive gamepads (to display)
+    armGPList: [],    // list of arm gamepads (to display)
+    drive: null,      // index of selected drive gamepad
+    arm: null,        // index of selected arm gamepad
   });
 
   const [armCommands, setArmCommands] = useState({
@@ -89,8 +92,8 @@ function App() {
                 rotationalVelocity={rotationalVelocity}
                 panHeightVelocity={panHeightVelocity}
                 panWidthVelocity={panWidthVelocity}
-                // driveConnectedOne={driveConnectedOne}
-                // setDriveConnectedOne={setDriveConnectedOne}
+                driveConnectedOne={driveConnectedOne}
+                setDriveConnectedOne={setDriveConnectedOne}
               />
             }
             showCameras={camsVisibility}
@@ -150,8 +153,8 @@ function App() {
             onPanVelocitiesChange={handlePanVelocitiesChange}
             driveConnectedOne={driveConnectedOne}
             setDriveConnectedOne={setDriveConnectedOne}
-            armConnectedOne={armConnectedOne}
-            setArmConnectedOne={setArmConnectedOne}
+            // armConnectedOne={armConnectedOne}
+            // setArmConnectedOne={setArmConnectedOne}
             camsVisibility={camsVisibility}
             setcamsVisibility={setcamsVisibility}
           />
