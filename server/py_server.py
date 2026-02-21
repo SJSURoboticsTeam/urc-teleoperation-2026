@@ -13,9 +13,9 @@ from camera_pt import register_camera_pt_events
 
 serial_ports = {
     "drive": None,
-    "driveId" : "Disconnect",
+    "driveId" : "disconnect",
     "arm": None,
-    "armId" : "Disconnect"
+    "armId" : "disconnect"
 }
 
 
@@ -105,7 +105,7 @@ async def disconnectDrive(sid):
         if serial_ports["drive"]:
             serial_ports["drive"].close()
             serial_ports["drive"] = None
-            serial_ports["driveId"] = "Disconnect"
+            serial_ports["driveId"] = "disconnect"
             print("Drive serial closed.")
             return("OK")
         else:
@@ -138,7 +138,7 @@ async def disconnectArm(sid):
         if serial_ports["arm"]:
             serial_ports["arm"].close()
             serial_ports["arm"] = None
-            serial_ports["driveId"] = "Disconnect"
+            serial_ports["armId"] = "disconnect"
             print("Arm serial closed.")
             return("OK")
         else:
