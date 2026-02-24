@@ -268,7 +268,8 @@ function disconnectArm() {
               background: "white",
               border: "1px solid gray",
               padding: "10px",
-              width: "300px"
+              width: "300px",
+              borderRadius: "4px"
             }}
           >
     

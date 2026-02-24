@@ -99,6 +99,7 @@ useEffect(() => {
               border: "1px solid gray",
               padding: "10px",
               minWidth: "250px",
+              borderRadius: "4px"
             }}
           >
     

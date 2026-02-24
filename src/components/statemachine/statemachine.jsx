@@ -33,6 +33,7 @@ export default function StateMachine({ openPane, setOpenPane }) {
               border: "1px solid gray",
               padding: "10px",
               minWidth: "250px",
+              borderRadius: "4px"
             }}
           >
     
