@@ -116,19 +116,20 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
-function requestcanIds() {
+function requestCanInfo() {
     // lock the ui so user can't do anything while loading
   setcanState( (prev) => ({
       ...prev,
       loading: true
     }));
-  socket.emit("getcanIds", (data) => {
-    console.log(data);
+  socket.emit("getCanInfo", (data) => {
+    //console.log(data);
     setcanState( (prev) => ({
       ...prev,
       canIds: data["canIds"],
       driveId: data["driveId"],
       armId: data["armId"],
+      // assignment if connected or not by text
       driveState: ( data["driveId"] !== "disconnect") ?  "active" : "idle",
       armState: ( data["armId"] !== "disconnect") ?  "active" : "idle",
       loading: false
@@ -220,7 +221,20 @@ function disconnectArm() {
           }));
   }
   })
+
 }
+
+  useEffect( () => {
+    if(openPane == "Backend") {
+      requestCanInfo();
+    } else {
+          setcanState( (prev) => ({
+            ...prev,
+            // lock so next time so reload has to happen first (and unlock)
+            loading: true 
+          }));
+    }
+},[openPane]);
 
 
 
@@ -273,7 +287,7 @@ function disconnectArm() {
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
               <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
                { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
-              <Button   variant="contained" onClick={requestcanIds} sx={{width:90}}>REFRESH</Button>
+              <Button   variant="contained" loading={canState.loading} onClick={requestCanInfo} sx={{width:90}}>REFRESH</Button>
               <Button disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
                { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>

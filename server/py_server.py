@@ -69,7 +69,7 @@ print("Preparing for CAN...")
 
 # =================== CAN connections ===================
 @sio.event
-async def getcanIds(sid):
+async def getCanInfo(sid):
     # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
