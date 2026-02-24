@@ -73,14 +73,17 @@ async def getCanInfo(sid):
     # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
-        print(f"{port.device} ")
-        canIds_arr.append(port.device)
-        data = {
-        'status': "OK",
-        'canIds' : canIds_arr,
-        'driveId' : serial_ports["driveId"],
-        'armId' : serial_ports["armId"]
-        }
+        #print(f"{port.device} ")
+
+        if(port.device.find("serial") != -1):
+            # loose check to remove system serial interfaces
+            canIds_arr.append(port.device)
+    data = {
+    'status': "OK",
+    'canIds' : canIds_arr,
+    'driveId' : serial_ports["driveId"],
+    'armId' : serial_ports["armId"]
+    }
     return data
 
 @sio.event
