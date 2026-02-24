@@ -197,7 +197,7 @@ async def connect(sid,environ):
        #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
-        #sio.start_background_task(cpuloop,sio)
+        sio.start_background_task(cpuloop,sio)
 
 
 @sio.event

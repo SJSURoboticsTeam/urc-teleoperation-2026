@@ -65,13 +65,15 @@ async def cpuloop(sio):
             ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
             
             model_path = Path("/proc/device-tree/model")
-            temp = -1
+            temp = -1 # placeholder, but returned if run on non-pi
             try:
+                # check if server is on rpi, and if so ask hardware for temp
                 if "Raspberry Pi" in model_path.read_text(errors="ignore").strip("\x00"):
                     with open("/sys/class/thermal/thermal_zone0/temp") as f:
                         temp = int(f.read()) / 1000.0
             except:
-                print("No RPI found, using dev mode ignore")
+                pass
+                # print("No RPI found, using dev mode ignore")
 
             data = {
                 'status': "GOOD",

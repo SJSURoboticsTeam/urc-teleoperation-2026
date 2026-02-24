@@ -269,8 +269,7 @@ function disconnectArm() {
             <Typography  sx={{ color: 'black' }}>Clients Connected: {numConnections}</Typography>
             <Typography  sx={{ color: 'black' }}>Websockets: {conntype}</Typography>
             <hr className="divider" />
-            <Typography  sx={{ color: 'black' }} variant = "h6">CAN CONNECTIONS</Typography>
-
+            <Typography  sx={{ color: 'black', m: 0 }} variant = "h6">CAN CONNECTIONS</Typography>
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
               <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
                { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
@@ -329,13 +328,6 @@ function disconnectArm() {
                 ))}
                 </Select>
               </FormControl>
-            </Box>
-
-            <hr className="divider" />
-            <Typography  sx={{ color: 'black' }} variant = "h6">FEATURE TOGGLES</Typography>
-            <Box sx={{display: "flex",flexDirection: "col",gap: 1}}>
-              <Button color="success" onClick={ connect } variant="contained">START CPU METRICS</Button>
-              <Button color="success" onClick={ connect } variant="contained">START UNIFI METRICS</Button>
             </Box>
             </div>
               
