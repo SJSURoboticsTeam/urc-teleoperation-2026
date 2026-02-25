@@ -35,7 +35,7 @@ function App() {
     clamp: 0,
   });
 
-  const [moduleConflicts, setModuleConflicts] = useState(0);
+  const [moduleConflicts, setModuleConflicts] = useState(1);
   const [camsVisibility, setcamsVisibility] = useState(true);
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {

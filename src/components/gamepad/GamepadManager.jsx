@@ -21,18 +21,18 @@ export default function GamepadDiv({
               control={
                 <Switch
                   checked={moduleConflicts}
-                  color="error"
                   onChange={(e) => setModuleConflicts(e.target.checked)}
                 />
               }
-              label="Autofix Safety Issues"
+              label="Autofix Overrotation"
             />
         </div>
       )}
       {gpList.length === 0 && (
         <Typography sx={{ color: 'black' }}>
-          No {name == "Drive" ? "Xbox" : "Logitech"} gamepads connected
+          No {name == "Drive" ? "Xbox/Playstation" : "Logitech Extreme"} gamepads connected.
         </Typography>
+        
       )}
       {gpList.map((gp) => (
         <Box
