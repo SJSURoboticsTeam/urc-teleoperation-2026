@@ -12,6 +12,8 @@ import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
 import SplitView from "./SplitView";
 import ExtrasView from "./ExtrasView";
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 // Context imports
 import ArmCommandContext from "../contexts/ArmCommandContext";
@@ -25,6 +27,7 @@ function App() {
   const [panWidthVelocity, setPanWidthVelocity] = useState(0);
   const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [armCommands, setArmCommands] = useState({
     track: 0,
@@ -49,6 +52,14 @@ function App() {
     setPanWidthVelocity(px);
   };
 
+
+  const handleClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setErrorMessage("");
+  };
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
@@ -117,6 +128,17 @@ function App() {
         overflow: "hidden",
       }}
     >
+        // !!errorMessage converts string to clean boolean (ie if theres a message show it)
+        <Snackbar open={!!errorMessage} autoHideDuration={6000} onClose={handleClose}>
+        <Alert
+          onClose={handleClose}
+          severity="error"
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          Error: {errorMessage}
+        </Alert>
+      </Snackbar>
       <ArmCommandContext 
         armCommands={armCommands}
         setArmCommands={setArmCommands}
@@ -134,6 +156,8 @@ function App() {
         setDriveConnectedOne={setDriveConnectedOne}
         camsVisibility={camsVisibility}
         setcamsVisibility={setcamsVisibility}
+        setErrorMessage={setErrorMessage}
+        errorMessage={errorMessage}
       />
 
       <Box

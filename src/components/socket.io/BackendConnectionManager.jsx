@@ -20,7 +20,7 @@ import EjectIcon from '@mui/icons-material/Eject';
 
 
 
-export default function NavConnectionStatus({ openPane, setOpenPane }) {
+export default function NavConnectionStatus({ openPane, setOpenPane,setErrorMessage, errorMessage }) {
   
     const isConnected = useSocketStatus(); // get socket status from ui
     const [latency, setLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
@@ -151,7 +151,8 @@ function connectDrive() {
             driveState: "active"
           }));
   } else {
-          setcanState( (prev) => ({
+          setErrorMessage("Drive didn't connect");
+    setcanState( (prev) => ({
             ...prev,
             driveState: "idle"
           }));
@@ -172,7 +173,8 @@ function disconnectDrive() {
             driveState: "idle"
           }));
   } else {
-          setcanState( (prev) => ({
+          setErrorMessage("Drive didn't disconnect");
+    setcanState( (prev) => ({
             ...prev,
             driveState: "active"
           }));
@@ -194,7 +196,8 @@ function connectArm() {
             armState: "active"
           }));
   } else {
-          setcanState( (prev) => ({
+     setErrorMessage("Arm didn't connect");     
+    setcanState( (prev) => ({
             ...prev,
             armState: "idle"
           }));
@@ -210,7 +213,8 @@ function disconnectArm() {
   socket.emit("disconnectArm", (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
-          setcanState( (prev) => ({
+          setErrorMessage("Arm didn't disconnect");
+      setcanState( (prev) => ({
             ...prev,
             armState: "idle"
           }));
