@@ -186,7 +186,7 @@ function connectArm() {
       armState: "connecting"
     }));
     console.log("Connecting, Sending id " + canState.armId)
-  socket.emit("connectArm", canState.driveId, (response) => {
+  socket.emit("connectArm", canState.armId, (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
           setcanState( (prev) => ({
@@ -311,7 +311,7 @@ function disconnectArm() {
                 >
                   <MenuItem value={"disconnect"}>Disconnect</MenuItem>
                 {canState.canIds?.map((canId) => (
-                  <MenuItem key={canId} value={canId}>
+                  <MenuItem disabled={canId === canState.armId} key={canId} value={canId}>
                     {canId}
                   </MenuItem>
                 ))}
@@ -337,8 +337,8 @@ function disconnectArm() {
                 >
                 <MenuItem value={"disconnect"}>Disconnect</MenuItem>
                 {canState.canIds?.map((canId) => (
-                  <MenuItem key={canId} value={canId}>
-                    {canId}
+                  <MenuItem disabled={canId === canState.driveId} key={canId} value={canId}>
+                    {canId}    
                   </MenuItem>
                 ))}
                 </Select>
