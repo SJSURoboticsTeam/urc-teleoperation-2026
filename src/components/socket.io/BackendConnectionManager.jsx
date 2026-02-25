@@ -22,10 +22,10 @@ import EjectIcon from '@mui/icons-material/Eject';
 
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
   
-    const isConnected = useSocketStatus();
-    const [latency, setLatency] = useState(null);
-    const [numConnections, setNumConnections] = useState(0);
-    const [conntype, setconntype] = useState("Checking...");
+    const isConnected = useSocketStatus(); // get socket status from ui
+    const [latency, setLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
+    const [numConnections, setNumConnections] = useState(0); // integer with clients that polls from backend
+    const [conntype, setconntype] = useState("Checking..."); // awaiting data ("checking"), websockets ("Yes"), polling ("No")
     const[canState, setcanState] = useState({
       driveState : "idle", // idle, connecting, active
       armState : "idle", // idle, connecting, active
