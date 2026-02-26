@@ -15,7 +15,9 @@ serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
     "arm": None,
-    "armId" : "disconnect"
+    "armId" : "disconnect",
+    "science": None,
+    "scienceId" : "disconnect"
 }
 
 
@@ -82,7 +84,8 @@ async def getCanInfo(sid):
     'status': "OK",
     'canIds' : canIds_arr,
     'driveId' : serial_ports["driveId"],
-    'armId' : serial_ports["armId"]
+    'armId' : serial_ports["armId"],
+    'scienceId' : serial_ports["scienceId"],
     }
     return data
 
@@ -157,6 +160,43 @@ async def disconnectArm(sid):
             return("ERROR")
     except Exception:
         print("ARM WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
+
+@sio.event
+async def connectScience(sid,data):
+    # connects to can and returns OK or ERROR
+    global serial_ports
+    # prevent double connection
+    if serial_ports["scienceId"]!= "disconnect":
+        print("SCIENCE WAS ALREADY CONNECTED!")
+        return("ERROR")
+    print("Connecting to " + str(data))
+    try:
+        serial_ports["science"] = CanSerial(data)
+        serial_ports["scienceId"] = data
+        print("Science connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectScience(sid):
+    # disconnects can and returns OK or ERROR
+    global serial_ports
+    try:
+        if serial_ports["science"]:
+            serial_ports["science"].close()
+            serial_ports["science"] = None
+            serial_ports["scienceId"] = "disconnect"
+            print("Science serial closed.")
+            return("OK")
+        else:
+            print("Science was never connected.")
+            return("ERROR")
+    except Exception:
+        print("SCIENCE WAS NOT DISCONNECTED!!!")
         return("ERROR")
         pass
 

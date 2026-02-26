@@ -29,10 +29,12 @@ export default function NavConnectionStatus({ openPane, setOpenPane,setErrorMess
     const[canState, setcanState] = useState({
       driveState : "idle", // idle, connecting, active
       armState : "idle", // idle, connecting, active
+      scienceState : "idle", // idle, connecting, active
       loading: true, // lock buttons, dropdowns when refreshing can data
       canIds : [], // array with every possible serial device
       driveId: "disconnect", // selected can id in dropdown or disconnect 
       armId: "disconnect", // selected can id in dropdown or disconnect
+      scienceId: "disconnect", // selected can id in dropdown or disconnect
 
     })
 
@@ -129,9 +131,11 @@ function requestCanInfo() {
       canIds: data["canIds"],
       driveId: data["driveId"],
       armId: data["armId"],
+      scienceId: data["scienceId"],
       // assignment if connected or not by text
       driveState: ( data["driveId"] !== "disconnect") ?  "active" : "idle",
       armState: ( data["armId"] !== "disconnect") ?  "active" : "idle",
+      scienceState: ( data["scienceId"] !== "disconnect") ?  "active" : "idle",
       loading: false
     }));
     });
@@ -216,6 +220,46 @@ function disconnectArm() {
 
 }
 
+function connectScience() {
+      setcanState( (prev) => ({
+      ...prev,
+      scienceState: "connecting"
+    }));
+    console.log("Connecting, Sending id " + canState.scienceId)
+  socket.emit("connectScience", canState.scienceId, (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            scienceState: "active"
+          }));
+  } else {
+     setErrorMessage("Science didn't connect, auto-updating to current state");
+     requestCanInfo();
+  }
+  })
+}
+function disconnectScience() {
+      setcanState( (prev) => ({
+      ...prev,
+      scienceState: "connecting"
+    }));
+    console.log("Disconnecting");
+  socket.emit("disconnectScience", (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            scienceState: "idle"
+          }));
+  } else {
+          setErrorMessage("Science didn't disconnect, auto-updating to current state");
+          requestCanInfo();
+  }
+  })
+
+}
+
   useEffect( () => {
     if(openPane == "Backend") {
       requestCanInfo();
@@ -278,11 +322,16 @@ function disconnectArm() {
             <hr className="divider" />
             <Typography  sx={{ color: 'black', m: 0 }} variant = "h6">CAN CONNECTIONS</Typography>
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
-              <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
+              <Button   variant="contained" loading={canState.loading} onClick={requestCanInfo} sx={{width:140}}>REFRESH</Button>
+              <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:140}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
                { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
-              <Button   variant="contained" loading={canState.loading} onClick={requestCanInfo} sx={{width:90}}>REFRESH</Button>
-              <Button disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:90}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
+            </Box>
+
+            <Box sx={{display: "flex",flexDirection: "row",gap: 1,pt:1}}>
+              <Button disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:140}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
                { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
+               <Button disabled={canState.loading || canState.scienceId=="disconnect"} loading={canState.scienceState=="connecting"} color="success" sx={{width:140}} onClick={ (canState.scienceState == "idle") ? connectScience : disconnectScience } variant="contained">SCIENCE 
+               { (canState.scienceState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
 
             {/* DRIVE CAN CONNECTION */}
@@ -303,7 +352,7 @@ function disconnectArm() {
                 >
                   <MenuItem value={"disconnect"}>Disconnect</MenuItem>
                 {canState.canIds?.map((canId) => (
-                  <MenuItem disabled={canId === canState.armId} key={canId} value={canId}>
+                  <MenuItem disabled={canId === canState.armId || canId === canState.scienceId} key={canId} value={canId}>
                     {canId}
                   </MenuItem>
                 ))}
@@ -327,9 +376,36 @@ function disconnectArm() {
                       }
                   fullWidth
                 >
+                  
                 <MenuItem value={"disconnect"}>Disconnect</MenuItem>
                 {canState.canIds?.map((canId) => (
-                  <MenuItem disabled={canId === canState.driveId} key={canId} value={canId}>
+                  <MenuItem disabled={canId === canState.driveId || canId === canState.scienceId} key={canId} value={canId}>
+                    {canId}    
+                  </MenuItem>
+                ))}
+                </Select>
+              </FormControl>
+            </Box>
+                {/* SCIENCE CAN CONNECTION */}
+            <Box sx={{display: "flex",flexDirection: "row",gap: 1,mt:1}}>
+              <FormControl sx={{flex:1}} size="small">
+                <InputLabel id="demo-simple-select-label">SCIENCE</InputLabel>
+                <Select
+                  value={canState.scienceId}
+                  label="SCIENCE"
+                  disabled={canState.loading || canState.scienceState != "idle"}
+                  onChange={(event) =>
+                        setcanState((prev) => ({
+                          ...prev,
+                          scienceId: event.target.value,
+                        }))
+                      }
+                  fullWidth
+                >
+                  
+                <MenuItem value={"disconnect"}>Disconnect</MenuItem>
+                {canState.canIds?.map((canId) => (
+                  <MenuItem disabled={canId === canState.driveId || canId === canState.armId} key={canId} value={canId}>
                     {canId}    
                   </MenuItem>
                 ))}
