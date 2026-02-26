@@ -90,6 +90,10 @@ async def getCanInfo(sid):
 async def connectDrive(sid,data):
     # connects to can and returns OK or ERROR
     global serial_ports
+    # prevent double connection
+    if serial_ports["driveId"] != "disconnect":
+        print("DRIVE WAS ALREADY CONNECTED!")
+        return("ERROR")
     print("Connecting to " + str(data))
     try:
         serial_ports["drive"] = CanSerial(data)
@@ -123,6 +127,10 @@ async def disconnectDrive(sid):
 async def connectArm(sid,data):
     # connects to can and returns OK or ERROR
     global serial_ports
+    # prevent double connection
+    if serial_ports["armId"]!= "disconnect":
+        print("ARM WAS ALREADY CONNECTED!")
+        return("ERROR")
     print("Connecting to " + str(data))
     try:
         serial_ports["arm"] = CanSerial(data)
