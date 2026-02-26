@@ -151,11 +151,8 @@ function connectDrive() {
             driveState: "active"
           }));
   } else {
-          setErrorMessage("Drive didn't connect");
-    setcanState( (prev) => ({
-            ...prev,
-            driveState: "idle"
-          }));
+          setErrorMessage("Drive didn't connect, auto-updating to current state");
+          requestCanInfo();
   }
   })
 }
@@ -173,11 +170,8 @@ function disconnectDrive() {
             driveState: "idle"
           }));
   } else {
-          setErrorMessage("Drive didn't disconnect");
-    setcanState( (prev) => ({
-            ...prev,
-            driveState: "active"
-          }));
+          setErrorMessage("Drive didn't disconnect, auto-updating to current state");
+          requestCanInfo();
   }
   })
 }
@@ -196,11 +190,8 @@ function connectArm() {
             armState: "active"
           }));
   } else {
-     setErrorMessage("Arm didn't connect");     
-    setcanState( (prev) => ({
-            ...prev,
-            armState: "idle"
-          }));
+     setErrorMessage("Arm didn't connect, auto-updating to current state");
+     requestCanInfo();
   }
   })
 }
@@ -213,16 +204,13 @@ function disconnectArm() {
   socket.emit("disconnectArm", (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
-          setErrorMessage("Arm didn't disconnect");
-      setcanState( (prev) => ({
-            ...prev,
-            armState: "idle"
-          }));
-  } else {
           setcanState( (prev) => ({
             ...prev,
-            armState: "active"
+            driveState: "idle"
           }));
+  } else {
+          setErrorMessage("Arm didn't disconnect, auto-updating to current state");
+          requestCanInfo();
   }
   })
 
