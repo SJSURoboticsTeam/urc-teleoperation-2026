@@ -335,7 +335,7 @@ console.log("ALl have been disconnected.");
             <Typography  sx={{ color: 'black', m: 0 }} variant = "h6">CAN CONNECTIONS</Typography>
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
               <Button   variant="contained" loading={canState.loading} onClick={requestCanInfo} sx={{width:140}}>REFRESH</Button>
-              <Button   color="error" variant="contained" loading={canState.loading} onClick={disconnectAll} sx={{width:140}}>STOP ALL</Button>
+              <Button   disabled={canState.driveState != "active" && canState.armState != "active" && canState.scienceState != "active"} color="error" variant="contained" loading={canState.loading} onClick={disconnectAll} sx={{width:140}}>STOP ALL</Button>
             </Box>
 
 
@@ -363,7 +363,7 @@ console.log("ALl have been disconnected.");
                 ))}
                 </Select>
               </FormControl>
-              <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:50,minWidth: 0}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">
+              <Button color={canState.driveState === "idle" ? "success" : "error"} disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} sx={{width:50,minWidth: 0}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">
                { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
             
@@ -392,7 +392,7 @@ console.log("ALl have been disconnected.");
                 ))}
                 </Select>
               </FormControl>
-              <Button disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:50,minWidth: 0}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained"> 
+              <Button color={canState.armState === "idle" ? "success" : "error"} disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} sx={{width:50,minWidth: 0}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained"> 
                { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
                 {/* SCIENCE CAN CONNECTION */}
@@ -420,7 +420,7 @@ console.log("ALl have been disconnected.");
                 ))}
                 </Select>
               </FormControl>
-              <Button disabled={canState.loading || canState.scienceId=="disconnect"} loading={canState.scienceState=="connecting"} color="success" sx={{width:50,minWidth: 0}} onClick={ (canState.scienceState == "idle") ? connectScience : disconnectScience } variant="contained">
+              <Button color={canState.scienceState === "idle" ? "success" : "error"} disabled={canState.loading || canState.scienceId=="disconnect"} loading={canState.scienceState=="connecting"} sx={{width:50,minWidth: 0}} onClick={ (canState.scienceState == "idle") ? connectScience : disconnectScience } variant="contained">
                { (canState.scienceState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
             </div>
