@@ -146,7 +146,7 @@ function connectDrive() {
       ...prev,
       driveState: "connecting"
     }));
-    console.log("Connecting, Sending id " + canState.driveId)
+    console.log("Connecting Drive, Sending id " + canState.driveId)
   socket.emit("connectDrive", canState.driveId, (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
@@ -165,7 +165,7 @@ function disconnectDrive() {
       ...prev,
       driveState: "connecting"
     }));
-    console.log("Disconnecting");
+    console.log("Disconnecting drive");
   socket.emit("disconnectDrive", (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
@@ -185,7 +185,7 @@ function connectArm() {
       ...prev,
       armState: "connecting"
     }));
-    console.log("Connecting, Sending id " + canState.armId)
+    console.log("Connecting Arm, Sending id " + canState.armId)
   socket.emit("connectArm", canState.armId, (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
@@ -204,13 +204,13 @@ function disconnectArm() {
       ...prev,
       armState: "connecting"
     }));
-    console.log("Disconnecting");
+    console.log("Disconnecting Arm");
   socket.emit("disconnectArm", (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
           setcanState( (prev) => ({
             ...prev,
-            driveState: "idle"
+            armState: "idle"
           }));
   } else {
           setErrorMessage("Arm didn't disconnect, auto-updating to current state");
@@ -225,7 +225,7 @@ function connectScience() {
       ...prev,
       scienceState: "connecting"
     }));
-    console.log("Connecting, Sending id " + canState.scienceId)
+    console.log("Connecting Science, Sending id " + canState.scienceId)
   socket.emit("connectScience", canState.scienceId, (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
@@ -244,7 +244,7 @@ function disconnectScience() {
       ...prev,
       scienceState: "connecting"
     }));
-    console.log("Disconnecting");
+    console.log("Disconnecting Science");
   socket.emit("disconnectScience", (response) => {
     console.log("RESPONSE:" + response);
     if(response === "OK") {
@@ -258,6 +258,18 @@ function disconnectScience() {
   }
   })
 
+}
+function disconnectAll() {
+  if(canState.driveState != "idle"){
+  disconnectDrive();
+}
+if(canState.armState != "idle"){
+  disconnectArm();
+}
+if(canState.scienceState != "idle"){
+  disconnectScience();
+}
+console.log("ALl have been disconnected.");
 }
 
   useEffect( () => {
@@ -323,16 +335,9 @@ function disconnectScience() {
             <Typography  sx={{ color: 'black', m: 0 }} variant = "h6">CAN CONNECTIONS</Typography>
             <Box sx={{display: "flex",flexDirection: "row",gap: 1}}>
               <Button   variant="contained" loading={canState.loading} onClick={requestCanInfo} sx={{width:140}}>REFRESH</Button>
-              <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:140}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">DRIVE 
-               { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
+              <Button   color="error" variant="contained" loading={canState.loading} onClick={disconnectAll} sx={{width:140}}>STOP ALL</Button>
             </Box>
 
-            <Box sx={{display: "flex",flexDirection: "row",gap: 1,pt:1}}>
-              <Button disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:140}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained">ARM 
-               { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
-               <Button disabled={canState.loading || canState.scienceId=="disconnect"} loading={canState.scienceState=="connecting"} color="success" sx={{width:140}} onClick={ (canState.scienceState == "idle") ? connectScience : disconnectScience } variant="contained">SCIENCE 
-               { (canState.scienceState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
-            </Box>
 
             {/* DRIVE CAN CONNECTION */}
             <Box sx={{display: "flex",flexDirection: "row",gap: 1,mt:1}}>
@@ -358,6 +363,8 @@ function disconnectScience() {
                 ))}
                 </Select>
               </FormControl>
+              <Button disabled={canState.loading || canState.driveId=="disconnect"} loading={canState.driveState=="connecting"} color="success" sx={{width:50,minWidth: 0}} onClick={ (canState.driveState == "idle") ? connectDrive : disconnectDrive } variant="contained">
+               { (canState.driveState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
             
             {/* ARM CAN CONNECTION */}
@@ -385,6 +392,8 @@ function disconnectScience() {
                 ))}
                 </Select>
               </FormControl>
+              <Button disabled={canState.loading || canState.armId=="disconnect"} loading={canState.armState=="connecting"} color="success" sx={{width:50,minWidth: 0}} onClick={ (canState.armState == "idle") ? connectArm : disconnectArm } variant="contained"> 
+               { (canState.armState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
                 {/* SCIENCE CAN CONNECTION */}
             <Box sx={{display: "flex",flexDirection: "row",gap: 1,mt:1}}>
@@ -411,6 +420,8 @@ function disconnectScience() {
                 ))}
                 </Select>
               </FormControl>
+              <Button disabled={canState.loading || canState.scienceId=="disconnect"} loading={canState.scienceState=="connecting"} color="success" sx={{width:50,minWidth: 0}} onClick={ (canState.scienceState == "idle") ? connectScience : disconnectScience } variant="contained">
+               { (canState.scienceState == "idle") ? <ElectricalServicesIcon/> : <EjectIcon/> }</Button>
             </Box>
             </div>
               
