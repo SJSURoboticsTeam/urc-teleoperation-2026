@@ -128,7 +128,7 @@ function App() {
         overflow: "hidden",
       }}
     >
-        // !!errorMessage converts string to clean boolean (ie if theres a message show it)
+      {/*!!errorMessage converts string to clean boolean (ie if theres a message show it */}
         <Snackbar open={!!errorMessage} autoHideDuration={6000} onClose={handleClose}>
         <Alert
           onClose={handleClose}
@@ -169,7 +169,7 @@ function App() {
           flexDirection: "column",
           overflow: "hidden",
           minHeight: 0,
-          marginTop: "64px",
+          marginTop: "60px",
         }}
       >
         {renderView()}
