@@ -23,9 +23,12 @@ function App() {
   const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
   const [forwardsVelocity, setForwardVelocity] = useState(0);
   const [rotationalVelocity, setRotationalVelocity] = useState(0);
-  const [panHeightVelocity, setPanHeightVelocity] = useState(0);
-  const [panWidthVelocity, setPanWidthVelocity] = useState(0);
-  const [armConnectedOne, setArmConnectedOne] = useState(null);
+  const [panAngles, setPanAngles]=useState({
+    px: 0,
+    py: 0,
+  });
+  const [panSpeed,setPanSpeed] = useState(30);
+  const [armConnectedOne,setArmConnectedOne]=useState(null)
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -46,10 +49,6 @@ function App() {
     setForwardVelocity(ly);
     setRotationalVelocity(rx);
     // console.log(lx,ly,rx)
-  };
-  const handlePanVelocitiesChange = ({ px, py }) => {
-    setPanHeightVelocity(py);
-    setPanWidthVelocity(px);
   };
 
 
@@ -75,23 +74,7 @@ function App() {
           />
         );
       case "DriveView":
-        return (
-          <SplitView
-            CurrentView={
-              <DriveComponents
-                moduleConflicts={moduleConflicts}
-                sidewaysVelocity={sidewaysVelocity}
-                forwardsVelocity={forwardsVelocity}
-                rotationalVelocity={rotationalVelocity}
-                panHeightVelocity={panHeightVelocity}
-                panWidthVelocity={panWidthVelocity}
-                driveConnectedOne={driveConnectedOne}
-                setDriveConnectedOne={setDriveConnectedOne}
-              />
-            }
-            showCameras={camsVisibility}
-          />
-        );
+        return <SplitView CurrentView={ <DriveComponents panSpeed={panSpeed} setPanSpeed={setPanSpeed} panAngles={panAngles} moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity}   driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
       case "ExtrasView":
         return (
           <SplitView
@@ -151,13 +134,14 @@ function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         onVelocitiesChange={handleVelocitiesChange}
-        onPanVelocitiesChange={handlePanVelocitiesChange}
         driveConnectedOne={driveConnectedOne}
         setDriveConnectedOne={setDriveConnectedOne}
         camsVisibility={camsVisibility}
         setcamsVisibility={setcamsVisibility}
         setErrorMessage={setErrorMessage}
         errorMessage={errorMessage}
+        setPanAngles={setPanAngles}
+        panSpeed={panSpeed}
       />
 
       <Box

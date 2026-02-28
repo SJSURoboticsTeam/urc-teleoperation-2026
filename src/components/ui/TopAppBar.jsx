@@ -19,20 +19,7 @@ import GamepadPanel from "../gamepad/Gamepad";
 import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
 
-export default function TopAppBar({
-  setCurrentView,
-  onVelocitiesChange,
-  currentView,
-  setModuleConflicts,
-  onPanVelocitiesChange,
-  driveConnectedOne,
-  setDriveConnectedOne,
-  camsVisibility,
-  setcamsVisibility,
-  moduleConflicts,
-  setErrorMessage, 
-  errorMessage
-}) {
+export default function TopAppBar({ moduleConflicts, setCurrentView, onVelocitiesChange, onArmVelocitiesChange, currentView, setModuleConflicts,driveConnectedOne,setDriveConnectedOne, camsVisibility, setcamsVisibility, panAngles, setPanAngles, panSpeed, setErrorMessage, errorMessage}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [driveGamepads, setDriveGamepads] = useState({});
   const [armGamepads, setArmGamepads] = useState({});
@@ -142,7 +129,6 @@ export default function TopAppBar({
           {/* Gamepad connection status and selection panel */}
 
           <GamepadPanel
-            onPanVelocitiesChange={onPanVelocitiesChange}
             openPane={openPane}
             setOpenPane={setOpenPane}
             name="Drive"
@@ -154,6 +140,9 @@ export default function TopAppBar({
             driveConnectedOne={driveConnectedOne}
             setDriveConnectedOne={setDriveConnectedOne}
             moduleConflicts={moduleConflicts}
+            panAngles={panAngles}
+            panSpeed={panSpeed}
+            setPanAngles={setPanAngles}
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} setErrorMessage={setErrorMessage} errorMessage={errorMessage} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />

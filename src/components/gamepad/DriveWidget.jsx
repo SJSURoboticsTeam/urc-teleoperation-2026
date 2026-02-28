@@ -18,8 +18,9 @@ export default function DriveManualInput({
   forwardsVelocity,
   rotationalVelocity,
   moduleConflicts,
-  panHeightVelocity,
-  panWidthVelocity,
+  panAngles,
+  panSpeed,
+  setPanSpeed,
   setDriveConnectedOne,
   driveConnectedOne,
 }) {
@@ -53,12 +54,11 @@ export default function DriveManualInput({
     if (!serverConnected || driveConnectedOne == null || !txon) return;
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   }, [
-    panHeightVelocity,
-    panWidthVelocity,
+    panAngles,
     serverConnected,
     driveConnectedOne,
     txon,
@@ -75,8 +75,8 @@ export default function DriveManualInput({
     });
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   };
 
@@ -174,10 +174,12 @@ export default function DriveManualInput({
             }}
           >
             <Slider 
-            step={1}
+            step={10}
             marks
-            min={1}
-            max={8}
+            value={panSpeed}
+            onChange={(_, value) => setPanSpeed(value)}
+            min={10}
+            max={100}
             valueLabelDisplay="auto"
             sx={{ width: 150 }} />
           </Box>
@@ -192,8 +194,8 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={panWidthVelocity} label="Pan W" />
-            <VelocityItem value={panHeightVelocity} label="Pan H" />
+            <VelocityItem value={panAngles.px} label="Pan W" />
+            <VelocityItem value={panAngles.py} label="Pan H" />
           </Box>
         </Box>
         <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>
