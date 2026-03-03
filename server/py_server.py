@@ -1,4 +1,5 @@
 from can_serial import CanSerial
+from serial.tools import list_ports
 import socketio
 import uvicorn
 import metrics
@@ -7,7 +8,19 @@ import signal
 import sys
 from metrics import asyncsshloop, cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
+from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
+
+serial_ports = {
+    "drive": None,
+    "driveId" : "disconnect",
+    "arm": None,
+    "armId" : "disconnect",
+    "science": None,
+    "scienceId" : "disconnect"
+}
+
+
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -24,8 +37,8 @@ def shutdown():
     shutting_down = True
     print("\nShutting down... ")
     try:
-        if drive_serial:
-            drive_serial.close()
+        if serial_ports["drive"]:
+            serial_ports["drive"].close()
             print("Drive serial closed.")
         else:
             print("Drive was never connected.")
@@ -33,8 +46,8 @@ def shutdown():
         print("DRIVE WAS NOT DISCONNECTED!!!")
         pass
     try:
-        if arm_serial:
-            arm_serial.close()
+        if serial_ports["drive"]:
+            serial_ports["drive"].close()
             print("Arm serial closed.")
         else:
             print("Arm was never connected.")
@@ -54,40 +67,153 @@ app = socketio.ASGIApp(sio)
 
 # CAN buses
 print("Preparing for CAN...")
-drive_serial = None
-arm_serial = None
-try:
-    # RX TESTER /dev/tty.usbserial-59760082211
-    # ROBOT /dev/tty.usbserial-59760073491
-    drive_serial = CanSerial('/dev/tty.usbserial-59760082211')
-    print("Drive connected.")
-except Exception as e:
-    print("FAILURE TO CONNECT DRIVE: " + str(e))
-try:
-    arm_serial = CanSerial('/dev/ttyACM1')
-    print("Arm connected.")
-except Exception as e:
-    print("FAILURE TO CONNECT ARM!" + str(e))
 
 
+# =================== CAN connections ===================
+@sio.event
+async def getCanInfo(sid):
+    # can ids for web ui
+    canIds_arr = []
+    for port in list_ports.comports():
+        #print(f"{port.device} ")
+
+        if(port.device.find("serial") != -1):
+            # loose check to remove system serial interfaces
+            canIds_arr.append(port.device)
+    data = {
+    'status': "OK",
+    'canIds' : canIds_arr,
+    'driveId' : serial_ports["driveId"],
+    'armId' : serial_ports["armId"],
+    'scienceId' : serial_ports["scienceId"],
+    }
+    return data
+
+@sio.event
+async def connectDrive(sid,data):
+    # connects to can and returns OK or ERROR
+    global serial_ports
+    # prevent double connection
+    if serial_ports["driveId"] != "disconnect":
+        print("DRIVE WAS ALREADY CONNECTED!")
+        return("ERROR")
+    print("Connecting to " + str(data))
+    try:
+        serial_ports["drive"] = CanSerial(data)
+        serial_ports["driveId"] = data
+        print("Drive connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectDrive(sid):
+    # disconnects can and returns OK or ERROR
+    global serial_ports
+    try:
+        if serial_ports["drive"]:
+            serial_ports["drive"].close()
+            serial_ports["drive"] = None
+            serial_ports["driveId"] = "disconnect"
+            print("Drive serial closed.")
+            return("OK")
+        else:
+            print("Drive was never connected.")
+            return("ERROR")
+    except Exception:
+        print("DRIVE WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
+
+@sio.event
+async def connectArm(sid,data):
+    # connects to can and returns OK or ERROR
+    global serial_ports
+    # prevent double connection
+    if serial_ports["armId"]!= "disconnect":
+        print("ARM WAS ALREADY CONNECTED!")
+        return("ERROR")
+    print("Connecting to " + str(data))
+    try:
+        serial_ports["arm"] = CanSerial(data)
+        serial_ports["armId"] = data
+        print("Arm connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectArm(sid):
+    # disconnects can and returns OK or ERROR
+    global serial_ports
+    try:
+        if serial_ports["arm"]:
+            serial_ports["arm"].close()
+            serial_ports["arm"] = None
+            serial_ports["armId"] = "disconnect"
+            print("Arm serial closed.")
+            return("OK")
+        else:
+            print("Arm was never connected.")
+            return("ERROR")
+    except Exception:
+        print("ARM WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
+
+@sio.event
+async def connectScience(sid,data):
+    # connects to can and returns OK or ERROR
+    global serial_ports
+    # prevent double connection
+    if serial_ports["scienceId"]!= "disconnect":
+        print("SCIENCE WAS ALREADY CONNECTED!")
+        return("ERROR")
+    print("Connecting to " + str(data))
+    try:
+        serial_ports["science"] = CanSerial(data)
+        serial_ports["scienceId"] = data
+        print("Science connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectScience(sid):
+    # disconnects can and returns OK or ERROR
+    global serial_ports
+    try:
+        if serial_ports["science"]:
+            serial_ports["science"].close()
+            serial_ports["science"] = None
+            serial_ports["scienceId"] = "disconnect"
+            print("Science serial closed.")
+            return("OK")
+        else:
+            print("Science was never connected.")
+            return("ERROR")
+    except Exception:
+        print("SCIENCE WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
 
 
 # =================== Initialization ===================
 # Background task guard
 can_error_message_started = False
 drive_task_started = False
+arm_task_started = False
 async_ssh_started = False
 cpu_started = False
 
 
 register_metric_events(sio)
-register_drive_events(sio,drive_serial)
-register_camera_pt_events(sio,drive_serial)
-
-# arm_thread = threading.Thread(target=read_arm_can_loop, daemon=True)
-# arm_thread.start()
-
-
+register_drive_events(sio,serial_ports)
+register_arm_events(sio, serial_ports)
+register_camera_pt_events(sio,serial_ports)
 
 # =================== Start Server ===================
 
@@ -96,6 +222,7 @@ async def connect(sid,environ):
     """On first client connect, start background CAN read loop."""
     global can_error_message_started
     global drive_task_started
+    global arm_task_started
     global async_ssh_started
     global cpu_started
     global numClients
@@ -109,16 +236,19 @@ async def connect(sid,environ):
     # Start background CAN loop once
     if not drive_task_started:
         drive_task_started = True
-        sio.start_background_task(read_drive_can_loop,drive_serial)
+        sio.start_background_task(read_drive_can_loop,serial_ports)
+    if not arm_task_started:
+        arm_task_started = True
+        sio.start_background_task(read_arm_can_loop, serial_ports)
     if not can_error_message_started:
         can_error_message_started = True
-        sio.start_background_task(send_drive_status_request,drive_serial)
+        sio.start_background_task(send_drive_status_request,serial_ports)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
-        #sio.start_background_task(cpuloop,sio)
+        sio.start_background_task(cpuloop,sio)
 
 
 @sio.event

@@ -28,7 +28,7 @@ can_msg_count = 0
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio,drive_serial):
+def register_drive_events(sio,serial_ports):
     @sio.event
     async def driveCommands(sid, data):
         try:
@@ -48,8 +48,8 @@ def register_drive_events(sio,drive_serial):
 
             can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
 
-            # drive_serial.write is blocking, run in thread
-            await asyncio.to_thread(drive_serial.write, can_msg.encode())
+            # serial_ports["drive"].write is blocking, run in thread
+            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
             print(f'[{sid}] Drive command sent: {can_msg}')
             global can_msg_count
             can_msg_count = can_msg_count + 1
@@ -63,7 +63,7 @@ def register_drive_events(sio,drive_serial):
     async def driveHoming(sid):
         try:
             can_msg = f't{drive_send_ID["HOMING_SEQUENCE"]}0\r'
-            await asyncio.to_thread(drive_serial.write, can_msg.encode())
+            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
             print(f'[{sid}] Homing initiated')
         except Exception as e:
             print(f'Error in driveHoming: {e}')
@@ -84,7 +84,7 @@ async def parse_drive_data(data):
                     match i:
                         case 6, 7:
                             can_msg = '\r\r\r\r'
-                            await asyncio.to_thread(drive_serial.write, can_msg.encode())
+                            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
 
         if len(string_data) < 5:
             return
@@ -143,11 +143,11 @@ async def parse_drive_data(data):
     except Exception as e:
         print(f'Error parsing drive data: {e}')
 
-async def read_drive_can_loop(drive_serial):
+async def read_drive_can_loop(serial_ports):
     try:
         while True:
             # read_can is blocking so run it in a thread
-            data = await asyncio.to_thread(drive_serial.read_can, None)
+            data = await asyncio.to_thread(serial_ports["drive"].read_can, None)
             if data:
                 await parse_drive_data(data)
             await asyncio.sleep(0.01)
@@ -156,11 +156,11 @@ async def read_drive_can_loop(drive_serial):
 
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
-async def send_drive_status_request(drive_serial):
+async def send_drive_status_request(serial_ports):
     try:
         while True:
             can_msg = 'F\r'
-            await asyncio.to_thread(drive_serial.write, can_msg.encode())
+            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
             print('Reading drive status flags')
             await asyncio.sleep(5)
             # await asyncio.sleep(1) # waiting 1000 ms
