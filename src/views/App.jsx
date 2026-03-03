@@ -79,15 +79,15 @@ function App() {
   function renderView() {
     switch (currentView) {
       case "ArmView":
-        return <SplitView viewKey="ArmView" CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } showCameras={camsVisibility} />;
       case "DriveView":
-        return <SplitView viewKey="DriveView" CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
       case "ExtrasView":
-        return <SplitView viewKey="ExtrasView" CurrentView={<ExtrasView /> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={<ExtrasView /> } showCameras={camsVisibility} />;
       case "ScienceView":
-        return <SplitView viewKey="ScienceView" CurrentView={<ScienceView /> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={<ScienceView /> } showCameras={camsVisibility} />;
       case "AutonomyView":
-        return <SplitView viewKey="AutonomyView" CurrentView={<AutonomyView/> } showCameras={camsVisibility} />;
+        return <SplitView CurrentView={<AutonomyView/> } showCameras={camsVisibility} />;
       default:
         return <div>Select a view</div>;
     }

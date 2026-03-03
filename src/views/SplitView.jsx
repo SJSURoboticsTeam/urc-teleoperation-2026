@@ -1,23 +1,44 @@
 import 'react-resizable/css/styles.css'
 import { useRef, useState, useCallback, isValidElement, useEffect } from 'react'
 import CameraPane from '../components/cameras/CameraPane'
-import Button from '@mui/material/Button';
+import { FormControl, InputLabel, MenuItem, Select } from '@mui/material'
 
 const DEFAULT_CAMERA = 'Standby'
 const DEFAULT_CAMERA_NUM = 2
-const STORAGE_KEY = 'missionControl.cameraViewConfigs'
+const STORAGE_KEY = 'missionControl.cameraLayout'
 
-export default function DriveView({ CurrentView, showCameras, viewKey = "default" }) {
+export default function DriveView({ CurrentView, showCameras }) {
   const containerRef = useRef(null)
   const [leftPct, setLeftPct] = useState(65)
-  const [viewConfigs, setViewConfigs] = useState(() => {
+  const [cameraNum, setCameraNum] = useState(DEFAULT_CAMERA_NUM)
+  const [cameraModes, setCameraModes] = useState(
+    Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA)
+  )
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      return raw ? JSON.parse(raw) : {}
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        const nextNum = Math.max(1, parsed.cameraNum ?? DEFAULT_CAMERA_NUM)
+        const nextModes = Array.isArray(parsed.cameraModes)
+          ? parsed.cameraModes.slice(0, nextNum)
+          : Array(nextNum).fill(DEFAULT_CAMERA)
+        setCameraNum(nextNum)
+        setCameraModes(
+          nextModes.length < nextNum
+            ? nextModes.concat(
+                Array(nextNum - nextModes.length).fill(DEFAULT_CAMERA)
+              )
+            : nextModes
+        )
+      }
     } catch {
-      return {}
+      // ignore storage errors
     }
-  })
+    setHydrated(true)
+  }, [])
 
   const startDrag = useCallback((e) => {
     const pointerId = e.pointerId
@@ -46,61 +67,36 @@ export default function DriveView({ CurrentView, showCameras, viewKey = "default
   const effectiveLeftPct = (!showCameras) ? 100 : leftPct
 
   useEffect(() => {
-    setViewConfigs((prev) => {
-      if (prev[viewKey]) return prev
-      return {
-        ...prev,
-        [viewKey]: {
-          cameraNum: DEFAULT_CAMERA_NUM,
-          cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
-        },
-      }
-    })
-  }, [viewKey])
-
-  useEffect(() => {
+    if (!hydrated) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(viewConfigs))
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ cameraNum, cameraModes })
+      )
     } catch {
       // ignore errors
     }
-  }, [viewConfigs])
-
-  const activeConfig =
-    viewConfigs[viewKey] ?? {
-      cameraNum: DEFAULT_CAMERA_NUM,
-      cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
-    }
-  const { cameraNum, cameraModes } = activeConfig
+  }, [cameraNum, cameraModes, hydrated])
 
   const updateCameraNum = (nextNum) => {
-    setViewConfigs((prev) => {
-      const current =
-        prev[viewKey] ?? {
-          cameraNum: DEFAULT_CAMERA_NUM,
-          cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
-        }
-      const cameraNum = Math.max(1, nextNum)
-      let cameraModes = current.cameraModes.slice(0, cameraNum)
-      if (cameraModes.length < cameraNum) {
-        cameraModes = cameraModes.concat(
-          Array(cameraNum - cameraModes.length).fill(DEFAULT_CAMERA)
+    const nextCameraNum = Math.max(1, nextNum)
+    setCameraNum(nextCameraNum)
+    setCameraModes((prev) => {
+      let nextModes = prev.slice(0, nextCameraNum)
+      if (nextModes.length < nextCameraNum) {
+        nextModes = nextModes.concat(
+          Array(nextCameraNum - nextModes.length).fill(DEFAULT_CAMERA)
         )
       }
-      return { ...prev, [viewKey]: { cameraNum, cameraModes } }
+      return nextModes
     })
   }
 
   const updateCameraMode = (index, nextMode) => {
-    setViewConfigs((prev) => {
-      const current =
-        prev[viewKey] ?? {
-          cameraNum: DEFAULT_CAMERA_NUM,
-          cameraModes: Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
-        }
-      const cameraModes = current.cameraModes.slice()
-      cameraModes[index] = nextMode
-      return { ...prev, [viewKey]: { ...current, cameraModes } }
+    setCameraModes((prev) => {
+      const nextModes = prev.slice()
+      nextModes[index] = nextMode
+      return nextModes
     })
   }
 
@@ -148,19 +144,28 @@ export default function DriveView({ CurrentView, showCameras, viewKey = "default
           display: (!showCameras) ? 'none' : 'flex',
         }}
       >
-        <div>
-          <Button onClick={() => updateCameraNum(cameraNum + 1)}>Add Camera</Button>
-          <Button onClick={() => updateCameraNum(cameraNum - 1)}>Remove Camera</Button>
-        </div>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel id="camera-count-label">Cameras</InputLabel>
+          <Select
+            labelId="camera-count-label"
+            value={cameraNum}
+            label="Cameras"
+            onChange={(e) => updateCameraNum(Number(e.target.value))}
+          >
+            <MenuItem value={1}>1 Camera</MenuItem>
+            <MenuItem value={2}>2 Cameras</MenuItem>
+            <MenuItem value={4}>4 Cameras</MenuItem>
+          </Select>
+        </FormControl>
         <div
           className="flex-1 min-h-0 overflow-auto"
           style={
             cameraNum <= 3
-              ? { display: 'flex', flexDirection: 'column', gap: '16px' }
+              ? { display: 'flex', flexDirection: 'column', gap: '8px' }
               : {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '16px',
+                  gap: '8px',
                 }
           }
         >
