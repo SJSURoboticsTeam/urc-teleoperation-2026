@@ -1,33 +1,21 @@
 import { Typography, Box, Button } from "@mui/material";
-import { useState } from "react";
-export default function GamepadDiv({
-  gpList,
-  connectedOne,
-  setConnectedOne,
-  name,
-  setModuleConflicts,
-  setArmManualDisconnect,
-}) {
-  const [current, setCurrent] = useState("Module Conflicts: OFF");
+import { useConnectedGamepads } from "../../contexts/GamepadContext";
+
+// Handles UI for connecting and disconnecting gamepads
+export default function GamepadDivNew({ name }) {
+  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+  const gpList =
+    name === "Drive"
+      ? Object.values(connectedGamepads.driveGPList || {})
+      : Object.values(connectedGamepads.armGPList || {});
+  const connectedOne =
+    name === "Drive" ? connectedGamepads.drive : connectedGamepads.arm;
+
   return (
     <div style={{ padding: 2, marginTop: 2 }}>
-      {name == "Drive" && (
-        <div style={{ marginBottom: 5 }}>
-          <button
-            onClick={() => {
-              setModuleConflicts((prev) => !prev);
-              current.includes("OFF")
-                ? setCurrent("Module Conflicts: ON")
-                : setCurrent("Module Conflicts: OFF");
-            }}
-          >
-            {current}
-          </button>
-        </div>
-      )}
       {gpList.length === 0 && (
         <Typography>
-          No {name == "Drive" ? "Xbox" : "Logitech"} gamepads connected
+          No {name === "Drive" ? "Xbox" : "Logitech"} gamepads connected
         </Typography>
       )}
       {gpList.map((gp) => (
@@ -48,13 +36,25 @@ export default function GamepadDiv({
             size="small"
             sx={{ marginTop: 1 }}
             onClick={() => {
-              setConnectedOne(connectedOne == gp.index ? null : gp.index);
-              if (connectedOne == gp.index) {
-                setArmManualDisconnect((prev) => !prev);
-              }
+              // Toggle connection for the selected gamepad
+              setConnectedGamepads((prev) =>
+                name === "Drive"
+                  ? {
+                      ...prev,
+                      drive: prev.drive === gp.index ? null : gp.index,
+                    }
+                  : { ...prev, arm: prev.arm === gp.index ? null : gp.index },
+              );
             }}
           >
-            {connectedOne === gp.index ? "Disconnect" : "Select"}
+            {/* Display Disconnect or Select */}
+            {name === "Drive"
+              ? connectedGamepads.drive === gp.index
+                ? "Disconnect"
+                : "Select"
+              : connectedGamepads.arm === gp.index
+                ? "Disconnect"
+                : "Select"}
           </Button>
         </Box>
       ))}

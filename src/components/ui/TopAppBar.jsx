@@ -19,6 +19,8 @@ import GamepadPanel from "../gamepad/Gamepad";
 import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
 
+// import { useConnectedGamepads } from "../../contexts/GamepadContext";
+
 export default function TopAppBar({
   setCurrentView,
   onVelocitiesChange,
@@ -27,15 +29,13 @@ export default function TopAppBar({
   onPanVelocitiesChange,
   driveConnectedOne,
   setDriveConnectedOne,
-  armConnectedOne,
-  setArmConnectedOne,
   camsVisibility,
   setcamsVisibility,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [driveGamepads, setDriveGamepads] = useState({});
-  const [armGamepads, setArmGamepads] = useState({});
   const [openPane, setOpenPane] = useState("None");
+
+  // const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -43,38 +43,47 @@ export default function TopAppBar({
 
   const handleViewChange = (view) => setCurrentView(view);
 
-  useEffect(() => {
-    const handleConnect = (e) => {
-      const gp = e.gamepad;
-      // check if a gamepad is a drive or arm controller based on id containing "Standard" or "Extreme"
-      if (/STANDARD/i.test(gp.id)) {
-        setDriveGamepads((prev) => ({ ...prev, [gp.index]: gp }));
-      } else if (/EXTREME/i.test(gp.id)) {
-        setArmGamepads((prev) => ({ ...prev, [gp.index]: gp }));
-      }
-    };
+  // Handle gamepad connection and disconnection
+  // useEffect(() => {
+  //   const handleConnect = (e) => {
+  //     const gp = e.gamepad;
+  //     // check if a gamepad is a drive or arm controller based on id containing "Standard" or "Extreme"
+  //     if (/STANDARD/i.test(gp.id)) {
+  //       setConnectedGamepads((prev) => ({
+  //         ...prev,
+  //         driveGPList: { ...prev.driveGPList, [gp.index]: gp },
+  //       }));
+  //     } else if (/EXTREME/i.test(gp.id)) {
+  //       setConnectedGamepads((prev) => ({
+  //         ...prev,
+  //         armGPList: { ...prev.armGPList, [gp.index]: gp },
+  //       }));
+  //     }
+  //   };
 
-    const handleDisconnect = (e) => {
-      setDriveGamepads((prev) => {
-        const copy = { ...prev };
-        delete copy[e.gamepad.index];
-        return copy;
-      });
-      setArmGamepads((prev) => {
-        const copy = { ...prev };
-        delete copy[e.gamepad.index];
-        return copy;
-      });
-    };
+  //   const handleDisconnect = (e) => {
+  //     const gpIndex = e.gamepad.index;
+  //     setConnectedGamepads((prev) => {
+  //       const copy = { ...prev };
+  //       if (copy.driveGPList[gpIndex]) {
+  //         copy.driveGPList = { ...copy.driveGPList };
+  //         delete copy.driveGPList[gpIndex];
+  //       } else if (copy.armGPList[gpIndex]) {
+  //         copy.armGPList = { ...copy.armGPList };
+  //         delete copy.armGPList[gpIndex];
+  //       }
+  //       return copy;
+  //     });
+  //   };
 
-    window.addEventListener("gamepadconnected", handleConnect);
-    window.addEventListener("gamepaddisconnected", handleDisconnect);
+  //   window.addEventListener("gamepadconnected", handleConnect);
+  //   window.addEventListener("gamepaddisconnected", handleDisconnect);
 
-    return () => {
-      window.removeEventListener("gamepadconnected", handleConnect);
-      window.removeEventListener("gamepaddisconnected", handleDisconnect);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("gamepadconnected", handleConnect);
+  //     window.removeEventListener("gamepaddisconnected", handleDisconnect);
+  //   };
+  // }, []);
 
   return (
     <>
@@ -147,13 +156,13 @@ export default function TopAppBar({
             name="Drive"
             setModuleConflicts={setModuleConflicts}
             onDriveVelocitiesChange={onVelocitiesChange}
-            driveGamepads={driveGamepads}
-            armGamepads={armGamepads}
+            // driveGamepads={driveGamepads}
+            // armGamepads={armGamepads}
             currentView={currentView}
-            driveConnectedOne={driveConnectedOne}
-            setDriveConnectedOne={setDriveConnectedOne}
-            armConnectedOne={armConnectedOne}
-            setArmConnectedOne={setArmConnectedOne}
+            // driveConnectedOne={driveConnectedOne}
+            // setDriveConnectedOne={setDriveConnectedOne}
+            // armConnectedOne={armConnectedOne}
+            // setArmConnectedOne={setArmConnectedOne}
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />

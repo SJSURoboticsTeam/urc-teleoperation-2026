@@ -9,7 +9,7 @@ import { useSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
-import Wheel from "../ui/wheel"
+import Wheel from "../ui/Wheel.jsx";
 
 const HEADER_HEIGHT = 56;
 

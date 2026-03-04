@@ -31,10 +31,10 @@ function App() {
 
   // list of gamepads and the connected one for drive and arm
   const [connectedGamepads, setConnectedGamepads] = useState({
-    driveGPList: [],  // list of drive gamepads (to display)
-    armGPList: [],    // list of arm gamepads (to display)
-    drive: null,      // index of selected drive gamepad
-    arm: null,        // index of selected arm gamepad
+    driveGPList: [], // list of drive gamepads (to display)
+    armGPList: [], // list of arm gamepads (to display)
+    drive: null, // index of selected drive gamepad
+    arm: null, // index of selected arm gamepad
   });
 
   const [armCommands, setArmCommands] = useState({
@@ -50,12 +50,12 @@ function App() {
     sidewaysVelocity: 0,
     forwardsVelocity: 0,
     rotationalVelocity: 0,
-  })
-  
+  });
+
   const [mastCommands, setMastCommands] = useState({
     panHeightVelocity: 0,
     panWidthVelocity: 0,
-  })
+  });
 
   const [moduleConflicts, setModuleConflicts] = useState(0);
   const [camsVisibility, setcamsVisibility] = useState(true);
@@ -76,10 +76,7 @@ function App() {
     switch (currentView) {
       case "ArmView":
         return (
-          <SplitView
-            CurrentView={<ArmView/>}
-            showCameras={camsVisibility}
-          />
+          <SplitView CurrentView={<ArmView />} showCameras={camsVisibility} />
         );
       case "DriveView":
         return (
@@ -135,7 +132,7 @@ function App() {
         overflow: "hidden",
       }}
     >
-      <ArmCommandContext 
+      <ArmCommandContext
         armCommands={armCommands}
         setArmCommands={setArmCommands}
       >
