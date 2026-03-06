@@ -5,12 +5,10 @@ import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
 import { socket } from "../components/socket.io/socket";
-import { useArmCommands } from '../contexts/ArmCommandContext'
+import { useArmCommands } from "../contexts/ArmCommandContext";
 
 // View for arm controls, handles both manual slider input and gamepad input (if connected)
-export default function ArmView({
-  armConnectedOne,
-}) {
+export default function ArmView({ armConnectedOne }) {
   const [armCommands, setArmCommands] = useArmCommands();
 
   // Continuously transmit arm commands
@@ -19,7 +17,7 @@ export default function ArmView({
       socket.emit("armCommands", armCommands);
     }, FrameRateConstant);
     return () => clearInterval(intervalId);
-  }, [armCommands])
+  }, [armCommands]);
 
   // Test transmission manually
   const handleManualUpdate = () => {
@@ -29,11 +27,11 @@ export default function ArmView({
 
   // When sliders are used, update armCommands state
   const handleSliderChange = (key, value) => {
-    setArmCommands(prev => ({
+    setArmCommands((prev) => ({
       ...prev,
-      [key]: Number(value)
-    }))
-  }
+      [key]: Number(value),
+    }));
+  };
 
   return (
     <Box
@@ -59,7 +57,7 @@ export default function ArmView({
                 { label: "Track (cm)", key: "track", max: 45 },
                 { label: "Pitch", key: "pitch", max: 150 },
                 { label: "Roll", key: "roll", max: 360 },
-                { label: "Clamp (cm)", key: "clamp", max: 20 }
+                { label: "Clamp (cm)", key: "clamp", max: 20 },
               ].map(({ label, key, max }) => (
                 <Grid
                   item
@@ -85,7 +83,9 @@ export default function ArmView({
                     sx={{ width: 200 }}
                     valueLabelDisplay="auto"
                   />
-                  <Typography variant="body2">{armCommands[key] || 0}</Typography>
+                  <Typography variant="body2">
+                    {armCommands[key] || 0}
+                  </Typography>
                 </Grid>
               ))}
             </Grid>

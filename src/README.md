@@ -1,8 +1,8 @@
-
 ## Getting Started
 
 ### 1. Install dependencies
-In the ```urc-teleoperation-2026``` directory
+
+In the `urc-teleoperation-2026` directory
 
 ```bash
 cd src/
@@ -10,21 +10,21 @@ npm install
 ```
 
 ### 2. Running the Development Environment
+
 **Start the Client**
-In the ```urc-teleoperation-2026``` directory
+In the `urc-teleoperation-2026` directory
 
 ```bash
 npm run *
 ```
 
-|     launch command  | Result  |
-| ------------- | ------------- |
-| npm run dev | Standard dev testing |
-| npm run dev-host | Standard w/lan reachability |
-| npm run lan | Connects to actual server, lan reachable |
+| launch command   | Result                                   |
+| ---------------- | ---------------------------------------- |
+| npm run dev      | Standard dev testing                     |
+| npm run dev-host | Standard w/lan reachability              |
+| npm run lan      | Connects to actual server, lan reachable |
 
 This will start the React Vite development server. Open [http://localhost:5173](http://localhost:5173) in your browser to view the client.
-
 
 ## Expanding the ESLint configuration
 
