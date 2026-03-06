@@ -35,21 +35,31 @@ export default function NavConnectionStatus({
     scienceId: "disconnect", // selected can id in dropdown or disconnect
   });
 
-  // latency threshold (ms) used to classify degraded communication
+  // latency threshold (ms) above which communication is considered degraded
   const LATENCY_DEGRADED_THRESHOLD = 300;
 
   // determine overall communication health
   const getHealthState = ({ isConnected, latency, websockets }) => {
     if (!isConnected || !websockets) return "LOST"; // websocket disconnected or transport fallback detected
-    if (latency > LATENCY_DEGRADED_THRESHOLD) return "DEGRADED"; // connected but latency is high
+    // latency may be null when the UI first loads, so check before comparing
+    if (latency && latency > LATENCY_DEGRADED_THRESHOLD) return "DEGRADED"; // connected but latency is high
     return "GOOD"; // connected and latency within acceptable range
   };
 
-  // color mapping for the HEALTH indicator dot
-  const healthDotColors = {
-    GOOD: green[500],
-    DEGRADED: "#facc15",
-    LOST: red[500],
+  // HEALTH state configuration used by the UI
+  const healthConfig = {
+    GOOD: {
+      color: green[500],
+      message: "System communication stable",
+    },
+    DEGRADED: {
+      color: "#facc15",
+      message: "High latency detected",
+    },
+    LOST: {
+      color: red[500],
+      message: "Connection unavailable",
+    },
   };
 
   // compute current HEALTH level using connection state and latency metrics
@@ -58,6 +68,9 @@ export default function NavConnectionStatus({
     latency,
     websockets: conntype === "Yes", // if conntype is "Yes" -> true; otherwise -> false
   });
+
+  // get the corresponding message and color for the current HEALTH level
+  const health = healthConfig[healthLevel];
 
   // server connect, disconnect
   function connect() {
@@ -384,7 +397,7 @@ export default function NavConnectionStatus({
                       width: 10,
                       height: 10,
                       borderRadius: "50%",
-                      backgroundColor: healthDotColors[healthLevel],
+                      backgroundColor: health.color,
                     }}
                   />
 
@@ -394,9 +407,7 @@ export default function NavConnectionStatus({
                 </Box>
 
                 <Typography variant="caption" color="text.secondary">
-                  {healthLevel === "GOOD" && "System communication stable"}
-                  {healthLevel === "DEGRADED" && "High latency detected"}
-                  {healthLevel === "LOST" && "Connection unavailable"}
+                  {health.message}
                 </Typography>
               </div>
 
