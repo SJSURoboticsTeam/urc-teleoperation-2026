@@ -103,8 +103,8 @@ def parse_arm_data(data):
 async def read_arm_can_loop(arm_serial):
     try:
         while True:
-            # data = arm_serial.read_can(None)
-            data = await asyncio.to_thread(arm_serial.read_can, None)
+            # data = serial_ports["arm"].read_can(None)
+            data = await asyncio.to_thread(serial_ports["arm"].read_can, None)
             if data:
                 parse_arm_data(data)
             # time.sleep(0.01)

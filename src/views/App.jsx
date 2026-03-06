@@ -1,5 +1,5 @@
 // React imports
-import { useState, useEffect } from "react";
+import { useState } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -12,6 +12,8 @@ import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
 import SplitView from "./SplitView";
 import ExtrasView from "./ExtrasView";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 // Context imports
 import ArmCommandContext from "../contexts/ArmCommandContext";
@@ -23,11 +25,13 @@ function App() {
   const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
   const [forwardsVelocity, setForwardVelocity] = useState(0);
   const [rotationalVelocity, setRotationalVelocity] = useState(0);
-  const [panHeightVelocity, setPanHeightVelocity] = useState(0);
-  const [panWidthVelocity, setPanWidthVelocity] = useState(0);
-
-  // const [armConnectedOne, setArmConnectedOne] = useState(null);
+  const [panAngles, setPanAngles] = useState({
+    px: 0,
+    py: 0,
+  });
+  const [panSpeed, setPanSpeed] = useState(30);
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // list of gamepads and the connected one for drive and arm
   const [connectedGamepads, setConnectedGamepads] = useState({
@@ -57,7 +61,7 @@ function App() {
     panWidthVelocity: 0,
   });
 
-  const [moduleConflicts, setModuleConflicts] = useState(0);
+  const [moduleConflicts, setModuleConflicts] = useState(1);
   const [camsVisibility, setcamsVisibility] = useState(true);
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
@@ -66,11 +70,14 @@ function App() {
     setRotationalVelocity(rx);
     // console.log(lx,ly,rx)
   };
-  const handlePanVelocitiesChange = ({ px, py }) => {
-    setPanHeightVelocity(py);
-    setPanWidthVelocity(px);
-  };
 
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setErrorMessage("");
+  };
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
@@ -83,12 +90,13 @@ function App() {
           <SplitView
             CurrentView={
               <DriveComponents
+                panSpeed={panSpeed}
+                setPanSpeed={setPanSpeed}
+                panAngles={panAngles}
                 moduleConflicts={moduleConflicts}
                 sidewaysVelocity={sidewaysVelocity}
                 forwardsVelocity={forwardsVelocity}
                 rotationalVelocity={rotationalVelocity}
-                panHeightVelocity={panHeightVelocity}
-                panWidthVelocity={panWidthVelocity}
                 driveConnectedOne={driveConnectedOne}
                 setDriveConnectedOne={setDriveConnectedOne}
               />
@@ -132,6 +140,21 @@ function App() {
         overflow: "hidden",
       }}
     >
+      {/*!!errorMessage converts string to clean boolean (ie if theres a message show it */}
+      <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={6000}
+        onClose={handleClose}
+      >
+        <Alert
+          onClose={handleClose}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          Error: {errorMessage}
+        </Alert>
+      </Snackbar>
       <ArmCommandContext
         armCommands={armCommands}
         setArmCommands={setArmCommands}
@@ -144,16 +167,18 @@ function App() {
           {/* Normalizes styles */}
           <TopAppBar
             setModuleConflicts={setModuleConflicts}
+            moduleConflicts={moduleConflicts}
             currentView={currentView}
             setCurrentView={setCurrentView}
             onVelocitiesChange={handleVelocitiesChange}
-            onPanVelocitiesChange={handlePanVelocitiesChange}
             driveConnectedOne={driveConnectedOne}
             setDriveConnectedOne={setDriveConnectedOne}
-            // armConnectedOne={armConnectedOne}
-            // setArmConnectedOne={setArmConnectedOne}
             camsVisibility={camsVisibility}
             setcamsVisibility={setcamsVisibility}
+            setErrorMessage={setErrorMessage}
+            errorMessage={errorMessage}
+            setPanAngles={setPanAngles}
+            panSpeed={panSpeed}
           />
 
           <Box
@@ -165,7 +190,7 @@ function App() {
               flexDirection: "column",
               overflow: "hidden",
               minHeight: 0,
-              marginTop: "64px",
+              marginTop: "60px",
             }}
           >
             {renderView()}

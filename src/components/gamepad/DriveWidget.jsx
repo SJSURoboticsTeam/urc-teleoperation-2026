@@ -9,7 +9,7 @@ import { useSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
-import Wheel from "../ui/Wheel.jsx";
+import Wheel from "../ui/Wheel"
 
 const HEADER_HEIGHT = 56;
 
@@ -18,9 +18,9 @@ export default function DriveManualInput({
   forwardsVelocity,
   rotationalVelocity,
   moduleConflicts,
-  panHeightVelocity,
-  panWidthVelocity,
-  setDriveConnectedOne,
+  panAngles,
+  panSpeed,
+  setPanSpeed,
   driveConnectedOne,
 }) {
   const serverConnected = useSocketStatus();
@@ -53,12 +53,11 @@ export default function DriveManualInput({
     if (!serverConnected || driveConnectedOne == null || !txon) return;
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   }, [
-    panHeightVelocity,
-    panWidthVelocity,
+    panAngles,
     serverConnected,
     driveConnectedOne,
     txon,
@@ -75,8 +74,8 @@ export default function DriveManualInput({
     });
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   };
 
@@ -156,9 +155,9 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={forwardsVelocity} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity} label="Y Vel" />
-            <VelocityItem value={rotationalVelocity} label="Rotational" />
+      <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
+      <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+      <VelocityItem value={rotationalVelocity.toFixed(1)} label="Rotational" />
           </Box>
         </Box>
 
@@ -174,10 +173,12 @@ export default function DriveManualInput({
             }}
           >
             <Slider 
-            step={1}
+            step={10}
             marks
-            min={1}
-            max={8}
+            value={panSpeed}
+            onChange={(_, value) => setPanSpeed(value)}
+            min={10}
+            max={100}
             valueLabelDisplay="auto"
             sx={{ width: 150 }} />
           </Box>
@@ -192,8 +193,8 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={panWidthVelocity} label="Pan W" />
-            <VelocityItem value={panHeightVelocity} label="Pan H" />
+            <VelocityItem value={panAngles.px} label="Pan W" />
+            <VelocityItem value={panAngles.py} label="Pan H" />
           </Box>
         </Box>
         <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>

@@ -4,7 +4,7 @@ import can_serial
 import math
 
 
-def register_camera_pt_events(sio,drive_serial):
+def register_camera_pt_events(sio,serial_ports):
     print("registering...")
     @sio.event
     async def panCommands(sid,data):
