@@ -20,6 +20,7 @@ export default function GamepadPanel({
   // general vars
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState("Drive");
+  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
   const [driveVelocities, setDriveVelocities] = useState({
@@ -27,6 +28,7 @@ export default function GamepadPanel({
     ly: 0,
     rx: 0,
   });
+  const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
   // pan-tilt
@@ -35,9 +37,8 @@ export default function GamepadPanel({
 
   // arm
   const [armCommands, setArmCommands] = useArmCommands();
-  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
-  const driveConnectedOne = connectedGamepads.drive;
   const armConnectedOne = connectedGamepads.arm;
+  const armAnimationIdRef = useRef(null);
 
   const gpList =
     page === "Drive"
@@ -139,8 +140,8 @@ export default function GamepadPanel({
     };
   }, [driveConnectedOne, onDriveVelocitiesChange]);
 
+  
   const lastTimeRef = useRef(null);
-
   useEffect(() => {
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
@@ -229,24 +230,19 @@ export default function GamepadPanel({
           prevVal = newVal;
         }
       }
+
+      armAnimationIdRef.current = requestAnimationFrame(pollAxes);
     };
 
-    const intervalId = setInterval(pollAxes, FrameRateConstant);
-    console.log(`Polling arm gamepad every ${FrameRateConstant}ms`);
-    return () => clearInterval(intervalId);
+    armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+    return () => {
+      cancelAnimationFrame(armAnimationIdRef.current);
+      armAnimationIdRef.current = null;
+    }
   }, [armConnectedOne, setArmCommands]);
 
-  // //console.log(driveGamepads) //dbg
-  // const gpList = Object.values(driveGamepads);
-  // //console.log(gpList); //dbg
-
-  // console.log(connectedGamepads.arm); //dbg
-  // const armList = Object.values(connectedGamepads.arm);
-  // console.log(armList); //dbg
-
-  const [info, setInfo] = useState("");
-
   // Update connection status icon based on current view and gamepad connections
+  const [info, setInfo] = useState("");
   useEffect(() => {
     if (currentView === "DriveView") {
       setInfo(
