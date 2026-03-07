@@ -2,7 +2,7 @@ import { socket } from "./socket";
 import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import { green, red } from "@mui/material/colors";
+import { green, red, yellow } from "@mui/material/colors";
 import { useSocketStatus } from "./socket";
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
