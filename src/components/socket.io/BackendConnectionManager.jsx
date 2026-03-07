@@ -35,18 +35,21 @@ export default function NavConnectionStatus({
     scienceId: "disconnect", // selected can id in dropdown or disconnect
   });
 
-  // latency threshold (ms) above which communication is considered degraded
   const LATENCY_DEGRADED_THRESHOLD = 300;
+  const LATENCY_LOST_THRESHOLD = 1000;
 
-  // determine overall communication health
-  const getHealthState = ({ isConnected, latency, websockets }) => {
-    if (!isConnected || !websockets) return "LOST"; // websocket disconnected or transport fallback detected
-    // latency may be null when the UI first loads, so check before comparing
-    if (latency && latency > LATENCY_DEGRADED_THRESHOLD) return "DEGRADED"; // connected but latency is high
-    return "GOOD"; // connected and latency within acceptable range
+  // Determine communication health based on connection status and latency
+  const getHealthState = ({ isConnected, latency }) => {
+    if (!isConnected) return "LOST";
+
+    // latency may be null when the UI first loads
+    if (latency !== null && latency > LATENCY_LOST_THRESHOLD) return "LOST";
+    if (latency !== null && latency > LATENCY_DEGRADED_THRESHOLD)
+      return "DEGRADED";
+
+    return "GOOD";
   };
 
-  // HEALTH state configuration used by the UI
   const healthConfig = {
     GOOD: {
       color: green[500],
@@ -62,14 +65,9 @@ export default function NavConnectionStatus({
     },
   };
 
-  // compute current HEALTH level using connection state and latency metrics
-  const healthLevel = getHealthState({
-    isConnected,
-    latency,
-    websockets: conntype === "Yes", // if conntype is "Yes" -> true; otherwise -> false
-  });
-
-  // get the corresponding message and color for the current HEALTH level
+  // determine the state
+  const healthLevel = getHealthState({ isConnected, latency });
+  // get the UI config
   const health = healthConfig[healthLevel];
 
   // server connect, disconnect
