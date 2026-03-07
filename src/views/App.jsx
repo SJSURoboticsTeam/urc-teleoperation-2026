@@ -1,6 +1,5 @@
 // React imports
 import { useState, useEffect } from "react";
-import { socket } from "../components/socket.io/socket";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -34,8 +33,6 @@ function App() {
 
   const [moduleConflicts,setModuleConflicts]=useState(0)
   const [camsVisibility, setcamsVisibility] = useState(true)
-  const [missionMode, setMissionMode] = useState(null)
-  const [syncToMissionState, setSyncToMissionState] = useState(true)
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx);
@@ -61,21 +58,10 @@ function App() {
     //console.log(armConnectedOne)
     //console.log(effector,pitch,roll,elbow,shoulder,track)
   }
-
-  useEffect(() => {
-    const handler = (data) => {
-      if (!data?.mode) return
-        setMissionMode(data.mode)
-      if (syncToMissionState) {
-        setCurrentView((prev) => (prev === data.mode ? prev : data.mode))
-      }
-    }
-    socket.on("missionState", handler)
-    return () => {
-      socket.off("missionState", handler)
-    }
-  }, [syncToMissionState])
   
+
+
+  // Select which view we want to display
   function renderView() {
     switch (currentView) {
       case "ArmView":
@@ -96,7 +82,7 @@ function App() {
   return (
     <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility} missionMode={missionMode} syncToMissionState={syncToMissionState} setSyncToMissionState={setSyncToMissionState}/>
+      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
       
       <Box
         component="main"

@@ -106,7 +106,6 @@ export default function DriveView({ CurrentView, showCameras }) {
       className="flex flex-1 h-full min-h-0"
       style={{ userSelect: 'none' }}
     >
-      {/* left pane */}
       <div
         className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
         style={{ flex: `0 0 ${effectiveLeftPct}%` }}
@@ -118,7 +117,6 @@ export default function DriveView({ CurrentView, showCameras }) {
           : null}
       </div>
 
-      {/* divider (gone when cameras hidden) */}
       {showCameras && (
         <div
           role="separator"
@@ -137,15 +135,17 @@ export default function DriveView({ CurrentView, showCameras }) {
         </div>
       )}
 
-      {/* right pane (still rendered, visually hidden) */}
       <div
-        className="relative flex-1 flex flex-col gap-2 p-2 min-h-0"
+        className="flex-1 flex flex-col p-2 min-h-0"
         style={{
           display: (!showCameras) ? 'none' : 'flex',
         }}
       >
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel id="camera-count-label">Cameras</InputLabel>
+        
+          
+        <FormControl size="small" sx={{ minWidth: 160, mb: 2 }}>
+          <InputLabel id="camera-count-label" sx={{ backgroundColor: 'white', px: 0.5 }}
+          >Select Camera Count</InputLabel>
           <Select
             labelId="camera-count-label"
             value={cameraNum}
@@ -180,10 +180,9 @@ export default function DriveView({ CurrentView, showCameras }) {
         </div>
         </div>
 
-      {/* fullscreen click layer to restore cameras */}
       {(!showCameras) && (
         <div
-          className="absolute inset-0 cursor-pointer"
+          className="absolute cursor-pointer"
           style={{ background: 'transparent' }}
         />
       )}

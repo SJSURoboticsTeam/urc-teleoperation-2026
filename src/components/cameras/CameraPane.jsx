@@ -64,10 +64,9 @@ export default function CameraPane({ cameraValue, onCameraChange }){
     }, [selectedUrl, selectedMediaType]);
     return(
         // Root Box is flexible so CameraPane can grow inside a column
-        
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
-            <FormControl fullWidth sx={{ mb: 0.5, minHeight: 40, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <InputLabel id="camera-select-label" sx={{ position: 'static', transform: 'none', mb: 0, fontSize: '0.875rem' }}>Camera</InputLabel>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1}}>
+        <FormControl size="small" sx={{ minWidth: 160, mt: 1 }}>
+        <InputLabel id="camera-select-label">Camera</InputLabel>
                 <Select
                     labelId="camera-select-label"
                     value={camera}
