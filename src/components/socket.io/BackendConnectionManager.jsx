@@ -36,14 +36,14 @@ export default function NavConnectionStatus({
   });
 
   const LATENCY_DEGRADED_THRESHOLD = 300;
-  const LATENCY_LOST_THRESHOLD = 1000;
+  const LATENCY_DANGER_THRESHOLD = 1000;
 
   // Determine communication health based on connection status and latency
   const getHealthState = ({ isConnected, latency }) => {
-    if (!isConnected) return "LOST";
+    if (!isConnected) return "DANGER";
 
     // latency may be null when the UI first loads
-    if (latency !== null && latency > LATENCY_LOST_THRESHOLD) return "LOST";
+    if (latency !== null && latency > LATENCY_DANGER_THRESHOLD) return "DANGER";
     if (latency !== null && latency > LATENCY_DEGRADED_THRESHOLD)
       return "DEGRADED";
 
@@ -56,12 +56,12 @@ export default function NavConnectionStatus({
       message: "System communication stable",
     },
     DEGRADED: {
-      color: "#facc15",
+      color: yellow[500],
       message: "High latency detected",
     },
-    LOST: {
+    DANGER: {
       color: red[500],
-      message: "Connection unavailable",
+      message: "Critical latency detected",
     },
   };
 
