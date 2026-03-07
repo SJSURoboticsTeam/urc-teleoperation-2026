@@ -1,6 +1,12 @@
-import { Typography, Box, Button, ListItem, FormControlLabel, Switch } from "@mui/material";
+import {
+  Typography,
+  Box,
+  Button,
+  ListItem,
+  FormControlLabel,
+  Switch,
+} from "@mui/material";
 import { useState } from "react";
-
 
 export default function GamepadDiv({
   gpList,
@@ -15,24 +21,23 @@ export default function GamepadDiv({
     <div style={{ padding: 2, marginTop: 2 }}>
       {name == "Drive" && (
         <div style={{ marginBottom: 5 }}>
-            <FormControlLabel
-              sx={{ color: 'black' }}
-              
-              control={
-                <Switch
-                  checked={moduleConflicts}
-                  onChange={(e) => setModuleConflicts(e.target.checked)}
-                />
-              }
-              label="Autofix Overrotation"
-            />
+          <FormControlLabel
+            sx={{ color: "black" }}
+            control={
+              <Switch
+                checked={moduleConflicts}
+                onChange={(e) => setModuleConflicts(e.target.checked)}
+              />
+            }
+            label="Autofix Overrotation"
+          />
         </div>
       )}
       {gpList.length === 0 && (
-        <Typography sx={{ color: 'black' }}>
-          No {name == "Drive" ? "Xbox/Playstation" : "Logitech Extreme"} gamepads connected.
+        <Typography sx={{ color: "black" }}>
+          No {name == "Drive" ? "Xbox/Playstation" : "Logitech Extreme"}{" "}
+          gamepads connected.
         </Typography>
-        
       )}
       {gpList.map((gp) => (
         <Box
@@ -45,8 +50,12 @@ export default function GamepadDiv({
             backgroundColor: connectedOne === gp.index ? "#e0f7fa" : "#f9f9f9",
           }}
         >
-          <Typography sx={{ color: 'black' }} variant="subtitle1">Gamepad {gp.index}</Typography>
-          <Typography sx={{ color: 'black' }} variant="body2">ID: {gp.id}</Typography>
+          <Typography sx={{ color: "black" }} variant="subtitle1">
+            Gamepad {gp.index}
+          </Typography>
+          <Typography sx={{ color: "black" }} variant="body2">
+            ID: {gp.id}
+          </Typography>
           <Button
             variant="outlined"
             size="small"
