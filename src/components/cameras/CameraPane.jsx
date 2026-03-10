@@ -101,32 +101,25 @@ export default function CameraPane({ cameraValue, onCameraChange }){
     <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <FormControl
         fullWidth
+        variant="outlined"
         sx={{
+          mt: 1,
           mb: 0.5,
-          minHeight: 40,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
         }}
       >
         <InputLabel
           id="camera-select-label"
-          sx={{
-            position: "static",
-            transform: "none",
-            mb: 0,
-            fontSize: "0.875rem",
-          }}
         >
           Camera
         </InputLabel>
         <Select
           labelId="camera-select-label"
+          id="camera-select"
           value={camera}
           label="Camera"
           onChange={handleChange}
           size="small"
-          sx={{ py: 0, height: 32, fontSize: "0.9rem" }}
+          sx={{ fontSize: "0.9rem" }}
           MenuProps={{
             // Render menu in a portal so it isn't clipped by ancestor overflow
             disablePortal: false,
