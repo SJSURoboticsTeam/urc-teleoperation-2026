@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import { Button, Collapse, Paper } from "@mui/material";
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@mui/material";
 import GamepadDiv from "./GamepadManager";
 import { FrameRateConstant } from "./FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import { green } from "@mui/material/colors";
-import {red} from '@mui/material/colors'
+import { green, red } from "@mui/material/colors";
+import { useArmCommands } from "../../contexts/ArmCommandContext";
+
 //usecontext
 //move armview into own component in arm folder
 //socket.emit for manual
@@ -13,37 +14,44 @@ export default function GamepadPanel({
   driveGamepads,
   onDriveVelocitiesChange,
   armGamepads,
-  onArmVelocitiesChange,
   currentView,
   setModuleConflicts,
-  onPanVelocitiesChange, 
-  driveConnectedOne, 
-  setDriveConnectedOne
+  moduleConflicts,
+  panAngles,
+  panSpeed,
+  setPanAngles,
+  driveConnectedOne,
+  setDriveConnectedOne,
 }) {
+  // general vars
+  const [open, setOpen] = useState(false);
+  const [armConnectedOne, setArmConnectedOne] = useState(null);
+  const [page, setPage] = useState("Drive");
+
+  // drive
   const [driveVelocities, setDriveVelocities] = useState({
     lx: 0,
     ly: 0,
     rx: 0,
   });
-  const [open, setOpen] = useState(false);
-  const [panVelocities, setPanVelocities] = useState({ 
-    px: 0, 
-    py: 0 
-  });
-  const [armConnectedOne, setArmConnectedOne] = useState(null);
-  const [page, setPage] = useState("Drive");
-  const [prevTime, setPrevTime] = useState();
-  const [armVelocities, setArmVelocities] = useState({
-    Elbow: 0,
-    Shoulder: 0,
-    Track: 0,
-    Pitch: 0,
-    Roll: 0,
-    Effector: 0,
-  });
+  const driveAnimationIdRef = useRef(null);
+
+  // pan-tilt
+  const panAnimationIdRef = useRef(null);
+  const panAnglesRef = useRef({ px: 0, py: 0 });
+
+  // arm
+  const [armCommands, setArmCommands] = useArmCommands();
+  // const [armVelocities, setArmVelocities] = useState({
+  //   Elbow: 0,
+  //   Shoulder: 0,
+  //   Track: 0,
+  //   Pitch: 0,
+  //   Roll: 0,
+  //   Effector: 0,
+  // });
 
   useEffect(() => {
-    let intervalId;
     const deadZone = (v, threshold = 0.15) =>
       Math.abs(v) <= threshold ? 0 : v;
 
@@ -55,80 +63,112 @@ export default function GamepadPanel({
           ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
           rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
         };
+        //console.log(newVel.lx);
         setDriveVelocities((prev) => {
-          if (
+          const changed =
             prev.lx !== newVel.lx ||
             prev.ly !== newVel.ly ||
-            prev.rx !== newVel.rx
-          ) {
+            prev.rx !== newVel.rx;
+
+          if (changed) {
             onDriveVelocitiesChange?.(newVel);
             return newVel;
           }
-          onDriveVelocitiesChange?.(prev);
-          return prev; // no change = no re-render
+
+          return prev;
         });
       }
     };
     if (driveConnectedOne != null) {
-   intervalId = setInterval(pollAxes, FrameRateConstant);
- } else {
-   const zero = { lx: 0, ly: 0, rx: 0 };
-   setDriveVelocities(zero);
-   onDriveVelocitiesChange?.(zero);
- }
-    console.log(`Polling drive gamepad every ${FrameRateConstant}ms`);
-    return () => intervalId && clearInterval(intervalId);
-}, [driveConnectedOne, onDriveVelocitiesChange]);
+      const loop = () => {
+        pollAxes();
+        driveAnimationIdRef.current = requestAnimationFrame(loop);
+      };
+      driveAnimationIdRef.current = requestAnimationFrame(loop);
+    } else {
+      const zero = { lx: 0, ly: 0, rx: 0 };
+      setDriveVelocities(zero);
+      onDriveVelocitiesChange?.(zero);
+    }
+    return () => {
+      if (driveAnimationIdRef.current) {
+        cancelAnimationFrame(driveAnimationIdRef.current);
+      }
+    };
+  }, [driveConnectedOne, onDriveVelocitiesChange]);
 
   // pan controller polling for drive
+
+  const lastTimeRef = useRef(null);
+
   useEffect(() => {
-    if (driveConnectedOne == null) {
-      setPanVelocities({ px: 0, py: 0 });
-      onPanVelocitiesChange?.({ px: 0, py: 0 });
-      return;
-    }
-    let animationId;
-    // poll for data
-    const pollAxes = () => {
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+    const pollAxes = (time) => {
+      if (lastTimeRef.current == null) {
+        lastTimeRef.current = time;
+      }
+
+      const deltaTime = (time - lastTimeRef.current) / 1000;
+      lastTimeRef.current = time;
+
       const gp = navigator.getGamepads()[driveConnectedOne];
-      if (gp) {
+      if (gp?.buttons) {
         const newVel = {
           px: gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0,
           py: gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0,
         };
-        // then set states
-        setPanVelocities(newVel);
-        onPanVelocitiesChange?.(newVel);
+
+        // integrate in ref (real-time domain)
+        panAnglesRef.current.px += newVel.px * deltaTime * panSpeed;
+        panAnglesRef.current.py += newVel.py * deltaTime * panSpeed;
+
+        panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
+        panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
+
+        // publish to React (UI domain)
+        setPanAngles({
+          px: Math.round(panAnglesRef.current.px),
+          py: Math.round(panAnglesRef.current.py),
+        });
       }
-      animationId = requestAnimationFrame(pollAxes);
+
+      panAnimationIdRef.current = requestAnimationFrame(pollAxes);
     };
-    pollAxes();
-    return () => cancelAnimationFrame(animationId);
-  }, [driveConnectedOne, onPanVelocitiesChange]);
+
+    panAnimationIdRef.current = requestAnimationFrame(pollAxes);
+
+    return () => {
+      cancelAnimationFrame(panAnimationIdRef.current);
+      panAnimationIdRef.current = null;
+      lastTimeRef.current = null;
+    };
+  }, [driveConnectedOne, panSpeed, setPanAngles]);
 
   // arm polling
   const [armManualDisconnect, setArmManualDisconnect] = useState(false);
   useEffect(() => {
     if (armManualDisconnect || armConnectedOne == null) {
-      setArmVelocities({
-        Elbow: 0,
-        Shoulder: 0,
-        Track: 0,
-        Pitch: 0,
-        Roll: 0,
-        Effector: 0,
-      });
-      onArmVelocitiesChange?.({
-        Elbow: 0,
-        Shoulder: 0,
-        Track: 0,
-        Pitch: 0,
-        Roll: 0,
-        Effector: 0,
-        armConnectedOne,
+      // onArmVelocitiesChange?.({
+      //   Elbow: 0,
+      //   Shoulder: 0,
+      //   Track: 0,
+      //   Pitch: 0,
+      //   Roll: 0,
+      //   Effector: 0,
+      //   armConnectedOne,
+      // });
+      setArmCommands({
+        track: 0,
+        shoulder: 0,
+        elbow: 0,
+        pitch: 0,
+        roll: 0,
+        clamp: 0,
       });
       return;
     }
+
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
       if (gp) {
@@ -142,20 +182,19 @@ export default function GamepadPanel({
           Track: gp.axes[3],
           Pitch: gp.axes[0],
           Roll: gp.axes[5],
-          Effector: gp.axes[6],
+          Clamp: gp.axes[6],
           armConnectedOne,
         };
-        setArmVelocities((prev) => {
-          const changed = Object.keys(newVal).some(
-            (key) => newVal[key] !== prev[key]
-          );
-          if (changed) {
-            onArmVelocitiesChange?.({ ...newVal, armConnectedOne });
-            return newVal;
-          }
-          onArmVelocitiesChange?.({ ...prev, armConnectedOne });
-          return prev;
-        });
+
+        const changed = Object.keys(newVal).some(
+          (key) => newVal[key] !== prev[key],
+        );
+        if (changed) {
+          setArmCommands?.({ ...newVal, armConnectedOne });
+          return newVal;
+        }
+        setArmCommands?.({ ...prev, armConnectedOne });
+        return prev;
       }
     };
     const intervalId = setInterval(pollAxes, FrameRateConstant);
@@ -180,7 +219,7 @@ export default function GamepadPanel({
           <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
           <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
-        )
+        ),
       );
     } else if (currentView === "ArmView") {
       setInfo(
@@ -188,7 +227,7 @@ export default function GamepadPanel({
           <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
           <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
-        )
+        ),
       );
     } else {
       setInfo(""); // empty string if neither view
@@ -218,20 +257,19 @@ export default function GamepadPanel({
       >
         GAMEPADS{info}
       </span>
-      <Collapse in={open}>
-        <Paper
-          sx={{
-            textAlign: "center",
-            maxHeight: 225,
-            width: 400,
-            overflowX: "hidden",
-            overflowY: "auto",
-            left: "50%",
-            transform: "translateX(-50%)",
+
+      {open == true && (
+        <div
+          style={{
             position: "absolute",
             top: "100%",
-            zIndex: 1300,
-            padding: 1,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "white",
+            border: "1px solid gray",
+            padding: "10px",
+            width: "300px",
+            borderRadius: "4px",
           }}
         >
           <Button
@@ -266,6 +304,7 @@ export default function GamepadPanel({
               gpList={gpList}
               connectedOne={driveConnectedOne}
               setConnectedOne={setDriveConnectedOne}
+              moduleConflicts={moduleConflicts}
               name={page}
             />
           ) : (
@@ -274,11 +313,12 @@ export default function GamepadPanel({
               gpList={armList}
               connectedOne={armConnectedOne}
               setConnectedOne={setArmConnectedOne}
+              moduleConflicts={moduleConflicts}
               name={page}
             />
           )}
-        </Paper>
-      </Collapse>
+        </div>
+      )}
     </div>
   );
 }

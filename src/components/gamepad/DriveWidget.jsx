@@ -9,7 +9,7 @@ import { useSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
-import Wheel from "../ui/wheel"
+import Wheel from "../ui/Wheel";
 
 const HEADER_HEIGHT = 56;
 
@@ -18,8 +18,9 @@ export default function DriveManualInput({
   forwardsVelocity,
   rotationalVelocity,
   moduleConflicts,
-  panHeightVelocity,
-  panWidthVelocity,
+  panAngles,
+  panSpeed,
+  setPanSpeed,
   setDriveConnectedOne,
   driveConnectedOne,
 }) {
@@ -53,16 +54,10 @@ export default function DriveManualInput({
     if (!serverConnected || driveConnectedOne == null || !txon) return;
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
-  }, [
-    panHeightVelocity,
-    panWidthVelocity,
-    serverConnected,
-    driveConnectedOne,
-    txon,
-  ]);
+  }, [panAngles, serverConnected, driveConnectedOne, txon]);
 
   const handleHoming = () => socket.emit("driveHoming");
 
@@ -75,13 +70,15 @@ export default function DriveManualInput({
     });
 
     socket.emit("panCommands", {
-      xVel: panHeightVelocity,
-      yVel: panWidthVelocity,
+      xVel: panAngles.px,
+      yVel: panAngles.py,
     });
   };
 
   const VelocityItem = ({ value, label }) => (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <Box
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
       <Box
         sx={{
           width: 75,
@@ -102,10 +99,19 @@ export default function DriveManualInput({
   );
 
   return (
-    <Box sx={{  display: "flex", justifyContent: "center" }}>
+    <Box sx={{ display: "flex", justifyContent: "center" }}>
       <Box sx={{ display: "flex", gap: 2.5 }}>
         {/* LEFT COLUMN */}
-        <Box sx={{ border: 1.5, borderRadius: '8px', display: "flex", flexDirection: "column", p: 1, borderColor: "gray"}}>
+        <Box
+          sx={{
+            border: 1.5,
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            p: 1,
+            borderColor: "gray",
+          }}
+        >
           {/* HEADER */}
           <Box
             sx={{
@@ -156,14 +162,26 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={forwardsVelocity} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity} label="Y Vel" />
-            <VelocityItem value={rotationalVelocity} label="Rotational" />
+            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
+            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+            <VelocityItem
+              value={rotationalVelocity.toFixed(1)}
+              label="Rotational"
+            />
           </Box>
         </Box>
 
         {/* RIGHT COLUMN */}
-        <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>
+        <Box
+          sx={{
+            border: 1.5,
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            p: 1,
+            borderColor: "gray",
+          }}
+        >
           {/* HEADER */}
           <Box
             sx={{
@@ -173,13 +191,16 @@ export default function DriveManualInput({
               justifyContent: "center",
             }}
           >
-            <Slider 
-            step={1}
-            marks
-            min={1}
-            max={8}
-            valueLabelDisplay="auto"
-            sx={{ width: 150 }} />
+            <Slider
+              step={10}
+              marks
+              value={panSpeed}
+              onChange={(_, value) => setPanSpeed(value)}
+              min={10}
+              max={100}
+              valueLabelDisplay="auto"
+              sx={{ width: 150 }}
+            />
           </Box>
 
           {/* CONTENT */}
@@ -192,18 +213,26 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={panWidthVelocity} label="Pan W" />
-            <VelocityItem value={panHeightVelocity} label="Pan H" />
+            <VelocityItem value={panAngles.px} label="Pan W" />
+            <VelocityItem value={panAngles.py} label="Pan H" />
           </Box>
         </Box>
-        <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>
+        <Box
+          sx={{
+            border: 1.5,
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            p: 1,
+            borderColor: "gray",
+          }}
+        >
           {/* WHEEL */}
-          <Wheel/>
+          <Wheel />
         </Box>
       </Box>
     </Box>
   );
 }
 
-
-<Wheel />
+<Wheel />;
