@@ -8,30 +8,22 @@ import { red } from "@mui/material/colors";
 import { useArmCommands } from "../../contexts/ArmCommandContext";
 import { useDriveCommands } from "../../contexts/DriveCommandContext";
 import { useConnectedGamepads } from "../../contexts/GamepadContext";
+import { useMastCommands } from "../../contexts/MastCommandContext";
 
 // Handles gamepad connections and state
-export default function GamepadPanel({
-  currentView,
-  panAngles,
-  panSpeed,
-  setPanAngles,
-}) {
+export default function GamepadPanel({ currentView }) {
   // general vars
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState("Drive");
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
-  // const [driveVelocities, setDriveVelocities] = useState({
-  //   lx: 0,
-  //   ly: 0,
-  //   rx: 0,
-  // });
   const [driveCommands, setDriveCommands] = useDriveCommands();
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
   // pan-tilt
+  const [mastCommands, setMastCommands] = useMastCommands(); // includes pan angles and speed
   const panAnimationIdRef = useRef(null);
   const panAnglesRef = useRef({ px: 0, py: 0 });
 
@@ -94,52 +86,6 @@ export default function GamepadPanel({
     };
   }, [setConnectedGamepads]);
 
-  // useEffect(() => {
-  //   const deadZone = (v, threshold = 0.15) =>
-  //     Math.abs(v) <= threshold ? 0 : v;
-
-  //   const pollAxes = () => {
-  //     const gp = navigator.getGamepads()[driveConnectedOne];
-  //     if (gp) {
-  //       const newVel = {
-  //         lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
-  //         ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
-  //         rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
-  //       };
-  //       //console.log(newVel.lx);
-  //       setDriveVelocities((prev) => {
-  //         const changed =
-  //           prev.lx !== newVel.lx ||
-  //           prev.ly !== newVel.ly ||
-  //           prev.rx !== newVel.rx;
-
-  //         if (changed) {
-  //           onDriveVelocitiesChange?.(newVel);
-  //           return newVel;
-  //         }
-
-  //         return prev;
-  //       });
-  //     }
-  //   };
-  //   if (driveConnectedOne != null) {
-  //     const loop = () => {
-  //       pollAxes();
-  //       driveAnimationIdRef.current = requestAnimationFrame(loop);
-  //     };
-  //     driveAnimationIdRef.current = requestAnimationFrame(loop);
-  //   } else {
-  //     const zero = { lx: 0, ly: 0, rx: 0 };
-  //     setDriveVelocities(zero);
-  //     onDriveVelocitiesChange?.(zero);
-  //   }
-  //   return () => {
-  //     if (driveAnimationIdRef.current) {
-  //       cancelAnimationFrame(driveAnimationIdRef.current);
-  //     }
-  //   };
-  // }, [driveConnectedOne, onDriveVelocitiesChange]);
-
   useEffect(() => {
     const deadZone = (v, threshold = 0.15) =>
       Math.abs(v) <= threshold ? 0 : v;
@@ -148,10 +94,6 @@ export default function GamepadPanel({
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (!gp) return;
 
-      // old lx/ly/rx mapping:
-      //  lx -> sidewaysVelocity
-      //  ly -> forwardsVelocity
-      //  rx -> rotationalVelocity
       const next = {
         sidewaysVelocity: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
         forwardsVelocity:
@@ -217,16 +159,20 @@ export default function GamepadPanel({
         };
 
         // integrate in ref (real-time domain)
-        panAnglesRef.current.px += newVel.px * deltaTime * panSpeed;
-        panAnglesRef.current.py += newVel.py * deltaTime * panSpeed;
+        const speed = mastCommands.panSpeed ?? 0;
+        panAnglesRef.current.px += newVel.px * deltaTime * speed;
+        panAnglesRef.current.py += newVel.py * deltaTime * speed;
 
         panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
         panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
 
-        // publish to React (UI domain)
-        setPanAngles({
-          px: Math.round(panAnglesRef.current.px),
-          py: Math.round(panAnglesRef.current.py),
+        // publish to context (UI domain)
+        const px = Math.round(panAnglesRef.current.px);
+        const py = Math.round(panAnglesRef.current.py);
+        setMastCommands((prev) => {
+          if (!prev) return { px, py, panSpeed: speed };
+          if (prev.px === px && prev.py === py) return prev;
+          return { ...prev, px, py };
         });
       }
 
@@ -240,7 +186,7 @@ export default function GamepadPanel({
       panAnimationIdRef.current = null;
       lastTimeRef.current = null;
     };
-  }, [driveConnectedOne, panSpeed, setPanAngles]);
+  }, [driveConnectedOne, mastCommands?.panSpeed, setMastCommands]);
 
   // Polling for arm gamepad input
   const [armManualDisconnect, setArmManualDisconnect] = useState(false);

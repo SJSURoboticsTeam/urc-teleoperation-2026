@@ -19,19 +19,16 @@ import Alert from "@mui/material/Alert";
 import ArmCommandContext from "../contexts/ArmCommandContext";
 import DriveCommandContext from "../contexts/DriveCommandContext";
 import GamepadContext from "../contexts/GamepadContext";
+import MastCommandContext from "../contexts/MastCommandContext";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
 
-  const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
-  const [forwardsVelocity, setForwardVelocity] = useState(0);
-  const [rotationalVelocity, setRotationalVelocity] = useState(0);
-  const [panAngles, setPanAngles] = useState({
-    px: 0,
-    py: 0,
-  });
-  const [panSpeed, setPanSpeed] = useState(30);
-  const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+  // const [panAngles, setPanAngles] = useState({
+  //   px: 0,
+  //   py: 0,
+  // });
+  // const [panSpeed, setPanSpeed] = useState(30);
   const [errorMessage, setErrorMessage] = useState("");
 
   // list of gamepads and the connected one for drive and arm
@@ -58,26 +55,13 @@ function App() {
     moduleConflicts: 1,
   });
 
-  // const [driveCommands, setDriveCommands] = useState({
-  //   sidewaysVelocity: 0,
-  //   forwardsVelocity: 0,
-  //   rotationalVelocity: 0,
-  // });
-
   const [mastCommands, setMastCommands] = useState({
-    panHeightVelocity: 0,
-    panWidthVelocity: 0,
+    px: 0,
+    py: 0,
+    panSpeed: 30,
   });
 
-  // const [moduleConflicts, setModuleConflicts] = useState(1);
   const [camsVisibility, setcamsVisibility] = useState(true);
-
-  // const handleVelocitiesChange = ({ lx, ly, rx }) => {
-  //   setSidewaysVelocity(lx);
-  //   setForwardVelocity(ly);
-  //   setRotationalVelocity(rx);
-  //   // console.log(lx,ly,rx)
-  // };
 
   const handleClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -96,13 +80,7 @@ function App() {
       case "DriveView":
         return (
           <SplitView
-            CurrentView={
-              <DriveComponents
-                panSpeed={panSpeed}
-                setPanSpeed={setPanSpeed}
-                panAngles={panAngles}
-              />
-            }
+            CurrentView={<DriveComponents />}
             showCameras={camsVisibility}
           />
         );
@@ -169,33 +147,36 @@ function App() {
             driveCommands={driveCommands}
             setDriveCommands={setDriveCommands}
           >
-            <CssBaseline />
-            {/* Normalizes styles */}
-            <TopAppBar
-              currentView={currentView}
-              setCurrentView={setCurrentView}
-              camsVisibility={camsVisibility}
-              setcamsVisibility={setcamsVisibility}
-              setErrorMessage={setErrorMessage}
-              errorMessage={errorMessage}
-              setPanAngles={setPanAngles}
-              panSpeed={panSpeed}
-            />
-
-            <Box
-              component="main"
-              sx={{
-                flexGrow: 1,
-                p: 2,
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-                minHeight: 0,
-                marginTop: "60px",
-              }}
+            <MastCommandContext
+              mastCommands={mastCommands}
+              setMastCommands={setMastCommands}
             >
-              {renderView()}
-            </Box>
+              <CssBaseline />
+              {/* Normalizes styles */}
+              <TopAppBar
+                currentView={currentView}
+                setCurrentView={setCurrentView}
+                camsVisibility={camsVisibility}
+                setcamsVisibility={setcamsVisibility}
+                setErrorMessage={setErrorMessage}
+                errorMessage={errorMessage}
+              />
+
+              <Box
+                component="main"
+                sx={{
+                  flexGrow: 1,
+                  p: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                  minHeight: 0,
+                  marginTop: "60px",
+                }}
+              >
+                {renderView()}
+              </Box>
+            </MastCommandContext>
           </DriveCommandContext>
         </GamepadContext>
       </ArmCommandContext>

@@ -22,9 +22,6 @@ import StateMachine from "../statemachine/statemachine";
 export default function TopAppBar({
   setCurrentView,
   currentView,
-  panAngles,
-  setPanAngles,
-  panSpeed,
   camsVisibility,
   setcamsVisibility,
 }) {
@@ -105,9 +102,6 @@ export default function TopAppBar({
             setOpenPane={setOpenPane}
             name="Drive"
             currentView={currentView}
-            panAngles={panAngles}
-            panSpeed={panSpeed}
-            setPanAngles={setPanAngles}
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />
