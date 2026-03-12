@@ -21,10 +21,7 @@ import StateMachine from "../statemachine/statemachine";
 
 export default function TopAppBar({
   setCurrentView,
-  onVelocitiesChange,
   currentView,
-  moduleConflicts,
-  setModuleConflicts,
   panAngles,
   setPanAngles,
   panSpeed,
@@ -33,8 +30,6 @@ export default function TopAppBar({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
-
-  // const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -109,9 +104,6 @@ export default function TopAppBar({
             openPane={openPane}
             setOpenPane={setOpenPane}
             name="Drive"
-            moduleConflicts={moduleConflicts}
-            setModuleConflicts={setModuleConflicts}
-            onDriveVelocitiesChange={onVelocitiesChange}
             currentView={currentView}
             panAngles={panAngles}
             panSpeed={panSpeed}

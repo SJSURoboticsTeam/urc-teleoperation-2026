@@ -11,20 +11,29 @@ import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
 import Wheel from "../ui/Wheel"
 
+import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
+import { useConnectedGamepads } from "../../contexts/GamepadContext.jsx";
+
 const HEADER_HEIGHT = 56;
 
 export default function DriveManualInput({
-  sidewaysVelocity,
-  forwardsVelocity,
-  rotationalVelocity,
-  moduleConflicts,
   panAngles,
   panSpeed,
   setPanSpeed,
-  driveConnectedOne,
 }) {
   const serverConnected = useSocketStatus();
   const [txon, settxon] = useState(false);
+
+  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+  const driveConnectedOne = connectedGamepads.drive;
+
+  const [driveCommands] = useDriveCommands();
+  const {
+    sidewaysVelocity,
+    forwardsVelocity,
+    rotationalVelocity,
+    moduleConflicts,
+  } = driveCommands;
 
   useEffect(() => {
     const interval = setInterval(() => {

@@ -6,11 +6,11 @@ import { green } from "@mui/material/colors";
 import { red } from "@mui/material/colors";
 
 import { useArmCommands } from "../../contexts/ArmCommandContext";
+import { useDriveCommands } from "../../contexts/DriveCommandContext";
 import { useConnectedGamepads } from "../../contexts/GamepadContext";
 
 // Handles gamepad connections and state
 export default function GamepadPanel({
-  onDriveVelocitiesChange,
   currentView,
   panAngles,
   panSpeed,
@@ -22,11 +22,12 @@ export default function GamepadPanel({
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
-  const [driveVelocities, setDriveVelocities] = useState({
-    lx: 0,
-    ly: 0,
-    rx: 0,
-  });
+  // const [driveVelocities, setDriveVelocities] = useState({
+  //   lx: 0,
+  //   ly: 0,
+  //   rx: 0,
+  // });
+  const [driveCommands, setDriveCommands] = useDriveCommands();
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
@@ -93,34 +94,85 @@ export default function GamepadPanel({
     };
   }, [setConnectedGamepads]);
 
+  // useEffect(() => {
+  //   const deadZone = (v, threshold = 0.15) =>
+  //     Math.abs(v) <= threshold ? 0 : v;
+
+  //   const pollAxes = () => {
+  //     const gp = navigator.getGamepads()[driveConnectedOne];
+  //     if (gp) {
+  //       const newVel = {
+  //         lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
+  //         ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
+  //         rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
+  //       };
+  //       //console.log(newVel.lx);
+  //       setDriveVelocities((prev) => {
+  //         const changed =
+  //           prev.lx !== newVel.lx ||
+  //           prev.ly !== newVel.ly ||
+  //           prev.rx !== newVel.rx;
+
+  //         if (changed) {
+  //           onDriveVelocitiesChange?.(newVel);
+  //           return newVel;
+  //         }
+
+  //         return prev;
+  //       });
+  //     }
+  //   };
+  //   if (driveConnectedOne != null) {
+  //     const loop = () => {
+  //       pollAxes();
+  //       driveAnimationIdRef.current = requestAnimationFrame(loop);
+  //     };
+  //     driveAnimationIdRef.current = requestAnimationFrame(loop);
+  //   } else {
+  //     const zero = { lx: 0, ly: 0, rx: 0 };
+  //     setDriveVelocities(zero);
+  //     onDriveVelocitiesChange?.(zero);
+  //   }
+  //   return () => {
+  //     if (driveAnimationIdRef.current) {
+  //       cancelAnimationFrame(driveAnimationIdRef.current);
+  //     }
+  //   };
+  // }, [driveConnectedOne, onDriveVelocitiesChange]);
+
   useEffect(() => {
     const deadZone = (v, threshold = 0.15) =>
       Math.abs(v) <= threshold ? 0 : v;
 
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
-      if (gp) {
-        const newVel = {
-          lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
-          ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
-          rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
-        };
-        //console.log(newVel.lx);
-        setDriveVelocities((prev) => {
-          const changed =
-            prev.lx !== newVel.lx ||
-            prev.ly !== newVel.ly ||
-            prev.rx !== newVel.rx;
+      if (!gp) return;
 
-          if (changed) {
-            onDriveVelocitiesChange?.(newVel);
-            return newVel;
-          }
+      // old lx/ly/rx mapping:
+      //  lx -> sidewaysVelocity
+      //  ly -> forwardsVelocity
+      //  rx -> rotationalVelocity
+      const next = {
+        sidewaysVelocity: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
+        forwardsVelocity:
+          deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
+        rotationalVelocity:
+          deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
+      };
 
-          return prev;
-        });
-      }
+      setDriveCommands((prev) => {
+        const changed =
+          prev.sidewaysVelocity !== next.sidewaysVelocity ||
+          prev.forwardsVelocity !== next.forwardsVelocity ||
+          prev.rotationalVelocity !== next.rotationalVelocity;
+
+        if (!changed) return prev;
+
+        // preserve moduleConflicts (and anything else you may add later)
+        return { ...prev, ...next };
+      });
     };
+
     if (driveConnectedOne != null) {
       const loop = () => {
         pollAxes();
@@ -128,18 +180,23 @@ export default function GamepadPanel({
       };
       driveAnimationIdRef.current = requestAnimationFrame(loop);
     } else {
-      const zero = { lx: 0, ly: 0, rx: 0 };
-      setDriveVelocities(zero);
-      onDriveVelocitiesChange?.(zero);
+      // no drive pad selected -> zero the velocities, preserve moduleConflicts
+      setDriveCommands((prev) => ({
+        ...prev,
+        sidewaysVelocity: 0,
+        forwardsVelocity: 0,
+        rotationalVelocity: 0,
+      }));
     }
+
     return () => {
       if (driveAnimationIdRef.current) {
         cancelAnimationFrame(driveAnimationIdRef.current);
+        driveAnimationIdRef.current = null;
       }
     };
-  }, [driveConnectedOne, onDriveVelocitiesChange]);
+  }, [driveConnectedOne, setDriveCommands]);
 
-  
   const lastTimeRef = useRef(null);
   useEffect(() => {
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
@@ -237,7 +294,7 @@ export default function GamepadPanel({
     return () => {
       cancelAnimationFrame(armAnimationIdRef.current);
       armAnimationIdRef.current = null;
-    }
+    };
   }, [armConnectedOne, setArmCommands]);
 
   // Update connection status icon based on current view and gamepad connections
