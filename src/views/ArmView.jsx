@@ -4,7 +4,7 @@ import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
-import { socket } from "../components/socket.io/socket";
+import { useSocketStatus, socket } from "../components/socket.io/socket";
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
 
@@ -14,17 +14,21 @@ export default function ArmView({}) {
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
   const armConnectedOne = connectedGamepads.arm;
 
+  const serverConnected = useSocketStatus();
+
   // Continuously transmit arm commands
   useEffect(() => {
+    if (!serverConnected || armConnectedOne == null) return;
     const intervalId = setInterval(() => {
       socket.emit("armCommands", armCommands);
       // console.log("Arm commands sent:", JSON.stringify(armCommands));
     }, FrameRateConstant);
     return () => clearInterval(intervalId);
-  }, [armCommands]);
+  }, [armCommands, serverConnected, armConnectedOne]);
 
   // Test transmission manually
   const handleManualUpdate = () => {
+    if (!serverConnected || armConnectedOne == null) return;
     socket.emit("armCommands", armCommands);
     console.log("Manual arm commands sent:", JSON.stringify(armCommands));
   };
@@ -64,9 +68,6 @@ export default function ArmView({}) {
                 { label: "Clamp (cm)", key: "clamp", max: 20 },
               ].map(({ label, key, max }) => (
                 <Grid
-                  item
-                  xs={12}
-                  sm={6}
                   key={label}
                   sx={{
                     border: "1px solid #ccc",
@@ -124,9 +125,6 @@ export default function ArmView({}) {
               { label: "Clamp", key: "clamp" },
             ].map(({ label, key }) => (
               <Grid
-                item
-                xs={12}
-                sm={6}
                 key={label}
                 sx={{
                   textAlign: "center",

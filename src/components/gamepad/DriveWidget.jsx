@@ -51,7 +51,7 @@ export default function DriveManualInput({}) {
   // Emit drive commands
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("emitting drive commands");
+      // console.log("emitting drive commands");
       if (!serverConnected || driveConnectedOne == null || !txon) return;
       socket.emit("driveCommands", {
         xVel: sidewaysVelocity,
@@ -78,7 +78,6 @@ export default function DriveManualInput({}) {
   useEffect(() => {
     const interval = setInterval(() => {
       if (!serverConnected || driveConnectedOne == null || !txon) return;
-      console.log("emitting pan commands");
       socket.emit("panCommands", {
         xVel: panXRef.current,
         yVel: panYRef.current,
@@ -89,6 +88,7 @@ export default function DriveManualInput({}) {
   }, [serverConnected, driveConnectedOne, txon]);
 
   const handleManualTx = () => {
+    if (!serverConnected || driveConnectedOne == null || !txon) return;
     socket.emit("driveCommands", {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
