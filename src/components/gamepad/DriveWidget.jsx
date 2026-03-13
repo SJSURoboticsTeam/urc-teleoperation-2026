@@ -51,8 +51,8 @@ export default function DriveManualInput({}) {
   // Emit drive commands
   useEffect(() => {
     const interval = setInterval(() => {
+      console.log("emitting drive commands");
       if (!serverConnected || driveConnectedOne == null || !txon) return;
-
       socket.emit("driveCommands", {
         xVel: sidewaysVelocity,
         yVel: forwardsVelocity,
