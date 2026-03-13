@@ -1,8 +1,10 @@
 import { green } from "@mui/material/colors";
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
 import { useSocketStatus, socket } from "../components/socket.io/socket";
 import { useArmCommands } from "../contexts/ArmCommandContext";
@@ -11,26 +13,32 @@ import { useConnectedGamepads } from "../contexts/GamepadContext";
 // View for arm controls, handles both manual slider input and gamepad input (if connected)
 export default function ArmView({}) {
   const [armCommands, setArmCommands] = useArmCommands();
-  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+  const [connectedGamepads] = useConnectedGamepads();
   const armConnectedOne = connectedGamepads.arm;
-
   const serverConnected = useSocketStatus();
+  const [txon, settxon] = useState(false);
+
+  const armCommandsRef = useRef(armCommands);
+  useEffect(() => {
+    armCommandsRef.current = armCommands;
+  }, [armCommands]);
 
   // Continuously transmit arm commands
   useEffect(() => {
-    if (!serverConnected || armConnectedOne == null) return;
+    if (!serverConnected || armConnectedOne == null || !txon) return;
+    console.log("Starting arm command transmission");
     const intervalId = setInterval(() => {
-      socket.emit("armCommands", armCommands);
-      // console.log("Arm commands sent:", JSON.stringify(armCommands));
+      socket.emit("armCommands", armCommandsRef.current);
     }, FrameRateConstant);
+
     return () => clearInterval(intervalId);
-  }, [armCommands, serverConnected, armConnectedOne]);
+  }, [serverConnected, armConnectedOne, txon]);
 
   // Test transmission manually
   const handleManualUpdate = () => {
-    if (!serverConnected || armConnectedOne == null) return;
+    if (!serverConnected) return;
     socket.emit("armCommands", armCommands);
-    console.log("Manual arm commands sent:", JSON.stringify(armCommands));
+    // console.log("Manual arm commands sent:", JSON.stringify(armCommands));
   };
 
   // When sliders are used, update armCommands state
@@ -94,13 +102,33 @@ export default function ArmView({}) {
                 </Grid>
               ))}
             </Grid>
-            <Button
-              sx={{ mt: 2, left: "50%", transform: "translateX(-50%)" }}
-              variant="contained"
-              onClick={handleManualUpdate}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 4,
+                mt: 3,
+              }}
             >
-              Manual TX
-            </Button>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={txon}
+                    onChange={(e) => settxon(e.target.checked)}
+                  />
+                }
+                label="AUTO TX"
+              />
+
+              <Button
+                variant="contained"
+                onClick={handleManualUpdate}
+                disabled={!serverConnected}
+              >
+                Manual TX
+              </Button>
+            </Box>
           </Box>
         </>
       ) : (

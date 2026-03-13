@@ -215,13 +215,18 @@ export default function GamepadPanel({ currentView }) {
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
       if (gp) {
+        const clean = (v, deadzone = 0.08) => {
+          if (Math.abs(v) < deadzone) return 0;
+          return Math.round(v * 100) / 100;
+        };
+
         const newVal = {
-          elbow: gp.axes[9],
-          shoulder: gp.axes[1],
-          track: gp.axes[3],
-          pitch: gp.axes[0],
-          roll: gp.axes[5],
-          clamp: gp.axes[6],
+          elbow: clean(gp.axes[9]),
+          shoulder: clean(gp.axes[1]),
+          track: clean(gp.axes[3]),
+          pitch: clean(gp.axes[0]),
+          roll: clean(gp.axes[5]),
+          clamp: clean(gp.axes[6]),
         };
 
         const changed = Object.keys(newVal).some(

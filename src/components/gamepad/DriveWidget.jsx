@@ -53,6 +53,7 @@ export default function DriveManualInput({}) {
     const interval = setInterval(() => {
       // console.log("emitting drive commands");
       if (!serverConnected || driveConnectedOne == null || !txon) return;
+      console.log("Starting drive command transmission");
       socket.emit("driveCommands", {
         xVel: sidewaysVelocity,
         yVel: forwardsVelocity,
@@ -167,6 +168,7 @@ export default function DriveManualInput({}) {
               variant="contained"
               onClick={handleHoming}
               sx={{ whiteSpace: "nowrap" }}
+              disabled={!serverConnected}
             >
               Homing
             </Button>
@@ -174,6 +176,7 @@ export default function DriveManualInput({}) {
               variant="contained"
               onClick={handleManualTx}
               sx={{ whiteSpace: "nowrap" }}
+              disabled={!serverConnected}
             >
               MANUAL TX
             </Button>
