@@ -89,7 +89,7 @@ export default function DriveManualInput({}) {
   }, [serverConnected, driveConnectedOne, txon]);
 
   const handleManualTx = () => {
-    if (!serverConnected || driveConnectedOne == null || !txon) return;
+    if (!serverConnected) return;
     socket.emit("driveCommands", {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
