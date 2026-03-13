@@ -131,19 +131,20 @@ export default function NavConnectionStatus({
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    let interval;
-    // see if client is connected optimally (websockets) or not
-    function getConnType() {
-      if (socket.io.engine.transport.name == "websocket") {
-        setconntype("Yes");
-      } else {
-        setconntype("No");
-      }
-    }
-    interval = setInterval(getConnType, 2000);
-    return () => clearInterval(interval);
-  }, []);
+useEffect(() => {
+  let interval;
+  // see if client is connected optimally (websockets) or not
+  function getConnType() {
+  const transport = socket?.io?.engine?.transport?.name;
+  if (transport === "websocket") {
+    setconntype("Yes");
+  } else {
+    setconntype("No");
+  }
+}
+  interval = setInterval(getConnType, 2000); 
+  return () => clearInterval(interval);
+}, []);
 
   function requestCanInfo() {
     // lock the ui so user can't do anything while loading
