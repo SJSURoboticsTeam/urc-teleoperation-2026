@@ -21,7 +21,6 @@ export default function GamepadDiv({ name }) {
 
   const [driveCommands, setDriveCommands] = useDriveCommands();
   const moduleConflicts = driveCommands.moduleConflicts;
-  console.log("Drive commands in GamepadDiv:", driveCommands);
 
   return (
     <div style={{ padding: 2, marginTop: 2 }}>
@@ -32,7 +31,12 @@ export default function GamepadDiv({ name }) {
             control={
               <Switch
                 checked={moduleConflicts}
-                onChange={(e) => setDriveCommands((prev) => ({ ...prev, moduleConflicts: e.target.checked }))}
+                onChange={(e) =>
+                  setDriveCommands((prev) => ({
+                    ...prev,
+                    moduleConflicts: e.target.checked,
+                  }))
+                }
               />
             }
             label="Autofix Overrotation"
@@ -41,7 +45,8 @@ export default function GamepadDiv({ name }) {
       )}
       {gpList.length === 0 ? (
         <Typography sx={{ color: "black" }}>
-          No {name === "Drive" ? "Xbox" : "Logitech"} gamepads connected
+          No {name === "Drive" ? "Xbox/Playstation" : "Logitech Extreme"}{" "}
+          gamepads connected.
         </Typography>
       ) : (
         gpList.map((gp) => (

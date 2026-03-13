@@ -23,12 +23,6 @@ import MastCommandContext from "../contexts/MastCommandContext";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
-
-  // const [panAngles, setPanAngles] = useState({
-  //   px: 0,
-  //   py: 0,
-  // });
-  // const [panSpeed, setPanSpeed] = useState(30);
   const [errorMessage, setErrorMessage] = useState("");
 
   // list of gamepads and the connected one for drive and arm

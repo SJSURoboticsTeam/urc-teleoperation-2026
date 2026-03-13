@@ -1,16 +1,16 @@
 import { Typography } from "@mui/material";
-import InfoIcon from '@mui/icons-material/Info';
+import InfoIcon from "@mui/icons-material/Info";
 
-export default function StateMachine({ openPane, setOpenPane }) {
+export default function StateMachine({ openPane, setOpenPane, missionMode }) {
 
   return (
-      <div
-        onMouseEnter={() => setOpenPane("StateMachine")}
-        onMouseLeave={() => setOpenPane("None")}
-        // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
-      >
-        <span
+    <div
+      onMouseEnter={() => setOpenPane("StateMachine")}
+      onMouseLeave={() => setOpenPane("None")}
+      // needed to detect hover and placement of popup
+      style={{ position: "relative", cursor: "pointer", textAlign: "center" }}
+    >
+      <span
         style={{
           whiteSpace: "pre-wrap",
           display: "inline-flex",
@@ -19,7 +19,8 @@ export default function StateMachine({ openPane, setOpenPane }) {
           marginRight: 10,
         }}
       >
-        STATUS<InfoIcon sx={{fontSize: 35 }}/>
+        STATUS
+        <InfoIcon sx={{ fontSize: 35 }} />
       </span>
         
         {openPane == "StateMachine" && (
@@ -33,12 +34,13 @@ export default function StateMachine({ openPane, setOpenPane }) {
               border: "1px solid gray",
               padding: "10px",
               minWidth: "250px",
-              borderRadius: "4px"
             }}
           >
     
             <Typography  sx={{ color: 'black' }} variant = "h6">STATE MACHINE</Typography>
-            
+            <Typography  sx={{ color: 'black' }}>
+              Current Mode: {missionMode ?? "UNKNOWN"}
+            </Typography>
 
 
           </div>

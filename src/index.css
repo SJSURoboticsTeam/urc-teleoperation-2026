@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 /* small app-level resets if needed */
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
