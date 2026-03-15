@@ -10,13 +10,6 @@ from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-from uart_drive_serial import UartDriveSerial
-from drive_uart import (
-    read_drive_uart_loop,
-    send_drive_heartbeat,
-    register_drive_events,
-)
-
 # ex: drive has the canserial object,
 # while driveId holds the canopener name so frontend can sync with backend status
 
@@ -270,13 +263,20 @@ async def connect(sid,environ):
     # Start background CAN loop once
     if not drive_task_started:
         drive_task_started = True
-        sio.start_background_task(read_drive_can_loop,serial_ports)
+        #sio.start_background_task(read_drive_can_loop,serial_ports)
+        sio.start_background_task(read_drive_uart_loop, serial_ports)
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports)
-    if not can_error_message_started:
-        can_error_message_started = True
-        sio.start_background_task(send_drive_status_request,serial_ports)
+    #if not can_error_message_started:
+    #    can_error_message_started = True
+    #    sio.start_background_task(send_drive_status_request,serial_ports)
+    if not drive_heartbeat_started:
+        drive_heartbeat_started = True
+        sio.start_background_task(send_drive_heartbeat, serial_ports)
+    if not async_ssh_started:
+       async_ssh_started = True
+       #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
