@@ -29,3 +29,18 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upg
 #    'password': 'admin',
 #})
 app = socketio.ASGIApp(sio)
+
+# CAN bus
+print("Starting...")
+try:
+    # RX TESTER /dev/tty.usbserial-59760082211
+    # ROBOT /dev/tty.usbserial-59760073491
+    science_serial = CanSerial('/dev/tty.usbserial-59760082211')
+    print("Science connected.")
+except Exception as e:
+    print("FAILURE TO CONNECT SCIENCE: " + str(e))
+
+@sio.event
+async def scienceCommands(sid, data):
+    
+    

@@ -6,107 +6,127 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { Typography } from '@mui/material';
 export default function ScienceView () {
-    const variables = ["Repeat","Pause", "Complete"];
-    const sensors = ["Load", "Humidity", "Pressure"]
-    const [value, setValue] = useState(0);
-    const handleChange = (event, newValue) => {
-        setValue(newValue);
+    const [TabContent, setTabContent] = useState(0);
+    const tabNum = [0,1,2]
+    const handleChange = (event, newTabContent) => {
+        setTabContent(newTabContent);
     };
     return (
-        <div className="flex flex-row gap-6" >
-            <div className="flex flex-col" >
-                <Box sx = {{
-                    border:1, 
-                    borderColor: 'black',
-                    width: 250,
-                    height: 100,
-                    display: 'flex',
-                    justifyContent: 'left',
-                    padding: 1,
-                    mt: 5,
-                    mb: 5
+        <div className="flex flex-1 flex-col justify-center items-center h-full min-h-0" style={{ userSelect: 'none' }}>
+            <div className = 'flex flex-row justify-center items-center'>
+                <Button variant='contained'sx = {{ 
+                        border:1,
+                        borderColor: 'black',
+                        height: 40,
+                        width: 240,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: 2,
+                        ml: 1,
                 }}>
-                    Current Step:
-                </Box>
-                <div className="flex items-center" >
-                    {sensors.map((sensor) => (
-                        <Box sx = {{
-                            border: 1,
-                            borderColor: 'black',
-                            width: 75,
-                            height: 60,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            padding: 1,
-                            mt: 1,
-                            mr: 1
-                        }}>
-                            <Typography variant="body2"sx={{mt:4}}>
-                            {sensor} Data
-                            </Typography>
-                            <Typography variant="body1" sx={{mt:3}}>
-                            {sensor} 
-                            </Typography>
-                        </Box>
-                    ))}      
-                </div> 
-                <Box sx={{ width: 400, height: 200, mt: 5, border:1 }}>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', }}>
-                        <Tabs value={value} onChange={handleChange}>
-                            <Tab label="Item One"/>
-                            <Tab label="Item Two" />
-                        </Tabs>
-                    </Box>
-                    {value === 0 && <Box sx={{ p: 2 }}>Color Sensor</Box>}
-                    {value === 1 && <Box sx={{ p: 2 }}>Temperature Sensor</Box>}
-                </Box>
-            </div>     
-            <div className="flex flex-col items-center">
-                <div className="flex flex-row gap-4 mb-2">
-                    <Button variant='contained'sx = {{ 
-                                    border:1,
-                                    borderColor: 'black',
-                                    height: 40,
-                                    width: 100,
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    marginBottom: 15,
-                                    marginTop: 5,
-                                    ml:15
-                        }}>
-                            Step
-                    </Button>
-                    <Button variant='contained'sx = {{ 
-                            border:1,
-                            borderColor: 'black',
-                            width: 100,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            marginBottom: 15,
-                            marginTop: 5,
-                            marginLeft: 1,
-                    }}>
-                        Stop
-                    </Button>
-                </div>
-                <div className="flex flex-col gap-2 mb-2 items-center justify-center">
-                {variables.map((variable) => (
-                    <Button variant='contained' sx = {{ 
-                            border:1,
-                            borderColor: 'black',
-                            width: 100,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginTop: 1,
-                            ml:15
-                    }}>
-                        {variable}
+                    Start Site Investigation
                 </Button>
-               ))}
-                </div>
+                <Button variant='contained'sx = {{ 
+                                border:1,
+                                borderColor: 'black',
+                                height: 40,
+                                width: 100,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                marginBottom: 2,
+                                ml:1
+                    }}>
+                        Step
+                </Button>
+                <Button variant='contained'sx = {{ 
+                        border:1,
+                        borderColor: 'black',
+                        backgroundColor: 'red',
+                        height: 40,
+                        width: 100,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: 2,
+                        ml: 1,
+                        mr: 15
+                }}>
+                    E-Stop
+                </Button>
             </div>
+            <div className="steps">
+                <div className="step step-primary">Start</div>
+                <div className="step">Site 1</div>
+                <div className="step">Site 2</div>
+                <div className="step">Site 3</div>
+            </div>
+            <Box sx={{ width: 600, height: 400, mt: 5, }}>
+                <Box sx={{border: 1, borderRadius: 2, borderColor: 'divider'}}>
+                    <Tabs
+                        value={TabContent}
+                        onChange={handleChange}
+                        sx={{minHeight: 32, width: 'auto'}}
+                    >
+                        <Tab label="Site 1" sx={{fontSize: '0.75rem', minHeight: 32 }} />
+                        <Tab label="Site 2" sx={{fontSize: '0.75rem', minHeight: 32 }} />
+                        <Tab label="Site 3" sx={{fontSize: '0.75rem', minHeight: 32 }} />
+                    </Tabs>
+                </Box>
+                <Box sx={{ p: 2 }}>
+                    {tabNum.map((num) => (
+                        TabContent === num ? (
+                            <div key={num}>
+                            <div className="flex flex-row gap-4 mb-4">
+                                <div className="overflow-x-auto">
+                                <div className="steps">
+                                    <div className="step">Start</div>
+                                    <div className="step">Step 1</div>
+                                    <div className="step">Step 2</div>
+                                    <div className="step">Step 3</div>
+                                    <div className="step">Step 4</div>
+                                    <div className="step">Step 5</div>
+                                    <div className="step">Step 6</div>
+                                </div>
+                                </div>
+                                <Box sx={{ ml: 5, width: 200 }}> Coordinates: (_,_) <br/> Accuracy: ___ <br/> Range: ___ <br/> </Box>
+                                <Button variant="contained"
+                                    sx={{
+                                        border: 1,
+                                        borderColor: "black",
+                                        height: 35,
+                                        width: 100,
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        ml: 2,
+                                        fontSize: "0.75rem"
+                                    }}
+                                >
+                                    GET GNSS
+                                </Button>
+                            </div>
+                            <div className="flex flex-row gap-4 mb-4">
+                                <Box sx={{ 
+                                    width: 275, 
+                                    height: 250, 
+                                    border: 1, 
+                                    borderColor: "black",
+                                    mt: 1,
+                                    }}> 
+                                    graph 
+                                </Box>
+                                <Box sx={{ 
+                                    width: 275, 
+                                    height: 250, 
+                                    border: 1, 
+                                    borderColor: "black",
+                                    mt: 1,
+                                    ml: 2,
+                                    }}> 
+                                    table
+                                </Box>
+                            </div>
+                        </div> ) : null ))}
+                </Box>
+            </Box>     
         </div>
     )
 }
