@@ -16,6 +16,12 @@ from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_driv
 # ex: drive has the canserial object,
 # while driveId holds the canopener name so frontend can sync with backend status
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+from uart_drive_serial import UartDriveSerial
+from drive import (
+    read_drive_uart_loop,
+    send_drive_heartbeat,
+    register_drive_events,
+)
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
@@ -24,7 +30,8 @@ if (offline):
 else:
     print("Online mode, GPS ready... ")
 
-
+# ex: drive has the canserial object,
+# while driveId holds the canopener name so frontend can sync with backend status
 
 serial_ports = {
     "drive": None,
@@ -106,10 +113,7 @@ app = socketio.ASGIApp(sio)
 
 # CAN buses
 #print("Preparing for CAN...")
-print("Preparing for serial connections...")
-print("Preparing for CAN...")
-
-
+print("Preparing serial connections...")
 
 
 # =================== CAN connections ===================
@@ -143,6 +147,8 @@ async def connectDrive(sid,data):
         return("ERROR")
     print("Connecting to " + str(data))
     try:
+        #serial_ports["drive"] = CanSerial(data)
+        serial_ports["drive"] = UartDriveSerial(data)
         #serial_ports["drive"] = CanSerial(data)
         serial_ports["drive"] = UartDriveSerial(data)
         serial_ports["driveId"] = data
@@ -342,6 +348,8 @@ async def connect(sid,environ):
         drive_task_started = True
         #sio.start_background_task(read_drive_can_loop,serial_ports)
         sio.start_background_task(read_drive_uart_loop, serial_ports)
+        #sio.start_background_task(read_drive_can_loop,serial_ports)
+        sio.start_background_task(read_drive_uart_loop, serial_ports)
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports)
@@ -365,6 +373,13 @@ async def connect(sid,environ):
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request, serial_ports)
+        sio.start_background_task(read_arm_can_loop, serial_ports)
+    #if not can_error_message_started:
+    #    can_error_message_started = True
+    #    sio.start_background_task(send_drive_status_request,serial_ports)
+    if not drive_heartbeat_started:
+        drive_heartbeat_started = True
+        sio.start_background_task(send_drive_heartbeat, serial_ports)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)
