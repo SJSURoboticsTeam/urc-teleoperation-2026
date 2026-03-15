@@ -176,6 +176,15 @@ export default function ArmView({}) {
               </Grid>
             ))}
           </Grid>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={txon}
+                onChange={(e) => settxon(e.target.checked)}
+              />
+            }
+            label="AUTO TX"
+          />
         </Box>
       )}
     </Box>

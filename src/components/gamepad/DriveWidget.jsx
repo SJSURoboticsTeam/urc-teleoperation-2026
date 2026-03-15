@@ -48,30 +48,27 @@ export default function DriveManualInput({}) {
     panYRef.current = panY;
   }, [panY]);
 
+  const driveCommandsRef = useRef(driveCommands);
+  useEffect(() => {
+    driveCommandsRef.current = driveCommands;
+  }, [driveCommands]);
+
   // Emit drive commands
   useEffect(() => {
-    const interval = setInterval(() => {
-      // console.log("emitting drive commands");
-      if (!serverConnected || driveConnectedOne == null || !txon) return;
-      console.log("Starting drive command transmission");
-      socket.emit("driveCommands", {
-        xVel: sidewaysVelocity,
-        yVel: forwardsVelocity,
-        rotVel: rotationalVelocity,
-        moduleConflicts: Number(moduleConflicts),
-      });
-    }, FrameRateConstant);
+  const interval = setInterval(() => {
+    if (!serverConnected || driveConnectedOne == null || !txon) return;
+    console.log("Starting drive command transmission");
 
-    return () => clearInterval(interval);
-  }, [
-    sidewaysVelocity,
-    forwardsVelocity,
-    rotationalVelocity,
-    moduleConflicts,
-    serverConnected,
-    driveConnectedOne,
-    txon,
-  ]);
+    socket.emit("driveCommands", {
+      xVel: driveCommandsRef.current.sidewaysVelocity,
+      yVel: driveCommandsRef.current.forwardsVelocity,
+      rotVel: driveCommandsRef.current.rotationalVelocity,
+      moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
+    });
+  }, FrameRateConstant);
+
+  return () => clearInterval(interval);
+}, [serverConnected, driveConnectedOne, txon]);
 
   const handleHoming = () => socket.emit("driveHoming");
 
