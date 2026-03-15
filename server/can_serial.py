@@ -1,6 +1,17 @@
 import serial
 import time
 
+status_flags = {
+    0: "CAN receive FIFO queue full",
+    1: "CAN transmit FIFO queue full",
+    2: "Error warning (EI), see SJA1000 datasheet",
+    3: "Data Overrun (DOI), see SJA1000 datasheet",
+    4: "Not used.",
+    5: "Error Passive (EPI), see SJA1000 datasheet",
+    6: "Arbitration Lost (ALI), see SJA1000 datasheet",
+    7: "Bus Error (BEI), see SJA1000 datasheet"
+}
+
 class CanSerial(serial.Serial):
 
     def __init__(self, port):

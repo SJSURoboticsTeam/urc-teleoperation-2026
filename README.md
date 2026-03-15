@@ -3,6 +3,7 @@
 ### This tool acts as the user interface for operating SJSU Robotic's University Rover Challenge Mars rover remotely.
 
 ---
+
 ## Project Setup
 
 ### Prerequisites
@@ -14,6 +15,7 @@ Make sure you have the following installed on your machine:
 - Python3 and pip
 
 ### 1. Navigate to your desired folder and Clone the Repository
+
 ```bash
 git clone https://github.com/SJSURoboticsTeam/urc-teleoperation-2026.git
 cd urc-teleoperation-2026

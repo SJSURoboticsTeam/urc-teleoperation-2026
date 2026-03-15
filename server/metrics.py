@@ -9,10 +9,6 @@ from pathlib import Path
 
 numClients = 0
 
-
-
-
-
 # get data from secrets
 load_dotenv()  # loads from .env
 username = os.getenv("SSH_USER")
@@ -69,13 +65,15 @@ async def cpuloop(sio):
             ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
             
             model_path = Path("/proc/device-tree/model")
-            temp = -1
+            temp = -1 # placeholder, but returned if run on non-pi
             try:
+                # check if server is on rpi, and if so ask hardware for temp
                 if "Raspberry Pi" in model_path.read_text(errors="ignore").strip("\x00"):
                     with open("/sys/class/thermal/thermal_zone0/temp") as f:
                         temp = int(f.read()) / 1000.0
             except:
-                print("No RPI found, using dev mode ignore")
+                pass
+                # print("No RPI found, using dev mode ignore")
 
             data = {
                 'status': "GOOD",
@@ -91,17 +89,12 @@ async def cpuloop(sio):
         await asyncio.sleep(config.RpiPollingRate)
 
 
-def register_metrics(sio):
+def register_metric_events(sio):
     """Register metrics-related socket.io handlers.
 
     `sio` is expected to be a `socketio.AsyncServer` (async handlers are supported).
     """
     global numClients
-
-    @sio.event
-    async def init(sid):
-        global numClients
-        numClients = 0
 
     @sio.event
     async def getConnections(sid):

@@ -5,34 +5,44 @@ import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
 
 // Local imports
-//import "./App.css";
 import TopAppBar from "../components/ui/TopAppBar";
 import DriveComponents from "./DriveView";
 import ArmView from "./ArmView";
 import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
-import SplitView from "./SplitView"
-import ExtrasView from "./ExtrasView"
+import SplitView from "./SplitView";
+import ExtrasView from "./ExtrasView";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+
+// Context imports
+import ArmCommandContext from "../contexts/ArmCommandContext";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
   const [sidewaysVelocity, setSidewaysVelocity] = useState(0);
   const [forwardsVelocity, setForwardVelocity] = useState(0);
   const [rotationalVelocity, setRotationalVelocity] = useState(0);
-  const [panHeightVelocity, setPanHeightVelocity]=useState(0);
-  const [panWidthVelocity, setPanWidthVelocity]=useState(0);
-  const [armConnectedOne,setArmConnectedOne]=useState(null)
+  const [panAngles, setPanAngles] = useState({
+    px: 0,
+    py: 0,
+  });
+  const [panSpeed, setPanSpeed] = useState(30);
+  const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [driveConnectedOne, setDriveConnectedOne] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [effector,setEffector]=useState(0);
-  const [elbow,setElbow]=useState(0);
-  const [shoulder,setShoulder]=useState(0);
-  const [pitch,setPitch]=useState(0);
-  const [track,setTrack]=useState(0);
-  const [roll, setRoll]=useState(0);
+  const [armCommands, setArmCommands] = useState({
+    track: 0,
+    shoulder: 0,
+    elbow: 0,
+    pitch: 0,
+    roll: 0,
+    clamp: 0,
+  });
 
-  const [moduleConflicts,setModuleConflicts]=useState(0)
-  const [camsVisibility, setcamsVisibility] = useState(true)
+  const [moduleConflicts, setModuleConflicts] = useState(1);
+  const [camsVisibility, setcamsVisibility] = useState(true);
 
   const handleVelocitiesChange = ({ lx, ly, rx }) => {
     setSidewaysVelocity(lx);
@@ -40,64 +50,131 @@ function App() {
     setRotationalVelocity(rx);
     // console.log(lx,ly,rx)
   };
-  const handlePanVelocitiesChange=({px,py})=>{
-    setPanHeightVelocity(py);
-    setPanWidthVelocity(px);
-  }
 
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
 
-  const handleArmVelocitiesChange = ({Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne}) =>{
-    // console.log(Effector,Elbow,Shoulder,Roll,Pitch,Track, armConnectedOne)
-    setArmConnectedOne(armConnectedOne)
-    setEffector(Effector)
-    setElbow(Elbow)
-    setPitch(Pitch)
-    setRoll(Roll)
-    setTrack(Track)
-    setShoulder(Shoulder)
-    //console.log(armConnectedOne)
-    //console.log(effector,pitch,roll,elbow,shoulder,track)
-  }
-  
-
-
+    setErrorMessage("");
+  };
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
       case "ArmView":
-        return <SplitView CurrentView={ <ArmView effector={effector} pitch={pitch} roll={roll} shoulder={shoulder} elbow={elbow} track={track} armConnectedOne={armConnectedOne}/> } showCameras={camsVisibility} />;
+        return (
+          <SplitView
+            CurrentView={<ArmView armConnectedOne={armConnectedOne} />}
+            showCameras={camsVisibility}
+          />
+        );
       case "DriveView":
-        return <SplitView CurrentView={ <DriveComponents moduleConflicts={moduleConflicts} sidewaysVelocity={sidewaysVelocity} forwardsVelocity={forwardsVelocity} rotationalVelocity={rotationalVelocity} panHeightVelocity={panHeightVelocity}  panWidthVelocity={panWidthVelocity} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} /> } showCameras={camsVisibility} />;
+        return (
+          <SplitView
+            CurrentView={
+              <DriveComponents
+                panSpeed={panSpeed}
+                setPanSpeed={setPanSpeed}
+                panAngles={panAngles}
+                moduleConflicts={moduleConflicts}
+                sidewaysVelocity={sidewaysVelocity}
+                forwardsVelocity={forwardsVelocity}
+                rotationalVelocity={rotationalVelocity}
+                driveConnectedOne={driveConnectedOne}
+                setDriveConnectedOne={setDriveConnectedOne}
+              />
+            }
+            showCameras={camsVisibility}
+          />
+        );
       case "ExtrasView":
-        return <SplitView CurrentView={<ExtrasView /> } showCameras={camsVisibility} />;
+        return (
+          <SplitView
+            CurrentView={<ExtrasView />}
+            showCameras={camsVisibility}
+          />
+        );
       case "ScienceView":
-        return <SplitView CurrentView={<ScienceView /> } showCameras={camsVisibility} />;
+        return (
+          <SplitView
+            CurrentView={<ScienceView />}
+            showCameras={camsVisibility}
+          />
+        );
       case "AutonomyView":
-        return <SplitView CurrentView={<AutonomyView/> } showCameras={camsVisibility} />;
+        return (
+          <SplitView
+            CurrentView={<AutonomyView />}
+            showCameras={camsVisibility}
+          />
+        );
       default:
         return <div>Select a view</div>;
     }
   }
 
   return (
-    <Box sx={{ display: "flex", flexGrow: 1, flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      <CssBaseline />{/* Normalizes styles */}
-      <TopAppBar setModuleConflicts={setModuleConflicts} currentView={currentView} setCurrentView={setCurrentView} onVelocitiesChange={handleVelocitiesChange} onArmVelocitiesChange={handleArmVelocitiesChange} onPanVelocitiesChange={handlePanVelocitiesChange} driveConnectedOne={driveConnectedOne} setDriveConnectedOne={setDriveConnectedOne} camsVisibility={camsVisibility} setcamsVisibility={setcamsVisibility}/>
-      
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 2,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          minHeight: 0,
-          marginTop: '64px'
-        }}
+    <Box
+      sx={{
+        display: "flex",
+        flexGrow: 1,
+        flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden",
+      }}
+    >
+      {/*!!errorMessage converts string to clean boolean (ie if theres a message show it */}
+      <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={6000}
+        onClose={handleClose}
       >
-        {renderView()}
-      </Box>
+        <Alert
+          onClose={handleClose}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          Error: {errorMessage}
+        </Alert>
+      </Snackbar>
+      <ArmCommandContext
+        armCommands={armCommands}
+        setArmCommands={setArmCommands}
+      >
+        <CssBaseline />
+        {/* Normalizes styles */}
+        <TopAppBar
+          setModuleConflicts={setModuleConflicts}
+          moduleConflicts={moduleConflicts}
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          onVelocitiesChange={handleVelocitiesChange}
+          driveConnectedOne={driveConnectedOne}
+          setDriveConnectedOne={setDriveConnectedOne}
+          camsVisibility={camsVisibility}
+          setcamsVisibility={setcamsVisibility}
+          setErrorMessage={setErrorMessage}
+          errorMessage={errorMessage}
+          setPanAngles={setPanAngles}
+          panSpeed={panSpeed}
+        />
+
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            minHeight: 0,
+            marginTop: "60px",
+          }}
+        >
+          {renderView()}
+        </Box>
+      </ArmCommandContext>
     </Box>
   );
 }
