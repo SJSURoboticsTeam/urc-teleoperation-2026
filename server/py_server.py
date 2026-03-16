@@ -10,7 +10,8 @@ from metrics import asyncsshloop, cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-
+# ex: drive has the canserial object,
+# while driveId holds the canopener name so frontend can sync with backend status
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
@@ -36,6 +37,7 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
+    #drive
     try:
         if serial_ports["drive"]:
             serial_ports["drive"].close()
@@ -45,14 +47,25 @@ def shutdown():
     except Exception:
         print("DRIVE WAS NOT DISCONNECTED!!!")
         pass
+    #arm
     try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
+        if serial_ports["arm"]:
+            serial_ports["arm"].close()
             print("Arm serial closed.")
         else:
             print("Arm was never connected.")
     except Exception:
         print("ARM WAS NOT DISCONNECTED!!!")
+        pass
+    #science
+    try:
+        if serial_ports["science"]:
+            serial_ports["science"].close()
+            print("Science serial closed.")
+        else:
+            print("Science was never connected.")
+    except Exception:
+        print("SCIENCE WAS NOT DISCONNECTED!!!")
         pass
     sys.exit(0)
 # =================== Setup, CAN connections ===================

@@ -8,7 +8,9 @@ const host =
     : window.location.hostname;
 
 const URL = `http://${host}:4000`;
-export const socket = io(URL);
+export const socket = io(URL, {
+  autoConnect: false, // <-- prevents immediate connection
+});
 
 export function useSocketStatus() {
   const [isConnected, setIsConnected] = useState(socket.connected);

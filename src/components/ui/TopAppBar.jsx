@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -20,25 +20,12 @@ import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
 
 export default function TopAppBar({
-  moduleConflicts,
   setCurrentView,
-  onVelocitiesChange,
-  onArmVelocitiesChange,
   currentView,
-  setModuleConflicts,
-  driveConnectedOne,
-  setDriveConnectedOne,
   camsVisibility,
   setcamsVisibility,
-  panAngles,
-  setPanAngles,
-  panSpeed,
-  setErrorMessage,
-  errorMessage,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [driveGamepads, setDriveGamepads] = useState({});
-  const [armGamepads, setArmGamepads] = useState({});
   const [openPane, setOpenPane] = useState("None");
 
   const toggleDrawer = (open) => () => {
@@ -46,39 +33,6 @@ export default function TopAppBar({
   };
 
   const handleViewChange = (view) => setCurrentView(view);
-
-  useEffect(() => {
-    const handleConnect = (e) => {
-      const gp = e.gamepad;
-      // check if a gamepad is a drive or arm controller based on id containing "Standard" or "Extreme"
-      if (/STANDARD/i.test(gp.id)) {
-        setDriveGamepads((prev) => ({ ...prev, [gp.index]: gp }));
-      } else if (/EXTREME/i.test(gp.id)) {
-        setArmGamepads((prev) => ({ ...prev, [gp.index]: gp }));
-      }
-    };
-
-    const handleDisconnect = (e) => {
-      setDriveGamepads((prev) => {
-        const copy = { ...prev };
-        delete copy[e.gamepad.index];
-        return copy;
-      });
-      setArmGamepads((prev) => {
-        const copy = { ...prev };
-        delete copy[e.gamepad.index];
-        return copy;
-      });
-    };
-
-    window.addEventListener("gamepadconnected", handleConnect);
-    window.addEventListener("gamepaddisconnected", handleDisconnect);
-
-    return () => {
-      window.removeEventListener("gamepadconnected", handleConnect);
-      window.removeEventListener("gamepaddisconnected", handleDisconnect);
-    };
-  }, []);
 
   return (
     <>
@@ -143,29 +97,13 @@ export default function TopAppBar({
           <div style={{ flexGrow: 1 }} />
 
           {/* Gamepad connection status and selection panel */}
-
           <GamepadPanel
             openPane={openPane}
             setOpenPane={setOpenPane}
             name="Drive"
-            setModuleConflicts={setModuleConflicts}
-            onDriveVelocitiesChange={onVelocitiesChange}
-            driveGamepads={driveGamepads}
-            armGamepads={armGamepads}
             currentView={currentView}
-            driveConnectedOne={driveConnectedOne}
-            setDriveConnectedOne={setDriveConnectedOne}
-            moduleConflicts={moduleConflicts}
-            panAngles={panAngles}
-            panSpeed={panSpeed}
-            setPanAngles={setPanAngles}
           />
-          <NavConnectionStatus
-            openPane={openPane}
-            setOpenPane={setOpenPane}
-            setErrorMessage={setErrorMessage}
-            errorMessage={errorMessage}
-          />
+          <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />
           <StateMachine openPane={openPane} setOpenPane={setOpenPane} />
 
