@@ -49,7 +49,7 @@ def register_drive_events(sio,serial_ports):
             can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
 
             # serial_ports["drive"].write is blocking, run in thread
-            # await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
             print(f'[{sid}] Drive command sent: {can_msg}')
             global can_msg_count
             can_msg_count = can_msg_count + 1
