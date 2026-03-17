@@ -27,12 +27,13 @@ export default function NavConnectionStatus({ openPane, setOpenPane,setErrorMess
       driveState : "idle", // idle, connecting, active
       armState : "idle", // idle, connecting, active
       scienceState : "idle", // idle, connecting, active
+      gpsState : "idle", // idle, connecting, active
       loading: true, // lock buttons, dropdowns when refreshing can data
       canIds : [], // array with every possible serial device
       driveId: "disconnect", // selected can id in dropdown or disconnect 
       armId: "disconnect", // selected can id in dropdown or disconnect
       scienceId: "disconnect", // selected can id in dropdown or disconnect
-
+      gpsId: "COM7" 
     })
 
 
@@ -129,13 +130,15 @@ function requestCanInfo() {
       driveId: data["driveId"],
       armId: data["armId"],
       scienceId: data["scienceId"],
+      gpsId: data["gpsId"],
       // assignment if connected or not by text
       driveState: ( data["driveId"] !== "disconnect") ?  "active" : "idle",
       armState: ( data["armId"] !== "disconnect") ?  "active" : "idle",
       scienceState: ( data["scienceId"] !== "disconnect") ?  "active" : "idle",
+      gpsState: ( data["gpsId"] !== "disconnect") ?  "active" : "idle",
       loading: false
     }));
-    });
+  });
 }
 
 function connectDrive() {
@@ -256,17 +259,59 @@ function disconnectScience() {
   })
 
 }
+
+function connectGPS() {
+      setcanState( (prev) => ({
+      ...prev,
+      gpsState: "connecting"
+    }));
+    console.log("Connecting GPS, Sending id " + canState.gpsId)
+    socket.emit("connectGPS", canState.gpsId, (response) => {
+      console.log("RESPONSE:" + response);
+      if(response === "OK") {
+            setcanState( (prev) => ({
+              ...prev,
+              gpsState: "active"
+            }));
+      } else {
+      setErrorMessage("GPS didn't connect, auto-updating to current state");
+      requestCanInfo();
+      }
+  })
+}
+function disconnectGPS() {
+      setcanState( (prev) => ({
+      ...prev,
+      gpsState: "connecting"
+    }));
+    console.log("Disconnecting GPS");
+    socket.emit("disconnectGPS", (response) => {
+    console.log("RESPONSE:" + response);
+    if(response === "OK") {
+          setcanState( (prev) => ({
+            ...prev,
+            gpsState: "idle"
+          }));
+    } else {
+          setErrorMessage("GPS didn't disconnect, auto-updating to current state");
+          requestCanInfo();
+    }
+  })
+}
 function disconnectAll() {
   if(canState.driveState != "idle"){
-  disconnectDrive();
-}
-if(canState.armState != "idle"){
-  disconnectArm();
-}
-if(canState.scienceState != "idle"){
-  disconnectScience();
-}
-console.log("ALl have been disconnected.");
+    disconnectDrive();
+  }
+  if(canState.armState != "idle"){
+    disconnectArm();
+  }
+  if(canState.scienceState != "idle"){
+    disconnectScience();
+  }
+  if(canState.gpsState != "idle"){ 
+    disconnectGPS();
+  }
+  console.log("ALl have been disconnected.");
 }
 
   useEffect( () => {
