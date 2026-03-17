@@ -1,55 +1,90 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@mui/material";
 import GamepadDiv from "./GamepadManager";
-import { FrameRateConstant } from "./FrameRateConstant";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import { green, red } from "@mui/material/colors";
-import { useArmCommands } from "../../contexts/ArmCommandContext";
+import { green } from "@mui/material/colors";
+import { red } from "@mui/material/colors";
 
-//usecontext
-//move armview into own component in arm folder
-//socket.emit for manual
-//prettier formatter
-export default function GamepadPanel({
-  driveGamepads,
-  onDriveVelocitiesChange,
-  armGamepads,
-  currentView,
-  setModuleConflicts,
-  moduleConflicts,
-  panAngles,
-  panSpeed,
-  setPanAngles,
-  driveConnectedOne,
-  setDriveConnectedOne,
-}) {
+import { useArmCommands } from "../../contexts/ArmCommandContext";
+import { useDriveCommands } from "../../contexts/DriveCommandContext";
+import { useConnectedGamepads } from "../../contexts/GamepadContext";
+import { useMastCommands } from "../../contexts/MastCommandContext";
+
+// Handles gamepad connections and state
+export default function GamepadPanel({ currentView }) {
   // general vars
   const [open, setOpen] = useState(false);
-  const [armConnectedOne, setArmConnectedOne] = useState(null);
   const [page, setPage] = useState("Drive");
+  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
-  const [driveVelocities, setDriveVelocities] = useState({
-    lx: 0,
-    ly: 0,
-    rx: 0,
-  });
+  const [driveCommands, setDriveCommands] = useDriveCommands();
+  const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
   // pan-tilt
+  const [mastCommands, setMastCommands] = useMastCommands(); // includes pan angles and speed
   const panAnimationIdRef = useRef(null);
   const panAnglesRef = useRef({ px: 0, py: 0 });
 
   // arm
   const [armCommands, setArmCommands] = useArmCommands();
-  // const [armVelocities, setArmVelocities] = useState({
-  //   Elbow: 0,
-  //   Shoulder: 0,
-  //   Track: 0,
-  //   Pitch: 0,
-  //   Roll: 0,
-  //   Effector: 0,
-  // });
+  const armConnectedOne = connectedGamepads.arm;
+  const armAnimationIdRef = useRef(null);
+
+  const gpList =
+    page === "Drive"
+      ? Object.values(connectedGamepads?.driveGPList || {})
+      : Object.values(connectedGamepads?.armGPList || {});
+
+  // setters that update only the selected index in the shared context
+  const setDriveConnectedOne = (index) =>
+    setConnectedGamepads((prev) => ({ ...prev, drive: index }));
+  const setArmConnectedOne = (index) =>
+    setConnectedGamepads((prev) => ({ ...prev, arm: index }));
+
+  // Handle gamepad connections and disconnections
+  useEffect(() => {
+    const handleConnect = (e) => {
+      const gp = e.gamepad;
+      if (/STANDARD/i.test(gp.id)) {
+        setConnectedGamepads((prev) => ({
+          ...prev,
+          driveGPList: { ...prev.driveGPList, [gp.index]: gp },
+        }));
+      } else if (/EXTREME/i.test(gp.id)) {
+        setConnectedGamepads((prev) => ({
+          ...prev,
+          armGPList: { ...prev.armGPList, [gp.index]: gp },
+        }));
+      }
+    };
+
+    // ?. optional chaining: if undefined, yields undefined instead of throwing
+    // _ : binds to gpIndex as a throw-away variable
+    // rest: collects the remaining properties into a new object
+    const handleDisconnect = (e) => {
+      const gpIndex = e.gamepad.index;
+      setConnectedGamepads((prev) => {
+        if (prev.driveGPList?.[gpIndex]) {
+          const { [gpIndex]: _, ...rest } = prev.driveGPList;
+          return { ...prev, driveGPList: rest };
+        } else if (prev.armGPList?.[gpIndex]) {
+          const { [gpIndex]: _, ...rest } = prev.armGPList;
+          return { ...prev, armGPList: rest };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener("gamepadconnected", handleConnect);
+    window.addEventListener("gamepaddisconnected", handleDisconnect);
+
+    return () => {
+      window.removeEventListener("gamepadconnected", handleConnect);
+      window.removeEventListener("gamepaddisconnected", handleDisconnect);
+    };
+  }, [setConnectedGamepads]);
 
   useEffect(() => {
     const deadZone = (v, threshold = 0.15) =>
@@ -57,28 +92,29 @@ export default function GamepadPanel({
 
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
-      if (gp) {
-        const newVel = {
-          lx: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
-          ly: deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
-          rx: deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
-        };
-        //console.log(newVel.lx);
-        setDriveVelocities((prev) => {
-          const changed =
-            prev.lx !== newVel.lx ||
-            prev.ly !== newVel.ly ||
-            prev.rx !== newVel.rx;
+      if (!gp) return;
 
-          if (changed) {
-            onDriveVelocitiesChange?.(newVel);
-            return newVel;
-          }
+      const next = {
+        sidewaysVelocity: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
+        forwardsVelocity:
+          deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
+        rotationalVelocity:
+          deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
+      };
 
-          return prev;
-        });
-      }
+      setDriveCommands((prev) => {
+        const changed =
+          prev.sidewaysVelocity !== next.sidewaysVelocity ||
+          prev.forwardsVelocity !== next.forwardsVelocity ||
+          prev.rotationalVelocity !== next.rotationalVelocity;
+
+        if (!changed) return prev;
+
+        // preserve moduleConflicts (and anything else you may add later)
+        return { ...prev, ...next };
+      });
     };
+
     if (driveConnectedOne != null) {
       const loop = () => {
         pollAxes();
@@ -86,21 +122,24 @@ export default function GamepadPanel({
       };
       driveAnimationIdRef.current = requestAnimationFrame(loop);
     } else {
-      const zero = { lx: 0, ly: 0, rx: 0 };
-      setDriveVelocities(zero);
-      onDriveVelocitiesChange?.(zero);
+      // no drive pad selected -> zero the velocities, preserve moduleConflicts
+      setDriveCommands((prev) => ({
+        ...prev,
+        sidewaysVelocity: 0,
+        forwardsVelocity: 0,
+        rotationalVelocity: 0,
+      }));
     }
+
     return () => {
       if (driveAnimationIdRef.current) {
         cancelAnimationFrame(driveAnimationIdRef.current);
+        driveAnimationIdRef.current = null;
       }
     };
-  }, [driveConnectedOne, onDriveVelocitiesChange]);
-
-  // pan controller polling for drive
+  }, [driveConnectedOne, setDriveCommands]);
 
   const lastTimeRef = useRef(null);
-
   useEffect(() => {
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
@@ -120,16 +159,20 @@ export default function GamepadPanel({
         };
 
         // integrate in ref (real-time domain)
-        panAnglesRef.current.px += newVel.px * deltaTime * panSpeed;
-        panAnglesRef.current.py += newVel.py * deltaTime * panSpeed;
+        const speed = mastCommands.panSpeed ?? 0;
+        panAnglesRef.current.px += newVel.px * deltaTime * speed;
+        panAnglesRef.current.py += newVel.py * deltaTime * speed;
 
         panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
         panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
 
-        // publish to React (UI domain)
-        setPanAngles({
-          px: Math.round(panAnglesRef.current.px),
-          py: Math.round(panAnglesRef.current.py),
+        // publish to context (UI domain)
+        const px = Math.round(panAnglesRef.current.px);
+        const py = Math.round(panAnglesRef.current.py);
+        setMastCommands((prev) => {
+          if (!prev) return { px, py, panSpeed: speed };
+          if (prev.px === px && prev.py === py) return prev;
+          return { ...prev, px, py };
         });
       }
 
@@ -143,21 +186,12 @@ export default function GamepadPanel({
       panAnimationIdRef.current = null;
       lastTimeRef.current = null;
     };
-  }, [driveConnectedOne, panSpeed, setPanAngles]);
+  }, [driveConnectedOne, mastCommands?.panSpeed, setMastCommands]);
 
-  // arm polling
+  // Polling for arm gamepad input
   const [armManualDisconnect, setArmManualDisconnect] = useState(false);
   useEffect(() => {
     if (armManualDisconnect || armConnectedOne == null) {
-      // onArmVelocitiesChange?.({
-      //   Elbow: 0,
-      //   Shoulder: 0,
-      //   Track: 0,
-      //   Pitch: 0,
-      //   Roll: 0,
-      //   Effector: 0,
-      //   armConnectedOne,
-      // });
       setArmCommands({
         track: 0,
         shoulder: 0,
@@ -169,53 +203,57 @@ export default function GamepadPanel({
       return;
     }
 
+    let prevVal = {
+      elbow: 0,
+      shoulder: 0,
+      track: 0,
+      pitch: 0,
+      roll: 0,
+      clamp: 0,
+    };
+
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
       if (gp) {
-        /**
-         * Effector,Elbow,Shoulder,Track,Pitch,Roll, armConnectedOne
-         */
-        // rand mapping to test socket.emit and arm/drive ui
+        const clean = (v, deadzone = 0.08) => {
+          if (Math.abs(v) < deadzone) return 0;
+          return Math.round(v * 100) / 100;
+        };
+
         const newVal = {
-          Elbow: gp.axes[9],
-          Shoulder: gp.axes[1],
-          Track: gp.axes[3],
-          Pitch: gp.axes[0],
-          Roll: gp.axes[5],
-          Clamp: gp.axes[6],
-          armConnectedOne,
+          elbow: clean(gp.axes[9]),
+          shoulder: clean(gp.axes[1]),
+          track: clean(gp.axes[3]),
+          pitch: clean(gp.axes[0]),
+          roll: clean(gp.axes[5]),
+          clamp: clean(gp.axes[6]),
         };
 
         const changed = Object.keys(newVal).some(
-          (key) => newVal[key] !== prev[key],
+          (key) => newVal[key] !== prevVal[key],
         );
         if (changed) {
-          setArmCommands?.({ ...newVal, armConnectedOne });
-          return newVal;
+          setArmCommands(newVal);
+          prevVal = newVal;
         }
-        setArmCommands?.({ ...prev, armConnectedOne });
-        return prev;
       }
+
+      armAnimationIdRef.current = requestAnimationFrame(pollAxes);
     };
-    const intervalId = setInterval(pollAxes, FrameRateConstant);
-    console.log(`Polling arm gamepad every ${FrameRateConstant}ms`);
-    return () => clearInterval(intervalId);
-  }, [armConnectedOne, armManualDisconnect]);
 
-  //console.log(driveGamepads) //dbg
-  const gpList = Object.values(driveGamepads);
-  //console.log(gpList); //dbg
+    armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+    return () => {
+      cancelAnimationFrame(armAnimationIdRef.current);
+      armAnimationIdRef.current = null;
+    };
+  }, [armConnectedOne, setArmCommands]);
 
-  //console.log(armGamepads) //dbg
-  const armList = Object.values(armGamepads);
-  //console.log(armList); //dbg
-
+  // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
-
   useEffect(() => {
     if (currentView === "DriveView") {
       setInfo(
-        driveConnectedOne != null ? (
+        driveConnectedOne !== null ? (
           <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
           <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
@@ -223,7 +261,7 @@ export default function GamepadPanel({
       );
     } else if (currentView === "ArmView") {
       setInfo(
-        armConnectedOne != null ? (
+        armConnectedOne !== null ? (
           <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
         ) : (
           <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
@@ -232,7 +270,7 @@ export default function GamepadPanel({
     } else {
       setInfo(""); // empty string if neither view
     }
-  }, [currentView, driveConnectedOne, armConnectedOne]);
+  }, [currentView, driveConnectedOne, connectedGamepads.arm]);
 
   return (
     <div
@@ -298,25 +336,7 @@ export default function GamepadPanel({
           >
             Arm
           </Button>
-          {page === "Drive" ? (
-            <GamepadDiv
-              setModuleConflicts={setModuleConflicts}
-              gpList={gpList}
-              connectedOne={driveConnectedOne}
-              setConnectedOne={setDriveConnectedOne}
-              moduleConflicts={moduleConflicts}
-              name={page}
-            />
-          ) : (
-            <GamepadDiv
-              setArmManualDisconnect={setArmManualDisconnect}
-              gpList={armList}
-              connectedOne={armConnectedOne}
-              setConnectedOne={setArmConnectedOne}
-              moduleConflicts={moduleConflicts}
-              name={page}
-            />
-          )}
+          <GamepadDiv name={page} />
         </div>
       )}
     </div>

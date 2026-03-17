@@ -1,82 +1,74 @@
 import { socket } from "../socket.io/socket";
 import { useState, useEffect } from "react";
-import Typography from '@mui/material/Typography';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import { useSocketStatus } from '../socket.io/socket';
-
+import Typography from "@mui/material/Typography";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
+import { useSocketStatus } from "../socket.io/socket";
 
 export default function Metrics({ openPane, setOpenPane }) {
-  
-    const isConnected = useSocketStatus();
-    // antenna telemtry
-    const[antenna, setantennadata] = useState({
-      status: "NO DATA YET",
-      roverRSSI : null,
-      txrate : null,
-      rxrate: null,
-      freq: null,
-      freqw: null
-    })
-    
-    const[rpidata, setrpidata] = useState({
-      status: "NO DATA YET",
-      cpupercent : null,
-      rampercent : null,
-      cputemp: null,
-    })
+  const isConnected = useSocketStatus();
+  // antenna telemtry
+  const [antenna, setantennadata] = useState({
+    status: "NO DATA YET",
+    roverRSSI: null,
+    txrate: null,
+    rxrate: null,
+    freq: null,
+    freqw: null,
+  });
 
-  
+  const [rpidata, setrpidata] = useState({
+    status: "NO DATA YET",
+    cpupercent: null,
+    rampercent: null,
+    cputemp: null,
+  });
 
-
-
-useEffect(() => {
-  const handler = (data) => {
-    // console.log("antenna data:", data);
+  useEffect(() => {
+    const handler = (data) => {
+      // console.log("antenna data:", data);
       setantennadata({
         status: data.status,
         roverRSSI: data.dbm,
         txrate: data.txrate,
         rxrate: data.rxrate,
         freq: data.freq,
-        freqw: data.freqwidth
+        freqw: data.freqwidth,
       });
- 
-  };
+    };
 
-  socket.on("antennastats", handler);
+    socket.on("antennastats", handler);
 
-  return () => {
-    socket.off("antennastats", handler); // cleanup so no duplicate listeners
-  };
-}, []);
+    return () => {
+      socket.off("antennastats", handler); // cleanup so no duplicate listeners
+    };
+  }, []);
 
-useEffect(() => {
-  const handler = (data) => {
-    console.log("cpu data:", data);
+  useEffect(() => {
+    const handler = (data) => {
+      console.log("cpu data:", data);
       setrpidata({
         status: data.status,
         cpupercent: data.cpupercent,
         rampercent: data.rampercent,
-        cputemp: data.cputemp
+        cputemp: data.cputemp,
       });
-  };
+    };
 
-  socket.on("cpustats", handler);
+    socket.on("cpustats", handler);
 
-  return () => {
-    socket.off("cpustats", handler); // cleanup so no duplicate listeners
-  };
-}, []);
-
+    return () => {
+      socket.off("cpustats", handler); // cleanup so no duplicate listeners
+    };
+  }, []);
 
   return (
-      <div
-        onMouseEnter={() => setOpenPane("Metrics")}
-        onMouseLeave={() => setOpenPane("None")}
-        // needed to detect hover and placement of popup
-        style={{ position: "relative", cursor: "pointer", textAlign:'center'}}
-      >
-        <span
+    <div
+      onMouseEnter={() => setOpenPane("Metrics")}
+      onMouseLeave={() => setOpenPane("None")}
+      // needed to detect hover and placement of popup
+      style={{ position: "relative", cursor: "pointer", textAlign: "center" }}
+    >
+      <span
         style={{
           whiteSpace: "pre-wrap",
           display: "inline-flex",
@@ -85,65 +77,89 @@ useEffect(() => {
           marginRight: 10,
         }}
       >
-        METRICS<AnalyticsIcon sx={{ fontSize: 35 }} />
+        METRICS
+        <AnalyticsIcon sx={{ fontSize: 35 }} />
       </span>
-        
-        {openPane == "Metrics" && (
-          <div
-            style={{
-              position: "absolute",
-              top: "100%",
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "white",
-              border: "1px solid gray",
-              padding: "10px",
-              minWidth: "250px",
-              borderRadius: "4px"
-            }}
-          >
-    
-            {isConnected ? (
-              <div>
-            <Typography  sx={{ color: 'black' }} variant = "h6">ROVER ANTENNA</Typography>
-            
-            {(antenna.status === "GOOD") ? (
-              <div>
-            <Typography  sx={{ color: 'black' }}>Signal Strength: {antenna.roverRSSI} dBm</Typography>
-            <Typography  sx={{ color: 'black' }}>TX Speed: {antenna.txrate} Mbps</Typography>
-            <Typography  sx={{ color: 'black' }}>RX Speed: {antenna.rxrate} Mbps</Typography>
-            <Typography  sx={{ color: 'black' }}>Frequency: {antenna.freq} MHz</Typography>
-            <Typography  sx={{ color: 'black' }}>Frequency Width: {antenna.freqw} MHz</Typography>
-              </div>
-            ) : (<Typography  sx={{ color: 'black' }}>{antenna.status} </Typography>)}
-              
+
+      {openPane == "Metrics" && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "white",
+            border: "1px solid gray",
+            padding: "10px",
+            minWidth: "250px",
+            borderRadius: "4px",
+          }}
+        >
+          {isConnected ? (
+            <div>
+              <Typography sx={{ color: "black" }} variant="h6">
+                ROVER ANTENNA
+              </Typography>
+
+              {antenna.status === "GOOD" ? (
+                <div>
+                  <Typography sx={{ color: "black" }}>
+                    Signal Strength: {antenna.roverRSSI} dBm
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    TX Speed: {antenna.txrate} Mbps
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    RX Speed: {antenna.rxrate} Mbps
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    Frequency: {antenna.freq} MHz
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    Frequency Width: {antenna.freqw} MHz
+                  </Typography>
+                </div>
+              ) : (
+                <Typography sx={{ color: "black" }}>
+                  {antenna.status}{" "}
+                </Typography>
+              )}
+
               <hr className="divider" />
-              <Typography  sx={{ color: 'black' }} variant = "h6">RPI STATUS</Typography>
+              <Typography sx={{ color: "black" }} variant="h6">
+                RPI STATUS
+              </Typography>
 
+              {rpidata.status === "GOOD" ? (
+                <div>
+                  <Typography sx={{ color: "black" }}>
+                    Cpu Utilization: {rpidata.cpupercent}%
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    RAM Utilization: {rpidata.rampercent}%
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    Cpu Temp: {rpidata.cputemp}°C
+                  </Typography>
+                </div>
+              ) : (
+                <Typography sx={{ color: "black" }}>
+                  {rpidata.status}{" "}
+                </Typography>
+              )}
 
-              {(rpidata.status === "GOOD") ? (
-              <div>
-            <Typography  sx={{ color: 'black' }}>Cpu Utilization: {rpidata.cpupercent}%</Typography>
-            <Typography  sx={{ color: 'black' }}>RAM Utilization: {rpidata.rampercent}%</Typography>
-            <Typography  sx={{ color: 'black' }}>Cpu Temp: {rpidata.cputemp}°C</Typography>
-              </div>
-            ) : (<Typography  sx={{ color: 'black' }}>{rpidata.status} </Typography>)}
-              
               <hr className="divider" />
-              <Typography  sx={{ color: 'black' }} variant = "h6">ROBOT</Typography>
-
-
-              
-              
-              
-              </div>
-            ):
-              <Typography  sx={{ color: 'black' }}>You aren't connected to the server! :(</Typography>}
-            
-
-
-          </div>
-        )}
-      </div>
+              <Typography sx={{ color: "black" }} variant="h6">
+                ROBOT
+              </Typography>
+            </div>
+          ) : (
+            <Typography sx={{ color: "black" }}>
+              You aren't connected to the server! :(
+            </Typography>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

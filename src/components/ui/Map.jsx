@@ -18,14 +18,16 @@ export default function Map() {
     //const target = [-121.881194, 37.336847]; // San Jose area 
     //const target = [-110.768401, 38.372207]; // Utah
     // https://www.gps-coordinates.net/ for coordinates
-    const urls = (import.meta.env.MODE === "production" || import.meta.env.MODE === "prod")
-    ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
-    : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+
+    const urls =
+      import.meta.env.MODE === "production" || import.meta.env.MODE === "prod"
+        ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
+        : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
     // Use local tileserver in production, demo for off-network development
 
     if (mapRef.current) return;
 
-  const container = mapContainer.current;
+    const container = mapContainer.current;
     if (!container) return;
 
     const map = new maplibregl.Map({
@@ -44,7 +46,7 @@ export default function Map() {
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
       .addTo(map);
 
-  const onLoad = () => {
+    const onLoad = () => {
       // Smooth camera fly-in
       // map.flyTo({
       //   center: target,

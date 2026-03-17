@@ -1,5 +1,5 @@
 import "react-resizable/css/styles.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { socket } from "../socket.io/socket.jsx";
@@ -9,64 +9,84 @@ import { useSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
-import Wheel from "../ui/Wheel"
+import Wheel from "../ui/Wheel";
+
+import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
+import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
+import { useConnectedGamepads } from "../../contexts/GamepadContext.jsx";
 
 const HEADER_HEIGHT = 56;
 
-export default function DriveManualInput({
-  sidewaysVelocity,
-  forwardsVelocity,
-  rotationalVelocity,
-  moduleConflicts,
-  panAngles,
-  panSpeed,
-  setPanSpeed,
-  setDriveConnectedOne,
-  driveConnectedOne,
-}) {
+export default function DriveManualInput({}) {
+  // Server connection status
   const serverConnected = useSocketStatus();
   const [txon, settxon] = useState(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!serverConnected || driveConnectedOne == null || !txon) return;
+  // Drive
+  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+  const driveConnectedOne = connectedGamepads.drive;
 
-      socket.emit("driveCommands", {
-        xVel: sidewaysVelocity,
-        yVel: forwardsVelocity,
-        rotVel: rotationalVelocity,
-        moduleConflicts: Number(moduleConflicts),
-      });
-    }, FrameRateConstant);
-
-    return () => clearInterval(interval);
-  }, [
+  const [driveCommands] = useDriveCommands();
+  const {
     sidewaysVelocity,
     forwardsVelocity,
     rotationalVelocity,
     moduleConflicts,
-    serverConnected,
-    driveConnectedOne,
-    txon,
-  ]);
+  } = driveCommands;
 
+  // Mast
+  const [mastCommands, setMastCommands] = useMastCommands();
+  const { px: panX, py: panY, panSpeed } = mastCommands; // destructure mastCommands
+
+  // refs update whenever Mast panning changes
+  const panXRef = useRef(panX);
+  const panYRef = useRef(panY);
   useEffect(() => {
-    if (!serverConnected || driveConnectedOne == null || !txon) return;
+    panXRef.current = panX;
+  }, [panX]);
+  useEffect(() => {
+    panYRef.current = panY;
+  }, [panY]);
 
-    socket.emit("panCommands", {
-      xVel: panAngles.px,
-      yVel: panAngles.py,
+  const driveCommandsRef = useRef(driveCommands);
+  useEffect(() => {
+    driveCommandsRef.current = driveCommands;
+  }, [driveCommands]);
+
+  // Emit drive commands
+  useEffect(() => {
+  const interval = setInterval(() => {
+    if (!serverConnected || driveConnectedOne == null || !txon) return;
+    console.log("Starting drive command transmission");
+
+    socket.emit("driveCommands", {
+      xVel: driveCommandsRef.current.sidewaysVelocity,
+      yVel: driveCommandsRef.current.forwardsVelocity,
+      rotVel: driveCommandsRef.current.rotationalVelocity,
+      moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
     });
-  }, [
-    panAngles,
-    serverConnected,
-    driveConnectedOne,
-    txon,
-  ]);
+  }, FrameRateConstant);
+
+  return () => clearInterval(interval);
+}, [serverConnected, driveConnectedOne, txon]);
 
   const handleHoming = () => socket.emit("driveHoming");
 
+  // Emit mast pan commands
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!serverConnected || driveConnectedOne == null || !txon) return;
+      socket.emit("panCommands", {
+        xVel: panXRef.current,
+        yVel: panYRef.current,
+      });
+    }, FrameRateConstant);
+
+    return () => clearInterval(interval);
+  }, [serverConnected, driveConnectedOne, txon]);
+
   const handleManualTx = () => {
+    if (!serverConnected) return;
     socket.emit("driveCommands", {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
@@ -75,13 +95,15 @@ export default function DriveManualInput({
     });
 
     socket.emit("panCommands", {
-      xVel: panAngles.px,
-      yVel: panAngles.py,
+      xVel: panX,
+      yVel: panY,
     });
   };
 
   const VelocityItem = ({ value, label }) => (
-    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <Box
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
       <Box
         sx={{
           width: 75,
@@ -102,10 +124,19 @@ export default function DriveManualInput({
   );
 
   return (
-    <Box sx={{  display: "flex", justifyContent: "center" }}>
+    <Box sx={{ display: "flex", justifyContent: "center" }}>
       <Box sx={{ display: "flex", gap: 2.5 }}>
         {/* LEFT COLUMN */}
-        <Box sx={{ border: 1.5, borderRadius: '8px', display: "flex", flexDirection: "column", p: 1, borderColor: "gray"}}>
+        <Box
+          sx={{
+            border: 1.5,
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            p: 1,
+            borderColor: "gray",
+          }}
+        >
           {/* HEADER */}
           <Box
             sx={{
@@ -134,6 +165,7 @@ export default function DriveManualInput({
               variant="contained"
               onClick={handleHoming}
               sx={{ whiteSpace: "nowrap" }}
+              disabled={!serverConnected}
             >
               Homing
             </Button>
@@ -141,6 +173,7 @@ export default function DriveManualInput({
               variant="contained"
               onClick={handleManualTx}
               sx={{ whiteSpace: "nowrap" }}
+              disabled={!serverConnected}
             >
               MANUAL TX
             </Button>
@@ -156,14 +189,26 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-      <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
-      <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
-      <VelocityItem value={rotationalVelocity.toFixed(1)} label="Rotational" />
+            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
+            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+            <VelocityItem
+              value={rotationalVelocity.toFixed(1)}
+              label="Rotational"
+            />
           </Box>
         </Box>
 
         {/* RIGHT COLUMN */}
-        <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>
+        <Box
+          sx={{
+            border: 1.5,
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            p: 1,
+            borderColor: "gray",
+          }}
+        >
           {/* HEADER */}
           <Box
             sx={{
@@ -173,15 +218,18 @@ export default function DriveManualInput({
               justifyContent: "center",
             }}
           >
-            <Slider 
-            step={10}
-            marks
-            value={panSpeed}
-            onChange={(_, value) => setPanSpeed(value)}
-            min={10}
-            max={100}
-            valueLabelDisplay="auto"
-            sx={{ width: 150 }} />
+            <Slider
+              step={10}
+              marks
+              value={panSpeed}
+              onChange={(_, value) =>
+                setMastCommands((prev) => ({ ...prev, panSpeed: value }))
+              }
+              min={10}
+              max={100}
+              valueLabelDisplay="auto"
+              sx={{ width: 150 }}
+            />
           </Box>
 
           {/* CONTENT */}
@@ -194,18 +242,26 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={panAngles.px} label="Pan W" />
-            <VelocityItem value={panAngles.py} label="Pan H" />
+            <VelocityItem value={panX} label="Pan W" />
+            <VelocityItem value={panY} label="Pan H" />
           </Box>
         </Box>
-        <Box sx={{ border: 1.5, borderRadius: '8px',display: "flex", flexDirection: "column",p: 1, borderColor: "gray" }}>
+        <Box
+          sx={{
+            border: 1.5,
+            borderRadius: "8px",
+            display: "flex",
+            flexDirection: "column",
+            p: 1,
+            borderColor: "gray",
+          }}
+        >
           {/* WHEEL */}
-          <Wheel/>
+          <Wheel />
         </Box>
       </Box>
     </Box>
   );
 }
 
-
-<Wheel />
+<Wheel />;

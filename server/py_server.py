@@ -38,6 +38,7 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
+    #drive
     try:
         if serial_ports["drive"]:
             serial_ports["drive"].close()
@@ -47,15 +48,27 @@ def shutdown():
     except Exception:
         print("DRIVE WAS NOT DISCONNECTED!!!")
         pass
+    #arm
     try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
+        if serial_ports["arm"]:
+            serial_ports["arm"].close()
             print("Arm serial closed.")
         else:
             print("Arm was never connected.")
     except Exception:
         print("ARM WAS NOT DISCONNECTED!!!")
         pass
+    #science
+    try:
+        if serial_ports["science"]:
+            serial_ports["science"].close()
+            print("Science serial closed.")
+        else:
+            print("Science was never connected.")
+    except Exception:
+        print("SCIENCE WAS NOT DISCONNECTED!!!")
+        pass
+    #gps
     try:
         if serial_ports["gps"]:
             serial_ports["gps"].close()
