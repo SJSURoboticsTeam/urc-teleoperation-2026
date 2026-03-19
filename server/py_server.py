@@ -6,7 +6,7 @@ import metrics
 import asyncio
 import signal
 import sys
-from metrics import cpuloop, register_metric_events
+from metrics import asyncsshloop, cpuloop, register_metric_events
 #from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
@@ -29,7 +29,7 @@ else:
 
 
 from uart_drive_serial import UartDriveSerial
-from drive import (
+from drive_uart import (
     read_drive_uart_loop,
     send_drive_heartbeat,
     register_drive_events,
@@ -127,6 +127,7 @@ print("Preparing serial connections...")
 # =================== CAN connections ===================
 @sio.event
 async def getSerialInfo(sid):
+async def getSerialInfo(sid):
     # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
@@ -158,7 +159,7 @@ async def connectDrive(sid,data):
         #serial_ports["drive"] = CanSerial(data)
         serial_ports["drive"] = UartDriveSerial(data)
         serial_ports["driveId"] = data
-        print("Drive connected.")
+        print("Drive UART connected.")
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
@@ -322,6 +323,7 @@ arm_position_task_started = False
 drive_heartbeat_started = False
 async_ssh_started = False
 cpu_started = False
+drive_heartbeat_started = False
 
 
 register_metric_events(sio)
@@ -334,6 +336,7 @@ register_camera_pt_events(sio,serial_ports)
 @sio.event
 async def connect(sid,environ):
     """On first client connect, start background serial read loops."""
+    """On first client connect, start background serial read loops."""
     global can_error_message_started
     global drive_task_started
     global arm_task_started
@@ -343,7 +346,6 @@ async def connect(sid,environ):
     global arm_position_task_started
     global cpu_started
     global drive_heartbeat_started
-    global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -357,24 +359,10 @@ async def connect(sid,environ):
         drive_task_started = True
         #sio.start_background_task(read_drive_can_loop,serial_ports)
         sio.start_background_task(read_drive_uart_loop, serial_ports)
-        #sio.start_background_task(read_drive_can_loop,serial_ports)
-        sio.start_background_task(read_drive_uart_loop, serial_ports)
-    if not arm_task_started:
-        arm_task_started = True
-        sio.start_background_task(read_arm_can_loop, serial_ports, sio)
-    if not arm_position_task_started:
-        arm_position_task_started = True
-        # sio.start_background_task(request_arm_position_loop, serial_ports)
-    if not gps_task_started:
-        gps_task_started = True
-        if offline:
-            sio.start_background_task(send_fake_gps_data, sio)
-        else:
-            sio.start_background_task(read_gps_data, serial_ports, sio)
-    if not can_error_message_started:
-        can_error_message_started = True
-        sio.start_background_task(send_drive_status_request, serial_ports)
-        sio.start_background_task(read_arm_can_loop, serial_ports)
+    # Temporarily disable arm CAN background loop during drive UART testing
+    #if not arm_task_started:
+    #    arm_task_started = True
+    #    sio.start_background_task(read_arm_can_loop, serial_ports)
     #if not can_error_message_started:
     #    can_error_message_started = True
     #    sio.start_background_task(send_drive_status_request,serial_ports)
