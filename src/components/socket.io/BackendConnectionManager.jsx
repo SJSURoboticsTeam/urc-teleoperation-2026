@@ -152,7 +152,7 @@ useEffect(() => {
       ...prev,
       loading: true,
     }));
-    socket.emit("getCanInfo", (data) => {
+    socket.emit("getSerialInfo", (data) => {
       //console.log(data);
       setcanState((prev) => ({
         ...prev,
