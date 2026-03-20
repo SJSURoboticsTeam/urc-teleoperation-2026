@@ -1,13 +1,21 @@
-import React, { useEffect, useRef } from "react";
+import React, { use, useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { socket } from "../socket.io/socket";
 
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
+  const marker = useRef(null);
+
+  const [coordinates, setCoordinates] = useState({
+      long:0,
+      lat:0
+  });
 
   useEffect(() => {
-    const target = [-121.881194, 37.336847]; // San Jose area
+    const target = [coordinates.long, coordinates.lat];
+    //const target = [-121.881194, 37.336847]; // San Jose area 
     //const target = [-110.768401, 38.372207]; // Utah
     // https://www.gps-coordinates.net/ for coordinates
 
@@ -33,22 +41,22 @@ export default function Map() {
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    new maplibregl.Marker({ color: "#ff0000" })
+    marker.current = new maplibregl.Marker({ color: "#ff0000" })
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
       .addTo(map);
 
     const onLoad = () => {
       // Smooth camera fly-in
-      map.flyTo({
-        center: target,
-        zoom: 18,
-        speed: 3,
-        curve: 1,
-        essential: true,
-        pitch: 60,
-        bearing: -20,
-      });
+      // map.flyTo({
+      //   center: target,
+      //   zoom: 18,
+      //   speed: 3,
+      //   curve: 1,
+      //   essential: true,
+      //   pitch: 60,
+      //   bearing: -20,
+      // });
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -96,6 +104,31 @@ export default function Map() {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const handler = (data) => {
+      console.log("Received GPS data:", data);
+      setCoordinates({
+        long: data.longitude,
+        lat: data.latitude
+      });
+    };
+
+    socket.on("gpsData", handler);
+    marker.current.setLngLat([coordinates.long, coordinates.lat]);
+    mapRef.current.flyTo({
+      center: [coordinates.long, coordinates.lat],
+      zoom: 18,
+      speed: 3,
+      curve: 1,
+      essential: true,
+      pitch: 60,
+      bearing: -20,
+    });
+    return () => {
+      socket.off("gpsData", handler);
+    }
+  }, [coordinates]);
 
   // Use full height so the map fills any explicit-height parent container
   return <div ref={mapContainer} className="w-full h-full bg-gray-200" />;

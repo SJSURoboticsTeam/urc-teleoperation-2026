@@ -28,11 +28,13 @@ export default function NavConnectionStatus({
     driveState: "idle", // idle, connecting, active
     armState: "idle", // idle, connecting, active
     scienceState: "idle", // idle, connecting, active
+    gpsState: "idle", // idle, connecting, active
     loading: true, // lock buttons, dropdowns when refreshing can data
     canIds: [], // array with every possible serial device
     driveId: "disconnect", // selected can id in dropdown or disconnect
     armId: "disconnect", // selected can id in dropdown or disconnect
     scienceId: "disconnect", // selected can id in dropdown or disconnect
+    gpsId: "COM7",
   });
 
   const LATENCY_DEGRADED_THRESHOLD = 300;
@@ -131,20 +133,20 @@ export default function NavConnectionStatus({
     return () => clearInterval(interval);
   }, []);
 
-useEffect(() => {
-  let interval;
-  // see if client is connected optimally (websockets) or not
-  function getConnType() {
-  const transport = socket?.io?.engine?.transport?.name;
-  if (transport === "websocket") {
-    setconntype("Yes");
-  } else {
-    setconntype("No");
-  }
-}
-  interval = setInterval(getConnType, 2000); 
-  return () => clearInterval(interval);
-}, []);
+  useEffect(() => {
+    let interval;
+    // see if client is connected optimally (websockets) or not
+    function getConnType() {
+      const transport = socket?.io?.engine?.transport?.name;
+      if (transport === "websocket") {
+        setconntype("Yes");
+      } else {
+        setconntype("No");
+      }
+    }
+    interval = setInterval(getConnType, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   function requestCanInfo() {
     // lock the ui so user can't do anything while loading
@@ -160,10 +162,12 @@ useEffect(() => {
         driveId: data["driveId"],
         armId: data["armId"],
         scienceId: data["scienceId"],
+        gpsId: data["gpsId"],
         // assignment if connected or not by text
         driveState: data["driveId"] !== "disconnect" ? "active" : "idle",
         armState: data["armId"] !== "disconnect" ? "active" : "idle",
         scienceState: data["scienceId"] !== "disconnect" ? "active" : "idle",
+        gpsState: data["gpsId"] !== "disconnect" ? "active" : "idle",
         loading: false,
       }));
     });
@@ -293,6 +297,47 @@ useEffect(() => {
       }
     });
   }
+
+  function connectGPS() {
+    setcanState((prev) => ({
+      ...prev,
+      gpsState: "connecting",
+    }));
+    console.log("Connecting GPS, Sending id " + canState.gpsId);
+    socket.emit("connectGPS", canState.gpsId, (response) => {
+      console.log("RESPONSE:" + response);
+      if (response === "OK") {
+        setcanState((prev) => ({
+          ...prev,
+          gpsState: "active",
+        }));
+      } else {
+        setErrorMessage("GPS didn't connect, auto-updating to current state");
+        requestCanInfo();
+      }
+    });
+  }
+  function disconnectGPS() {
+    setcanState((prev) => ({
+      ...prev,
+      gpsState: "connecting",
+    }));
+    console.log("Disconnecting GPS");
+    socket.emit("disconnectGPS", (response) => {
+      console.log("RESPONSE:" + response);
+      if (response === "OK") {
+        setcanState((prev) => ({
+          ...prev,
+          gpsState: "idle",
+        }));
+      } else {
+        setErrorMessage(
+          "GPS didn't disconnect, auto-updating to current state",
+        );
+        requestCanInfo();
+      }
+    });
+  }
   function disconnectAll() {
     if (canState.driveState != "idle") {
       disconnectDrive();
@@ -303,7 +348,10 @@ useEffect(() => {
     if (canState.scienceState != "idle") {
       disconnectScience();
     }
-    console.log("ALl have been disconnected.");
+    if (canState.gpsState != "idle") {
+      disconnectGPS();
+    }
+    console.log("ALL have been disconnected.");
   }
 
   useEffect(() => {
