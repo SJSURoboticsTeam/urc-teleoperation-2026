@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
+  Button,
   Drawer,
   List,
   ListItem,
   Typography,
   IconButton,
-  Button,
   FormControlLabel,
   Checkbox,
+  Dialog,
+  DialogTitle,
+  Tooltip
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -18,6 +21,8 @@ import NavConnectionStatus from "../socket.io/BackendConnectionManager";
 import GamepadPanel from "../gamepad/Gamepad";
 import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
+import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
+
 
 export default function TopAppBar({
   setCurrentView,
@@ -33,6 +38,36 @@ export default function TopAppBar({
   };
 
   const handleViewChange = (view) => setCurrentView(view);
+
+  const [capsLockActive, setCapsLockState] = useState(false);
+  const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
+  const isRobotConnected = useRobotSocketStatus();
+
+  function initiateEstop() {
+    console.log("E-STOP!");
+    setestopStatus("LOADING");
+    // E_STOP vs E-STOP since python can't handle dashed function names
+    robotsocket.emit("E_STOP", (response) => {
+      if (response === "OK") {
+        setestopStatus("KILLED");
+        console.log("REMOTE KILL COMPLETE. ");
+      }
+    });
+  }
+
+  useEffect(() => {
+    const updateCapsState = (e) => {
+      setCapsLockState(e.getModifierState("CapsLock"));
+    };
+
+    window.addEventListener("keydown", updateCapsState);
+    window.addEventListener("keyup", updateCapsState);
+
+    return () => {
+      window.removeEventListener("keydown", updateCapsState);
+      window.removeEventListener("keyup", updateCapsState);
+    };
+  }, []);
 
   return (
     <>
@@ -95,6 +130,37 @@ export default function TopAppBar({
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
+          <span>
+          <Button
+            style={{
+              marginRight: 20,
+            }}
+            variant="contained"
+            color="error"
+            loading={estopStatus == "LOADING"}
+            disabled={!capsLockActive || !isRobotConnected}
+            onClick={() => {
+              if (capsLockActive) {
+                initiateEstop();
+              }
+            }}
+          >
+            E-STOP
+          </Button>
+          </span>
+          </Tooltip>
+
+          <Dialog
+            open={estopStatus == "KILLED"}
+            onClose={() => setestopStatus("idle")}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle color="red" id="alert-dialog-title">
+              {"REMOTE KILL SUCCESS"}
+            </DialogTitle>
+          </Dialog>
 
           {/* Gamepad connection status and selection panel */}
           <GamepadPanel

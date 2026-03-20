@@ -1,0 +1,8 @@
+python-socketio[asyncio_client]
+aiohttp
+asyncssh
+uvicorn
+psutil
+asyncssh
+dotenv
+pathlib

@@ -6,7 +6,7 @@ import metrics
 import asyncio
 import signal
 import sys
-from metrics import asyncsshloop, cpuloop, register_metric_events
+from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
@@ -213,6 +213,16 @@ async def disconnectScience(sid):
         return("ERROR")
         pass
 
+@sio.event
+async def E_STOP(sid):
+    # shut everything down
+    print("----------------")
+    print("E-STOP TRIGGERED")
+    print("----------------")
+    # wait 200ms for message to come back, then stop
+    asyncio.get_event_loop().call_later(0.2, shutdown)
+    return("OK")
+
 
 # =================== Initialization ===================
 # Background task guard
@@ -236,7 +246,6 @@ async def connect(sid,environ):
     global can_error_message_started
     global drive_task_started
     global arm_task_started
-    global async_ssh_started
     global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
@@ -256,9 +265,6 @@ async def connect(sid,environ):
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request,serial_ports)
-    if not async_ssh_started:
-       async_ssh_started = True
-       #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

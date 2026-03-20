@@ -34,4 +34,8 @@ __pycache__*
 *.njsproj
 *.sln
 *.sw?
-server/.env
+
+# Robo Specific 
+.env
+*.env
+@.env
