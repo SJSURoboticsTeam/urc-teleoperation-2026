@@ -19,6 +19,9 @@ DRIVE_REPLY_ID = {
 }
 
 def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts):
+    """
+    Builds the payload for the SET_CHASSIS_VELOCITIES command.
+    """
     x_scaled = int(x_vel * (2 ** 12))
     y_scaled = int(y_vel * (2 ** 12))
     rot_scaled = int(rot_vel * (2 ** 6))
@@ -32,6 +35,9 @@ def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts
     )
 
 def register_drive_events(sio, serial_ports):
+    """
+    Registers drive events with the Socket.IO server.
+    """
     @sio.event
     async def driveCommands(sid, data):
         try:
@@ -58,6 +64,9 @@ def register_drive_events(sio, serial_ports):
 
     @sio.event
     async def driveHoming(sid):
+        """
+        Initiates homing sequence on the drive
+        """
         try:
             drive = serial_ports["drive"]
             if drive is None:
@@ -74,6 +83,9 @@ def register_drive_events(sio, serial_ports):
             print(f"Error in driveHoming: {e}")
 
 async def parse_drive_packet(packet):
+    """
+    Parses a drive packet and prints the relevant information.
+    """
     msg_id, payload = packet
 
     if msg_id == DRIVE_REPLY_ID["HEARTBEAT_REPLY"]:
@@ -93,6 +105,9 @@ async def parse_drive_packet(packet):
         print(f"est rot vel: {rot_vel}")
 
 async def read_drive_uart_loop(serial_ports):
+    """
+    Continuously reads packets from the drive UART and parses them.
+    """
     try:
         while True:
             drive = serial_ports["drive"]
@@ -105,6 +120,9 @@ async def read_drive_uart_loop(serial_ports):
         print(f"Drive UART task error: {e}")
 
 async def send_drive_heartbeat(serial_ports):
+    """
+    Sends a heartbeat message to the drive every 5 seconds.
+    """
     try:
         while True:
             drive = serial_ports["drive"]
