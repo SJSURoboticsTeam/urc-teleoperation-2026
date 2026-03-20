@@ -36,6 +36,12 @@ export default function CameraPane({ cameraValue, onCameraChange }){
         name: "Mast",
         url: "http://192.168.1.2:8889/mast/",
       },
+      {
+        value: "Demo",
+        mediatype: "iframe",
+        name: "Demo",
+        url: "http://192.168.1.2:8889/masttesting/",
+      },
     ];
 
   const selectedCamera = cameras.find((cam) => cam.value == camera);
