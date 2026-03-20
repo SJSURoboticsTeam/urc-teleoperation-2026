@@ -6,8 +6,8 @@ import metrics
 import asyncio
 import signal
 import sys
-from metrics import asyncsshloop, cpuloop, register_metric_events
-#from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
+from metrics import cpuloop, register_metric_events
+from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from uart_drive_serial import UartDriveSerial
@@ -223,6 +223,16 @@ async def disconnectScience(sid):
         return("ERROR")
         pass
 
+@sio.event
+async def E_STOP(sid):
+    # shut everything down
+    print("----------------")
+    print("E-STOP TRIGGERED")
+    print("----------------")
+    # wait 200ms for message to come back, then stop
+    asyncio.get_event_loop().call_later(0.2, shutdown)
+    return("OK")
+
 
 # =================== Initialization ===================
 # Background task guard
@@ -247,7 +257,6 @@ async def connect(sid,environ):
     global can_error_message_started
     global drive_task_started
     global arm_task_started
-    global async_ssh_started
     global cpu_started
     global drive_heartbeat_started
     global numClients
@@ -261,21 +270,13 @@ async def connect(sid,environ):
     # Start background CAN loop once
     if not drive_task_started:
         drive_task_started = True
-        #sio.start_background_task(read_drive_can_loop,serial_ports)
-        sio.start_background_task(read_drive_uart_loop, serial_ports)
-    # Temporarily disable arm CAN background loop during drive UART testing
-    #if not arm_task_started:
-    #    arm_task_started = True
-    #    sio.start_background_task(read_arm_can_loop, serial_ports)
-    #if not can_error_message_started:
-    #    can_error_message_started = True
-    #    sio.start_background_task(send_drive_status_request,serial_ports)
-    if not drive_heartbeat_started:
-        drive_heartbeat_started = True
-        sio.start_background_task(send_drive_heartbeat, serial_ports)
-    if not async_ssh_started:
-       async_ssh_started = True
-       #sio.start_background_task(asyncsshloop,sio)
+        sio.start_background_task(read_drive_can_loop,serial_ports)
+    if not arm_task_started:
+        arm_task_started = True
+        sio.start_background_task(read_arm_can_loop, serial_ports)
+    if not can_error_message_started:
+        can_error_message_started = True
+        sio.start_background_task(send_drive_status_request,serial_ports)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

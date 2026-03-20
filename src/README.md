@@ -18,11 +18,12 @@ In the `urc-teleoperation-2026` directory
 npm run *
 ```
 
-| launch command   | Result                                   |
-| ---------------- | ---------------------------------------- |
-| npm run dev      | Standard dev testing                     |
-| npm run dev-host | Standard w/lan reachability              |
-| npm run lan      | Connects to actual server, lan reachable |
+| launch command   | Result                                     |
+| ---------------- | ----------------------------------------   |
+| npm run lite      | Disables auto-connect for offline testing |
+| npm run dev      | Standard dev testing                       |
+| npm run dev-host | Standard w/lan reachability                |
+| npm run lan      | Connects to actual server, lan reachable   |
 
 This will start the React Vite development server. Open [http://localhost:5173](http://localhost:5173) in your browser to view the client.
 

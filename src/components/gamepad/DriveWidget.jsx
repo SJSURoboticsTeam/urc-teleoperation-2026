@@ -2,10 +2,10 @@ import "react-resizable/css/styles.css";
 import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { socket } from "../socket.io/socket.jsx";
+import { basesocket, robotsocket } from "../socket.io/socket";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
-import { useSocketStatus } from "../socket.io/socket";
+import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
@@ -19,7 +19,7 @@ const HEADER_HEIGHT = 56;
 
 export default function DriveManualInput({}) {
   // Server connection status
-  const serverConnected = useSocketStatus();
+  const serverConnected = useRobotSocketStatus();
   const [txon, settxon] = useState(false);
 
   // Drive
@@ -70,7 +70,7 @@ export default function DriveManualInput({}) {
   return () => clearInterval(interval);
 }, [serverConnected, driveConnectedOne, txon]);
 
-  const handleHoming = () => socket.emit("driveHoming");
+  const handleHoming = () => robotsocket.emit("driveHoming");
 
   // Emit mast pan commands
   useEffect(() => {

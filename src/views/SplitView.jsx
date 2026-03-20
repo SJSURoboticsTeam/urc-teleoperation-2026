@@ -1,44 +1,50 @@
-import 'react-resizable/css/styles.css'
-import { useRef, useState, useCallback, isValidElement, useEffect } from 'react'
-import CameraPane from '../components/cameras/CameraPane'
-import { FormControl, InputLabel, MenuItem, Select } from '@mui/material'
+import "react-resizable/css/styles.css";
+import {
+  useRef,
+  useState,
+  useCallback,
+  isValidElement,
+  useEffect,
+} from "react";
+import CameraPane from "../components/cameras/CameraPane";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 
-const DEFAULT_CAMERA = 'Standby'
-const DEFAULT_CAMERA_NUM = 2
-const STORAGE_KEY = 'missionControl.cameraLayout'
+const DEFAULT_CAMERA = "Standby";
+const DEFAULT_CAMERA_NUM = 2;
+const STORAGE_KEY = "missionControl.cameraLayout";
 
 export default function DriveView({ CurrentView, showCameras }) {
-  const containerRef = useRef(null)
-  const [leftPct, setLeftPct] = useState(65)
-  const [cameraNum, setCameraNum] = useState(DEFAULT_CAMERA_NUM)
+  const containerRef = useRef(null);
+  const [leftPct, setLeftPct] = useState(65);
+  const [cameraNum, setCameraNum] = useState(DEFAULT_CAMERA_NUM);
   const [cameraModes, setCameraModes] = useState(
-    Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA)
-  )
-  const [hydrated, setHydrated] = useState(false)
+    Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
+  );
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw)
-        const nextNum = Math.max(1, parsed.cameraNum ?? DEFAULT_CAMERA_NUM)
+        const parsed = JSON.parse(raw);
+        const nextNum = Math.max(1, parsed.cameraNum ?? DEFAULT_CAMERA_NUM);
         const nextModes = Array.isArray(parsed.cameraModes)
           ? parsed.cameraModes.slice(0, nextNum)
-          : Array(nextNum).fill(DEFAULT_CAMERA)
-        setCameraNum(nextNum)
+          : Array(nextNum).fill(DEFAULT_CAMERA);
+        setCameraNum(nextNum);
         setCameraModes(
           nextModes.length < nextNum
             ? nextModes.concat(
-                Array(nextNum - nextModes.length).fill(DEFAULT_CAMERA)
+                Array(nextNum - nextModes.length).fill(DEFAULT_CAMERA),
               )
-            : nextModes
-        )
+            : nextModes,
+        );
       }
     } catch {
       // ignore storage errors
     }
-    setHydrated(true)
-  }, [])
+    setHydrated(true);
+  }, []);
 
   const startDrag = useCallback((e) => {
     const pointerId = e.pointerId;
@@ -50,7 +56,7 @@ export default function DriveView({ CurrentView, showCameras }) {
     const onPointerMove = (ev) => {
       const rect = container.getBoundingClientRect();
       let pct = ((ev.clientX - rect.left) / rect.width) * 100;
-      pct = Math.min(95, Math.max(5, pct));
+      pct = Math.min(100, Math.max(35, pct));
       setLeftPct(pct);
     };
 
@@ -64,41 +70,41 @@ export default function DriveView({ CurrentView, showCameras }) {
     window.addEventListener("pointerup", onPointerUp);
   }, []);
 
-  const effectiveLeftPct = (!showCameras) ? 100 : leftPct
+  const effectiveLeftPct = !showCameras ? 100 : leftPct;
 
   useEffect(() => {
-    if (!hydrated) return
+    if (!hydrated) return;
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ cameraNum, cameraModes })
-      )
+        JSON.stringify({ cameraNum, cameraModes }),
+      );
     } catch {
       // ignore errors
     }
-  }, [cameraNum, cameraModes, hydrated])
+  }, [cameraNum, cameraModes, hydrated]);
 
   const updateCameraNum = (nextNum) => {
-    const nextCameraNum = Math.max(1, nextNum)
-    setCameraNum(nextCameraNum)
+    const nextCameraNum = Math.max(1, nextNum);
+    setCameraNum(nextCameraNum);
     setCameraModes((prev) => {
-      let nextModes = prev.slice(0, nextCameraNum)
+      let nextModes = prev.slice(0, nextCameraNum);
       if (nextModes.length < nextCameraNum) {
         nextModes = nextModes.concat(
-          Array(nextCameraNum - nextModes.length).fill(DEFAULT_CAMERA)
-        )
+          Array(nextCameraNum - nextModes.length).fill(DEFAULT_CAMERA),
+        );
       }
-      return nextModes
-    })
-  }
+      return nextModes;
+    });
+  };
 
   const updateCameraMode = (index, nextMode) => {
     setCameraModes((prev) => {
-      const nextModes = prev.slice()
-      nextModes[index] = nextMode
-      return nextModes
-    })
-  }
+      const nextModes = prev.slice();
+      nextModes[index] = nextMode;
+      return nextModes;
+    });
+  };
 
   return (
     <div
@@ -110,6 +116,7 @@ export default function DriveView({ CurrentView, showCameras }) {
         className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
         style={{ flex: `0 0 ${effectiveLeftPct}%` }}
       >
+        {/* embed the current view */}
         {isValidElement(CurrentView) ? (
           CurrentView
         ) : typeof CurrentView === "function" ? (
@@ -138,14 +145,23 @@ export default function DriveView({ CurrentView, showCameras }) {
       <div
         className="flex-1 flex flex-col p-2 min-h-0"
         style={{
-          display: (!showCameras) ? 'none' : 'flex',
+          display: !showCameras ? "none" : "flex",
         }}
       >
-        
-          
-        <FormControl size="small" sx={{ minWidth: 160, mb: 2 }}>
-          <InputLabel id="camera-count-label" sx={{ backgroundColor: 'white', px: 0.5 }}
-          >Select Camera Count</InputLabel>
+        <FormControl
+          size="small"
+          sx={
+            cameraNum >= 3
+              ? { minWidth: 400, mb: 0.5 }
+              : { minWidth: 250, mb: 0.5 }
+          }
+        >
+          <InputLabel
+            id="camera-count-label"
+            sx={{ backgroundColor: "white", px: 0.5 }}
+          >
+            Camera Count
+          </InputLabel>
           <Select
             labelId="camera-count-label"
             value={cameraNum}
@@ -161,13 +177,14 @@ export default function DriveView({ CurrentView, showCameras }) {
           className="flex-1 min-h-0 overflow-auto"
           style={
             cameraNum <= 3
-              ? { display: 'flex', flexDirection: 'column', gap: '8px' }
+              ? { display: "flex", flexDirection: "column", gap: "6px" }
               : {
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '8px',
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2,1fr)",
+                  gap: "6px",
                 }
           }
+          sx={cameraNum >= 3 ? { minWidth: 500 } : {}}
         >
           {[...Array(cameraNum)].map((_, index) => (
             <div key={index} className="flex w-full h-full min-h-0">
@@ -178,12 +195,12 @@ export default function DriveView({ CurrentView, showCameras }) {
             </div>
           ))}
         </div>
-        </div>
+      </div>
 
-      {(!showCameras) && (
+      {!showCameras && (
         <div
           className="absolute cursor-pointer"
-          style={{ background: 'transparent' }}
+          style={{ background: "transparent" }}
         />
       )}
     </div>

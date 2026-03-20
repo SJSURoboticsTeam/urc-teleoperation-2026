@@ -4,6 +4,8 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
 
+
+
 // Local imports
 import TopAppBar from "../components/ui/TopAppBar";
 import DriveComponents from "./DriveView";
@@ -12,7 +14,6 @@ import ScienceView from "./ScienceView";
 import AutonomyView from "./AutonomyView";
 import SplitView from "./SplitView";
 import ExtrasView from "./ExtrasView";
-import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
 // Context imports
@@ -20,10 +21,18 @@ import ArmCommandContext from "../contexts/ArmCommandContext";
 import DriveCommandContext from "../contexts/DriveCommandContext";
 import GamepadContext from "../contexts/GamepadContext";
 import MastCommandContext from "../contexts/MastCommandContext";
+import { SnackbarProvider, useSnackbar } from "notistack";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
-  const [errorMessage, setErrorMessage] = useState("");
+
+  //snackbar
+  const { enqueueSnackbar } = useSnackbar();
+
+  const addSnackbarMessage = (message, variant) => () => {
+    // variant could be success, error, warning, info, or default
+    enqueueSnackbar({ message }, { variant });
+  };
 
   // list of gamepads and the connected one for drive and arm
   const [connectedGamepads, setConnectedGamepads] = useState({
@@ -57,13 +66,6 @@ function App() {
 
   const [camsVisibility, setcamsVisibility] = useState(true);
 
-  const handleClose = (event, reason) => {
-    if (reason === "clickaway") {
-      return;
-    }
-
-    setErrorMessage("");
-  };
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
@@ -114,66 +116,53 @@ function App() {
         overflow: "hidden",
       }}
     >
-      {/*!!errorMessage converts string to clean boolean (ie if theres a message show it */}
-      <Snackbar
-        open={!!errorMessage}
-        autoHideDuration={6000}
-        onClose={handleClose}
-      >
-        <Alert
-          onClose={handleClose}
-          severity="error"
-          variant="filled"
-          sx={{ width: "100%" }}
+      {/* snackbar */}
+      <SnackbarProvider maxSnack={5}>
+        <ArmCommandContext
+          armCommands={armCommands}
+          setArmCommands={setArmCommands}
         >
-          Error: {errorMessage}
-        </Alert>
-      </Snackbar>
-      <ArmCommandContext
-        armCommands={armCommands}
-        setArmCommands={setArmCommands}
-      >
-        <GamepadContext
-          connectedGamepads={connectedGamepads}
-          setConnectedGamepads={setConnectedGamepads}
-        >
-          <DriveCommandContext
-            driveCommands={driveCommands}
-            setDriveCommands={setDriveCommands}
+          <GamepadContext
+            connectedGamepads={connectedGamepads}
+            setConnectedGamepads={setConnectedGamepads}
           >
-            <MastCommandContext
-              mastCommands={mastCommands}
-              setMastCommands={setMastCommands}
+            <DriveCommandContext
+              driveCommands={driveCommands}
+              setDriveCommands={setDriveCommands}
             >
-              <CssBaseline />
-              {/* Normalizes styles */}
-              <TopAppBar
-                currentView={currentView}
-                setCurrentView={setCurrentView}
-                camsVisibility={camsVisibility}
-                setcamsVisibility={setcamsVisibility}
-                setErrorMessage={setErrorMessage}
-                errorMessage={errorMessage}
-              />
-
-              <Box
-                component="main"
-                sx={{
-                  flexGrow: 1,
-                  p: 2,
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  minHeight: 0,
-                  marginTop: "60px",
-                }}
+              <MastCommandContext
+                mastCommands={mastCommands}
+                setMastCommands={setMastCommands}
               >
-                {renderView()}
-              </Box>
-            </MastCommandContext>
-          </DriveCommandContext>
-        </GamepadContext>
-      </ArmCommandContext>
+                <CssBaseline />
+                {/* Normalizes styles */}
+                <TopAppBar
+                  currentView={currentView}
+                  setCurrentView={setCurrentView}
+                  camsVisibility={camsVisibility}
+                  setcamsVisibility={setcamsVisibility}
+                  addSnackbarMessage={addSnackbarMessage}
+                />
+
+                <Box
+                  component="main"
+                  sx={{
+                    flexGrow: 1,
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    minHeight: 0,
+                    marginTop: "60px",
+                  }}
+                >
+                  {renderView()}
+                </Box>
+              </MastCommandContext>
+            </DriveCommandContext>
+          </GamepadContext>
+        </ArmCommandContext>
+      </SnackbarProvider>
     </Box>
   );
 }
