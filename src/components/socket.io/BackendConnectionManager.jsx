@@ -223,7 +223,7 @@ export default function NavConnectionStatus({
       ...prev,
       loading: true,
     }));
-    socket.emit("getSerialInfo", (data) => {
+    robotsocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setcanState((prev) => ({
         ...prev,
