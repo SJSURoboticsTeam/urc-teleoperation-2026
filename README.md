@@ -22,5 +22,5 @@ cd urc-teleoperation-2026
 ```
 
 Instructions for frontend are in src/README.md
-
-Instructions for backend are at server/README.md
+Instructions for Robot backend are at server/README.md
+Instructions for Base Pi backend are at base-pi/README.md

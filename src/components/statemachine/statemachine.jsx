@@ -1,7 +1,8 @@
 import { Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 
-export default function StateMachine({ openPane, setOpenPane }) {
+export default function StateMachine({ openPane, setOpenPane, missionMode }) {
+
   return (
     <div
       onMouseEnter={() => setOpenPane("StateMachine")}
@@ -21,26 +22,29 @@ export default function StateMachine({ openPane, setOpenPane }) {
         STATUS
         <InfoIcon sx={{ fontSize: 35 }} />
       </span>
+        
+        {openPane == "StateMachine" && (
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "white",
+              border: "1px solid gray",
+              padding: "10px",
+              minWidth: "250px",
+            }}
+          >
+    
+            <Typography  sx={{ color: 'black' }} variant = "h6">STATE MACHINE</Typography>
+            <Typography  sx={{ color: 'black' }}>
+              Current Mode: {missionMode ?? "UNKNOWN"}
+            </Typography>
 
-      {openPane == "StateMachine" && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "white",
-            border: "1px solid gray",
-            padding: "10px",
-            minWidth: "250px",
-            borderRadius: "4px",
-          }}
-        >
-          <Typography sx={{ color: "black" }} variant="h6">
-            STATE MACHINE
-          </Typography>
-        </div>
-      )}
-    </div>
+
+          </div>
+        )}
+      </div>
   );
 }

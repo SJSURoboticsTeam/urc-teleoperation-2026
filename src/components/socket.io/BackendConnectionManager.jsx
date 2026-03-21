@@ -1,9 +1,9 @@
-import { socket } from "./socket";
+import { basesocket, robotsocket } from "./socket";
 import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { green, red, yellow } from "@mui/material/colors";
-import { useSocketStatus } from "./socket";
+import { useRobotSocketStatus, useBaseSocketStatus } from "./socket";
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
@@ -13,17 +13,28 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
 import EjectIcon from "@mui/icons-material/Eject";
+import Paper from "@mui/material/Paper";
+import { useSnackbar } from 'notistack';
+
 
 export default function NavConnectionStatus({
   openPane,
   setOpenPane,
-  setErrorMessage,
-  errorMessage,
 }) {
-  const isConnected = useSocketStatus(); // get socket status from ui
-  const [latency, setLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
-  const [numConnections, setNumConnections] = useState(0); // integer with clients that polls from backend
-  const [conntype, setconntype] = useState("Checking..."); // awaiting data ("checking"), websockets ("Yes"), polling ("No")
+  const { enqueueSnackbar } = useSnackbar();
+
+  const isRobotConnected = useRobotSocketStatus(); // get socket status from ui
+  const isBaseConnected = useBaseSocketStatus(); // get socket status from ui
+  
+  // robot
+  const [robotLatency, setRobotLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
+  const [robotNumConnections, setRobotNumConnections] = useState(0); // integer with clients that polls from backend
+  const [robotConnType, setRobotConnType] = useState("???"); // awaiting data ("checking"), websockets ("Yes"), polling ("No")
+  // base
+  const [baseLatency, setBaseLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
+  const [baseNumConnections, setBaseNumConnections] = useState(0); // integer with clients that polls from backend
+  const [baseConnType, setBaseConnType] = useState("???"); // awaiting data ("checking"), websockets ("Yes"), polling ("No")
+  // can state
   const [canState, setcanState] = useState({
     driveState: "idle", // idle, connecting, active
     armState: "idle", // idle, connecting, active
@@ -39,12 +50,13 @@ export default function NavConnectionStatus({
   const LATENCY_DANGER_THRESHOLD = 1000;
 
   // Determine communication health based on connection status and latency
-  const getHealthState = ({ isConnected, latency }) => {
-    if (!isConnected) return "DANGER";
+  const getHealthState = ({ isRobotConnected, robotLatency }) => {
+    if (!isRobotConnected) return "DANGER";
 
     // latency may be null when the UI first loads
-    if (latency !== null && latency > LATENCY_DANGER_THRESHOLD) return "DANGER";
-    if (latency !== null && latency > LATENCY_DEGRADED_THRESHOLD)
+    if (robotLatency !== null && robotLatency > LATENCY_DANGER_THRESHOLD)
+      return "DANGER";
+    if (robotLatency !== null && robotLatency > LATENCY_DEGRADED_THRESHOLD)
       return "DEGRADED";
 
     return "GOOD";
@@ -66,50 +78,62 @@ export default function NavConnectionStatus({
   };
 
   // determine the state
-  const healthLevel = getHealthState({ isConnected, latency });
+  const healthLevel = getHealthState({ isRobotConnected, robotLatency });
   // get the UI config
   const health = healthConfig[healthLevel];
 
   // server connect, disconnect
-  function connect() {
-    socket.connect();
+  function connectBasePi() {
+    basesocket.connect();
   }
 
-  function disconnect() {
-    socket.disconnect();
+  function disconnectBasePI() {
+    basesocket.disconnect();
+  }
+
+  function connectRobotPi() {
+    robotsocket.connect();
+  }
+
+  function disconnectRobotPI() {
+    robotsocket.disconnect();
   }
   const [robotconnectedIcon, setrobotConnectedIcon] = useState("");
 
   //icons and if connected
   useEffect(() => {
     setrobotConnectedIcon(
-      isConnected ? (
+      isRobotConnected ? (
         <SettingsRemoteIcon sx={{ color: green[500], fontSize: 35 }} />
       ) : (
         <SettingsRemoteIcon sx={{ color: red[500], fontSize: 35 }} />
       ),
     );
-  }, [isConnected]);
+  }, [isRobotConnected]);
 
   const [baseconnectedIcon, setbaseConnectedIcon] = useState("");
 
   useEffect(() => {
     setbaseConnectedIcon(
-      isConnected ? (
+      isBaseConnected ? (
         <MapsHomeWorkIcon sx={{ color: green[500], fontSize: 35 }} />
       ) : (
         <MapsHomeWorkIcon sx={{ color: red[500], fontSize: 35 }} />
       ),
     );
-  }, [isConnected]);
+  }, [isBaseConnected]);
+
+  // polling effects
+
+  // ROBOT
 
   useEffect(() => {
     let interval;
     // send a ping to the server every 750ms and measure latency
     function checkLatency() {
       const start = Date.now();
-      socket.emit("pingCheck", () => {
-        setLatency(Date.now() - start);
+      robotsocket.emit("pingCheck", () => {
+        setRobotLatency(Date.now() - start);
       });
     }
 
@@ -122,8 +146,8 @@ export default function NavConnectionStatus({
     let interval;
     // send a ping to the server every 2s to get number of connected clients from backend
     function numClients() {
-      socket.emit("getConnections", (connections) => {
-        setNumConnections(connections);
+      robotsocket.emit("getConnections", (connections) => {
+        setRobotNumConnections(connections);
       });
     }
 
@@ -135,15 +159,61 @@ export default function NavConnectionStatus({
     let interval;
     // see if client is connected optimally (websockets) or not
     function getConnType() {
-      if (socket.io.engine.transport.name == "websocket") {
-        setconntype("Yes");
+      const robottransport = robotsocket?.io?.engine?.transport?.name;
+      if (robottransport == "websocket") {
+        setRobotConnType("Yes");
       } else {
-        setconntype("No");
+        setRobotConnType("No");
       }
     }
     interval = setInterval(getConnType, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  // BASE
+
+  useEffect(() => {
+    let interval;
+    // send a ping to the server every 750ms and measure latency
+    function checkLatency() {
+      const start = Date.now();
+      basesocket.emit("pingCheck", () => {
+        setBaseLatency(Date.now() - start);
+      });
+    }
+    interval = setInterval(checkLatency, 750);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let interval;
+    // send a ping to the server every 2s to get number of connected clients from backend
+    function numClients() {
+      basesocket.emit("getConnections", (connections) => {
+        setBaseNumConnections(connections);
+      });
+    }
+
+    interval = setInterval(numClients, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let interval;
+    // see if client is connected optimally (websockets) or not
+    function getConnType() {
+      const basetransport = basesocket?.io?.engine?.transport?.name;
+      if (basetransport == "websocket") {
+        setBaseConnType("Yes");
+      } else {
+        setBaseConnType("No");
+      }
+    }
+    interval = setInterval(getConnType, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // CAN INFO
 
   function requestCanInfo() {
     // lock the ui so user can't do anything while loading
@@ -151,7 +221,7 @@ export default function NavConnectionStatus({
       ...prev,
       loading: true,
     }));
-    socket.emit("getCanInfo", (data) => {
+    robotsocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setcanState((prev) => ({
         ...prev,
@@ -174,7 +244,7 @@ export default function NavConnectionStatus({
       driveState: "connecting",
     }));
     console.log("Connecting Drive, Sending id " + canState.driveId);
-    socket.emit("connectDrive", canState.driveId, (response) => {
+    robotsocket.emit("connectDrive", canState.driveId, (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -182,7 +252,7 @@ export default function NavConnectionStatus({
           driveState: "active",
         }));
       } else {
-        setErrorMessage("Drive didn't connect, auto-updating to current state");
+        enqueueSnackbar("Drive didn't connect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -193,7 +263,7 @@ export default function NavConnectionStatus({
       driveState: "connecting",
     }));
     console.log("Disconnecting drive");
-    socket.emit("disconnectDrive", (response) => {
+    robotsocket.emit("disconnectDrive", (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -201,9 +271,7 @@ export default function NavConnectionStatus({
           driveState: "idle",
         }));
       } else {
-        setErrorMessage(
-          "Drive didn't disconnect, auto-updating to current state",
-        );
+        enqueueSnackbar("Drive didn't disconnect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -215,7 +283,7 @@ export default function NavConnectionStatus({
       armState: "connecting",
     }));
     console.log("Connecting Arm, Sending id " + canState.armId);
-    socket.emit("connectArm", canState.armId, (response) => {
+    robotsocket.emit("connectArm", canState.armId, (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -223,7 +291,7 @@ export default function NavConnectionStatus({
           armState: "active",
         }));
       } else {
-        setErrorMessage("Arm didn't connect, auto-updating to current state");
+        enqueueSnackbar("Arm didn't connect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -234,7 +302,7 @@ export default function NavConnectionStatus({
       armState: "connecting",
     }));
     console.log("Disconnecting Arm");
-    socket.emit("disconnectArm", (response) => {
+    robotsocket.emit("disconnectArm", (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -242,9 +310,7 @@ export default function NavConnectionStatus({
           armState: "idle",
         }));
       } else {
-        setErrorMessage(
-          "Arm didn't disconnect, auto-updating to current state",
-        );
+        enqueueSnackbar("Arm didn't disconnect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -256,7 +322,7 @@ export default function NavConnectionStatus({
       scienceState: "connecting",
     }));
     console.log("Connecting Science, Sending id " + canState.scienceId);
-    socket.emit("connectScience", canState.scienceId, (response) => {
+    robotsocket.emit("connectScience", canState.scienceId, (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -264,9 +330,7 @@ export default function NavConnectionStatus({
           scienceState: "active",
         }));
       } else {
-        setErrorMessage(
-          "Science didn't connect, auto-updating to current state",
-        );
+        enqueueSnackbar("Science didn't connect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -277,7 +341,7 @@ export default function NavConnectionStatus({
       scienceState: "connecting",
     }));
     console.log("Disconnecting Science");
-    socket.emit("disconnectScience", (response) => {
+    robotsocket.emit("disconnectScience", (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -285,9 +349,7 @@ export default function NavConnectionStatus({
           scienceState: "idle",
         }));
       } else {
-        setErrorMessage(
-          "Science didn't disconnect, auto-updating to current state",
-        );
+        enqueueSnackbar("Science didn't disconnect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -307,7 +369,7 @@ export default function NavConnectionStatus({
 
   useEffect(() => {
     if (openPane == "Backend") {
-      requestCanInfo();
+      requestCanInfo(); // autoload can info
     } else {
       setcanState((prev) => ({
         ...prev,
@@ -354,33 +416,65 @@ export default function NavConnectionStatus({
           <Box
             sx={{
               display: "flex",
-              flexDirection: "row",
               gap: 1,
               justifyContent: "center",
             }}
           >
-            <Button
-              color="error"
-              onClick={disconnect}
-              variant="contained"
-              sx={{ width: 140 }}
-            >
-              DISCONNECT
-            </Button>
-            <Button
-              color="success"
-              onClick={connect}
-              variant="contained"
-              sx={{ width: 140 }}
-            >
-              CONNECT
-            </Button>
+            <Box>
+              <Typography
+                sx={{ color: "black", mt: -1 }}
+                variant="h6"
+                fontWeight={600}
+              >
+                ROBOT PI
+              </Typography>
+              <Button
+                color="success"
+                onClick={connectRobotPi}
+                variant="contained"
+                sx={{ width: 120 }}
+              >
+                CONNECT
+              </Button>
+              <Button
+                color="error"
+                onClick={disconnectRobotPI}
+                variant="contained"
+                sx={{ width: 120, mt: 1 }}
+              >
+                DISCONNECT
+              </Button>
+            </Box>
+            <hr className="divider" />
+            <Box>
+              <Typography
+                sx={{ color: "black", mt: -1 }}
+                variant="h6"
+                fontWeight={600}
+              >
+                BASE PI
+              </Typography>
+              <Button
+                color="success"
+                onClick={connectBasePi}
+                variant="contained"
+                sx={{ width: 120 }}
+              >
+                CONNECT
+              </Button>
+              <Button
+                color="error"
+                onClick={disconnectBasePI}
+                variant="contained"
+                sx={{ width: 120, mt: 1 }}
+              >
+                DISCONNECT
+              </Button>
+            </Box>
           </Box>
-          {isConnected ? (
+          <hr className="divider" />
+          {isBaseConnected || isRobotConnected ? (
             <div>
-              <hr className="divider" />
-
-              {/* HEALTH indicator */}
               <div style={{ textAlign: "center", padding: "4px 0" }}>
                 <Box
                   sx={{
@@ -398,7 +492,6 @@ export default function NavConnectionStatus({
                       backgroundColor: health.color,
                     }}
                   />
-
                   <Typography sx={{ color: "black", fontWeight: 600 }}>
                     HEALTH: {healthLevel}
                   </Typography>
@@ -409,19 +502,57 @@ export default function NavConnectionStatus({
                 </Typography>
               </div>
 
-              <hr className="divider" />
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "1.5fr 1fr 1fr",
+                  gap: 0.5,
+                  backgroundColor: "#ebebeb",
+                  p: 1,
+                  borderRadius: 2,
+                  mt: 1,
+                }}
+              >
+                {/* Headers */}
+                <Typography sx={{ color: "black" }} fontWeight={600}>
+                  Data Field
+                </Typography>
+                <Typography sx={{ color: "black" }} fontWeight={600}>
+                  Robot PI
+                </Typography>
+                <Typography sx={{ color: "black" }} fontWeight={600}>
+                  Base PI
+                </Typography>
 
-              <Typography sx={{ color: "black" }}>
-                Latency: {latency} ms
-              </Typography>
-              <Typography sx={{ color: "black" }}>
-                Clients Connected: {numConnections}
-              </Typography>
-              <Typography sx={{ color: "black" }}>
-                Websockets: {conntype}
-              </Typography>
+                {/* Latency Row */}
+                <Typography sx={{ color: "black" }}>Latency:</Typography>
+                <Typography sx={{ color: "black" }}>
+                  {robotLatency} ms
+                </Typography>
+                <Typography sx={{ color: "black" }}>
+                  {baseLatency} ms
+                </Typography>
+
+                {/* Clients Row */}
+                <Typography sx={{ color: "black" }}># of Clients:</Typography>
+                <Typography sx={{ color: "black" }}>
+                  {robotNumConnections}
+                </Typography>
+                <Typography sx={{ color: "black" }}>
+                  {baseNumConnections}
+                </Typography>
+                {/* Websockets Row */}
+                <Typography sx={{ color: "black" }}>Websockets</Typography>
+                <Typography sx={{ color: "black" }}>{robotConnType}</Typography>
+                <Typography sx={{ color: "black" }}>{baseConnType}</Typography>
+              </Box>
               <hr className="divider" />
-              <Typography sx={{ color: "black", m: 0 }} variant="h6">
+            </div>
+          ) : null}
+
+          {isRobotConnected ? (
+            <div>
+              <Typography sx={{ color: "black", mt: -1 }} variant="h6">
                 CAN CONNECTIONS
               </Typography>
               <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
@@ -611,7 +742,7 @@ export default function NavConnectionStatus({
               </Box>
             </div>
           ) : (
-            <Typography sx={{ color: "black" }}>you are offline :(</Typography>
+            <Typography sx={{ color: "black" }}>Robot is offline.</Typography>
           )}
           {/* <TextField id="outlined-basic" label="Address Placeholder" variant="outlined" /> */}
         </div>

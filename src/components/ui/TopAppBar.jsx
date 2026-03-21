@@ -12,12 +12,26 @@
     Checkbox,
   } from "@mui/material";
   import MenuIcon from "@mui/icons-material/Menu";
+  import { createTheme, ThemeProvider } from "@mui/material/styles";
+  import { MenuItem } from "@mui/material";
   import FullscreenIcon from "@mui/icons-material/Fullscreen";
   import { orange } from "@mui/material/colors";
   import NavConnectionStatus from "../socket.io/BackendConnectionManager";
   import GamepadPanel from "../gamepad/Gamepad";
   import Metrics from "../metrics/metrics";
   import StateMachine from "../statemachine/statemachine";
+
+  const theme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
+});
 
   export default function TopAppBar({
     moduleConflicts,
@@ -81,6 +95,7 @@
     }, []);
 
     return (
+      <ThemeProvider theme={theme}>
       <>
         <AppBar
           sx={{
@@ -113,52 +128,51 @@
               Teleoperations
             </Typography>
             
-
+            
 
             {/* Buttons to change between views */}
             <div style={{ display: "flex" }}>
               <Button
                 sx={{
-                display: { xs: "none", md: "inline-flex" },
+                display: {xs: "none", sm: "none", md: "none", lg: "inline-flex"},
                 bgcolor: currentView === "DriveView" ? "rgba(255,255,255,0.2)" : "transparent"
-              }}
-              color="inherit"
-              onClick={() => handleViewChange("DriveView")}>Drive
+                }}
+                color="inherit"
+                onClick={() => handleViewChange("DriveView")}>Drive
               </Button>
 
               <Button
                 sx={{
-                display: { xs: "none", md: "inline-flex" },
-                bgcolor: currentView === "ArmView" ? "rgba(255,255,255,0.2)" : "transparent"
-              }}
-              color="inherit"
-              onClick={() => handleViewChange("ArmView")}>Arm
+                  display: {xs: "none", sm: "none", md: "none", lg: "inline-flex"},
+                  bgcolor: currentView === "ArmView" ? "rgba(255,255,255,0.2)" : "transparent"
+                }}
+                color="inherit"
+                onClick={() => handleViewChange("ArmView")}>Arm
               </Button>
 
               <Button
                 sx={{
-                display: { xs: "none", md: "inline-flex" },
-                bgcolor: currentView === "ScienceView" ? "rgba(255,255,255,0.2)" : "transparent"
-              }}
+                  display: {xs: "none", sm: "none", md: "none", lg: "inline-flex"},
+                  bgcolor: currentView === "ScienceView" ? "rgba(255,255,255,0.2)" : "transparent"
+                }}
                 color="inherit"
                 onClick={() => handleViewChange("ScienceView")}>Science
               </Button>
 
               <Button
                 sx={{
-                  display: { xs: "none", md: "inline-flex" },
+                  display: {xs: "none", sm: "none", md: "none", lg: "inline-flex"},
                   bgcolor: currentView === "AutonomyView" ? "rgba(255,255,255,0.2)" : "transparent"
                 }}
                 color="inherit"
                 onClick={() => handleViewChange("AutonomyView")}>Autonomy</Button>
-
               <Button
                 sx={{
-                  display: { xs: "none", md: "inline-flex" },
+                  display: {xs: "none", sm: "none", md: "none", lg: "inline-flex"},
                   bgcolor: currentView === "ExtrasView" ? "rgba(255,255,255,0.2)" : "transparent"
                 }}
-                color="inherit"
-                onClick={() => handleViewChange("ExtrasView")}>Extras
+                  color="inherit"
+                  onClick={() => handleViewChange("ExtrasView")}>Extras
               </Button>
               </div>
 
@@ -220,28 +234,54 @@
   }}
 >
   <List>
-
-    <ListItem sx={{ display: { xs: "flex", md: "none" } }} button onClick={() => handleViewChange("DriveView")}>
-      <Typography sx={{ color: "black" }}>Drive</Typography>
+    <ListItem
+      sx={{ display: {xs: "flex", sm: "flex", md: "flex", lg: "none" } }}
+    >
+      <Typography sx={{ color: "black" }} variant="h6">
+        VIEWS
+      </Typography>
     </ListItem>
 
-    <ListItem sx={{ display: { xs: "flex", md: "none" } }} button onClick={() => handleViewChange("ArmView")}>
-      <Typography sx={{ color: "black" }}>Arm</Typography>
-    </ListItem>
+    <MenuItem
+      selected={currentView === "DriveView"}
+      onClick={() => handleViewChange("DriveView")}
+      sx={{ display: {xs: "flex", sm: "flex", md: "flex", lg: "none" } }}
+    >
+      Drive
+    </MenuItem>
 
-    <ListItem sx={{ display: { xs: "flex", md: "none" } }} button onClick={() => handleViewChange("ScienceView")}>
-      <Typography sx={{ color: "black" }}>Science</Typography>
-    </ListItem>
+    <MenuItem
+      selected={currentView === "ArmView"}
+      onClick={() => handleViewChange("ArmView")}
+      sx={{ display: {xs: "flex", sm: "flex", md: "flex", lg: "none" } }}
+    >
+      Arm
+    </MenuItem>
 
-    <ListItem sx={{ display: { xs: "flex", md: "none" } }} button onClick={() => handleViewChange("AutonomyView")}>
-      <Typography sx={{ color: "black" }}>Autonomy</Typography>
-    </ListItem>
+    <MenuItem
+      selected={currentView === "ScienceView"}
+      onClick={() => handleViewChange("ScienceView")}
+      sx={{ display: {xs: "flex", sm: "flex", md: "flex", lg: "none" } }}
+    >
+      Science
+    </MenuItem>
 
-    <ListItem sx={{ display: { xs: "flex", md: "none" } }} button onClick={() => handleViewChange("ExtrasView")}>
-      <Typography sx={{ color: "black" }}>Extras</Typography>
-    </ListItem>
-    <ListItem></ListItem>
-    <ListItem></ListItem>
+    <MenuItem
+      selected={currentView === "AutonomyView"}
+      onClick={() => handleViewChange("AutonomyView")}
+      sx={{ display: {xs: "flex", sm: "flex", md: "flex", lg: "none" } }}
+    >
+      Autonomy
+    </MenuItem>
+
+    <MenuItem
+      selected={currentView === "ExtrasView"}
+      onClick={() => handleViewChange("ExtrasView")}
+      sx={{ display: {xs: "flex", sm: "flex", md: "flex", lg: "none" } }}
+    >
+      Extras
+    </MenuItem>
+
     <ListItem>
       <Typography sx={{ color: "black" }} variant="h6">
         SETTINGS
@@ -259,9 +299,9 @@
         label="Show Cameras"
       />
     </ListItem>
-
   </List>
 </Drawer>
       </>
+    </ThemeProvider>
     );
   }

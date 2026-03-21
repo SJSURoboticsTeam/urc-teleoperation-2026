@@ -1,11 +1,13 @@
-import { socket } from "../socket.io/socket";
+import { basesocket, robotsocket } from "../socket.io/socket";
 import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
-import { useSocketStatus } from "../socket.io/socket";
+import { useRobotSocketStatus, useBaseSocketStatus } from "../socket.io/socket";
+import { Box } from "@mui/system";
 
 export default function Metrics({ openPane, setOpenPane }) {
-  const isConnected = useSocketStatus();
+  const isRobotConnected = useRobotSocketStatus();
+  const isBaseConnected = useBaseSocketStatus();
   // antenna telemtry
   const [antenna, setantennadata] = useState({
     status: "NO DATA YET",
@@ -16,7 +18,13 @@ export default function Metrics({ openPane, setOpenPane }) {
     freqw: null,
   });
 
-  const [rpidata, setrpidata] = useState({
+  const [robotRPIData, setRobotRPIData] = useState({
+    status: "NO DATA YET",
+    cpupercent: null,
+    rampercent: null,
+    cputemp: null,
+  });
+  const [baseRPIData, setBaseRPIData] = useState({
     status: "NO DATA YET",
     cpupercent: null,
     rampercent: null,
@@ -36,17 +44,18 @@ export default function Metrics({ openPane, setOpenPane }) {
       });
     };
 
-    socket.on("antennastats", handler);
+    basesocket.on("antennastats", handler);
 
     return () => {
-      socket.off("antennastats", handler); // cleanup so no duplicate listeners
+      basesocket.off("antennastats", handler); // cleanup so no duplicate listeners
     };
   }, []);
 
+  // robot
   useEffect(() => {
     const handler = (data) => {
       console.log("cpu data:", data);
-      setrpidata({
+      setRobotRPIData({
         status: data.status,
         cpupercent: data.cpupercent,
         rampercent: data.rampercent,
@@ -54,10 +63,28 @@ export default function Metrics({ openPane, setOpenPane }) {
       });
     };
 
-    socket.on("cpustats", handler);
+    robotsocket.on("cpustats", handler);
 
     return () => {
-      socket.off("cpustats", handler); // cleanup so no duplicate listeners
+      robotsocket.off("cpustats", handler); // cleanup so no duplicate listeners
+    };
+  }, []);
+  // base pi
+  useEffect(() => {
+    const handler = (data) => {
+      console.log("cpu data:", data);
+      setBaseRPIData({
+        status: data.status,
+        cpupercent: data.cpupercent,
+        rampercent: data.rampercent,
+        cputemp: data.cputemp,
+      });
+    };
+
+    basesocket.on("cpustats", handler);
+
+    return () => {
+      basesocket.off("cpustats", handler); // cleanup so no duplicate listeners
     };
   }, []);
 
@@ -91,11 +118,11 @@ export default function Metrics({ openPane, setOpenPane }) {
             background: "white",
             border: "1px solid gray",
             padding: "10px",
-            minWidth: "250px",
+            minWidth: "300px",
             borderRadius: "4px",
           }}
         >
-          {isConnected ? (
+          {isRobotConnected || isBaseConnected ? (
             <div>
               <Typography sx={{ color: "black" }} variant="h6">
                 ROVER ANTENNA
@@ -129,22 +156,61 @@ export default function Metrics({ openPane, setOpenPane }) {
               <Typography sx={{ color: "black" }} variant="h6">
                 RPI STATUS
               </Typography>
-
-              {rpidata.status === "GOOD" ? (
+              {robotRPIData.status === "GOOD" ||
+              baseRPIData.status === "GOOD" ? (
                 <div>
-                  <Typography sx={{ color: "black" }}>
-                    Cpu Utilization: {rpidata.cpupercent}%
-                  </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    RAM Utilization: {rpidata.rampercent}%
-                  </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    Cpu Temp: {rpidata.cputemp}°C
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "1.5fr 1fr 1fr",
+                      gap: 0.5,
+                      backgroundColor: "#ebebeb",
+                      p: 1,
+                      borderRadius: 2,
+                      mt: -0.25,
+                    }}
+                  >
+                    {/* Headers */}
+                    <Typography sx={{ color: "black" }} fontWeight={600}>
+                      Data Field
+                    </Typography>
+                    <Typography sx={{ color: "black" }} fontWeight={600}>
+                      Robot PI
+                    </Typography>
+                    <Typography sx={{ color: "black" }} fontWeight={600}>
+                      Base PI
+                    </Typography>
+
+                    {/* Latency Row */}
+                    <Typography sx={{ color: "black" }}>% of CPU:</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {robotRPIData.cpupercent}%
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {baseRPIData.cpupercent}%
+                    </Typography>
+
+                    {/* Clients Row */}
+                    <Typography sx={{ color: "black" }}>% of RAM:</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {robotRPIData.rampercent}%
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {baseRPIData.rampercent}%
+                    </Typography>
+                    {/* Websockets Row */}
+                    <Typography sx={{ color: "black" }}>CPU Temp:</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {robotRPIData.cputemp}°C
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {baseRPIData.cputemp}°C
+                    </Typography>
+                  </Box>
                 </div>
               ) : (
                 <Typography sx={{ color: "black" }}>
-                  {rpidata.status}{" "}
+                  {robotRPIData.status}{" "}
                 </Typography>
               )}
 

@@ -11,45 +11,62 @@ import {
   Button,
 } from "@mui/material";
 
-export default function CameraPane() {
-  const [camera, setCamera] = useState("Standby");
+export default function CameraPane({ cameraValue, onCameraChange }){
+    const [camera, setCamera] = useState(cameraValue ?? 'Standby');
 
-  const handleChange = (event) => {
+    useEffect(() => {
+        if (cameraValue !== undefined) {
+            setCamera(cameraValue);
+        }
+    }, [cameraValue]);
+
+    const handleChange = (event) => {
     setCamera(event.target.value);
-  };
-  const cameras = [
-    { value: "Standby", mediatype: "image", name: "Standby", url: "/mars.jpg" },
-    {
-      value: "Mast Cam",
-      mediatype: "iframe",
-      name: "Mast Cam",
-      url: "http://192.168.1.114:8889/mast-720p/",
-    },
-    {
-      value: "Wheels Cam",
-      mediatype: "iframe",
-      name: "Wheels Cam",
-      url: "http://192.168.1.114:8889/wheels-720p/",
-    },
-    {
-      value: "Autonomy Cam",
-      mediatype: "iframe",
-      name: "Drive Cam",
-      url: "http://192.168.1.114:8889/vision-720p/",
-    },
-    {
-      value: "Arm 1",
-      mediatype: "iframe",
-      name: "Arm Base",
-      url: "http://192.168.1.114:8889/one-720p",
-    },
-    {
-      value: "Arm 2",
-      mediatype: "iframe",
-      name: "Arm Front",
-      url: "http://192.168.1.114:8889/two-720p/",
-    },
-  ];
+    const nextValue = event.target.value;
+    setCamera(nextValue);
+    if (onCameraChange) {
+        onCameraChange(nextValue);
+    }
+    };
+    const cameras = [
+      { value: "Standby", mediatype: "image", name: "Standby", url: "/mars.jpg" },
+      {
+        value: "Mast Cam",
+        mediatype: "iframe",
+        name: "Mast Cam",
+        url: "http://192.168.1.114:8889/mast-720p/",
+      },
+      {
+        value: "Wheels Cam",
+        mediatype: "iframe",
+        name: "Wheels Cam",
+        url: "http://192.168.1.114:8889/wheels-720p/",
+      },
+      {
+        value: "Autonomy Cam",
+        mediatype: "iframe",
+        name: "Drive Cam",
+        url: "http://192.168.1.114:8889/vision-720p/",
+      },
+      {
+        value: "Arm 1",
+        mediatype: "iframe",
+        name: "Arm Base",
+        url: "http://192.168.1.114:8889/one-720p",
+      },
+      {
+        value: "Arm 2",
+        mediatype: "iframe",
+        name: "Arm Front",
+        url: "http://192.168.1.114:8889/two-720p/",
+      },
+      {
+        value: "Demo",
+        mediatype: "iframe",
+        name: "Demo",
+        url: "http://192.168.1.2:8889/masttesting/",
+      },
+    ];
 
   const selectedCamera = cameras.find((cam) => cam.value == camera);
   const [loading, setLoading] = useState(true);
@@ -90,32 +107,25 @@ export default function CameraPane() {
     <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <FormControl
         fullWidth
+        variant="outlined"
         sx={{
+          mt: 1,
           mb: 0.5,
-          minHeight: 40,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
         }}
       >
         <InputLabel
           id="camera-select-label"
-          sx={{
-            position: "static",
-            transform: "none",
-            mb: 0,
-            fontSize: "0.875rem",
-          }}
         >
           Camera
         </InputLabel>
         <Select
           labelId="camera-select-label"
+          id="camera-select"
           value={camera}
           label="Camera"
           onChange={handleChange}
           size="small"
-          sx={{ py: 0, height: 32, fontSize: "0.9rem" }}
+          sx={{ fontSize: "0.9rem" }}
           MenuProps={{
             // Render menu in a portal so it isn't clipped by ancestor overflow
             disablePortal: false,
