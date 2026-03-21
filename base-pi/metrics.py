@@ -48,44 +48,56 @@ async def cpuloop(sio):
 
 
 async def asyncsshloop(sio):
+    conn = None
+
     while True:
         if not username:
             await sio.emit('antennastats', {'status': "ERROR: NO SSH CREDS"})
+            await asyncio.sleep(1)
             continue
+
         try:
-            #print("Testing ssh...")
-            async with asyncio.timeout(config.AntennaPollingRate):
-                async with asyncssh.connect("192.168.1.20", username=username, password=password) as conn:
-                    try:
-                        #print("CONNECTED")
-                        res = await conn.run("mca-status | grep signal", check=False)
-                        dbm = res.stdout.strip()
-                        res = await conn.run("mca-status | grep wlanTxRate", check=False)
-                        txrate = res.stdout.strip()
-                        res = await conn.run("mca-status | grep wlanRxRate", check=False)
-                        rxrate = res.stdout.strip()
-                        # typical frequency is 924MHz with a channel width of 8, becoming 920-928MHz
-                        res = await conn.run("mca-status | grep centerFreq", check=False)
-                        freq = res.stdout.strip()  # 924
-                        res = await conn.run("mca-status | grep chanbw", check=False)
-                        freqwidth = res.stdout.strip()  # 8
-                        data = {
-                            'status': "GOOD",
-                            'dbm': dbm[7:],
-                            'txrate': txrate[11:],
-                            'rxrate': rxrate[11:],
-                            'freq': freq[11:],
-                            'freqwidth': freqwidth[7:]
-                        }
-                        await sio.emit('antennastats', data)
-                    except Exception as e:
-                        if (config.silenceSSHErrors == False):
-                            print("ERROR RETRIEVING SSH DATA!:", e)
+            # ensure connection (reuse if possible)
+            if conn is None :
+                conn = await asyncssh.connect(
+                    "192.168.1.20",
+                    username=username,
+                    password=password,
+                )
+
+            # single command to reduce round-trips
+            res = await asyncio.wait_for(
+                conn.run(
+                    "mca-status | egrep 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw'",
+                    check=False
+                ),
+                timeout=config.AntennaPollingRate * 2
+            )
+
+            lines = res.stdout.splitlines()
+            parsed = {k: v for k, v in (line.split('=') for line in lines if '=' in line)}
+
+            data = {
+                'status': "GOOD",
+                'dbm': parsed.get('signal', ''),
+                'txrate': parsed.get('wlanTxRate', ''),
+                'rxrate': parsed.get('wlanRxRate', ''),
+                'freq': parsed.get('centerFreq', ''),
+                'freqwidth': parsed.get('chanbw', '')
+            }
+
+            await sio.emit('antennastats', data)
+
         except Exception as e:
-            if(config.silenceSSHErrors == False):
-                print("SSH connection failed:" + str(e))
+            if not config.silenceSSHErrors:
+                print("SSH error:", e)
+
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
-        #print("Sleeping")
+
+            # reset connection and back off slightly
+            conn = None
+            await asyncio.sleep(2)
+
         await asyncio.sleep(config.AntennaPollingRate)
 
 
@@ -106,4 +118,3 @@ def register_metric_events(sio):
     async def pingCheck(sid):
         #unlike the others ping works better as a query and respond than otherwise
         return 1
-
