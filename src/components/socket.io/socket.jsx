@@ -10,7 +10,6 @@ const host =
 const URL = `http://${host}:4000`;
 export const socket = io(URL, {
   autoConnect: false, // <-- prevents immediate connection
-  transports: ["websocket"], // <-- only use websockets
 });
 
 export function useSocketStatus() {
