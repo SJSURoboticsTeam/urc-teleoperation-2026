@@ -58,7 +58,7 @@ async def asyncsshloop(sio):
 
         try:
             # ensure connection (reuse if possible)
-            if conn is None :
+            if conn is None:
                 conn = await asyncssh.connect(
                     "192.168.1.20",
                     username=username,
@@ -66,24 +66,24 @@ async def asyncsshloop(sio):
                 )
 
             # single command to reduce round-trips
-            res = await asyncio.wait_for(
-                conn.run(
-                    "mca-status | egrep 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw'",
-                    check=False
-                ),
-                timeout=config.AntennaPollingRate * 2
+            res = await conn.run(
+                "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw'",
+                check=False
             )
 
-            lines = res.stdout.splitlines()
-            parsed = {k: v for k, v in (line.split('=') for line in lines if '=' in line)}
+            parsed = {}
+            for line in res.stdout.splitlines():
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    parsed[k.strip()] = v.strip()
 
             data = {
                 'status': "GOOD",
-                'dbm': parsed.get('signal', ''),
-                'txrate': parsed.get('wlanTxRate', ''),
-                'rxrate': parsed.get('wlanRxRate', ''),
-                'freq': parsed.get('centerFreq', ''),
-                'freqwidth': parsed.get('chanbw', '')
+                'dbm': parsed.get('signal'),
+                'txrate': parsed.get('wlanTxRate'),
+                'rxrate': parsed.get('wlanRxRate'),
+                'freq': parsed.get('centerFreq'),
+                'freqwidth': parsed.get('chanbw')
             }
 
             await sio.emit('antennastats', data)
