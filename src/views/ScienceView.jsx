@@ -26,7 +26,6 @@ export default function ScienceView () {
     const handleChange = (event, newTabContent) => {
         setTabContent(newTabContent);
     };
-    const margin = { right: 24 };
     const exampleFrequency1 = [515, 500, 515, 520, 515, 500, 525, 510, 500, 515, 500];
     const exampleFrequency2 = [545, 540, 545, 550, 540, 555, 545, 540, 545, 535, 545];
     const xTime = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110];
@@ -38,7 +37,7 @@ export default function ScienceView () {
                         border:1,
                         borderColor: 'black',
                         height: 40,
-                        width: 240,
+                        width: 'auto',
                         display: 'flex',
                         justifyContent: 'center',
                         marginBottom: 2,
@@ -50,7 +49,7 @@ export default function ScienceView () {
                                 border:1,
                                 borderColor: 'black',
                                 height: 40,
-                                width: 100,
+                                width: 'auto',
                                 display: 'flex',
                                 justifyContent: 'center',
                                 marginBottom: 2,
@@ -63,14 +62,13 @@ export default function ScienceView () {
                         borderColor: 'black',
                         backgroundColor: 'red',
                         height: 40,
-                        width: 100,
+                        width: 'auto',
                         display: 'flex',
                         justifyContent: 'center',
                         marginBottom: 2,
                         ml: 1,
-                        mr: 15
                 }}>
-                    E-Stop
+                    SCIENCE E-Stop
                 </Button>
             </div>
             <div className="steps">
@@ -79,7 +77,7 @@ export default function ScienceView () {
                 <div className="step step-accent">Site 2</div>
                 <div className="step step-accent">Site 3</div>
             </div>
-            <Box sx={{ width: 600, height: 400}}>
+            <Box sx={{ minWidth: '100%', minHeight: 600}}>
                 <Box sx={{border: 1, borderRadius: 2, borderColor: 'divider'}}>
                     <Tabs
                         value={TabContent}
@@ -95,6 +93,7 @@ export default function ScienceView () {
                     {tabNum.map((num) => ( TabContent === num ? (
                         <div key={num}>
                             <div className="flex flex-row gap-4 mb-4">
+                                <Box sx={{width: '50%'}}>
                                 <div className="overflow-x-auto">
                                     <div className="steps">
                                         <div className="step step-accent">Start</div>
@@ -104,18 +103,21 @@ export default function ScienceView () {
                                         <div className="step step-accent">Step 4</div>
                                         <div className="step step-accent">Step 5</div>
                                         <div className="step step-accent">Step 6</div>
+                                        <div className="step step-accent">Step 7</div>
+                                        <div className="step step-accent">Step 8</div>
+                                        <div className="step step-accent">Step 9</div>
                                     </div>
                                 </div>
-                                <Box sx={{ ml: 5, width: 200 }}> Coordinates: (_,_) <br/> Accuracy: ___ <br/> Range: ___ <br/> </Box>
+                                </Box>
+                                <Box sx={{ ml: 5, minWidth: 200 }}> Coordinates: (_,_) <br/> Accuracy: ___ <br/> Range: ___ <br/> </Box>
                                 <Button variant="contained"
                                     sx={{
                                         border: 1,
                                         borderColor: "black",
                                         height: 45,
-                                        width: 90,
+                                        width: 100,
                                         display: "flex",
                                         justifyContent: "center",
-                                        ml: 2,
                                         fontSize: "0.75rem"
                                     }}
                                 >
@@ -123,7 +125,7 @@ export default function ScienceView () {
                                 </Button>
                             </div>
                             <div className="flex flex-row gap-4 mb-4">
-                                <Box sx={{ width: 800, height: 300 }}>
+                                <Box sx={{ minWidth: '70%', minHeight: 400 }}>
                                     <LineChart
                                         series={[
                                         {data: exampleFrequency1, label: 'Frequency 1'},
@@ -131,11 +133,11 @@ export default function ScienceView () {
                                         ]}
                                         xAxis={[{scaleType: 'point', data: xTime, height: 25 }]}
                                         yAxis={[{width: 45 }]}
-                                        margin ={margin}
+
                                     />
                                     </Box>
                                 <TableContainer component={Paper}>
-                                    <Table sx={{ minWidth: 100}} aria-label="simple table">
+                                    <Table sx={{ minWidth: '10%', minHeight: 400 }} aria-label="simple table">
                                         <TableHead>
                                         <TableRow>
                                             <TableCell>vials</TableCell>
