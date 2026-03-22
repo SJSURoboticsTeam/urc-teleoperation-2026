@@ -152,7 +152,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                 </Typography>
               )}
 
-              <hr className="divider" />
+              <hr className="border-t border-gray-300 my-4" />
               <Typography sx={{ color: "black" }} variant="h6">
                 RPI STATUS
               </Typography>
@@ -214,7 +214,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                 </Typography>
               )}
 
-              <hr className="divider" />
+              <hr className="border-t border-gray-300 my-4" />
               <Typography sx={{ color: "black" }} variant="h6">
                 ROBOT
               </Typography>

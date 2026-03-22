@@ -445,7 +445,7 @@ export default function NavConnectionStatus({
                 DISCONNECT
               </Button>
             </Box>
-            <hr className="divider" />
+            <hr className="border-t border-gray-300 my-4" />
             <Box>
               <Typography
                 sx={{ color: "black", mt: -1 }}
@@ -472,7 +472,7 @@ export default function NavConnectionStatus({
               </Button>
             </Box>
           </Box>
-          <hr className="divider" />
+          <hr className="border-t border-gray-300 my-4" />
           {isBaseConnected || isRobotConnected ? (
             <div>
               <div style={{ textAlign: "center", padding: "4px 0" }}>
@@ -546,7 +546,7 @@ export default function NavConnectionStatus({
                 <Typography sx={{ color: "black" }}>{robotConnType}</Typography>
                 <Typography sx={{ color: "black" }}>{baseConnType}</Typography>
               </Box>
-              <hr className="divider" />
+              <hr className="border-t border-gray-300 my-4" />
             </div>
           ) : null}
 
