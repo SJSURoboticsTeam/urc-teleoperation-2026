@@ -1,67 +1,92 @@
 import "react-resizable/css/styles.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { socket } from "../socket.io/socket.jsx";
+import { basesocket, robotsocket } from "../socket.io/socket";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
-import { useSocketStatus } from "../socket.io/socket";
+import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
 import Wheel from "../ui/Wheel";
 
+import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
+import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
+import { useConnectedGamepads } from "../../contexts/GamepadContext.jsx";
+
 const HEADER_HEIGHT = 56;
 
-export default function DriveManualInput({
-  sidewaysVelocity,
-  forwardsVelocity,
-  rotationalVelocity,
-  moduleConflicts,
-  panAngles,
-  panSpeed,
-  setPanSpeed,
-  setDriveConnectedOne,
-  driveConnectedOne,
-}) {
-  const serverConnected = useSocketStatus();
+export default function DriveManualInput({}) {
+  // Server connection status
+  const serverConnected = useRobotSocketStatus();
   const [txon, settxon] = useState(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!serverConnected || driveConnectedOne == null || !txon) return;
+  // Drive
+  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+  const driveConnectedOne = connectedGamepads.drive;
 
-      socket.emit("driveCommands", {
-        xVel: sidewaysVelocity,
-        yVel: forwardsVelocity,
-        rotVel: rotationalVelocity,
-        moduleConflicts: Number(moduleConflicts),
-      });
-    }, FrameRateConstant);
-
-    return () => clearInterval(interval);
-  }, [
+  const [driveCommands] = useDriveCommands();
+  const {
     sidewaysVelocity,
     forwardsVelocity,
     rotationalVelocity,
     moduleConflicts,
-    serverConnected,
-    driveConnectedOne,
-    txon,
-  ]);
+  } = driveCommands;
 
+  // Mast
+  const [mastCommands, setMastCommands] = useMastCommands();
+  const { px: panX, py: panY, panSpeed } = mastCommands; // destructure mastCommands
+
+  // refs update whenever Mast panning changes
+  const panXRef = useRef(panX);
+  const panYRef = useRef(panY);
   useEffect(() => {
+    panXRef.current = panX;
+  }, [panX]);
+  useEffect(() => {
+    panYRef.current = panY;
+  }, [panY]);
+
+  const driveCommandsRef = useRef(driveCommands);
+  useEffect(() => {
+    driveCommandsRef.current = driveCommands;
+  }, [driveCommands]);
+
+  // Emit drive commands
+  useEffect(() => {
+  const interval = setInterval(() => {
     if (!serverConnected || driveConnectedOne == null || !txon) return;
+    console.log("Starting drive command transmission");
 
-    socket.emit("panCommands", {
-      xVel: panAngles.px,
-      yVel: panAngles.py,
+    socket.emit("driveCommands", {
+      xVel: driveCommandsRef.current.sidewaysVelocity,
+      yVel: driveCommandsRef.current.forwardsVelocity,
+      rotVel: driveCommandsRef.current.rotationalVelocity,
+      moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
     });
-  }, [panAngles, serverConnected, driveConnectedOne, txon]);
+  }, FrameRateConstant);
 
-  const handleHoming = () => socket.emit("driveHoming");
+  return () => clearInterval(interval);
+}, [serverConnected, driveConnectedOne, txon]);
+
+  const handleHoming = () => robotsocket.emit("driveHoming");
+
+  // Emit mast pan commands
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!serverConnected || driveConnectedOne == null || !txon) return;
+      socket.emit("panCommands", {
+        xVel: panXRef.current,
+        yVel: panYRef.current,
+      });
+    }, FrameRateConstant);
+
+    return () => clearInterval(interval);
+  }, [serverConnected, driveConnectedOne, txon]);
 
   const handleManualTx = () => {
+    if (!serverConnected) return;
     socket.emit("driveCommands", {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
@@ -70,8 +95,8 @@ export default function DriveManualInput({
     });
 
     socket.emit("panCommands", {
-      xVel: panAngles.px,
-      yVel: panAngles.py,
+      xVel: panX,
+      yVel: panY,
     });
   };
 
@@ -140,6 +165,7 @@ export default function DriveManualInput({
               variant="contained"
               onClick={handleHoming}
               sx={{ whiteSpace: "nowrap" }}
+              disabled={!serverConnected}
             >
               Homing
             </Button>
@@ -147,6 +173,7 @@ export default function DriveManualInput({
               variant="contained"
               onClick={handleManualTx}
               sx={{ whiteSpace: "nowrap" }}
+              disabled={!serverConnected}
             >
               MANUAL TX
             </Button>
@@ -195,7 +222,9 @@ export default function DriveManualInput({
               step={10}
               marks
               value={panSpeed}
-              onChange={(_, value) => setPanSpeed(value)}
+              onChange={(_, value) =>
+                setMastCommands((prev) => ({ ...prev, panSpeed: value }))
+              }
               min={10}
               max={100}
               valueLabelDisplay="auto"
@@ -213,8 +242,8 @@ export default function DriveManualInput({
               gap: 2,
             }}
           >
-            <VelocityItem value={panAngles.px} label="Pan W" />
-            <VelocityItem value={panAngles.py} label="Pan H" />
+            <VelocityItem value={panX} label="Pan W" />
+            <VelocityItem value={panY} label="Pan H" />
           </Box>
         </Box>
         <Box

@@ -6,11 +6,12 @@ import metrics
 import asyncio
 import signal
 import sys
-from metrics import asyncsshloop, cpuloop, register_metric_events
+from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-
+# ex: drive has the canserial object,
+# while driveId holds the canopener name so frontend can sync with backend status
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
@@ -36,6 +37,7 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
+    #drive
     try:
         if serial_ports["drive"]:
             serial_ports["drive"].close()
@@ -45,14 +47,25 @@ def shutdown():
     except Exception:
         print("DRIVE WAS NOT DISCONNECTED!!!")
         pass
+    #arm
     try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
+        if serial_ports["arm"]:
+            serial_ports["arm"].close()
             print("Arm serial closed.")
         else:
             print("Arm was never connected.")
     except Exception:
         print("ARM WAS NOT DISCONNECTED!!!")
+        pass
+    #science
+    try:
+        if serial_ports["science"]:
+            serial_ports["science"].close()
+            print("Science serial closed.")
+        else:
+            print("Science was never connected.")
+    except Exception:
+        print("SCIENCE WAS NOT DISCONNECTED!!!")
         pass
     sys.exit(0)
 # =================== Setup, CAN connections ===================
@@ -200,6 +213,16 @@ async def disconnectScience(sid):
         return("ERROR")
         pass
 
+@sio.event
+async def E_STOP(sid):
+    # shut everything down
+    print("----------------")
+    print("E-STOP TRIGGERED")
+    print("----------------")
+    # wait 200ms for message to come back, then stop
+    asyncio.get_event_loop().call_later(0.2, shutdown)
+    return("OK")
+
 
 # =================== Initialization ===================
 # Background task guard
@@ -223,7 +246,6 @@ async def connect(sid,environ):
     global can_error_message_started
     global drive_task_started
     global arm_task_started
-    global async_ssh_started
     global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
@@ -243,9 +265,6 @@ async def connect(sid,environ):
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request,serial_ports)
-    if not async_ssh_started:
-       async_ssh_started = True
-       #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

@@ -2,14 +2,17 @@ import { useState, useEffect } from "react";
 import {
   AppBar,
   Toolbar,
+  Button,
   Drawer,
   List,
   ListItem,
   Typography,
   IconButton,
-  Button,
   FormControlLabel,
   Checkbox,
+  Dialog,
+  DialogTitle,
+  Tooltip
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -18,27 +21,16 @@ import NavConnectionStatus from "../socket.io/BackendConnectionManager";
 import GamepadPanel from "../gamepad/Gamepad";
 import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
+import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
+
 
 export default function TopAppBar({
-  moduleConflicts,
   setCurrentView,
-  onVelocitiesChange,
-  onArmVelocitiesChange,
   currentView,
-  setModuleConflicts,
-  driveConnectedOne,
-  setDriveConnectedOne,
   camsVisibility,
   setcamsVisibility,
-  panAngles,
-  setPanAngles,
-  panSpeed,
-  setErrorMessage,
-  errorMessage,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [driveGamepads, setDriveGamepads] = useState({});
-  const [armGamepads, setArmGamepads] = useState({});
   const [openPane, setOpenPane] = useState("None");
 
   const toggleDrawer = (open) => () => {
@@ -47,36 +39,33 @@ export default function TopAppBar({
 
   const handleViewChange = (view) => setCurrentView(view);
 
-  useEffect(() => {
-    const handleConnect = (e) => {
-      const gp = e.gamepad;
-      // check if a gamepad is a drive or arm controller based on id containing "Standard" or "Extreme"
-      if (/STANDARD/i.test(gp.id)) {
-        setDriveGamepads((prev) => ({ ...prev, [gp.index]: gp }));
-      } else if (/EXTREME/i.test(gp.id)) {
-        setArmGamepads((prev) => ({ ...prev, [gp.index]: gp }));
+  const [capsLockActive, setCapsLockState] = useState(false);
+  const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
+  const isRobotConnected = useRobotSocketStatus();
+
+  function initiateEstop() {
+    console.log("E-STOP!");
+    setestopStatus("LOADING");
+    // E_STOP vs E-STOP since python can't handle dashed function names
+    robotsocket.emit("E_STOP", (response) => {
+      if (response === "OK") {
+        setestopStatus("KILLED");
+        console.log("REMOTE KILL COMPLETE. ");
       }
+    });
+  }
+
+  useEffect(() => {
+    const updateCapsState = (e) => {
+      setCapsLockState(e.getModifierState("CapsLock"));
     };
 
-    const handleDisconnect = (e) => {
-      setDriveGamepads((prev) => {
-        const copy = { ...prev };
-        delete copy[e.gamepad.index];
-        return copy;
-      });
-      setArmGamepads((prev) => {
-        const copy = { ...prev };
-        delete copy[e.gamepad.index];
-        return copy;
-      });
-    };
-
-    window.addEventListener("gamepadconnected", handleConnect);
-    window.addEventListener("gamepaddisconnected", handleDisconnect);
+    window.addEventListener("keydown", updateCapsState);
+    window.addEventListener("keyup", updateCapsState);
 
     return () => {
-      window.removeEventListener("gamepadconnected", handleConnect);
-      window.removeEventListener("gamepaddisconnected", handleDisconnect);
+      window.removeEventListener("keydown", updateCapsState);
+      window.removeEventListener("keyup", updateCapsState);
     };
   }, []);
 
@@ -141,31 +130,46 @@ export default function TopAppBar({
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
+          <span>
+          <Button
+            style={{
+              marginRight: 20,
+            }}
+            variant="contained"
+            color="error"
+            loading={estopStatus == "LOADING"}
+            disabled={!capsLockActive || !isRobotConnected}
+            onClick={() => {
+              if (capsLockActive) {
+                initiateEstop();
+              }
+            }}
+          >
+            E-STOP
+          </Button>
+          </span>
+          </Tooltip>
+
+          <Dialog
+            open={estopStatus == "KILLED"}
+            onClose={() => setestopStatus("idle")}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle color="red" id="alert-dialog-title">
+              {"REMOTE KILL SUCCESS"}
+            </DialogTitle>
+          </Dialog>
 
           {/* Gamepad connection status and selection panel */}
-
           <GamepadPanel
             openPane={openPane}
             setOpenPane={setOpenPane}
             name="Drive"
-            setModuleConflicts={setModuleConflicts}
-            onDriveVelocitiesChange={onVelocitiesChange}
-            driveGamepads={driveGamepads}
-            armGamepads={armGamepads}
             currentView={currentView}
-            driveConnectedOne={driveConnectedOne}
-            setDriveConnectedOne={setDriveConnectedOne}
-            moduleConflicts={moduleConflicts}
-            panAngles={panAngles}
-            panSpeed={panSpeed}
-            setPanAngles={setPanAngles}
           />
-          <NavConnectionStatus
-            openPane={openPane}
-            setOpenPane={setOpenPane}
-            setErrorMessage={setErrorMessage}
-            errorMessage={errorMessage}
-          />
+          <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />
           <StateMachine openPane={openPane} setOpenPane={setOpenPane} />
 

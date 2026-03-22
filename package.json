@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "lite": "vite --open --mode lite",
     "dev": "vite --open",
     "dev-host": "vite --open --host",
     "lan": "vite --mode prod --open",
@@ -22,6 +23,7 @@
     "@vis.gl/react-maplibre": "^8.0.4",
     "express": "^4.21.2",
     "maplibre-gl": "^5.8.0",
+    "notistack": "^3.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-resizable": "^3.0.5",

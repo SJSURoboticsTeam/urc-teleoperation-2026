@@ -31,7 +31,7 @@ arm_receive_ID = {
     "WRIST_EF1": '223',
     "WRIST_EF2": '224',
     "CLAMP": '225',
-}
+} 
 
 # =================== ARM CAN Data Parsing & Emit =======================
 arm_parse_functions = {
@@ -46,6 +46,7 @@ arm_parse_functions = {
 def register_arm_events(sio, serial_ports):
     @sio.event
     async def armCommands(sid, data):
+        print(data)
         # 8 bit signed integer correlating to 2^6x
         shoulder_scaled = int(data['shoulder'] * (2**6))
         elbow_scaled = int(data['elbow'] * (2**6))
@@ -62,13 +63,14 @@ def register_arm_events(sio, serial_ports):
         clamp = clamp_scaled.to_bytes(2, 'big', signed=True).hex()
 
         can_msg = f't{arm_send_ID["ELBOW"]}312{elbow}\r'
-        await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
+        print(f'Arm command: {can_msg}')
+        # await asyncio.to_thread(serial_ports["arm"].write,can_msg.encode())
         
         # can_msg = f't{arm_send_ID["SHOULDER"]}312{shoulder}\r'
-        # await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
+        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
         
         # can_msg = f't{arm_send_ID["TRACK"]}312{track}\r'
-        # await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
+        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
 
         print(f'[{sid}] Arm command sent: {can_msg}')
 

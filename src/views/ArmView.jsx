@@ -1,28 +1,44 @@
 import { green } from "@mui/material/colors";
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import "react-resizable/css/styles.css";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Grid, Button } from "@mui/material";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
-import { socket } from "../components/socket.io/socket";
+import { useRobotSocketStatus, basesocket } from "../components/socket.io/socket";
 import { useArmCommands } from "../contexts/ArmCommandContext";
+import { useConnectedGamepads } from "../contexts/GamepadContext";
 
 // View for arm controls, handles both manual slider input and gamepad input (if connected)
-export default function ArmView({ armConnectedOne }) {
+export default function ArmView({}) {
   const [armCommands, setArmCommands] = useArmCommands();
+  const [connectedGamepads] = useConnectedGamepads();
+  const armConnectedOne = connectedGamepads.arm;
+  const serverConnected = useRobotSocketStatus();
+  const [txon, settxon] = useState(false);
+
+  const armCommandsRef = useRef(armCommands);
+  useEffect(() => {
+    armCommandsRef.current = armCommands;
+  }, [armCommands]);
 
   // Continuously transmit arm commands
   useEffect(() => {
+    if (!serverConnected || armConnectedOne == null || !txon) return;
+    console.log("Starting arm command transmission");
     const intervalId = setInterval(() => {
-      socket.emit("armCommands", armCommands);
+      basesocket.emit("armCommands", armCommandsRef.current);
     }, FrameRateConstant);
+
     return () => clearInterval(intervalId);
-  }, [armCommands]);
+  }, [serverConnected, armConnectedOne, txon]);
 
   // Test transmission manually
   const handleManualUpdate = () => {
-    socket.emit("armCommands", armCommands);
-    console.log("Manual arm commands sent:", JSON.stringify(armCommands));
+    if (!serverConnected) return;
+    basesocket.emit("armCommands", armCommands);
+    // console.log("Manual arm commands sent:", JSON.stringify(armCommands));
   };
 
   // When sliders are used, update armCommands state
@@ -60,9 +76,6 @@ export default function ArmView({ armConnectedOne }) {
                 { label: "Clamp (cm)", key: "clamp", max: 20 },
               ].map(({ label, key, max }) => (
                 <Grid
-                  item
-                  xs={12}
-                  sm={6}
                   key={label}
                   sx={{
                     border: "1px solid #ccc",
@@ -89,13 +102,33 @@ export default function ArmView({ armConnectedOne }) {
                 </Grid>
               ))}
             </Grid>
-            <Button
-              sx={{ mt: 2, left: "50%", transform: "translateX(-50%)" }}
-              variant="contained"
-              onClick={handleManualUpdate}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 4,
+                mt: 3,
+              }}
             >
-              Manual TX
-            </Button>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={txon}
+                    onChange={(e) => settxon(e.target.checked)}
+                  />
+                }
+                label="AUTO TX"
+              />
+
+              <Button
+                variant="contained"
+                onClick={handleManualUpdate}
+                disabled={!serverConnected}
+              >
+                Manual TX
+              </Button>
+            </Box>
           </Box>
         </>
       ) : (
@@ -112,17 +145,14 @@ export default function ArmView({ armConnectedOne }) {
           </Box>
           <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
             {[
-              { label: "elbow", key: "elbow" },
-              { label: "shoulder", key: "shoulder" },
-              { label: "track", key: "track" },
-              { label: "pitch", key: "pitch" },
-              { label: "roll", key: "roll" },
-              { label: "clamp", key: "clamp" },
+              { label: "Elbow", key: "elbow" },
+              { label: "Shoulder", key: "shoulder" },
+              { label: "Track", key: "track" },
+              { label: "Pitch", key: "pitch" },
+              { label: "Roll", key: "roll" },
+              { label: "Clamp", key: "clamp" },
             ].map(({ label, key }) => (
               <Grid
-                item
-                xs={12}
-                sm={6}
                 key={label}
                 sx={{
                   textAlign: "center",
@@ -141,11 +171,20 @@ export default function ArmView({ armConnectedOne }) {
                   {label}
                 </Typography>
                 <Typography variant="h6">
-                  {Math.round(key * 100) / 100}
+                  {Math.round((armCommands[key] || 0) * 100) / 100}
                 </Typography>
               </Grid>
             ))}
           </Grid>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={txon}
+                onChange={(e) => settxon(e.target.checked)}
+              />
+            }
+            label="AUTO TX"
+          />
         </Box>
       )}
     </Box>
