@@ -31,7 +31,7 @@ arm_receive_ID = {
     "WRIST_EF1": '223',
     "WRIST_EF2": '224',
     "CLAMP": '225',
-}
+} 
 
 # =================== ARM CAN Data Parsing & Emit =======================
 arm_parse_functions = {
