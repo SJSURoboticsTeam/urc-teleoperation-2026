@@ -65,19 +65,21 @@ function App() {
   });
 
   const [camsVisibility, setcamsVisibility] = useState(true);
+  const [uiVisibility, setuiVisibility] = useState(true);
 
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
       case "ArmView":
         return (
-          <SplitView CurrentView={<ArmView />} showCameras={camsVisibility} />
+          <SplitView CurrentView={<ArmView />} showCameras={camsVisibility}  showUI = {uiVisibility}/>
         );
       case "DriveView":
         return (
           <SplitView
             CurrentView={<DriveComponents />}
             showCameras={camsVisibility}
+            showUI = {uiVisibility}
           />
         );
       case "ExtrasView":
@@ -85,6 +87,7 @@ function App() {
           <SplitView
             CurrentView={<ExtrasView />}
             showCameras={camsVisibility}
+            showUI = {uiVisibility}
           />
         );
       case "ScienceView":
@@ -92,6 +95,7 @@ function App() {
           <SplitView
             CurrentView={<ScienceView />}
             showCameras={camsVisibility}
+            showUI = {uiVisibility}
           />
         );
       case "AutonomyView":
@@ -99,6 +103,7 @@ function App() {
           <SplitView
             CurrentView={<AutonomyView />}
             showCameras={camsVisibility}
+            showUI = {uiVisibility}
           />
         );
       default:
@@ -141,6 +146,8 @@ function App() {
                   setCurrentView={setCurrentView}
                   camsVisibility={camsVisibility}
                   setcamsVisibility={setcamsVisibility}
+                  uiVisibility = {uiVisibility}
+                  setuiVisibility = {setuiVisibility}
                   addSnackbarMessage={addSnackbarMessage}
                 />
 

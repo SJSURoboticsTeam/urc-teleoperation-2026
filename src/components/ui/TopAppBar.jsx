@@ -30,6 +30,8 @@ export default function TopAppBar({
   currentView,
   camsVisibility,
   setcamsVisibility,
+  uiVisibility, 
+  setuiVisibility
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
@@ -322,6 +324,17 @@ export default function TopAppBar({
                 />
               }
               label="Show Cameras"
+            />
+          </ListItem>
+                    <ListItem>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={uiVisibility}
+                  onChange={(e) => setuiVisibility(e.target.checked)}
+                />
+              }
+              label="Show UI"
             />
           </ListItem>
         </List>

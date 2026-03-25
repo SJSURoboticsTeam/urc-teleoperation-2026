@@ -13,7 +13,7 @@ const DEFAULT_CAMERA = "Standby";
 const DEFAULT_CAMERA_NUM = 2;
 const STORAGE_KEY = "missionControl.cameraLayout";
 
-export default function DriveView({ CurrentView, showCameras }) {
+export default function DriveView({ CurrentView, showCameras, showUI }) {
   const containerRef = useRef(null);
   const [leftPct, setLeftPct] = useState(65);
   const [cameraNum, setCameraNum] = useState(DEFAULT_CAMERA_NUM);
@@ -112,6 +112,7 @@ export default function DriveView({ CurrentView, showCameras }) {
       className="flex flex-1 h-full min-h-0"
       style={{ userSelect: "none" }}
     >
+      {showUI && (
       <div
         className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
         style={{ flex: `0 0 ${effectiveLeftPct}%` }}
@@ -123,8 +124,9 @@ export default function DriveView({ CurrentView, showCameras }) {
           <CurrentView />
         ) : null}
       </div>
+      )}
 
-      {showCameras && (
+      {(showCameras && showUI) && (
         <div
           role="separator"
           aria-orientation="vertical"
@@ -170,6 +172,7 @@ export default function DriveView({ CurrentView, showCameras }) {
           >
             <MenuItem value={1}>1 Camera</MenuItem>
             <MenuItem value={2}>2 Cameras</MenuItem>
+            <MenuItem value={3}>3 Cameras</MenuItem>
             <MenuItem value={4}>4 Cameras</MenuItem>
           </Select>
         </FormControl>
@@ -183,6 +186,7 @@ export default function DriveView({ CurrentView, showCameras }) {
                   gridTemplateColumns: "repeat(2,1fr)",
                   gap: "6px",
                 }
+            
           }
           sx={cameraNum >= 3 ? { minWidth: 500 } : {}}
         >
