@@ -57,7 +57,7 @@ export default function DriveManualInput({}) {
   useEffect(() => {
   const interval = setInterval(() => {
     if (!serverConnected || driveConnectedOne == null || !txon) return;
-    console.log("Starting drive command transmission");
+    //console.log("Starting drive command transmission");
 
     robotsocket.emit("driveCommands", {
       xVel: driveCommandsRef.current.sidewaysVelocity,
