@@ -19,7 +19,7 @@ pip install -r requirements.txt
 ## SSH requires three things (For Antenna Metrics)
 
 ### Secrets Install
-create a file called .env in server/
+create a file called .env in base-pi/
 with the following:
 
 ```bash

@@ -59,7 +59,7 @@ export default function DriveManualInput({}) {
     if (!serverConnected || driveConnectedOne == null || !txon) return;
     console.log("Starting drive command transmission");
 
-    socket.emit("driveCommands", {
+    robotsocket.emit("driveCommands", {
       xVel: driveCommandsRef.current.sidewaysVelocity,
       yVel: driveCommandsRef.current.forwardsVelocity,
       rotVel: driveCommandsRef.current.rotationalVelocity,
@@ -76,7 +76,7 @@ export default function DriveManualInput({}) {
   useEffect(() => {
     const interval = setInterval(() => {
       if (!serverConnected || driveConnectedOne == null || !txon) return;
-      socket.emit("panCommands", {
+      robotsocket.emit("mastCommands", {
         xVel: panXRef.current,
         yVel: panYRef.current,
       });
@@ -87,14 +87,15 @@ export default function DriveManualInput({}) {
 
   const handleManualTx = () => {
     if (!serverConnected) return;
-    socket.emit("driveCommands", {
+    console.log("Manual TX");
+    robotsocket.emit("driveCommands", {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
       rotVel: rotationalVelocity,
       moduleConflicts: Number(moduleConflicts),
     });
 
-    socket.emit("panCommands", {
+    robotsocket.emit("panCommands", {
       xVel: panX,
       yVel: panY,
     });
