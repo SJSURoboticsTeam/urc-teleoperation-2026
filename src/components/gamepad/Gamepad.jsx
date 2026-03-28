@@ -65,12 +65,23 @@ export default function GamepadPanel({ currentView }) {
     // rest: collects the remaining properties into a new object
     // Clear selected controller if the unplugged gamepad was active
     // Prevents stale drive/arm indices after disconnect
+    // Clear selected controller if the unplugged gamepad was active
+    // Prevents stale drive/arm indices after disconnect
     const handleDisconnect = (e) => {
       const gpIndex = e.gamepad.index;
+
 
       setConnectedGamepads((prev) => {
         if (prev.driveGPList?.[gpIndex]) {
           const { [gpIndex]: _, ...rest } = prev.driveGPList;
+          return { 
+            ...prev, 
+            driveGPList: rest,
+            drive: prev.drive === gpIndex ? null : prev.drive,
+          };
+        } 
+        
+        if (prev.armGPList?.[gpIndex]) {
           return { 
             ...prev, 
             driveGPList: rest,
@@ -85,7 +96,13 @@ export default function GamepadPanel({ currentView }) {
             armGPList: rest,
             arm: prev.arm === gpIndex ? null : prev.arm,
           };
+          return { 
+            ...prev, 
+            armGPList: rest,
+            arm: prev.arm === gpIndex ? null : prev.arm,
+          };
         }
+
 
         return prev;
       });
@@ -263,6 +280,13 @@ export default function GamepadPanel({ currentView }) {
         return;
       }
 
+      // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
+      // so stale arm commands do not persist after disconnect
+      if (!gp) {
+        armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+        return;
+      }
+
       const armInputs = {
         elbow: gp.buttons[2].pressed ? clean(gp.axes[1]) : 0, 
         shoulder: gp.buttons[3].pressed ? -1 *clean(gp.axes[1]) : 0, 
@@ -343,7 +367,12 @@ export default function GamepadPanel({ currentView }) {
 
     armAnimationIdRef.current = requestAnimationFrame(pollAxes);
 
+
     return () => {
+      if (armAnimationIdRef.current) {
+        cancelAnimationFrame(armAnimationIdRef.current);
+        armAnimationIdRef.current = null;
+      }
       if (armAnimationIdRef.current) {
         cancelAnimationFrame(armAnimationIdRef.current);
         armAnimationIdRef.current = null;
