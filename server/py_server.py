@@ -119,7 +119,7 @@ async def connectDrive(sid,data):
         #serial_ports["drive"] = CanSerial(data)
         serial_ports["drive"] = UartDriveSerial(data)
         serial_ports["driveId"] = data
-        print("Drive connected.")
+        print("Drive UART connected.")
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
