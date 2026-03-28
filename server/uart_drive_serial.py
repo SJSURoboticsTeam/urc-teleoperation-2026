@@ -15,6 +15,7 @@ class UartDriveSerial:
         # [msg_id][length][payload]
         length = len(payload)
         packet = bytes([msg_id, length]) + payload
+        print(f"TX: id={msg_id:#04x}, len={length}, payload={payload.hex()}")
         self.ser.write(packet)
 
     def read_packet(self):

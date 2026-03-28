@@ -43,6 +43,7 @@ async def main():
     uart.send_packet(0x40, payload)
     print("Written bytes:", uart.ser.written)
     print("Written hex:", uart.ser.written.hex())
+    print(f"TX: id={0x40:#04x}, len={len(payload)}, payload={payload.hex()}")
     print()
 
     print("=== Test 4: UART read_packet ===")
