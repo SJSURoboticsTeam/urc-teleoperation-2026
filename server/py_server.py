@@ -6,20 +6,15 @@ import metrics
 import asyncio
 import signal
 import sys
-from metrics import asyncsshloop, cpuloop, register_metric_events
+from metrics import cpuloop, register_metric_events
 #from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from uart_drive_serial import UartDriveSerial
-from drive_uart import (
-    read_drive_uart_loop,
-    send_drive_heartbeat,
-    register_drive_events,
-)
+from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
 
 # ex: drive has the canserial object,
 # while driveId holds the canopener name so frontend can sync with backend status
-
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
@@ -88,12 +83,11 @@ app = socketio.ASGIApp(sio)
 
 # CAN buses
 #print("Preparing for CAN...")
-print("Preparing serial connections...")
+print("Preparing for serial connections...")
 
 
 # =================== CAN connections ===================
 @sio.event
-async def getSerialInfo(sid):
 async def getSerialInfo(sid):
     # can ids for web ui
     canIds_arr = []
@@ -125,8 +119,7 @@ async def connectDrive(sid,data):
         #serial_ports["drive"] = CanSerial(data)
         serial_ports["drive"] = UartDriveSerial(data)
         serial_ports["driveId"] = data
-        print("Drive UART connected.")
-        print("Drive UART connected.")
+        print("Drive connected.")
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
@@ -241,10 +234,9 @@ async def E_STOP(sid):
 can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
+drive_heartbeat_started = False
 async_ssh_started = False
 cpu_started = False
-drive_heartbeat_started = False
-drive_heartbeat_started = False
 
 
 register_metric_events(sio)
@@ -257,13 +249,11 @@ register_camera_pt_events(sio,serial_ports)
 @sio.event
 async def connect(sid,environ):
     """On first client connect, start background serial read loops."""
-    """On first client connect, start background serial read loops."""
     global can_error_message_started
     global drive_task_started
     global arm_task_started
+    global drive_heartbeat_started
     global cpu_started
-    global drive_heartbeat_started
-    global drive_heartbeat_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -277,19 +267,16 @@ async def connect(sid,environ):
         drive_task_started = True
         #sio.start_background_task(read_drive_can_loop,serial_ports)
         sio.start_background_task(read_drive_uart_loop, serial_ports)
-    # Temporarily disable arm CAN background loop during drive UART testing
-    #if not arm_task_started:
-    #    arm_task_started = True
-    #    sio.start_background_task(read_arm_can_loop, serial_ports)
+    if not arm_task_started:
+        arm_task_started = True
+        sio.start_background_task(read_arm_can_loop, serial_ports)
+    # Disable old CAN drive status polling during UART testing
     #if not can_error_message_started:
     #    can_error_message_started = True
     #    sio.start_background_task(send_drive_status_request,serial_ports)
     if not drive_heartbeat_started:
         drive_heartbeat_started = True
         sio.start_background_task(send_drive_heartbeat, serial_ports)
-    if not async_ssh_started:
-       async_ssh_started = True
-       #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

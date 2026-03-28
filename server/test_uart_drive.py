@@ -1,11 +1,6 @@
 import asyncio
-<<<<<<< HEAD
 from uart_drive_serial import UartDriveSerial
 from drive_uart import (
-=======
-from uart_drive_serial import UartDrivesSerial
-from drive import (
->>>>>>> a37f01f (Add UART prototype path for drive backend communication)
     build_set_chassis_velocities_payload,
     parse_drive_packet,
 )
@@ -42,11 +37,7 @@ async def main():
     print()
 
     print("=== Test 3: UART send_packet ===")
-<<<<<<< HEAD
     uart = UartDriveSerial.__new__(UartDriveSerial)
-=======
-    uart = UartDrivesSerial.__new__(UartDrivesSerial)
->>>>>>> a37f01f (Add UART prototype path for drive backend communication)
     uart.ser = FakeSerial()
 
     uart.send_packet(0x40, payload)
