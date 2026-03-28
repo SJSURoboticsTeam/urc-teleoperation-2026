@@ -63,16 +63,30 @@ export default function GamepadPanel({ currentView }) {
     // ?. optional chaining: if undefined, yields undefined instead of throwing
     // _ : binds to gpIndex as a throw-away variable
     // rest: collects the remaining properties into a new object
+    // Clear selected controller if the unplugged gamepad was active
+    // Prevents stale drive/arm indices after disconnect
     const handleDisconnect = (e) => {
       const gpIndex = e.gamepad.index;
+
       setConnectedGamepads((prev) => {
         if (prev.driveGPList?.[gpIndex]) {
           const { [gpIndex]: _, ...rest } = prev.driveGPList;
-          return { ...prev, driveGPList: rest };
-        } else if (prev.armGPList?.[gpIndex]) {
+          return { 
+            ...prev, 
+            driveGPList: rest,
+            drive: prev.drive === gpIndex ? null : prev.drive,
+          };
+        } 
+        
+        if (prev.armGPList?.[gpIndex]) {
           const { [gpIndex]: _, ...rest } = prev.armGPList;
-          return { ...prev, armGPList: rest };
+          return { 
+            ...prev, 
+            armGPList: rest,
+            arm: prev.arm === gpIndex ? null : prev.arm,
+          };
         }
+
         return prev;
       });
     };
@@ -189,9 +203,8 @@ export default function GamepadPanel({ currentView }) {
   }, [driveConnectedOne, mastCommands?.panSpeed, setMastCommands]);
 
   // Polling for arm gamepad input
-  const [armManualDisconnect, setArmManualDisconnect] = useState(false);
   useEffect(() => {
-    if (armManualDisconnect || armConnectedOne == null) {
+    if (armConnectedOne == null) {
       setArmCommands({
         track: 0,
         shoulder: 0,
@@ -214,37 +227,64 @@ export default function GamepadPanel({ currentView }) {
 
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
-      if (gp) {
-        const clean = (v, deadzone = 0.08) => {
-          if (Math.abs(v) < deadzone) return 0;
-          return Math.round(v * 100) / 100;
+
+      // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
+      // so stale arm commands do not persist after disconnect
+      if (!gp) {
+        const zeroVal = {
+          track: 0,
+          shoulder: 0,
+          elbow: 0, 
+          pitch: 0,
+          roll: 0,
+          clamp: 0,
         };
 
-        const newVal = {
-          elbow: clean(gp.axes[9]),
-          shoulder: clean(gp.axes[1]),
-          track: clean(gp.axes[3]),
-          pitch: clean(gp.axes[0]),
-          roll: clean(gp.axes[5]),
-          clamp: clean(gp.axes[6]),
-        };
-
-        const changed = Object.keys(newVal).some(
-          (key) => newVal[key] !== prevVal[key],
+        const changed = Object.keys(zeroVal).some(
+          (key) => zeroVal[key] !== prevVal[key],
         );
         if (changed) {
-          setArmCommands(newVal);
-          prevVal = newVal;
+          setArmCommands(zeroVal);
+          prevVal = zeroVal;
         }
+
+        armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+        return;
+      }
+
+      const clean = (v, deadzone = 0.08) => {
+        if (Math.abs(v) < deadzone) return 0;
+        return Math.round(v * 100) / 100;
+      };
+
+      const newVal = {
+        elbow: clean(gp.axes[9]),
+        shoulder: clean(gp.axes[1]),
+        track: clean(gp.axes[3]),
+        pitch: clean(gp.axes[0]),
+        roll: clean(gp.axes[5]),
+        clamp: clean(gp.axes[6]),
+      };
+
+      const changed = Object.keys(newVal).some(
+        (key) => newVal[key] !== prevVal[key],
+      );
+        
+      if (changed) {
+        setArmCommands(newVal);
+        prevVal = newVal;
       }
 
       armAnimationIdRef.current = requestAnimationFrame(pollAxes);
     };
 
     armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+
     return () => {
-      cancelAnimationFrame(armAnimationIdRef.current);
-      armAnimationIdRef.current = null;
+      if (armAnimationIdRef.current) {
+        cancelAnimationFrame(armAnimationIdRef.current);
+        armAnimationIdRef.current = null;
+      }
     };
   }, [armConnectedOne, setArmCommands]);
 
