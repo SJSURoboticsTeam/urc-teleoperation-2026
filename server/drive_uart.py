@@ -18,31 +18,35 @@ DRIVE_REPLY_ID = {
     "CONFIG_ACK": 0x7F,
 }
 
-def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts):
-    """
-    Builds the payload for the SET_CHASSIS_VELOCITIES command.
-    """
-    x_scaled = int(x_vel * (2 ** 12))
-    y_scaled = int(y_vel * (2 ** 12))
-    rot_scaled = int(rot_vel * (2 ** 6))
-    mod_conf = int(module_conflicts)
 
-    return (
-        x_scaled.to_bytes(2, "big", signed=True) +
-        y_scaled.to_bytes(2, "big", signed=True) +
-        rot_scaled.to_bytes(2, "big", signed=True) +
-        mod_conf.to_bytes(1, "big", signed=False)
+def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts):
+    # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
+    x_vel_scaled = int(x_vel * (2 ** 12))
+    y_vel_scaled = int(y_vel * (2 ** 12))
+
+    # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
+    rot_vel_scaled = int(rot_vel * (2 ** 6))
+    mod_conf_scaled = int(module_conflicts)
+
+    # convert each field into bytes and combine into one payload
+    payload = (
+        x_vel_scaled.to_bytes(2, "big", signed=True) +
+        y_vel_scaled.to_bytes(2, "big", signed=True) +
+        rot_vel_scaled.to_bytes(2, "big", signed=True) +
+        mod_conf_scaled.to_bytes(1, "big", signed=False)
     )
 
+    return payload
+
+
+# =================== Client Drive Event Handlers ====================
+
 def register_drive_events(sio, serial_ports):
-    """
-    Registers drive events with the Socket.IO server.
-    """
     @sio.event
     async def driveCommands(sid, data):
         try:
-            drive = serial_ports["drive"]
-            if drive is None:
+            # make sure drive UART is connected first
+            if serial_ports["drive"] is None:
                 print("Drive UART not connected")
                 return
 
@@ -53,63 +57,90 @@ def register_drive_events(sio, serial_ports):
                 data["moduleConflicts"],
             )
 
+            # send_packet is blocking, run it in a thread
             await asyncio.to_thread(
-                drive.send_packet,
+                serial_ports["drive"].send_packet,
                 DRIVE_MSG_ID["SET_CHASSIS_VELOCITIES"],
                 payload,
             )
-            print(f"[{sid}] Drive UART command sent")
+            print(f'[{sid}] Drive UART command sent')
         except Exception as e:
-            print(f"Error in driveCommands: {e}")
+            print(f'Error in driveCommands: {e}')
 
     @sio.event
     async def driveHoming(sid):
-        """
-        Initiates homing sequence on the drive
-        """
         try:
-            drive = serial_ports["drive"]
-            if drive is None:
+            # make sure drive UART is connected first
+            if serial_ports["drive"] is None:
                 print("Drive UART not connected")
                 return
 
             await asyncio.to_thread(
-                drive.send_packet,
+                serial_ports["drive"].send_packet,
                 DRIVE_MSG_ID["HOMING_SEQUENCE"],
                 b""
             )
-            print(f"[{sid}] Homing initiated")
+            print(f'[{sid}] Homing initiated')
         except Exception as e:
-            print(f"Error in driveHoming: {e}")
+            print(f'Error in driveHoming: {e}')
+
 
 async def parse_drive_packet(packet):
-    """
-    Parses a drive packet and prints the relevant information.
-    """
-    msg_id, payload = packet
+    try:
+        msg_id, payload = packet
 
-    if msg_id == DRIVE_REPLY_ID["HEARTBEAT_REPLY"]:
-        print("Heartbeat Reply")
+        if msg_id == DRIVE_REPLY_ID["HEARTBEAT_REPLY"]:
+            print("Heartbeat Reply")
 
-    elif msg_id == DRIVE_REPLY_ID["RETURN_ESTIMATED_CHASSIS_VELOCITIES"]:
-        if len(payload) != 6:
-            print("Bad estimated velocity payload length")
-            return
+        elif msg_id == DRIVE_REPLY_ID["HOMING_SEQUENCE_RESPONSE"]:
+            print("Homing Reply")
 
-        x_vel = int.from_bytes(payload[0:2], "big", signed=True)
-        y_vel = int.from_bytes(payload[2:4], "big", signed=True)
-        rot_vel = int.from_bytes(payload[4:6], "big", signed=True)
+        elif msg_id == DRIVE_REPLY_ID["RETURN_ESTIMATED_CHASSIS_VELOCITIES"]:
+            if len(payload) != 6:
+                print("Bad estimated velocity payload length")
+                return
 
-        print(f"est x vel: {x_vel}")
-        print(f"est y vel: {y_vel}")
-        print(f"est rot vel: {rot_vel}")
+            x_vel = int.from_bytes(payload[0:2], "big", signed=True)
+            y_vel = int.from_bytes(payload[2:4], "big", signed=True)
+            rot_vel = int.from_bytes(payload[4:6], "big", signed=True)
+
+            print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
+
+        elif msg_id == DRIVE_REPLY_ID["SET_VELOCITIES_RESPONSE"]:
+            if len(payload) != 7:
+                print("Bad set velocities response payload length")
+                return
+
+            x_vel = int.from_bytes(payload[0:2], "big", signed=True)
+            y_vel = int.from_bytes(payload[2:4], "big", signed=True)
+            rot_vel = int.from_bytes(payload[4:6], "big", signed=True)
+            transition_type = payload[6]
+
+            print(
+                f"\nx vel: {x_vel} "
+                f"\ny vel: {y_vel} "
+                f"\nrot vel {rot_vel} "
+                f"\ntransition type: {transition_type}"
+            )
+
+        elif msg_id == DRIVE_REPLY_ID["RETURN_OFFSET"]:
+            if len(payload) != 3:
+                print("Bad return offset payload length")
+                return
+
+            # current UART version assumes 2-byte angle offset + 1-byte module position
+            angle_offset = int.from_bytes(payload[0:2], "big", signed=True)
+            module_position = payload[2]
+            print(f"angle offset: {angle_offset} \nmodule position: {module_position}")
+
+    except Exception as e:
+        print(f'Error parsing drive UART packet: {e}')
+
 
 async def read_drive_uart_loop(serial_ports):
-    """
-    Continuously reads packets from the drive UART and parses them.
-    """
     try:
         while True:
+            # read_packet is blocking so run it in a thread
             drive = serial_ports["drive"]
             if drive is not None:
                 packet = await asyncio.to_thread(drive.read_packet)
@@ -117,12 +148,11 @@ async def read_drive_uart_loop(serial_ports):
                     await parse_drive_packet(packet)
             await asyncio.sleep(0.01)
     except Exception as e:
-        print(f"Drive UART task error: {e}")
+        print(f'Drive UART task error: {e}')
 
+
+# send heartbeat once in a while so drive can confirm MC is still alive
 async def send_drive_heartbeat(serial_ports):
-    """
-    Sends a heartbeat message to the drive every 5 seconds.
-    """
     try:
         while True:
             drive = serial_ports["drive"]
@@ -132,7 +162,8 @@ async def send_drive_heartbeat(serial_ports):
                     DRIVE_MSG_ID["HEARTBEAT"],
                     b""
                 )
-                print("Sent drive heartbeat")
+                print('Sent drive heartbeat')
             await asyncio.sleep(5)
     except Exception as e:
-        print(f"Drive heartbeat error: {e}")
+        print(f'Drive heartbeat error: {e}')
+        
