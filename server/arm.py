@@ -44,71 +44,99 @@ arm_parse_functions = {
     arm_receive_ID['CLAMP']:        lambda data: parse_arm_servo(data)
 }
 
+JOINT_TO_CAN_KEY = {
+    "track": "TRACK",
+    "shoulder": "SHOULDER",
+    "elbow": "ELBOW",
+    "pitch": "WRIST_EF1",
+    "roll": "WRIST_EF2",
+    "clamp": "CLAMP",
+}
+
+# Optional temporary test filter for hardware bring-up
+# Ex: {"track"}, {"shoulder"}, {"elbow"}, {"pitch"}, {"roll"}, {"clamp"}
+# Leave as None to send all joints normally
+ARM_TEST_JOINTS = None
+
+def should_send_joint(joint_name):
+    return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
+
+def encode_arm_value(value):
+    try:
+        scaled = int(float(value) * (2**6))
+    except Exception:
+        scaled = 0
+    return scaled.to_bytes(2, "big", signed=True).hex()
+
+async def send_arm_joint(serial_ports, joint_name, value):
+    arm_serial = serial_ports.get("arm")
+    if arm_serial is None:
+        print(f'[ARM] {joint_name} ignored: arm not connected')
+        return False
+
+    if joint_name not in JOINT_TO_CAN_KEY:
+        print(f'[ARM] Unknown joint: {joint_name}')
+        return False
+
+    payload = encode_arm_value(value)
+    can_key = JOINT_TO_CAN_KEY[joint_name]
+    can_msg = f't{arm_send_ID[can_key]}312{payload}\r'
+
+    try:
+        print(f'[ARM] {joint_name}: {can_msg}')
+        await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        return True
+    except Exception as e:
+        print(f'[ARM] {joint_name} send failed: {e}')
+        return False
+
 def register_arm_events(sio, serial_ports):
     @sio.event
     async def armCommands(sid, data):
-        # Ignore arm commands while the arm CAN device is disconnected
-        # Prevents write errors during disconnect/reconnect
+        # Manual/full send path: send all joints from one payload
         if serial_ports.get("arm") is None:
-            print(f'[{sid}] Arm command ignored: arm not connected')
+            print(f'[{sid}] armCommands ignored: arm not connected')
             return "ERROR"
         
-        print(data)
-        # 8 bit signed integer correlating to 2^6x
-        shoulder_scaled = int(data['shoulder'] * (2**6))
-        elbow_scaled = int(data['elbow'] * (2**6))
-        pitch_scaled = int(data['pitch'] * (2**6))
-        roll_scaled = int(data['roll'] * (2**6))
-        track_scaled = int(data['track'] * (2**6))
-        clamp_scaled = int(data['clamp'] * (2**6))
+        print(f"[{sid}] armCommands payload: {data}")
 
-        shoulder = shoulder_scaled.to_bytes(2, 'big', signed=True).hex()
-        elbow = elbow_scaled.to_bytes(2, 'big', signed=True).hex()
-        pitch = pitch_scaled.to_bytes(2, 'big', signed=True).hex()
-        roll = roll_scaled.to_bytes(2, 'big', signed=True).hex()
-        track = track_scaled.to_bytes(2, 'big', signed=True).hex()
-        clamp = clamp_scaled.to_bytes(2, 'big', signed=True).hex()
+        joint_order = ["track", "shoulder", "elbow", "pitch", "roll", "clamp"]
 
-        # Create CAN messages for each joint
-        joint_msgs = [
-            ("TRACK", track),
-            ("SHOULDER", shoulder),
-            ("ELBOW", elbow),
-            ("WRIST_EF1", pitch),
-            ("WRIST_EF2", roll),
-            ("CLAMP", clamp),
-        ]
+        for joint_name in joint_order:
+            if not should_send_joint(joint_name):
+                continue
 
-        # Send CAN messages for each joint
-        for joint_name, payload in joint_msgs:
-            try:
-                can_msg = f't{arm_send_ID[joint_name]}312{payload}\r'
-                print(f'Arm command [{joint_name}]: {can_msg}')
-                await asyncio.to_thread(serial_ports["arm"].write, can_msg.encode())
-            except Exception as e:
-                print(f'Arm command failed [{joint_name}]: {e}')
+            value = data.get(joint_name, 0)
+            ok = await send_arm_joint(serial_ports, joint_name, value)
+            if not ok:
                 return "ERROR"
 
-        print(f'[{sid}] Arm commands sent')
+        print(f"[{sid}] armCommands sent successfully")
         return "OK"
 
-        #can_msg = f't{arm_send_ID["ELBOW"]}312{elbow}\r'
-        #print(f'Arm command: {can_msg}')
-        # await asyncio.to_thread(serial_ports["arm"].write,can_msg.encode())
-        
-        # can_msg = f't{arm_send_ID["SHOULDER"]}312{shoulder}\r'
-        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
-        
-        # can_msg = f't{arm_send_ID["TRACK"]}312{track}\r'
-        # await asyncio.to_thread(arm_serial.write, can_msg.encode())
+    @sio.event
+    async def armJointCommand(sid, data):
+        # AUTO TX path: send only the updated joint
+        if serial_ports.get("arm") is None:
+            print(f"[{sid}] armJointCommand ignored: arm not connected")
+            return "ERROR"
 
-        #print(f'[{sid}] Arm command sent: {can_msg}')
+        joint_name = data.get("joint")
+        value = data.get("value", 0)
+
+        print(f"[{sid}] armJointCommand payload: {data}")
+
+        if not should_send_joint(joint_name):
+            print(f"[{sid}] armJointCommand skipped by test filter: {joint_name}")
+            return "OK"
+
+        ok = await send_arm_joint(serial_ports, joint_name, value)
+        return "OK" if ok else "ERROR"
 
 def parse_receive_stop():
     print("Received Arm Stop")
 
 def parse_arm_servo(data):
-
     address_map = {
         "220": 'Track',
         "221": 'Shoulder',
@@ -128,7 +156,8 @@ def parse_arm_data(data):
             return
 
         address = string_data[1:4]
-        arm_parse_functions[address](data)
+        if address in arm_parse_functions:
+            arm_parse_functions[address](data)
     except Exception as e:
         print(f'Error parsing arm data: {e}')
 
@@ -137,17 +166,17 @@ async def read_arm_can_loop(serial_ports):
         try:
             arm_serial = serial_ports.get("arm")
             # Keep the read loop alive even when the arm is disconnected
-            # This allows reconnects to recover without restarting the server
             if arm_serial is None:
                 await asyncio.sleep(0.1)
                 continue
 
-            # data = serial_ports["arm"].read_can(None)
             data = await asyncio.to_thread(arm_serial.read_can, None)
             if data:
                 parse_arm_data(data)
+
             # time.sleep(0.01)
             await asyncio.sleep(0.01)
         except Exception as e:
             print(f'Arm CAN thread error: {e}')
             await asyncio.sleep(0.25)
+            
