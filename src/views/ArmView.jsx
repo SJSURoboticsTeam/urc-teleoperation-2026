@@ -107,10 +107,10 @@ export default function ArmView({}) {
               {[
                 { label: "Elbow (deg)", key: "elbow", min: -100, max: -20 },
                 { label: "Shoulder (deg)", key: "shoulder", min: -20, max: 90 },
-                { label: "Track (cm)", key: "track", min: 0, max: 30 },
+                { label: "Track (mm)", key: "track", min: 0, max: 300 },
                 { label: "Pitch (deg)", key: "pitch", min: 0, max: 180 },
                 { label: "Roll (deg)", key: "roll", min: 0, max: 360 },
-                { label: "Clamp (cm)", key: "clamp", min: 0, max: 20 },
+                { label: "Clamp", key: "clamp", min: 0, max: 20 },
               ].map(({ label, key, min = 0, max }) => (
                 <Grid
                   key={label}
