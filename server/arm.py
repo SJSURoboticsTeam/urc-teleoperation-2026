@@ -63,7 +63,7 @@ def should_send_joint(joint_name):
 
 def encode_arm_value(value):
     try:
-        scaled = int(float(value) * (2**6))
+        scaled = int(float(value))  # send raw degrees or mm
     except Exception:
         scaled = 0
     return scaled.to_bytes(2, "big", signed=True).hex()
