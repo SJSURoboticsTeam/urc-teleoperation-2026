@@ -45,7 +45,7 @@ export default function NavConnectionStatus({
     driveId: "disconnect", // selected can id in dropdown or disconnect
     armId: "disconnect", // selected can id in dropdown or disconnect
     scienceId: "disconnect", // selected can id in dropdown or disconnect
-    gpsId: "COM7",
+    gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
 
   const LATENCY_DEGRADED_THRESHOLD = 300;
@@ -365,7 +365,7 @@ export default function NavConnectionStatus({
       gpsState: "connecting",
     }));
     console.log("Connecting GPS, Sending id " + canState.gpsId);
-    socket.emit("connectGPS", canState.gpsId, (response) => {
+    robotsocket.emit("connectGPS", canState.gpsId, (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -373,7 +373,7 @@ export default function NavConnectionStatus({
           gpsState: "active",
         }));
       } else {
-        setErrorMessage("GPS didn't connect, auto-updating to current state");
+        enqueueSnackbar("GPS didn't connect, auto-updating to current state");
         requestCanInfo();
       }
     });
@@ -384,7 +384,7 @@ export default function NavConnectionStatus({
       gpsState: "connecting",
     }));
     console.log("Disconnecting GPS");
-    socket.emit("disconnectGPS", (response) => {
+    robotsocket.emit("disconnectGPS", (response) => {
       console.log("RESPONSE:" + response);
       if (response === "OK") {
         setcanState((prev) => ({
@@ -392,9 +392,7 @@ export default function NavConnectionStatus({
           gpsState: "idle",
         }));
       } else {
-        setErrorMessage(
-          "GPS didn't disconnect, auto-updating to current state",
-        );
+        enqueueSnackbar("GPS didn't disconnect, auto-updating to current state", { variant: 'error' });
         requestCanInfo();
       }
     });
@@ -651,7 +649,8 @@ export default function NavConnectionStatus({
                       <MenuItem
                         disabled={
                           canId === canState.armId ||
-                          canId === canState.scienceId
+                          canId === canState.scienceId || 
+                          canId === canState.gpsId
                         }
                         key={canId}
                         value={canId}
@@ -706,7 +705,8 @@ export default function NavConnectionStatus({
                       <MenuItem
                         disabled={
                           canId === canState.driveId ||
-                          canId === canState.scienceId
+                          canId === canState.scienceId ||
+                          canId === canState.gpsId
                         }
                         key={canId}
                         value={canId}
@@ -757,7 +757,7 @@ export default function NavConnectionStatus({
                     {canState.canIds?.map((canId) => (
                       <MenuItem
                         disabled={
-                          canId === canState.driveId || canId === canState.armId
+                          canId === canState.driveId || canId === canState.armId || canId === canState.gpsId
                         }
                         key={canId}
                         value={canId}
@@ -782,6 +782,61 @@ export default function NavConnectionStatus({
                   variant="contained"
                 >
                   {canState.scienceState == "idle" ? (
+                    <ElectricalServicesIcon />
+                  ) : (
+                    <EjectIcon />
+                  )}
+                </Button>
+              </Box>
+              {/* GPS CONNECTION */}
+              <Box
+                sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}
+              >
+                <FormControl sx={{ flex: 1 }} size="small">
+                  <InputLabel id="demo-simple-select-label">GPS</InputLabel>
+                  <Select
+                    value={canState.gpsId}
+                    label="GPS"
+                    disabled={
+                      canState.loading || canState.gpsState != "idle"
+                    }
+                    onChange={(event) =>
+                      setcanState((prev) => ({
+                        ...prev,
+                        gpsId: event.target.value,
+                      }))
+                    }
+                    fullWidth
+                  >
+                    <MenuItem value={"disconnect"}>Disconnect</MenuItem>
+                    {canState.canIds?.map((canId) => (
+                      <MenuItem
+                        disabled={
+                          canId === canState.driveId || canId === canState.armId || canId === canState.scienceId
+                        }
+                        key={canId}
+                        value={canId}
+                      >
+                        {canId}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button
+                  color={canState.gpsState === "idle" ? "success" : "error"}
+                  disabled={
+                    canState.loading || canState.gpsId == "disconnect"
+                  }
+                  loading={canState.gpsState == "connecting"}
+                  sx={{ width: 50, minWidth: 0 }}
+                  onClick={
+                    canState.gpsState == "idle"
+                      ? connectGPS
+                      : disconnectGPS
+                  }
+                  variant="contained"
+                >
+                  {canState.gpsState == "idle" ? (
                     <ElectricalServicesIcon />
                   ) : (
                     <EjectIcon />

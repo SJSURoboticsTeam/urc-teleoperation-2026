@@ -92,23 +92,24 @@ class ZEDF9P:
                 self.__gnrmc = self.process_gnrmc(line)
 
 async def read_gps_data(serial_ports, sio):
-    try:
-       gps = ZEDF9P(serial_ports["gpsId"], 57600)
-       while True:
-        if gps.has_gps_lock():
-            position = gps.get_position()
-            data = {
-                    'latitude': position.latitude,
-                    'longitude': position.longitude,
-            }
-            await sio.emit("gpsData", data)
-            # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
-        else:
-            print("No GPS lock")
-        # time.sleep(0.01)
-        await asyncio.sleep(0.01)
-    except Exception as e:
-        print(f'GPS thread error: {e}')
+    while True:
+        gps = serial_ports['gps']
+        try:
+            if gps.has_gps_lock():
+                position = gps.get_position()
+                data = {
+                        'latitude': position.latitude,
+                        'longitude': position.longitude,
+                }
+                await sio.emit("gpsData", data)
+                # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
+            else:
+                print("No GPS lock")
+            # time.sleep(0.01)
+        except Exception as e:
+            print(f'GPS thread error: {e}')
+        finally:
+            await asyncio.sleep(0.5)  # Sleep briefly to prevent tight loop on error
 
 # /dev/tty.usbmodem14301
 # if(__name__ == "__main__"):

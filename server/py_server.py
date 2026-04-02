@@ -17,7 +17,7 @@ serial_ports = {
     "arm": None,
     "armId" : "disconnect",
     "gps": None,
-    "gpsId" : "COM7",
+    "gpsId" : "disconnect",
     "science": None,
     "scienceId" : "disconnect"
 }
@@ -103,7 +103,7 @@ async def getCanInfo(sid):
     for port in list_ports.comports():
         #print(f"{port.device} ")
 
-        if(port.device.find("serial") != -1):
+        if(port.device.find("serial") != -1 or port.device.find("COM") != -1):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
         data = {
@@ -237,7 +237,7 @@ async def connectGPS(sid, data):
         return("ERROR")
     print("Connecting to " + str(data))
     try:
-        serial_ports["gps"] = ZEDF9P(data) 
+        serial_ports["gps"] = ZEDF9P(data, 57600) 
         serial_ports["gpsId"] = data
         print("GPS connected.")
         return("OK")
@@ -250,7 +250,6 @@ async def disconnectGPS(sid):
     global serial_ports
     try:
         if serial_ports["gps"]:
-            serial_ports["gps"].close()
             serial_ports["gps"] = None
             serial_ports["gpsId"] = "disconnect"
             print("GPS serial closed.")
