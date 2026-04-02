@@ -23,18 +23,55 @@ export default function ArmView({}) {
     armCommandsRef.current = armCommands;
   }, [armCommands]);
 
-  // Continuously transmit arm commands
+  // When no arm gamepad is selected, initialize manual controls to
+  // their default test ranges so the sliders and displayed values match
   useEffect(() => {
-    if (!serverConnected || armConnectedOne == null || !txon) return;
-    console.log("Starting arm command transmission");
+    if (armConnectedOne == null) {
+      setArmCommands({
+        elbow: -100,
+        shoulder: -20,
+        track: 0,
+        pitch: 0,
+        roll: 0,
+        clamp: 0,
+      });
+    }
+  }, [armConnectedOne, setArmCommands]);
+
+  const ARM_JOINT_KEYS = ["track", "shoulder", "elbow", "pitch", "roll", "clamp"];
+  const prevArmCommandsRef = useRef(armCommands);
+
+  useEffect(() => {
+    prevArmCommandsRef.current = armCommands;
+  }, []);
+
+  // AUTO TX: emit only joints whose values changed since the last interval
+  // This works for both slider mode and gamepad mode
+  useEffect(() => {
+    if (!serverConnected || !txon) return;
+
+    console.log("[ARM] Starting auto TX (changed joints only)");
+
     const intervalId = setInterval(() => {
-      robotsocket.emit("armCommands", armCommandsRef.current);
+      const current = armCommandsRef.current;
+      const previous = prevArmCommandsRef.current;
+
+      ARM_JOINT_KEYS.forEach((joint) => {
+        if (current[joint] !== previous[joint]) {
+          robotsocket.emit("armJointCommand", { 
+            joint,
+            value: current[joint],
+          });
+        }
+      });
+
+      prevArmCommandsRef.current = { ...current };
     }, FrameRateConstant);
 
     return () => clearInterval(intervalId);
-  }, [serverConnected, armConnectedOne, txon]);
+  }, [serverConnected, txon]);
 
-  // Test transmission manually
+  // Manual TX sends the full arm state in one payload
   const handleManualUpdate = () => {
     if (!serverConnected) return;
     robotsocket.emit("armCommands", armCommands);
@@ -68,13 +105,13 @@ export default function ArmView({}) {
             </Typography>
             <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
               {[
-                { label: "Elbow", key: "elbow", max: 90 },
-                { label: "Shoulder", key: "shoulder", max: 110 },
-                { label: "Track (cm)", key: "track", max: 45 },
-                { label: "Pitch", key: "pitch", max: 150 },
-                { label: "Roll", key: "roll", max: 360 },
-                { label: "Clamp (cm)", key: "clamp", max: 20 },
-              ].map(({ label, key, max }) => (
+                { label: "Elbow (deg)", key: "elbow", min: -100, max: -20 },
+                { label: "Shoulder (deg)", key: "shoulder", min: -20, max: 90 },
+                { label: "Track (cm)", key: "track", min: 0, max: 30 },
+                { label: "Pitch (deg)", key: "pitch", min: 0, max: 180 },
+                { label: "Roll (deg)", key: "roll", min: 0, max: 360 },
+                { label: "Clamp (cm)", key: "clamp", min: 0, max: 20 },
+              ].map(({ label, key, min = 0, max }) => (
                 <Grid
                   key={label}
                   sx={{
@@ -88,16 +125,16 @@ export default function ArmView({}) {
                 >
                   <Typography gutterBottom>{label}</Typography>
                   <Slider
-                    value={armCommands[key] || 0}
+                    value={armCommands[key] ?? min}
                     onChange={(_, v) => handleSliderChange(key, v)}
-                    min={0}
+                    min={min}
                     max={max}
                     step={1}
                     sx={{ width: 200 }}
                     valueLabelDisplay="auto"
                   />
                   <Typography variant="body2">
-                    {armCommands[key] || 0}
+                    {armCommands[key] ?? min}
                   </Typography>
                 </Grid>
               ))}
@@ -171,7 +208,7 @@ export default function ArmView({}) {
                   {label}
                 </Typography>
                 <Typography variant="h6">
-                  {Math.round((armCommands[key] || 0) * 100) / 100}
+                  {Math.round((armCommands[key] ?? 0) * 100) / 100}
                 </Typography>
               </Grid>
             ))}
