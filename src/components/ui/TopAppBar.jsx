@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogTitle,
   Tooltip,
+  Box
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -89,17 +90,17 @@ export default function TopAppBar({
           >
             <MenuIcon />
           </IconButton>
-          {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
           <Typography
             variant="h6"
             component="div"
             sx={{
-              display: { xs: "none", sm: "none", md: "block" },
               pr: 1, // add left padding to align with toolbar items
+              display: { xs: "none", md: "inline-flex" }
             }}
           >
             Teleoperations
           </Typography>
+          <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
 
           {/* Buttons to change between views */}
           <Button
@@ -162,14 +163,17 @@ export default function TopAppBar({
           >
             Extras
           </Button>
+          </Box>
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
           <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
             <span>
               <Button
-                style={{
-                  marginRight: 20,
+                sx={{
+                  mr:2,
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
                 }}
                 variant="contained"
                 color="error"
