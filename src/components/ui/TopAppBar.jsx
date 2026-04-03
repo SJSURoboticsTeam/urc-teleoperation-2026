@@ -95,74 +95,73 @@ export default function TopAppBar({
             component="div"
             sx={{
               pr: 1, // add left padding to align with toolbar items
-              display: { xs: "none", md: "inline-flex" }
+              display: { xs: "none", md: "inline-flex" },
             }}
           >
             Teleoperations
           </Typography>
           <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
-
-          {/* Buttons to change between views */}
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("DriveView")}
-            sx={{
-              bgcolor:
-                currentView === "DriveView"
-                  ? "rgba(255,255,255,0.2)"
-                  : "transparent",
-            }}
-          >
-            Drive
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("ArmView")}
-            sx={{
-              bgcolor:
-                currentView === "ArmView"
-                  ? "rgba(255,255,255,0.2)"
-                  : "transparent",
-            }}
-          >
-            Arm
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("ScienceView")}
-            sx={{
-              bgcolor:
-                currentView === "ScienceView"
-                  ? "rgba(255,255,255,0.2)"
-                  : "transparent",
-            }}
-          >
-            Science
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("AutonomyView")}
-            sx={{
-              bgcolor:
-                currentView === "AutonomyView"
-                  ? "rgba(255,255,255,0.2)"
-                  : "transparent",
-            }}
-          >
-            Autonomy
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("ExtrasView")}
-            sx={{
-              bgcolor:
-                currentView === "ExtrasView"
-                  ? "rgba(255,255,255,0.2)"
-                  : "transparent",
-            }}
-          >
-            Extras
-          </Button>
+            {/* Buttons to change between views */}
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("DriveView")}
+              sx={{
+                bgcolor:
+                  currentView === "DriveView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Drive
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("ArmView")}
+              sx={{
+                bgcolor:
+                  currentView === "ArmView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Arm
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("ScienceView")}
+              sx={{
+                bgcolor:
+                  currentView === "ScienceView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Science
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("AutonomyView")}
+              sx={{
+                bgcolor:
+                  currentView === "AutonomyView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Autonomy
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("ExtrasView")}
+              sx={{
+                bgcolor:
+                  currentView === "ExtrasView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Extras
+            </Button>
           </Box>
 
           {/* fill the space between the buttons and the connection status */}
@@ -171,7 +170,7 @@ export default function TopAppBar({
             <span>
               <Button
                 sx={{
-                  mr:2,
+                  mr: 2,
                   flexShrink: 0,
                   whiteSpace: "nowrap",
                 }}
@@ -239,6 +238,32 @@ export default function TopAppBar({
         }}
       >
         <List>
+          <Box sx={{ display: { xs: "block", lg: "none" } }}>
+            <ListItem>
+              <Typography sx={{ color: "black" }} variant="h6">
+                VIEWS
+              </Typography>
+            </ListItem>
+            <ListItem button onClick={() => handleViewChange("DriveView")}>
+              <Typography sx={{ color: "black" }}>Drive</Typography>
+            </ListItem>
+
+            <ListItem button onClick={() => handleViewChange("ArmView")}>
+              <Typography sx={{ color: "black" }}>Arm</Typography>
+            </ListItem>
+
+            <ListItem button onClick={() => handleViewChange("ScienceView")}>
+              <Typography sx={{ color: "black" }}>Science</Typography>
+            </ListItem>
+
+            <ListItem button onClick={() => handleViewChange("AutonomyView")}>
+              <Typography sx={{ color: "black" }}>Autonomy</Typography>
+            </ListItem>
+
+            <ListItem button onClick={() => handleViewChange("ExtrasView")}>
+              <Typography sx={{ color: "black" }}>Extras</Typography>
+            </ListItem>
+          </Box>
           <ListItem>
             <Typography sx={{ color: "black" }} variant="h6">
               SETTINGS
