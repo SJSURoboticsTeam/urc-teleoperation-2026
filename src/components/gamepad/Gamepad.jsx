@@ -257,14 +257,34 @@ export default function GamepadPanel({ currentView }) {
         return Math.round(v * 100) / 100;
       };
 
-      const newVal = {
-        elbow: clean(gp.axes[9]),
-        shoulder: clean(gp.axes[1]),
-        track: clean(gp.axes[3]),
-        pitch: clean(gp.axes[0]),
-        roll: clean(gp.axes[5]),
+      const armInputs = {
+        elbow: clean(gp.axes[1]),
+        shoulder: clean(gp.axes[5]),
+        track: clean(gp.axes[2]),
+        pitch: clean(gp.axes[3]),
+        roll: clean(gp.axes[4]),
         clamp: clean(gp.axes[6]),
       };
+      //console.log("Arm Inputs: ", armInputs);
+
+      const inputSens = {
+        elbow: 0.5,
+        shoulder: 0.5,
+        track: 0.5,
+        pitch: 0.5,
+        roll: 0.5,
+        clamp: 0.5,
+      };
+
+      const newVal = {
+        elbow: prevVal.elbow + armInputs.elbow * inputSens.elbow,
+        shoulder: prevVal.shoulder + armInputs.shoulder * inputSens.shoulder,
+        track: prevVal.track + armInputs.track * inputSens.track,
+        pitch: prevVal.pitch + armInputs.pitch * inputSens.pitch,
+        roll: prevVal.roll + armInputs.roll * inputSens.roll,
+        clamp: armInputs.clamp * inputSens.clamp,
+      };
+      console.log("New Arm Values: ", newVal);
 
       const changed = Object.keys(newVal).some(
         (key) => newVal[key] !== prevVal[key],
