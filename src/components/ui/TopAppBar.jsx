@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogTitle,
   Tooltip,
+  ListItemButton,
   Box
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -244,25 +245,68 @@ export default function TopAppBar({
                 VIEWS
               </Typography>
             </ListItem>
-            <ListItem button onClick={() => handleViewChange("DriveView")}>
+            <ListItemButton
+              onClick={() => handleViewChange("DriveView")}
+              sx={{
+                bgcolor:
+                  currentView === "DriveView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
               <Typography sx={{ color: "black" }}>Drive</Typography>
-            </ListItem>
+            </ListItemButton>
 
-            <ListItem button onClick={() => handleViewChange("ArmView")}>
+            <ListItemButton
+              button
+              onClick={() => handleViewChange("ArmView")}
+              sx={{
+                bgcolor:
+                  currentView === "ArmView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
               <Typography sx={{ color: "black" }}>Arm</Typography>
-            </ListItem>
+            </ListItemButton>
 
-            <ListItem button onClick={() => handleViewChange("ScienceView")}>
+            <ListItemButton
+              button
+              onClick={() => handleViewChange("ScienceView")}
+              sx={{
+                bgcolor:
+                  currentView === "ScienceView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
               <Typography sx={{ color: "black" }}>Science</Typography>
-            </ListItem>
+            </ListItemButton>
 
-            <ListItem button onClick={() => handleViewChange("AutonomyView")}>
+            <ListItemButton
+              onClick={() => handleViewChange("AutonomyView")}
+              sx={{
+                bgcolor:
+                  currentView === "AutonomyView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
               <Typography sx={{ color: "black" }}>Autonomy</Typography>
-            </ListItem>
+            </ListItemButton>
 
-            <ListItem button onClick={() => handleViewChange("ExtrasView")}>
+            <ListItemButton
+              button
+              onClick={() => handleViewChange("ExtrasView")}
+              sx={{
+                bgcolor:
+                  currentView === "ExtrasView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
               <Typography sx={{ color: "black" }}>Extras</Typography>
-            </ListItem>
+            </ListItemButton>
           </Box>
           <ListItem>
             <Typography sx={{ color: "black" }} variant="h6">
