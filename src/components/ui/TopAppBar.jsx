@@ -12,7 +12,7 @@ import {
   Checkbox,
   Dialog,
   DialogTitle,
-  Tooltip
+  Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -22,7 +22,6 @@ import GamepadPanel from "../gamepad/Gamepad";
 import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
 import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
-
 
 export default function TopAppBar({
   setCurrentView,
@@ -103,27 +102,63 @@ export default function TopAppBar({
           </Typography>
 
           {/* Buttons to change between views */}
-          <Button color="inherit" onClick={() => handleViewChange("DriveView")}>
+          <Button
+            color="inherit"
+            onClick={() => handleViewChange("DriveView")}
+            sx={{
+              bgcolor:
+                currentView === "DriveView"
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
+            }}
+          >
             Drive
           </Button>
-          <Button color="inherit" onClick={() => handleViewChange("ArmView")}>
+          <Button
+            color="inherit"
+            onClick={() => handleViewChange("ArmView")}
+            sx={{
+              bgcolor:
+                currentView === "ArmView"
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
+            }}
+          >
             Arm
           </Button>
           <Button
             color="inherit"
             onClick={() => handleViewChange("ScienceView")}
+            sx={{
+              bgcolor:
+                currentView === "ScienceView"
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
+            }}
           >
             Science
           </Button>
           <Button
             color="inherit"
             onClick={() => handleViewChange("AutonomyView")}
+            sx={{
+              bgcolor:
+                currentView === "AutonomyView"
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
+            }}
           >
             Autonomy
           </Button>
           <Button
             color="inherit"
             onClick={() => handleViewChange("ExtrasView")}
+            sx={{
+              bgcolor:
+                currentView === "ExtrasView"
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
+            }}
           >
             Extras
           </Button>
@@ -131,24 +166,24 @@ export default function TopAppBar({
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
           <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
-          <span>
-          <Button
-            style={{
-              marginRight: 20,
-            }}
-            variant="contained"
-            color="error"
-            loading={estopStatus == "LOADING"}
-            disabled={!capsLockActive || !isRobotConnected}
-            onClick={() => {
-              if (capsLockActive) {
-                initiateEstop();
-              }
-            }}
-          >
-            E-STOP
-          </Button>
-          </span>
+            <span>
+              <Button
+                style={{
+                  marginRight: 20,
+                }}
+                variant="contained"
+                color="error"
+                loading={estopStatus == "LOADING"}
+                disabled={!capsLockActive || !isRobotConnected}
+                onClick={() => {
+                  if (capsLockActive) {
+                    initiateEstop();
+                  }
+                }}
+              >
+                E-STOP
+              </Button>
+            </span>
           </Tooltip>
 
           <Dialog
