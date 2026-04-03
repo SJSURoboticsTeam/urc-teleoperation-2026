@@ -64,46 +64,41 @@ function App() {
     panSpeed: 30,
   });
 
-  const [camsVisibility, setcamsVisibility] = useState(true);
-  const [uiVisibility, setuiVisibility] = useState(true);
+  const [selectedElements, setselectedElements] = useState("both");
 
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
       case "ArmView":
         return (
-          <SplitView CurrentView={<ArmView />} showCameras={camsVisibility}  showUI = {uiVisibility}/>
+          <SplitView CurrentView={<ArmView />} selectedElements={selectedElements}/>
         );
       case "DriveView":
         return (
           <SplitView
             CurrentView={<DriveComponents />}
-            showCameras={camsVisibility}
-            showUI = {uiVisibility}
+            selectedElements={selectedElements}
           />
         );
       case "ExtrasView":
         return (
           <SplitView
             CurrentView={<ExtrasView />}
-            showCameras={camsVisibility}
-            showUI = {uiVisibility}
+            selectedElements={selectedElements}
           />
         );
       case "ScienceView":
         return (
           <SplitView
             CurrentView={<ScienceView />}
-            showCameras={camsVisibility}
-            showUI = {uiVisibility}
+            selectedElements={selectedElements}
           />
         );
       case "AutonomyView":
         return (
           <SplitView
             CurrentView={<AutonomyView />}
-            showCameras={camsVisibility}
-            showUI = {uiVisibility}
+            selectedElements={selectedElements}
           />
         );
       default:
@@ -144,10 +139,8 @@ function App() {
                 <TopAppBar
                   currentView={currentView}
                   setCurrentView={setCurrentView}
-                  camsVisibility={camsVisibility}
-                  setcamsVisibility={setcamsVisibility}
-                  uiVisibility = {uiVisibility}
-                  setuiVisibility = {setuiVisibility}
+                  selectedElements={selectedElements}
+                  setselectedElements={setselectedElements}
                   addSnackbarMessage={addSnackbarMessage}
                 />
 

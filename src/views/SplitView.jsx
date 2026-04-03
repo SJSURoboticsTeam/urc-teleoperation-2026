@@ -13,7 +13,7 @@ const DEFAULT_CAMERA = "Standby";
 const DEFAULT_CAMERA_NUM = 2;
 const STORAGE_KEY = "missionControl.cameraLayout";
 
-export default function DriveView({ CurrentView, showCameras, showUI }) {
+export default function DriveView({ CurrentView, selectedElements }) {
   const containerRef = useRef(null);
   const [leftPct, setLeftPct] = useState(65);
   const [cameraNum, setCameraNum] = useState(DEFAULT_CAMERA_NUM);
@@ -70,7 +70,7 @@ export default function DriveView({ CurrentView, showCameras, showUI }) {
     window.addEventListener("pointerup", onPointerUp);
   }, []);
 
-  const effectiveLeftPct = !showCameras ? 100 : leftPct;
+  const effectiveLeftPct = !(selectedElements== "cams" || selectedElements == "both") ? 100 : leftPct;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -112,7 +112,7 @@ export default function DriveView({ CurrentView, showCameras, showUI }) {
       className="flex flex-1 h-full min-h-0"
       style={{ userSelect: "none" }}
     >
-      {showUI && (
+      {(selectedElements== "ui" || selectedElements == "both") && (
       <div
         className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
         style={{ flex: `0 0 ${effectiveLeftPct}%` }}
@@ -126,7 +126,7 @@ export default function DriveView({ CurrentView, showCameras, showUI }) {
       </div>
       )}
 
-      {(showCameras && showUI) && (
+      {(selectedElements == "both") && (
         <div
           role="separator"
           aria-orientation="vertical"
@@ -147,7 +147,7 @@ export default function DriveView({ CurrentView, showCameras, showUI }) {
       <div
         className="flex-1 flex flex-col p-2 min-h-0"
         style={{
-          display: !showCameras ? "none" : "flex",
+          display: (selectedElements== "ui") ? "none" : "flex",
         }}
       >
         <FormControl
@@ -201,7 +201,7 @@ export default function DriveView({ CurrentView, showCameras, showUI }) {
         </div>
       </div>
 
-      {!showCameras && (
+      {(selectedElements== "ui") && (
         <div
           className="absolute cursor-pointer"
           style={{ background: "transparent" }}
