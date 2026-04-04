@@ -12,7 +12,9 @@ import {
   Checkbox,
   Dialog,
   DialogTitle,
-  Tooltip
+  Tooltip,
+  ListItemButton,
+  Box
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -22,7 +24,6 @@ import GamepadPanel from "../gamepad/Gamepad";
 import Metrics from "../metrics/metrics";
 import StateMachine from "../statemachine/statemachine";
 import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
-
 
 export default function TopAppBar({
   setCurrentView,
@@ -90,65 +91,103 @@ export default function TopAppBar({
           >
             <MenuIcon />
           </IconButton>
-          {/* sx: hide "Teleoperations" title on phones in portrait mode so menubar fits */}
           <Typography
             variant="h6"
             component="div"
             sx={{
-              display: { xs: "none", sm: "none", md: "block" },
               pr: 1, // add left padding to align with toolbar items
+              display: { xs: "none", md: "inline-flex" },
             }}
           >
             Teleoperations
           </Typography>
-
-          {/* Buttons to change between views */}
-          <Button color="inherit" onClick={() => handleViewChange("DriveView")}>
-            Drive
-          </Button>
-          <Button color="inherit" onClick={() => handleViewChange("ArmView")}>
-            Arm
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("ScienceView")}
-          >
-            Science
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("AutonomyView")}
-          >
-            Autonomy
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => handleViewChange("ExtrasView")}
-          >
-            Extras
-          </Button>
+          <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
+            {/* Buttons to change between views */}
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("DriveView")}
+              sx={{
+                bgcolor:
+                  currentView === "DriveView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Drive
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("ArmView")}
+              sx={{
+                bgcolor:
+                  currentView === "ArmView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Arm
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("ScienceView")}
+              sx={{
+                bgcolor:
+                  currentView === "ScienceView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Science
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("AutonomyView")}
+              sx={{
+                bgcolor:
+                  currentView === "AutonomyView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Autonomy
+            </Button>
+            <Button
+              color="inherit"
+              onClick={() => handleViewChange("ExtrasView")}
+              sx={{
+                bgcolor:
+                  currentView === "ExtrasView"
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+              }}
+            >
+              Extras
+            </Button>
+          </Box>
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
           <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
-          <span>
-          <Button
-            style={{
-              marginRight: 20,
-            }}
-            variant="contained"
-            color="error"
-            loading={estopStatus == "LOADING"}
-            disabled={!capsLockActive || !isRobotConnected}
-            onClick={() => {
-              if (capsLockActive) {
-                initiateEstop();
-              }
-            }}
-          >
-            E-STOP
-          </Button>
-          </span>
+            <span>
+              <Button
+                sx={{
+                  mr: 2,
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
+                }}
+                variant="contained"
+                color="error"
+                loading={estopStatus == "LOADING"}
+                disabled={!capsLockActive || !isRobotConnected}
+                onClick={() => {
+                  if (capsLockActive) {
+                    initiateEstop();
+                  }
+                }}
+              >
+                E-STOP
+              </Button>
+            </span>
           </Tooltip>
 
           <Dialog
@@ -200,6 +239,75 @@ export default function TopAppBar({
         }}
       >
         <List>
+          <Box sx={{ display: { xs: "block", lg: "none" } }}>
+            <ListItem>
+              <Typography sx={{ color: "black" }} variant="h6">
+                VIEWS
+              </Typography>
+            </ListItem>
+            <ListItemButton
+              onClick={() => handleViewChange("DriveView")}
+              sx={{
+                bgcolor:
+                  currentView === "DriveView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
+              <Typography sx={{ color: "black" }}>Drive</Typography>
+            </ListItemButton>
+
+            <ListItemButton
+              button
+              onClick={() => handleViewChange("ArmView")}
+              sx={{
+                bgcolor:
+                  currentView === "ArmView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
+              <Typography sx={{ color: "black" }}>Arm</Typography>
+            </ListItemButton>
+
+            <ListItemButton
+              button
+              onClick={() => handleViewChange("ScienceView")}
+              sx={{
+                bgcolor:
+                  currentView === "ScienceView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
+              <Typography sx={{ color: "black" }}>Science</Typography>
+            </ListItemButton>
+
+            <ListItemButton
+              onClick={() => handleViewChange("AutonomyView")}
+              sx={{
+                bgcolor:
+                  currentView === "AutonomyView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
+              <Typography sx={{ color: "black" }}>Autonomy</Typography>
+            </ListItemButton>
+
+            <ListItemButton
+              button
+              onClick={() => handleViewChange("ExtrasView")}
+              sx={{
+                bgcolor:
+                  currentView === "ExtrasView"
+                    ? "rgba(0, 0, 0, 0.2)"
+                    : "transparent",
+              }}
+            >
+              <Typography sx={{ color: "black" }}>Extras</Typography>
+            </ListItemButton>
+          </Box>
           <ListItem>
             <Typography sx={{ color: "black" }} variant="h6">
               SETTINGS
