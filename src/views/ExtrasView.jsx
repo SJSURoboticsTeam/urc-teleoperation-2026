@@ -1,4 +1,5 @@
 import "react-resizable/css/styles.css"; // keep global resizable styles if used elsewhere
+import MetricsGraph from "../components/metrics/metricsGraph";
 import Box from "@mui/material/Box";
 import Map from "../components/ui/Map";
 import { useState } from "react";
@@ -15,6 +16,8 @@ export default function ExtrasView() {
       return <SpeedTestView />;
     } else if (currentView == "Map") {
       return <Map />;
+    } else if (currentView == "MetricsTest") {
+      return <MetricsTestView />;
     } else {
       return "No pane selected.";
     }
@@ -43,6 +46,13 @@ export default function ExtrasView() {
           variant="contained"
         >
           SpeedTest
+        </Button>
+        <Button
+          style={{ marginRight: 5, marginLeft: 5 }}
+          onClick={() => setcurrentView("MetricsTest")}
+          variant="contained"
+        >
+          Metrics Test
         </Button>
       </div>
       {switcher()}
@@ -79,5 +89,11 @@ export function RecordingsView() {
       title="Speed Test"
       allow="fullscreen; autoplay"
     ></iframe>
+  );
+}
+
+export function MetricsTestView() {
+  return (
+      <MetricsGraph />
   );
 }

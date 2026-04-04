@@ -1,49 +1,63 @@
 import 'react-resizable/css/styles.css';
 import {useAntennaData} from './metrics';
 import { useState, useEffect } from 'react';
-import { Typography } from '@mui/material/Typography';
-import Select from '@mui/material/Select';
 import { LineChart } from '@mui/x-charts/LineChart';
+import {Button, Box} from '@mui/material';
 
-export function Graph() {
+export default function MetricsGraph() {
     const antenna = useAntennaData();
-    const [interval, setInterval] = useState([]);
+
+    const initialData = [-98, -92, -95, -80, -75, -81, -60, -61, -59, -70];
+    const initialTime = [100,200,300,400,500,600,700,800,900,1000];
+    const [running, setRunning] = useState(false);
+    const [time, setTime] = useState(initialTime);
+    const [signalData, setSignalData] = useState(initialData);
+
 
     useEffect(() => {
-        if (antenna.status === "GOOD") {
-            setInterval((prev) => [
-                ...prev.slice(30),
-                {time: new Date(), signal: antenna.roverRSSI}
+        if (!running) return;
+        
+        const intervalId = setInterval(() => {
+            setSignalData((prev) => [
+                ...prev.slice(1),
+                Math.max(-98, Math.min(-32, prev.at(-1) + Math.floor(Math.random() * 21) - 10))
             ]);
-        }
-    }, [antenna]);
+            setTime((prev) => {
+                const last = prev.at(-1);
+                return [...prev.slice(1), last + 100];
+            });
+        }, 500);
+        return () => clearInterval(intervalId);
+    }, [running]);
 
     return (
-        <div>
-            {antenna.status === "GOOD" ? (
+        <Box sx={{width: '75%'}}>
             <LineChart
-                height={300}
+                height={500}
                 skipAnimation
                 series={[
                 {   
-                    data: interval.map((entry) => ({x: entry.time, y: entry.signal})), 
+                    data: signalData, id: 'Signal Strength',
                 },]}
-                xAxis={[{ type: 'time', label: 'Time' },]}
+                xAxis={[{ data: time, label: 'Time (ms)' }]}
                 yAxis={[{ label: 'Signal Strength (dBm)', width: 50 }]}
             />
-            ):(
-                <Typography sx={{ color: "black" }}>
-                    No data available for graph
-                </Typography>
-            )}
-        </div>
-    )
-}
-
-export default function MetricsGraph() {
-    return (
-        <Select>
-            <Graph />
-        </Select>
+            <Button 
+                variant="contained" 
+                onClick={() => setRunning((p) => !p)}
+                sx={{width: 'auto'}}>
+                {running ? 'stop' : 'start'}
+            </Button>
+            <Button
+                variant="outlined"
+                sx={{ ml:1, width: 'auto'}}
+                onClick={() => {
+                setSignalData(initialData);
+                setTime(initialTime);
+                }}
+            >
+                reset
+            </Button>
+        </Box>
     )
 }
