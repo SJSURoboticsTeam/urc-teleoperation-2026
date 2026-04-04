@@ -90,7 +90,7 @@ async def getCanInfo(sid):
     for port in list_ports.comports():
         #print(f"{port.device} ")
 
-        if(port.device.find("serial") != -1):
+        if(port.device.find("serial") != -1 or port.device.find("COM") != -1):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
     data = {
