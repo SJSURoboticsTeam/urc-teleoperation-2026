@@ -56,14 +56,15 @@ JOINT_TO_CAN_KEY = {
 # Optional temporary test filter for hardware bring-up
 # Ex: {"track"}, {"shoulder"}, {"elbow"}, {"pitch"}, {"roll"}, {"clamp"}
 # Leave as None to send all joints normally
-ARM_TEST_JOINTS = None
+ARM_TEST_JOINTS = {"elbow", "shoulder"}
 
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
 
 def encode_arm_value(value):
     try:
-        scaled = int(float(value))  # send raw degrees or mm
+        scaled = int(float(value) * (2**6)) # Scale by 64 to convert from float to fixed-point representation
+        print(f"[ARM DEBUG] raw={value}, scaled={scaled}, hex={scaled.to_bytes(2, 'big', signed=True).hex()}")
     except Exception:
         scaled = 0
     return scaled.to_bytes(2, "big", signed=True).hex()
