@@ -1,3 +1,10 @@
+# Arm CAN module
+# Handles:
+# - sending arm joint commands (manual + AUTO TX)
+# - parsing CAN responses from firmware
+# - optional filtering for joint-by-joint testing
+# - emitting feedback to frontend
+
 import asyncio
 
 # Track Servo Address: 0x120 
@@ -33,17 +40,6 @@ arm_receive_ID = {
     "CLAMP": '225',
 } 
 
-# =================== ARM CAN Data Parsing & Emit =======================
-arm_parse_functions = {
-    arm_receive_ID['RECEIVE_STOP']: lambda _: parse_receive_stop(),
-    arm_receive_ID['TRACK']:        lambda data: parse_arm_servo(data),
-    arm_receive_ID['SHOULDER']:     lambda data: parse_arm_servo(data),
-    arm_receive_ID['ELBOW']:        lambda data: parse_arm_servo(data),
-    arm_receive_ID['WRIST_EF1']:    lambda data: parse_arm_servo(data),
-    arm_receive_ID['WRIST_EF2']:    lambda data: parse_arm_servo(data),
-    arm_receive_ID['CLAMP']:        lambda data: parse_arm_servo(data)
-}
-
 JOINT_TO_CAN_KEY = {
     "track": "TRACK",
     "shoulder": "SHOULDER",
@@ -54,21 +50,29 @@ JOINT_TO_CAN_KEY = {
 }
 
 # Optional temporary test filter for hardware bring-up
+# Limits which joints are actually sent to CAN
 # Ex: {"track"}, {"shoulder"}, {"elbow"}, {"pitch"}, {"roll"}, {"clamp"}
-# Leave as None to send all joints normally
-ARM_TEST_JOINTS = {"elbow", "shoulder"}
+# Set to None to send all joints normally
+ARM_TEST_JOINTS = None
 
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
 
+# Encode joint value into 2-byte CAN payload
+# Firmware currently expects fixed-point values scaled by 2^6
 def encode_arm_value(value):
     try:
-        scaled = int(float(value) * (2**6)) # Scale by 64 to convert from float to fixed-point representation
-        print(f"[ARM DEBUG] raw={value}, scaled={scaled}, hex={scaled.to_bytes(2, 'big', signed=True).hex()}")
+        scaled = int(float(value) * (2**6)) 
+        print(
+            f"[ARM DEBUG] raw={value}, scaled={scaled}, "
+            f"hex={scaled.to_bytes(2, 'big', signed=True).hex()}"
+        )
     except Exception:
         scaled = 0
     return scaled.to_bytes(2, "big", signed=True).hex()
 
+# Send a single joint command over CAN
+# Converts joint name -> CAN ID and writes formatted CANUSB frame
 async def send_arm_joint(serial_ports, joint_name, value):
     arm_serial = serial_ports.get("arm")
     if arm_serial is None:
@@ -90,8 +94,105 @@ async def send_arm_joint(serial_ports, joint_name, value):
     except Exception as e:
         print(f'[ARM] {joint_name} send failed: {e}')
         return False
+    
+def parse_receive_stop():
+    print("Received Arm Stop")
 
+# Parse incoming CAN frame for arm joint position feedback
+# Extracts CAN ID, decodes payload bytes, and converts back to approximate value
+def parse_arm_servo(data):
+    string_data = data.decode().strip()
+
+    address_map = {
+        "220": "track",
+        "221": "shoulder",
+        "222": "elbow",
+        "223": "pitch",
+        "224": "roll",
+        "225": "clamp",
+    }
+
+    can_id = string_data[1:4]
+    joint_name = address_map.get(can_id, "unknown")
+
+    try:
+        # ASCII CAN frame format:
+        # t + 3-char CAN ID + 1-char DLC + payload bytes as hex
+        # Example: t22137004c0
+        payload_hex = string_data[5:]
+        payload_bytes = [payload_hex[i:i+2] for i in range(0, len(payload_hex), 2)]
+
+        # Return-servo-position reply usually contains:
+        # byte0 = reply command / ack
+        # byte1 = position MSB
+        # byte2 = position LSB
+        if len(payload_bytes) < 3:
+            print(f"[ARM RX] {joint_name}: not enough payload bytes -> {string_data}")
+            return None
+
+        position_raw = int.from_bytes(
+            bytes.fromhex(payload_bytes[1] + payload_bytes[2]),
+            byteorder="big",
+            signed=True,
+        )
+
+        # If firmware is returning the same fixed-point style, this is a useful approximation
+        position_approx = position_raw / 64.0
+
+        print(
+            f"[ARM RX] {joint_name} raw={position_raw}, "
+            f"approx={position_approx}, frame={string_data}"
+        )
+
+        return {
+            "joint": joint_name,
+            "raw": position_raw,
+            "approx": position_approx,
+            "frame": string_data,
+        }
+
+    except Exception as e:
+        print(f"[ARM RX] Failed to parse {joint_name} reply: {e} | frame={string_data}")
+        return None
+
+# Build mapping from CAN receive IDs to parsing handlers
+# Keeps parsing logic centralized and easy to extend
+def build_arm_parse_functions():
+    return {
+        arm_receive_ID['RECEIVE_STOP']: lambda _: parse_receive_stop(),
+        arm_receive_ID['TRACK']:        lambda data: parse_arm_servo(data),
+        arm_receive_ID['SHOULDER']:     lambda data: parse_arm_servo(data),
+        arm_receive_ID['ELBOW']:        lambda data: parse_arm_servo(data),
+        arm_receive_ID['WRIST_EF1']:    lambda data: parse_arm_servo(data),
+        arm_receive_ID['WRIST_EF2']:    lambda data: parse_arm_servo(data),
+        arm_receive_ID['CLAMP']:        lambda data: parse_arm_servo(data),
+    }
+
+# Route incoming CAN frame to correct parser based on CAN ID
+def parse_arm_data(data, arm_parse_functions):
+    try:
+        string_data = data.decode().strip()
+        print(string_data)
+
+        if len(string_data) < 5:
+            return None
+
+        address = string_data[1:4]
+        if address in arm_parse_functions:
+            return arm_parse_functions[address](data)
+        
+        return None
+    
+    except Exception as e:
+        print(f'Error parsing arm data: {e}')
+        return None
+
+# Register socket.io events for arm control:
+# - armCommands: full state (manual TX)
+# - armJointCommand: per-joint updates (AUTO TX)
 def register_arm_events(sio, serial_ports):
+    arm_parse_functions = build_arm_parse_functions()
+
     @sio.event
     async def armCommands(sid, data):
         # Manual/full send path: send all joints from one payload
@@ -134,38 +235,16 @@ def register_arm_events(sio, serial_ports):
         ok = await send_arm_joint(serial_ports, joint_name, value)
         return "OK" if ok else "ERROR"
 
-def parse_receive_stop():
-    print("Received Arm Stop")
+# Background task that continuously reads CAN data from the arm
+# Parses responses and emits feedback to frontend
+# Designed to survive disconnect/reconnect
+async def read_arm_can_loop(serial_ports, sio):
+    arm_parse_functions = build_arm_parse_functions()
 
-def parse_arm_servo(data):
-    address_map = {
-        "220": 'Track',
-        "221": 'Shoulder',
-        "222": 'Elbow',
-        "223": 'Wrist EF1',
-        "224": 'Wrist EF2',
-        "225": 'Clamp'
-    }
-
-    print(f'{address_map[data[1:4]]} servo position set reply')
-
-def parse_arm_data(data):
-    try:
-        string_data = data.decode()
-        print(string_data)
-        if len(string_data) < 5:
-            return
-
-        address = string_data[1:4]
-        if address in arm_parse_functions:
-            arm_parse_functions[address](data)
-    except Exception as e:
-        print(f'Error parsing arm data: {e}')
-
-async def read_arm_can_loop(serial_ports):
     while True:
         try:
             arm_serial = serial_ports.get("arm")
+
             # Keep the read loop alive even when the arm is disconnected
             if arm_serial is None:
                 await asyncio.sleep(0.1)
@@ -173,10 +252,14 @@ async def read_arm_can_loop(serial_ports):
 
             data = await asyncio.to_thread(arm_serial.read_can, None)
             if data:
-                parse_arm_data(data)
+                parsed = parse_arm_data(data, arm_parse_functions)
+
+                if isinstance(parsed, dict) and parsed.get("joint") != "unknown":
+                    await sio.emit("armFeedback", parsed)
 
             # time.sleep(0.01)
             await asyncio.sleep(0.01)
+
         except Exception as e:
             print(f'Arm CAN thread error: {e}')
             await asyncio.sleep(0.25)
