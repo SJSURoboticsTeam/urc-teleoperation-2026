@@ -16,8 +16,15 @@ class LockOnControl {
     this._container.className = "maplibregl-ctrl my-custom-control";
     this._container.style.display = "flex";
     this._container.style.flexDirection = "column";
+    this._container.style.backgroundColor = "rgba(255, 255, 255, 0.8)";
+    this._container.style.padding = "6px";
+    this._container.style.borderRadius = "4px";
+    this._container.style.borderColor = "black";
+    this._container.style.borderStyle = "solid";
+    this._container.style.borderWidth = "1px";
+
     this._label = document.createElement("span");
-    this._label.textContent = "Latitude/Longitude: ---, ---";
+    this._label.textContent = "Latitude: --- \nLongitude: ---";
     this._coordLabelRef.current = this._label;
 
     this._signal = document.createElement("span");
@@ -28,7 +35,6 @@ class LockOnControl {
     this._button.textContent = "Toggle Lock-On";
     this._button.style.marginLeft = "10px";
     this._button.style.backgroundColor = "#880808";
-    // #276221 is a green color that stands out against the map
     this._button.addEventListener("click", () => this._onToggle());
     this._buttonRef.current = this._button;
 
