@@ -70,11 +70,7 @@ export default function DriveView({ CurrentView, selectedElements }) {
     window.addEventListener("pointerup", onPointerUp);
   }, []);
 
-  const effectiveLeftPct = !(
-    selectedElements == "cams" || selectedElements == "both"
-  )
-    ? 100
-    : leftPct;
+    const effectiveLeftPct = (selectedElements == "ui" ) ? 100 : leftPct;
 
   useEffect(() => {
     if (!hydrated) return;
