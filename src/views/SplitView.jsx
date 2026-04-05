@@ -70,7 +70,11 @@ export default function DriveView({ CurrentView, selectedElements }) {
     window.addEventListener("pointerup", onPointerUp);
   }, []);
 
-  const effectiveLeftPct = !(selectedElements== "cams" || selectedElements == "both") ? 100 : leftPct;
+  const effectiveLeftPct = !(
+    selectedElements == "cams" || selectedElements == "both"
+  )
+    ? 100
+    : leftPct;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -106,27 +110,33 @@ export default function DriveView({ CurrentView, selectedElements }) {
     });
   };
 
+  const getGridColumns = (cameraNum) => {
+    if (cameraNum === 1) return "1fr";
+    if (cameraNum === 4) return "repeat(2,1fr)";
+    return "repeat(auto-fit, minmax(300px, 1fr))";
+  };
+
   return (
     <div
       ref={containerRef}
       className="flex flex-1 h-full min-h-0"
       style={{ userSelect: "none" }}
     >
-      {(selectedElements== "ui" || selectedElements == "both") && (
-      <div
-        className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
-        style={{ flex: `0 0 ${effectiveLeftPct}%` }}
-      >
-        {/* embed the current view */}
-        {isValidElement(CurrentView) ? (
-          CurrentView
-        ) : typeof CurrentView === "function" ? (
-          <CurrentView />
-        ) : null}
-      </div>
+      {(selectedElements == "ui" || selectedElements == "both") && (
+        <div
+          className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
+          style={{ flex: `0 0 ${effectiveLeftPct}%` }}
+        >
+          {/* embed the current view */}
+          {isValidElement(CurrentView) ? (
+            CurrentView
+          ) : typeof CurrentView === "function" ? (
+            <CurrentView />
+          ) : null}
+        </div>
       )}
 
-      {(selectedElements == "both") && (
+      {selectedElements == "both" && (
         <div
           role="separator"
           aria-orientation="vertical"
@@ -147,7 +157,7 @@ export default function DriveView({ CurrentView, selectedElements }) {
       <div
         className="flex-1 flex flex-col p-2 min-h-0"
         style={{
-          display: (selectedElements== "ui") ? "none" : "flex",
+          display: selectedElements == "ui" ? "none" : "flex",
         }}
       >
         <FormControl
@@ -178,17 +188,12 @@ export default function DriveView({ CurrentView, selectedElements }) {
         </FormControl>
         <div
           className="flex-1 min-h-0 overflow-auto"
-          style={
-            cameraNum <= 3
-              ? { display: "flex", flexDirection: "column", gap: "6px" }
-              : {
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2,1fr)",
-                  gap: "6px",
-                }
-            
-          }
-          sx={cameraNum >= 3 ? { minWidth: 500 } : {}}
+          style={{
+            display: "grid",
+            gridTemplateColumns: getGridColumns(cameraNum),
+            gap: "6px",
+            minWidth: cameraNum >= 3 ? 500 : undefined,
+          }}
         >
           {[...Array(cameraNum)].map((_, index) => (
             <div key={index} className="flex w-full h-full min-h-0">
@@ -201,7 +206,7 @@ export default function DriveView({ CurrentView, selectedElements }) {
         </div>
       </div>
 
-      {(selectedElements== "ui") && (
+      {selectedElements == "ui" && (
         <div
           className="absolute cursor-pointer"
           style={{ background: "transparent" }}
