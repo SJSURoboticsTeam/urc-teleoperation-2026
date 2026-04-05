@@ -14,9 +14,9 @@ def register_camera_pt_events(sio,serial_ports):
             # frontend is from -90 to 90, but controls expects 0 to 180 so add 90
             panx_scaled = data['xVel'] + 90
             pany_scaled = data['yVel'] + 90
-            # convert into useable can format
-            panx = panx_scaled.to_bytes(2, 'big', signed=True).hex()
-            pany = pany_scaled.to_bytes(2, 'big', signed=True).hex()
+            # uses 1 byte (8-bit) UNSIGNED = range of 0-255
+            panx = panx_scaled.to_bytes(1, 'big', signed=False).hex()
+            pany = pany_scaled.to_bytes(1, 'big', signed=False).hex()
             # Mast CAN ID
             MAST_CAN_ID= "300" # 0x300
 

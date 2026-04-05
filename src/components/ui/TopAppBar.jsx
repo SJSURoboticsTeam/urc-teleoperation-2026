@@ -71,7 +71,9 @@ export default function TopAppBar({
   }, []);
 
   const changeElements = (event, newAlignment) => {
+    if(newAlignment !== null){
     setSelectedElements(newAlignment);
+    }
   };
 
   return (
