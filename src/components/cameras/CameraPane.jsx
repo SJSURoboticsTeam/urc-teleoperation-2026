@@ -31,7 +31,7 @@ export default function CameraPane({ cameraValue, onCameraChange }){
     const cameras = [
       { value: "Standby", mediatype: "image", name: "Standby", url: "/mars.jpg" },
       {
-        value: "Testing Camera",
+        value: "Mast Camera",
         mediatype: "iframe",
         name: "Mast",
         url: "http://192.168.1.2:8889/mast/",

@@ -8,8 +8,6 @@ import {
   ListItem,
   Typography,
   IconButton,
-  FormControlLabel,
-  Checkbox,
   Dialog,
   DialogTitle,
   Tooltip,
@@ -31,7 +29,7 @@ export default function TopAppBar({
   setCurrentView,
   currentView,
   selectedElements, 
-  setselectedElements
+  setSelectedElements
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
@@ -73,7 +71,7 @@ export default function TopAppBar({
   }, []);
 
   const changeElements = (event, newAlignment) => {
-    setselectedElements(newAlignment);
+    setSelectedElements(newAlignment);
   };
 
   return (

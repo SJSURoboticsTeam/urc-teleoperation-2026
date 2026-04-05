@@ -64,7 +64,7 @@ function App() {
     panSpeed: 30,
   });
 
-  const [selectedElements, setselectedElements] = useState("both");
+  const [selectedElements, setSelectedElements] = useState("both");
 
   // Select which view we want to display
   function renderView() {
@@ -140,7 +140,7 @@ function App() {
                   currentView={currentView}
                   setCurrentView={setCurrentView}
                   selectedElements={selectedElements}
-                  setselectedElements={setselectedElements}
+                  setSelectedElements={setSelectedElements}
                   addSnackbarMessage={addSnackbarMessage}
                 />
 

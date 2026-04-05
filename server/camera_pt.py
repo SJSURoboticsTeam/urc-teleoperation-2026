@@ -6,14 +6,14 @@ import math
 
 def register_camera_pt_events(sio,serial_ports):
     print("registering...")
-    @sio.event
 
+    @sio.event
     async def mastCommands(sid,data):
         try:
             print("Camera Pan Commands X: " + str(data['xVel']) + " Y: " + str(data['yVel']))
             # frontend is from -90 to 90, but controls expects 0 to 180 so add 90
             panx_scaled = data['xVel'] + 90
-            pany_scaled = data['xVel'] + 90
+            pany_scaled = data['yVel'] + 90
             # convert into useable can format
             panx = panx_scaled.to_bytes(2, 'big', signed=True).hex()
             pany = pany_scaled.to_bytes(2, 'big', signed=True).hex()
