@@ -59,17 +59,18 @@ async def asyncsshloop(sio):
         try:
             # ensure connection (reuse if possible)
             if conn is None:
-                conn = await asyncssh.connect(
-                    "192.168.1.20",
-                    username=username,
-                    password=password,
-                )
-
+                async with asyncio.timeout(10):
+                    conn = await asyncssh.connect(
+                        "192.168.1.20",
+                        username=username,
+                        password=password,
+                    )
             # single command to reduce round-trips
-            res = await conn.run(
-                "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw'",
-                check=False
-            )
+            async with asyncio.timeout(10):
+                res = await conn.run(
+                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw'",
+                    check=False
+                )
 
             parsed = {}
             for line in res.stdout.splitlines():
@@ -95,8 +96,11 @@ async def asyncsshloop(sio):
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
 
             # reset connection and back off slightly
-            conn = None
-            await asyncio.sleep(2)
+            if conn is not None:
+                conn.close()
+                await conn.wait_closed()
+                conn = None
+            await asyncio.sleep(config.AntennaPollingRate)
 
         await asyncio.sleep(config.AntennaPollingRate)
 
