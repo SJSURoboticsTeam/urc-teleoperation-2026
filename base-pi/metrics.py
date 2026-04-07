@@ -115,8 +115,8 @@ async def send_fake_antenna_stats(sio):
         data = {
             'status': "GOOD", # Reports good if link is successful
             'dbm': random.randint(-90, -30),             # signal strength
-            'txrate': round(random.uniform(1, 10), 2),  # Mbps
-            'rxrate': round(random.uniform(1, 10), 2),  # Mbps
+            'txrate': round(random.uniform(1, 10), 1),  # Mbps
+            'rxrate': round(random.uniform(1, 10), 1),  # Mbps
             'freq': random.choice([904, 914, 924]),   # MHz
             'freqwidth': random.choice([3, 5, 8, 20]),
             'noise': random.randint(-100, -70),          # dBm

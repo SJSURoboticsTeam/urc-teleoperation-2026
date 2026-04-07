@@ -135,26 +135,25 @@ export default function Metrics({ openPane, setOpenPane }) {
               {antenna.status === "GOOD" ? (
                 <div>
                   <Typography sx={{ color: "black" }}>
-                    Signal Strength: {antenna.roverRSSI} dBm
+                    Strength: {antenna.roverRSSI} dBm
                   </Typography>
                   <Typography sx={{ color: "black" }}>
-                    Signal Noise: {antenna.noise} dBm
+                    Noise: {antenna.noise} dBm
                   </Typography>
                   <Typography sx={{ color: "black" }}>
                     Efficiency: {antenna.efficiency}%
                   </Typography>
                   <Typography sx={{ color: "black" }}>
-                    TX Speed: {antenna.txrate} Mbps
+                    TX & RX: {antenna.txrate}, {antenna.rxrate} Mbps
                   </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    RX Speed: {antenna.rxrate} Mbps
-                  </Typography>
+                  <hr className="border-t border-gray-300 my-2 w-1/2 mx-auto" />
                   <Typography sx={{ color: "black" }}>
                     Frequency: {antenna.freq} MHz
                   </Typography>
                   <Typography sx={{ color: "black" }}>
                     Frequency Width: {antenna.freqw} MHz
                   </Typography>
+                  
                 </div>
               ) : (
                 <Typography sx={{ color: "black" }}>
