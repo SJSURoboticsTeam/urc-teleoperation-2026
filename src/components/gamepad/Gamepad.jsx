@@ -260,9 +260,9 @@ export default function GamepadPanel({ currentView }) {
       const armInputs = {
         elbow: clean(gp.axes[1]),
         shoulder: clean(gp.axes[5]),
-        track: clean(gp.axes[2]),
-        pitch: clean(gp.axes[3]),
-        roll: clean(gp.axes[4]),
+        track: clean(gp.axes[0]),
+        pitch: gp.axes[9] == -1 ? -1 : (gp.axes[9] < 0.15 && gp.axes[9] > 0.14 ? 1 : 0), // treat full up/down as hard limits for better control at extremes
+        roll: gp.axes[9] < 0.72 && gp.axes[9] > 0.71 ? -1 : (gp.axes[9] < -0.42 && gp.axes[9] > -0.43 ? 1 : 0),
         clamp: clean(gp.axes[6]),
       };
       //console.log("Arm Inputs: ", armInputs);
@@ -271,8 +271,8 @@ export default function GamepadPanel({ currentView }) {
         elbow: 0.5,
         shoulder: 0.5,
         track: 0.5,
-        pitch: 0.5,
-        roll: 0.5,
+        pitch: 0.25,
+        roll: 0.25,
         clamp: 0.5,
       };
 
@@ -284,7 +284,6 @@ export default function GamepadPanel({ currentView }) {
         roll: prevVal.roll + armInputs.roll * inputSens.roll,
         clamp: armInputs.clamp * inputSens.clamp,
       };
-      console.log("New Arm Values: ", newVal);
 
       const changed = Object.keys(newVal).some(
         (key) => newVal[key] !== prevVal[key],
