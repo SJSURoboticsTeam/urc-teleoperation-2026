@@ -5,6 +5,7 @@ import os
 import asyncio
 import config # holds config values
 import psutil
+import random
 from pathlib import Path
 
 numClients = 0
@@ -68,7 +69,7 @@ async def asyncsshloop(sio):
             # single command to reduce round-trips
             async with asyncio.timeout(10):
                 res = await conn.run(
-                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw'",
+                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw|noise|wlanPollingCapacity'",
                     check=False
                 )
 
@@ -84,7 +85,9 @@ async def asyncsshloop(sio):
                 'txrate': parsed.get('wlanTxRate'),
                 'rxrate': parsed.get('wlanRxRate'),
                 'freq': parsed.get('centerFreq'),
-                'freqwidth': parsed.get('chanbw')
+                'freqwidth': parsed.get('chanbw'),
+                'noise': parsed.get('noise'),
+                "efficiency" : parsed.get('wlanPollingCapacity')
             }
 
             await sio.emit('antennastats', data)
@@ -104,6 +107,24 @@ async def asyncsshloop(sio):
 
         await asyncio.sleep(config.AntennaPollingRate)
 
+
+
+# function to generate and send fake data, pass in --offline flag to server to use
+async def send_fake_antenna_stats(sio):
+    while True:
+        data = {
+            'status': "GOOD", # Reports good if link is successful
+            'dbm': random.randint(-90, -30),             # signal strength
+            'txrate': round(random.uniform(1, 10), 2),  # Mbps
+            'rxrate': round(random.uniform(1, 10), 2),  # Mbps
+            'freq': random.choice([904, 914, 924]),   # MHz
+            'freqwidth': random.choice([3, 5, 8, 20]),
+            'noise': random.randint(-100, -70),          # dBm
+            'efficiency': round(random.uniform(0, 100), 2)  # %
+        }
+
+        await sio.emit('antennastats', data)
+        await asyncio.sleep(config.AntennaPollingRate)
 
 
 

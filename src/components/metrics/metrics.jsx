@@ -14,6 +14,8 @@ export default function Metrics({ openPane, setOpenPane }) {
     roverRSSI: null,
     txrate: null,
     rxrate: null,
+    noise: null,
+    efficiency : null,
     freq: null,
     freqw: null,
   });
@@ -39,6 +41,8 @@ export default function Metrics({ openPane, setOpenPane }) {
         roverRSSI: data.dbm,
         txrate: data.txrate,
         rxrate: data.rxrate,
+        noise: data.noise,
+        efficiency : data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
       });
@@ -132,6 +136,12 @@ export default function Metrics({ openPane, setOpenPane }) {
                 <div>
                   <Typography sx={{ color: "black" }}>
                     Signal Strength: {antenna.roverRSSI} dBm
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    Signal Noise: {antenna.noise} dBm
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    Efficiency: {antenna.efficiency}%
                   </Typography>
                   <Typography sx={{ color: "black" }}>
                     TX Speed: {antenna.txrate} Mbps
