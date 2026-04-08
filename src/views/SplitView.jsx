@@ -109,7 +109,7 @@ export default function DriveView({ CurrentView, selectedElements }) {
   const getGridColumns = (cameraNum) => {
     if (cameraNum === 1) return "1fr";
     if (cameraNum === 4) return "repeat(2,1fr)";
-    return "repeat(auto-fit, minmax(300px, 1fr))";
+    return "repeat(auto-fit, minmax(250px, 1fr))";
   };
 
   return (
