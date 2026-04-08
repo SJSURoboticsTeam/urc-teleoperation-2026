@@ -5,6 +5,7 @@ import os
 import asyncio
 import config # holds config values
 import psutil
+import random
 from pathlib import Path
 
 numClients = 0
@@ -48,46 +49,81 @@ async def cpuloop(sio):
 
 
 async def asyncsshloop(sio):
+    conn = None
+
     while True:
         if not username:
             await sio.emit('antennastats', {'status': "ERROR: NO SSH CREDS"})
+            await asyncio.sleep(1)
             continue
+
         try:
-            #print("Testing ssh...")
-            async with asyncio.timeout(config.AntennaPollingRate):
-                async with asyncssh.connect("192.168.1.20", username=username, password=password) as conn:
-                    try:
-                        #print("CONNECTED")
-                        res = await conn.run("mca-status | grep signal", check=False)
-                        dbm = res.stdout.strip()
-                        res = await conn.run("mca-status | grep wlanTxRate", check=False)
-                        txrate = res.stdout.strip()
-                        res = await conn.run("mca-status | grep wlanRxRate", check=False)
-                        rxrate = res.stdout.strip()
-                        # typical frequency is 924MHz with a channel width of 8, becoming 920-928MHz
-                        res = await conn.run("mca-status | grep centerFreq", check=False)
-                        freq = res.stdout.strip()  # 924
-                        res = await conn.run("mca-status | grep chanbw", check=False)
-                        freqwidth = res.stdout.strip()  # 8
-                        data = {
-                            'status': "GOOD",
-                            'dbm': dbm[7:],
-                            'txrate': txrate[11:],
-                            'rxrate': rxrate[11:],
-                            'freq': freq[11:],
-                            'freqwidth': freqwidth[7:]
-                        }
-                        await sio.emit('antennastats', data)
-                    except Exception as e:
-                        if (config.silenceSSHErrors == False):
-                            print("ERROR RETRIEVING SSH DATA!:", e)
+            # ensure connection (reuse if possible)
+            if conn is None:
+                async with asyncio.timeout(10):
+                    conn = await asyncssh.connect(
+                        "192.168.1.20",
+                        username=username,
+                        password=password,
+                    )
+            # single command to reduce round-trips
+            async with asyncio.timeout(10):
+                res = await conn.run(
+                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw|noise|wlanPollingCapacity'",
+                    check=False
+                )
+
+            parsed = {}
+            for line in res.stdout.splitlines():
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    parsed[k.strip()] = v.strip()
+
+            data = {
+                'status': "GOOD",
+                'dbm': parsed.get('signal'),
+                'txrate': parsed.get('wlanTxRate'),
+                'rxrate': parsed.get('wlanRxRate'),
+                'freq': parsed.get('centerFreq'),
+                'freqwidth': parsed.get('chanbw'),
+                'noise': parsed.get('noise'),
+                "efficiency" : parsed.get('wlanPollingCapacity')
+            }
+
+            await sio.emit('antennastats', data)
+
         except Exception as e:
-            if(config.silenceSSHErrors == False):
-                print("SSH connection failed:" + str(e))
+            if not config.silenceSSHErrors:
+                print("SSH error:", e)
+
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
-        #print("Sleeping")
+
+            # reset connection and back off slightly
+            if conn is not None:
+                conn.close()
+                await conn.wait_closed()
+                conn = None
+
         await asyncio.sleep(config.AntennaPollingRate)
 
+
+
+# function to generate and send fake data, pass in --offline flag to server to use
+async def send_fake_antenna_stats(sio):
+    while True:
+        data = {
+            'status': "GOOD", # Reports good if link is successful
+            'dbm': random.randint(-90, -30),             # signal strength
+            'txrate': round(random.uniform(1, 10), 1),  # Mbps
+            'rxrate': round(random.uniform(1, 10), 1),  # Mbps
+            'freq': random.choice([904, 914, 924]),   # MHz
+            'freqwidth': random.choice([3, 5, 8, 20]),
+            'noise': random.randint(-100, -70),          # dBm
+            'efficiency': round(random.uniform(0, 100), 2)  # %
+        }
+
+        await sio.emit('antennastats', data)
+        await asyncio.sleep(config.AntennaPollingRate)
 
 
 
@@ -106,4 +142,3 @@ def register_metric_events(sio):
     async def pingCheck(sid):
         #unlike the others ping works better as a query and respond than otherwise
         return 1
-

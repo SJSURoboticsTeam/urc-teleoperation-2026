@@ -14,6 +14,8 @@ export default function Metrics({ openPane, setOpenPane }) {
     roverRSSI: null,
     txrate: null,
     rxrate: null,
+    noise: null,
+    efficiency : null,
     freq: null,
     freqw: null,
   });
@@ -39,6 +41,8 @@ export default function Metrics({ openPane, setOpenPane }) {
         roverRSSI: data.dbm,
         txrate: data.txrate,
         rxrate: data.rxrate,
+        noise: data.noise,
+        efficiency : data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
       });
@@ -131,20 +135,25 @@ export default function Metrics({ openPane, setOpenPane }) {
               {antenna.status === "GOOD" ? (
                 <div>
                   <Typography sx={{ color: "black" }}>
-                    Signal Strength: {antenna.roverRSSI} dBm
+                    Strength: {antenna.roverRSSI} dBm
                   </Typography>
                   <Typography sx={{ color: "black" }}>
-                    TX Speed: {antenna.txrate} Mbps
+                    Noise: {antenna.noise} dBm
                   </Typography>
                   <Typography sx={{ color: "black" }}>
-                    RX Speed: {antenna.rxrate} Mbps
+                    Efficiency: {antenna.efficiency}%
                   </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    TX & RX: {antenna.txrate}, {antenna.rxrate} Mbps
+                  </Typography>
+                  <hr className="border-t border-gray-300 my-2 w-1/2 mx-auto" />
                   <Typography sx={{ color: "black" }}>
                     Frequency: {antenna.freq} MHz
                   </Typography>
                   <Typography sx={{ color: "black" }}>
                     Frequency Width: {antenna.freqw} MHz
                   </Typography>
+                  
                 </div>
               ) : (
                 <Typography sx={{ color: "black" }}>

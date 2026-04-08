@@ -3,10 +3,16 @@ import uvicorn
 import metrics
 import asyncio
 import signal
+from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 import sys
-from metrics import asyncsshloop, register_metric_events, cpuloop
 
 
+# run python 3 py_server.py --offline to send fake data instead for ssh
+offline = "--offline" in sys.argv
+if (offline):
+    print("Offline mode enabled, using mock data instead")
+else:
+    print("Online mode, SSH ready... ")
 
 
 
@@ -77,8 +83,11 @@ async def connect(sid,environ):
 
     # Start background loop once
     if not async_ssh_started:
-       async_ssh_started = True
-       sio.start_background_task(asyncsshloop,sio)
+        async_ssh_started = True
+        if offline:
+            sio.start_background_task(send_fake_antenna_stats,sio)
+        else:
+            sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
