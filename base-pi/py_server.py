@@ -3,7 +3,6 @@ import uvicorn
 import metrics
 import asyncio
 import signal
-import sys
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 import sys
 

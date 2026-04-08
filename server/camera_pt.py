@@ -26,6 +26,7 @@ def register_camera_pt_events(sio,serial_ports):
 
         except Exception as e:
             # if you are testing on a computer without serial, set the bool true to help your console
+            print("Error sending Mast Pan Command!")
             if config.silenceSerialErrors == False:
                 print(f'Error in mastCommands: {e}')
 

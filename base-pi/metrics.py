@@ -103,7 +103,6 @@ async def asyncsshloop(sio):
                 conn.close()
                 await conn.wait_closed()
                 conn = None
-            await asyncio.sleep(config.AntennaPollingRate)
 
         await asyncio.sleep(config.AntennaPollingRate)
 
