@@ -8,13 +8,13 @@ import {
   ListItem,
   Typography,
   IconButton,
-  FormControlLabel,
-  Checkbox,
   Dialog,
   DialogTitle,
   Tooltip,
   ListItemButton,
-  Box
+  Box,
+  ToggleButtonGroup,
+  ToggleButton
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
@@ -28,8 +28,8 @@ import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
 export default function TopAppBar({
   setCurrentView,
   currentView,
-  camsVisibility,
-  setcamsVisibility,
+  selectedElements, 
+  setSelectedElements
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
@@ -69,6 +69,12 @@ export default function TopAppBar({
       window.removeEventListener("keyup", updateCapsState);
     };
   }, []);
+
+  const changeElements = (event, newAlignment) => {
+    if(newAlignment !== null){
+    setSelectedElements(newAlignment);
+    }
+  };
 
   return (
     <>
@@ -310,19 +316,20 @@ export default function TopAppBar({
           </Box>
           <ListItem>
             <Typography sx={{ color: "black" }} variant="h6">
-              SETTINGS
+              SPLIT SCREEN
             </Typography>
           </ListItem>
           <ListItem>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={camsVisibility}
-                  onChange={(e) => setcamsVisibility(e.target.checked)}
-                />
-              }
-              label="Show Cameras"
-            />
+            <ToggleButtonGroup
+              color="primary"
+              value={selectedElements}
+              exclusive
+              onChange={changeElements}
+            >
+              <ToggleButton value="ui">UI</ToggleButton>
+              <ToggleButton value="both">BOTH</ToggleButton>
+              <ToggleButton value="cameras">CAMS</ToggleButton>
+            </ToggleButtonGroup>
           </ListItem>
         </List>
       </Drawer>
