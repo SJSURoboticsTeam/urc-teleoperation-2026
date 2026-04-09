@@ -1,7 +1,5 @@
-import { green } from "@mui/material/colors";
 import { useState, useRef, useEffect } from "react";
 import "react-resizable/css/styles.css";
-import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { Typography, Box, Slider, Button } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
@@ -169,13 +167,16 @@ export default function ArmView() {
   };
 
   useEffect(() => {
+    const pulseTimeouts = pulseTimeoutsRef.current;
+    const txPulseTimeout = txPulseTimeoutRef;
+
     return () => {
-      Object.values(pulseTimeoutsRef.current).forEach((timeoutId) => {
+      Object.values(pulseTimeouts).forEach((timeoutId) => {
         if (timeoutId) clearTimeout(timeoutId);
       });
 
-      if (txPulseTimeoutRef.current) {
-        clearTimeout(txPulseTimeoutRef.current);
+      if (txPulseTimeout.current) {
+        clearTimeout(txPulseTimeout.current);
       }
     };
   }, []);
