@@ -204,25 +204,53 @@ export default function GamepadPanel({ currentView }) {
 
   // Polling for arm gamepad input
   useEffect(() => {
+    const ARM_LIMITS = {
+      elbow: { min: -100, max: -20, initial: -20 },
+      shoulder: { min: -20, max: 65, initial: 0 },
+      track: { min: 0, max: 300, initial: 0 },
+      pitch: { min: 0, max: 180, initial: 0 },
+      roll: { min: 0, max: 360, initial: 0 },
+      clamp: { min: 0, max: 20, initial: 0 },
+    };
+
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+    const clean = (v, deadzone = 0.15) => {
+      if (Math.abs(v) < deadzone) return 0;
+      return Math.round(v * 100) / 100;
+    };
+
+    const differsEnough = (a, b, epsilon = 0.1) => Math.abs(a - b) > epsilon;
+
     if (armConnectedOne == null) {
-      setArmCommands({
-        track: 0,
-        shoulder: 0,
-        elbow: 0,
-        pitch: 0,
-        roll: 0,
-        clamp: 0,
-      });
       return;
     }
 
     let prevVal = {
-      elbow: 0,
-      shoulder: 0,
-      track: 0,
-      pitch: 0,
-      roll: 0,
-      clamp: 0,
+      elbow: 
+        typeof armCommands?.elbow === "number"
+          ? armCommands.elbow
+          : ARM_LIMITS.elbow.initial,
+      shoulder: 
+        typeof armCommands?.shoulder === "number"
+          ? armCommands.shoulder
+          : ARM_LIMITS.shoulder.initial,
+      track: 
+        typeof armCommands?.track === "number"
+          ? armCommands.track
+          : ARM_LIMITS.track.initial,
+      pitch: 
+        typeof armCommands?.pitch === "number"
+          ? armCommands.pitch
+          : ARM_LIMITS.pitch.initial,
+      roll: 
+        typeof armCommands?.roll === "number"
+          ? armCommands.roll
+          : ARM_LIMITS.roll.initial,
+      clamp: 
+        typeof armCommands?.clamp === "number"
+          ? armCommands.clamp
+          : ARM_LIMITS.clamp.initial,
     };
 
     const pollAxes = () => {
@@ -231,38 +259,27 @@ export default function GamepadPanel({ currentView }) {
       // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
       // so stale arm commands do not persist after disconnect
       if (!gp) {
-        const zeroVal = {
-          track: 0,
-          shoulder: 0,
-          elbow: 0, 
-          pitch: 0,
-          roll: 0,
-          clamp: 0,
-        };
-
-        const changed = Object.keys(zeroVal).some(
-          (key) => zeroVal[key] !== prevVal[key],
-        );
-        if (changed) {
-          setArmCommands(zeroVal);
-          prevVal = zeroVal;
-        }
-
         armAnimationIdRef.current = requestAnimationFrame(pollAxes);
         return;
       }
-
-      const clean = (v, deadzone = 0.08) => {
-        if (Math.abs(v) < deadzone) return 0;
-        return Math.round(v * 100) / 100;
-      };
 
       const armInputs = {
         elbow: clean(gp.axes[1]),
         shoulder: clean(gp.axes[5]),
         track: clean(gp.axes[0]),
-        pitch: gp.axes[9] == -1 ? -1 : (gp.axes[9] < 0.15 && gp.axes[9] > 0.14 ? 1 : 0), // treat full up/down as hard limits for better control at extremes
-        roll: gp.axes[9] < 0.72 && gp.axes[9] > 0.71 ? -1 : (gp.axes[9] < -0.42 && gp.axes[9] > -0.43 ? 1 : 0),
+        // treat full up/down as hard limits for better control at extremes
+        pitch: 
+          gp.axes[9] === -1 
+            ? -1 
+            : gp.axes[9] < 0.15 && gp.axes[9] > 0.14 
+              ? 1 
+              : 0, 
+        roll: 
+          gp.axes[9] < 0.72 && gp.axes[9] > 0.71 
+            ? -1 
+            : gp.axes[9] < -0.42 && gp.axes[9] > -0.43 
+              ? 1 
+              : 0,
         clamp: clean(gp.axes[6]),
       };
       //console.log("Arm Inputs: ", armInputs);
@@ -276,22 +293,46 @@ export default function GamepadPanel({ currentView }) {
         clamp: 0.5,
       };
 
-      const newVal = {
-        elbow: prevVal.elbow + armInputs.elbow * inputSens.elbow,
-        shoulder: prevVal.shoulder + armInputs.shoulder * inputSens.shoulder,
-        track: prevVal.track + armInputs.track * inputSens.track,
-        pitch: prevVal.pitch + armInputs.pitch * inputSens.pitch,
-        roll: prevVal.roll + armInputs.roll * inputSens.roll,
-        clamp: armInputs.clamp * inputSens.clamp,
+      const nextVal = {
+        elbow: clamp(
+          prevVal.elbow + armInputs.elbow * inputSens.elbow,
+          ARM_LIMITS.elbow.min,
+          ARM_LIMITS.elbow.max,
+        ),
+        shoulder: clamp(
+          prevVal.shoulder + armInputs.shoulder * inputSens.shoulder,
+          ARM_LIMITS.shoulder.min,
+          ARM_LIMITS.shoulder.max,
+        ),
+        track: clamp(
+          prevVal.track + armInputs.track * inputSens.track,
+          ARM_LIMITS.track.min,
+          ARM_LIMITS.track.max,
+        ),
+        pitch: clamp(
+          prevVal.pitch + armInputs.pitch * inputSens.pitch,
+          ARM_LIMITS.pitch.min,
+          ARM_LIMITS.pitch.max,
+        ),
+        roll: clamp(
+          prevVal.roll + armInputs.roll * inputSens.roll,
+          ARM_LIMITS.roll.min,
+          ARM_LIMITS.roll.max,
+        ),
+        clamp: clamp(
+          prevVal.clamp + armInputs.clamp * inputSens.clamp,
+          ARM_LIMITS.clamp.min,
+          ARM_LIMITS.clamp.max,
+        ),
       };
 
-      const changed = Object.keys(newVal).some(
-        (key) => newVal[key] !== prevVal[key],
+      const changed = Object.keys(nextVal).some((key) =>
+        differsEnough(nextVal[key], prevVal[key], 0.1),
       );
         
       if (changed) {
-        setArmCommands(newVal);
-        prevVal = newVal;
+        setArmCommands(nextVal);
+        prevVal = nextVal;
       }
 
       armAnimationIdRef.current = requestAnimationFrame(pollAxes);
