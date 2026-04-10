@@ -8,7 +8,7 @@ import signal
 import sys
 from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
-from arm import read_arm_can_loop, register_arm_events
+from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 # ex: drive has the canserial object,
 # while driveId holds the canopener name so frontend can sync with backend status
@@ -229,6 +229,7 @@ async def E_STOP(sid):
 can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
+arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -246,6 +247,7 @@ async def connect(sid,environ):
     global can_error_message_started
     global drive_task_started
     global arm_task_started
+    global arm_position_task_started
     global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
@@ -262,6 +264,9 @@ async def connect(sid,environ):
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not arm_position_task_started:
+        arm_position_task_started = True
+        sio.start_background_task(request_arm_position_loop, serial_ports)
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request,serial_ports)
