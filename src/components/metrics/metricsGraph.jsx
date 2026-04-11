@@ -5,59 +5,152 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import {Button, Box} from '@mui/material';
 
 export default function MetricsGraph() {
+    return(
+        <div className="flex flex-row">
+            <Box>
+                <SignalGraph/>
+            </Box>
+            <Box>
+                <NoiseGraph/>
+            </Box>
+            <Box>
+                <EfficiencyGraph/>
+            </Box>
+        </div>
+    )
+}
+
+function SignalGraph() {
     const antenna = useAntennaData();
 
-    const initialData = [-98, -92, -95, -80, -75, -81, -60, -61, -59, -70];
-    const initialTime = [100,200,300,400,500,600,700,800,900,1000];
-    const [running, setRunning] = useState(false);
-    const [time, setTime] = useState(initialTime);
-    const [signalData, setSignalData] = useState(initialData);
-
+    const [time, setTime] = useState([]);
+    const [signalData, setSignalData] = useState([]);
 
     useEffect(() => {
-        if (!running) return;
-        
-        const intervalId = setInterval(() => {
-            setSignalData((prev) => [
-                ...prev.slice(1),
-                Math.max(-98, Math.min(-32, prev.at(-1) + Math.floor(Math.random() * 21) - 10))
-            ]);
-            setTime((prev) => {
-                const last = prev.at(-1);
-                return [...prev.slice(1), last + 100];
+        if (antenna.status !== "GOOD" || antenna.roverRSSI == null) return;
+            setSignalData((prev) => {
+                return [...prev, antenna.roverRSSI].slice(-20);
             });
-        }, 500);
-        return () => clearInterval(intervalId);
-    }, [running]);
+            setTime((prev) => {
+                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
+                    return [...prev, updateTime].slice(-20);
+            });
+    }, [antenna.status, antenna.roverRSSI]);
 
-    return (
+    return (    
         <Box sx={{width: '75%'}}>
             <LineChart
-                height={500}
+                height={400}
+                width={400}
                 skipAnimation
                 series={[
                 {   
-                    data: signalData, id: 'Signal Strength',
+                    data:signalData, id: 'Signal Strength', label: 'Signal Strength (dBm)'
                 },]}
-                xAxis={[{ data: time, label: 'Time (ms)' }]}
+                xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
                 yAxis={[{ label: 'Signal Strength (dBm)', width: 50 }]}
             />
-            <Button 
-                variant="contained" 
-                onClick={() => setRunning((p) => !p)}
-                sx={{width: 'auto'}}>
-                {running ? 'stop' : 'start'}
-            </Button>
+        
             <Button
                 variant="outlined"
                 sx={{ ml:1, width: 'auto'}}
                 onClick={() => {
-                setSignalData(initialData);
-                setTime(initialTime);
+                setSignalData([]);
+                setTime([]);
                 }}
             >
                 reset
             </Button>
         </Box>
-    )
+    );
+}
+
+function NoiseGraph() {
+    const antenna = useAntennaData();
+
+    const [time, setTime] = useState([]);
+    const [noiseData, setNoiseData] = useState([]);
+
+    useEffect(() => {
+        if (antenna.status !== "GOOD" || antenna.noise == null) return;
+            setNoiseData((prev) => {
+                return [...prev, antenna.noise].slice(-20);
+            });
+            setTime((prev) => {
+                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
+                    return [...prev, updateTime].slice(-20);
+            });
+    }, [antenna.status, antenna.noise]);
+
+    return (    
+        <Box sx={{width: '75%'}}>
+            <LineChart
+                height={400}
+                width={400}
+                skipAnimation
+                series={[
+                {   
+                    data:noiseData, id: 'Noise', label: 'Noise (dBm)'
+                },]}
+                xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
+                yAxis={[{ label: 'Noise (dBm)', width: 50 }]}
+            />
+        
+            <Button
+                variant="outlined"
+                sx={{ ml:1, width: 'auto'}}
+                onClick={() => {
+                setNoiseData([]);
+                setTime([]);
+                }}
+            >
+                reset
+            </Button>
+        </Box>
+    );
+}
+
+function EfficiencyGraph() {
+    const antenna = useAntennaData();
+
+    const [time, setTime] = useState([]);
+    const [efficiencyData, setEfficiencyData] = useState([]);
+
+    useEffect(() => {
+        if (antenna.status !== "GOOD" || antenna.efficiency == null) return;
+            setEfficiencyData((prev) => {
+                return [...prev, antenna.efficiency].slice(-20);
+            });
+            setTime((prev) => {
+                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
+                    return [...prev, updateTime].slice(-20);
+            });
+    }, [antenna.status, antenna.efficiency]);
+
+    return (    
+        <Box sx={{width: '75%'}}>
+            <LineChart
+                height={400}
+                width={400}
+                skipAnimation
+                series={[
+                {   
+                    data:efficiencyData, id: 'Efficiency', label: 'Efficiency (%)'
+                },]}
+                xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
+                yAxis={[{ label: 'Efficiency (%)', width: 50 }]}
+            />
+        
+            <Button
+                variant="outlined"
+                sx={{ ml:1, width: 'auto'}}
+                onClick={() => {
+                setEfficiencyData([]);
+                setTime([]);
+                }}
+            >
+                reset
+            </Button>
+        </Box>
+    );
 }
