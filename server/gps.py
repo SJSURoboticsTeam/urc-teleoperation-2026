@@ -1,5 +1,5 @@
 import socket
-
+import random
 import serial
 from dataclasses import dataclass
 from typing import Union
@@ -117,14 +117,14 @@ async def read_gps_data(serial_ports, sio):
         finally:
             await asyncio.sleep(0.5)  # Sleep briefly to prevent tight loop on error
 
-# /dev/tty.usbmodem14301
-# if(__name__ == "__main__"):
-#     #TODO check for gps on port
-#     gps = ZEDF9P("COM7", 57600)
-#     while(True):
-#         if gps.has_gps_lock():
-#             position = gps.get_position()
-#             print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
-#         else:
-#             print("No GPS lock")
-#         time.sleep(1)
+async def send_fake_gps_data(sio):
+    while True:
+        data = {
+
+            'latitude': round(random.uniform(37.334, 37.335), 5),
+            'longitude': round(random.uniform(-121.882, -121.883), 5), 
+            'time': round(random.uniform(0.2,3),2) # time
+        }
+
+        await sio.emit('gpsData', data)
+        await asyncio.sleep(random.uniform(2,7))

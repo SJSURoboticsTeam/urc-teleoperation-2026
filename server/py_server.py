@@ -10,7 +10,17 @@ from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data
+from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+
+# run python 3 py_server.py --offline to send fake data instead for ssh
+offline = "--offline" in sys.argv
+if (offline):
+    print("Offline mode enabled, using mock data instead")
+else:
+    print("Online mode, GPS ready... ")
+
+
+
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
@@ -316,7 +326,10 @@ async def connect(sid,environ):
         sio.start_background_task(read_arm_can_loop, serial_ports)
     if not gps_task_started:
         gps_task_started = True
-        sio.start_background_task(read_gps_data, serial_ports, sio)
+        if offline:
+            sio.start_background_task(send_fake_gps_data, sio)
+        else:
+            sio.start_background_task(read_gps_data, serial_ports, sio)
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request, serial_ports)
