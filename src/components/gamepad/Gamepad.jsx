@@ -285,12 +285,12 @@ export default function GamepadPanel({ currentView }) {
       //console.log("Arm Inputs: ", armInputs);
 
       const inputSens = {
-        elbow: 0.5,
-        shoulder: 0.5,
-        track: 0.5,
-        pitch: 0.25,
-        roll: 0.25,
-        clamp: 0.5,
+        elbow: 0.5 * uniSens,
+        shoulder: 0.5 * uniSens,
+        track: 0.5 * uniSens,
+        pitch: 0.75 * uniSens,
+        roll: 0.75 * uniSens,
+        clamp: 0.5 * uniSens,
       };
 
       const nextVal = {
