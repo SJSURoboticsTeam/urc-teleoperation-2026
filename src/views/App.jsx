@@ -64,41 +64,41 @@ function App() {
     panSpeed: 30,
   });
 
-  const [camsVisibility, setcamsVisibility] = useState(true);
+  const [selectedElements, setSelectedElements] = useState("both");
 
   // Select which view we want to display
   function renderView() {
     switch (currentView) {
       case "ArmView":
         return (
-          <SplitView CurrentView={<ArmView />} showCameras={camsVisibility} />
+          <SplitView CurrentView={<ArmView />} selectedElements={selectedElements}/>
         );
       case "DriveView":
         return (
           <SplitView
             CurrentView={<DriveComponents />}
-            showCameras={camsVisibility}
+            selectedElements={selectedElements}
           />
         );
       case "ExtrasView":
         return (
           <SplitView
             CurrentView={<ExtrasView />}
-            showCameras={camsVisibility}
+            selectedElements={selectedElements}
           />
         );
       case "ScienceView":
         return (
           <SplitView
             CurrentView={<ScienceView />}
-            showCameras={camsVisibility}
+            selectedElements={selectedElements}
           />
         );
       case "AutonomyView":
         return (
           <SplitView
             CurrentView={<AutonomyView />}
-            showCameras={camsVisibility}
+            selectedElements={selectedElements}
           />
         );
       default:
@@ -139,8 +139,8 @@ function App() {
                 <TopAppBar
                   currentView={currentView}
                   setCurrentView={setCurrentView}
-                  camsVisibility={camsVisibility}
-                  setcamsVisibility={setcamsVisibility}
+                  selectedElements={selectedElements}
+                  setSelectedElements={setSelectedElements}
                   addSnackbarMessage={addSnackbarMessage}
                 />
 

@@ -95,7 +95,7 @@ export default function DriveManualInput({}) {
       moduleConflicts: Number(moduleConflicts),
     });
 
-    robotsocket.emit("panCommands", {
+    robotsocket.emit("mastCommands", {
       xVel: panX,
       yVel: panY,
     });
