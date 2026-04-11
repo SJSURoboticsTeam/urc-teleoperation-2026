@@ -36,13 +36,6 @@ class LockOnControl {
     this._signal.textContent = "Last Read: ---";
     this._signalRef.current = this._signal;
 
-    // this._button = document.createElement("button);
-    // this._button.textContent = "Toggle Lock-On";
-    // this._button.style.marginLeft = "10px";
-    // this._button.style.backgroundColor = "#880808";
-    // this._button.addEventListener("click", () => this._onToggle());
-    // this._buttonRef.current = this._button;
-
     this._wrapper = document.createElement("div");
     this._wrapper.style.display = "flex";
     this._wrapper.style.alignItems = "center";

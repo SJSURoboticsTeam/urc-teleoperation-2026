@@ -13,7 +13,7 @@ class GNRMC:
     valid: bool  # is the GNRMC sentence valid (do we have a GPS lock)
 
 @dataclass
-class GPS:
+class GPS_Data:
     latitude: float
     longitude: float
     time: float  
@@ -53,7 +53,7 @@ class ZEDF9P:
                 longitude *= -1
         return GNRMC(longitude, latitude, valid)
 
-    def get_position(self) -> GPS:
+    def get_position(self) -> GPS_Data:
         """
         Should only be called when gnrmc is valid, otherwise
         this will error because longitude and latitude are None
@@ -63,7 +63,7 @@ class ZEDF9P:
         new_time = time.time()
         signal_time = new_time - self.start_time
         self.start_time = new_time
-        return GPS(longitude=val.longitude, latitude=val.latitude, time=signal_time)
+        return GPS_Data(longitude=val.longitude, latitude=val.latitude, time=signal_time)
 
     def has_gps_lock(self) -> bool:
         """
