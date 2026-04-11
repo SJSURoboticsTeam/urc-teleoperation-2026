@@ -10,7 +10,7 @@ from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
 from arm import read_arm_can_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-from gps import ZEDF9P, GPS, GNRMC, read_gps_data
+from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
