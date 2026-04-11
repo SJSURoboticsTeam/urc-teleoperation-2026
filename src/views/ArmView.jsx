@@ -6,7 +6,7 @@ import { Typography, Box, Slider, Grid, Button } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
-import { useRobotSocketStatus, basesocket } from "../components/socket.io/socket";
+import { useRobotSocketStatus, robotsocket } from "../components/socket.io/socket";
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
 
@@ -28,7 +28,7 @@ export default function ArmView({}) {
     if (!serverConnected || armConnectedOne == null || !txon) return;
     console.log("Starting arm command transmission");
     const intervalId = setInterval(() => {
-      basesocket.emit("armCommands", armCommandsRef.current);
+      robotsocket.emit("armCommands", armCommandsRef.current);
     }, FrameRateConstant);
 
     return () => clearInterval(intervalId);
@@ -37,7 +37,7 @@ export default function ArmView({}) {
   // Test transmission manually
   const handleManualUpdate = () => {
     if (!serverConnected) return;
-    basesocket.emit("armCommands", armCommands);
+    robotsocket.emit("armCommands", armCommands);
     // console.log("Manual arm commands sent:", JSON.stringify(armCommands));
   };
 
