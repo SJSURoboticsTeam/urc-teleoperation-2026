@@ -39,11 +39,13 @@ export default function NavConnectionStatus({
     driveState: "idle", // idle, connecting, active
     armState: "idle", // idle, connecting, active
     scienceState: "idle", // idle, connecting, active
+    gpsState: "idle", // idle, connecting, active
     loading: true, // lock buttons, dropdowns when refreshing can data
     canIds: [], // array with every possible serial device
     driveId: "disconnect", // selected can id in dropdown or disconnect
     armId: "disconnect", // selected can id in dropdown or disconnect
     scienceId: "disconnect", // selected can id in dropdown or disconnect
+    gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
 
   const LATENCY_DEGRADED_THRESHOLD = 300;
@@ -229,10 +231,12 @@ export default function NavConnectionStatus({
         driveId: data["driveId"],
         armId: data["armId"],
         scienceId: data["scienceId"],
+        gpsId: data["gpsId"],
         // assignment if connected or not by text
         driveState: data["driveId"] !== "disconnect" ? "active" : "idle",
         armState: data["armId"] !== "disconnect" ? "active" : "idle",
         scienceState: data["scienceId"] !== "disconnect" ? "active" : "idle",
+        gpsState: data["gpsId"] !== "disconnect" ? "active" : "idle",
         loading: false,
       }));
     });
@@ -354,6 +358,45 @@ export default function NavConnectionStatus({
       }
     });
   }
+
+  function connectGPS() {
+    setcanState((prev) => ({
+      ...prev,
+      gpsState: "connecting",
+    }));
+    console.log("Connecting GPS, Sending id " + canState.gpsId);
+    robotsocket.emit("connectGPS", canState.gpsId, (response) => {
+      console.log("RESPONSE:" + response);
+      if (response === "OK") {
+        setcanState((prev) => ({
+          ...prev,
+          gpsState: "active",
+        }));
+      } else {
+        enqueueSnackbar("GPS didn't connect, auto-updating to current state");
+        requestCanInfo();
+      }
+    });
+  }
+  function disconnectGPS() {
+    setcanState((prev) => ({
+      ...prev,
+      gpsState: "connecting",
+    }));
+    console.log("Disconnecting GPS");
+    robotsocket.emit("disconnectGPS", (response) => {
+      console.log("RESPONSE:" + response);
+      if (response === "OK") {
+        setcanState((prev) => ({
+          ...prev,
+          gpsState: "idle",
+        }));
+      } else {
+        enqueueSnackbar("GPS didn't disconnect, auto-updating to current state", { variant: 'error' });
+        requestCanInfo();
+      }
+    });
+  }
   function disconnectAll() {
     if (canState.driveState != "idle") {
       disconnectDrive();
@@ -364,7 +407,10 @@ export default function NavConnectionStatus({
     if (canState.scienceState != "idle") {
       disconnectScience();
     }
-    console.log("ALl have been disconnected.");
+    if (canState.gpsState != "idle") {
+      disconnectGPS();
+    }
+    console.log("ALL have been disconnected.");
   }
 
   useEffect(() => {
@@ -603,7 +649,8 @@ export default function NavConnectionStatus({
                       <MenuItem
                         disabled={
                           canId === canState.armId ||
-                          canId === canState.scienceId
+                          canId === canState.scienceId || 
+                          canId === canState.gpsId
                         }
                         key={canId}
                         value={canId}
@@ -658,7 +705,8 @@ export default function NavConnectionStatus({
                       <MenuItem
                         disabled={
                           canId === canState.driveId ||
-                          canId === canState.scienceId
+                          canId === canState.scienceId ||
+                          canId === canState.gpsId
                         }
                         key={canId}
                         value={canId}
@@ -709,7 +757,7 @@ export default function NavConnectionStatus({
                     {canState.canIds?.map((canId) => (
                       <MenuItem
                         disabled={
-                          canId === canState.driveId || canId === canState.armId
+                          canId === canState.driveId || canId === canState.armId || canId === canState.gpsId
                         }
                         key={canId}
                         value={canId}
@@ -734,6 +782,61 @@ export default function NavConnectionStatus({
                   variant="contained"
                 >
                   {canState.scienceState == "idle" ? (
+                    <ElectricalServicesIcon />
+                  ) : (
+                    <EjectIcon />
+                  )}
+                </Button>
+              </Box>
+              {/* GPS CONNECTION */}
+              <Box
+                sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}
+              >
+                <FormControl sx={{ flex: 1 }} size="small">
+                  <InputLabel id="demo-simple-select-label">GPS</InputLabel>
+                  <Select
+                    value={canState.gpsId}
+                    label="GPS"
+                    disabled={
+                      canState.loading || canState.gpsState != "idle"
+                    }
+                    onChange={(event) =>
+                      setcanState((prev) => ({
+                        ...prev,
+                        gpsId: event.target.value,
+                      }))
+                    }
+                    fullWidth
+                  >
+                    <MenuItem value={"disconnect"}>Disconnect</MenuItem>
+                    {canState.canIds?.map((canId) => (
+                      <MenuItem
+                        disabled={
+                          canId === canState.driveId || canId === canState.armId || canId === canState.scienceId
+                        }
+                        key={canId}
+                        value={canId}
+                      >
+                        {canId}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button
+                  color={canState.gpsState === "idle" ? "success" : "error"}
+                  disabled={
+                    canState.loading || canState.gpsId == "disconnect"
+                  }
+                  loading={canState.gpsState == "connecting"}
+                  sx={{ width: 50, minWidth: 0 }}
+                  onClick={
+                    canState.gpsState == "idle"
+                      ? connectGPS
+                      : disconnectGPS
+                  }
+                  variant="contained"
+                >
+                  {canState.gpsState == "idle" ? (
                     <ElectricalServicesIcon />
                   ) : (
                     <EjectIcon />
