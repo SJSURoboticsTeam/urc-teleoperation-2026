@@ -14,19 +14,13 @@ export default function MetricsGraph() {
                 <Box>
                     <NoiseGraph/>
                 </Box>
-                <Box>
-                    <EfficiencyGraph/>
-                </Box>
             </div>
             <div className="flex flex-row">  
                 <Box>
+                    <EfficiencyGraph/>
+                </Box>
+                <Box>
                     <TxRxGraph/>
-                </Box>
-                <Box>
-                    <FrequencyGraph/>
-                </Box>
-                <Box>
-                    <FrequencyWidthGraph/>
                 </Box>
             </div>
         </div>
@@ -54,7 +48,7 @@ function SignalGraph() {
         <Box sx={{width: '75%'}}>
             <LineChart
                 height={300}
-                width={400}
+                width={500}
                 skipAnimation
                 series={[
                 {   
@@ -66,7 +60,7 @@ function SignalGraph() {
         
             <Button
                 variant="outlined"
-                sx={{ ml:1, width: 'auto'}}
+                sx={{ ml:1, width: 'auto', fontSize:12}}
                 onClick={() => {
                 setSignalData([]);
                 setTime([]);
@@ -99,7 +93,7 @@ function NoiseGraph() {
         <Box sx={{width: '75%'}}>
             <LineChart
                 height={300}
-                width={400}
+                width={500}
                 skipAnimation
                 series={[
                 {   
@@ -111,7 +105,7 @@ function NoiseGraph() {
         
             <Button
                 variant="outlined"
-                sx={{ ml:1, width: 'auto'}}
+                sx={{ ml:1, width: 'auto', fontSize:12}}
                 onClick={() => {
                 setNoiseData([]);
                 setTime([]);
@@ -144,7 +138,7 @@ function EfficiencyGraph() {
         <Box sx={{width: '75%'}}>
             <LineChart
                 height={300}
-                width={400}
+                width={500}
                 skipAnimation
                 series={[
                 {   
@@ -156,7 +150,7 @@ function EfficiencyGraph() {
         
             <Button
                 variant="outlined"
-                sx={{ ml:1, width: 'auto'}}
+                sx={{ ml:1, width: 'auto', fontSize:12}}
                 onClick={() => {
                 setEfficiencyData([]);
                 setTime([]);
@@ -167,50 +161,7 @@ function EfficiencyGraph() {
         </Box>
     );
 }
-function FrequencyWidthGraph() {
-    const antenna = useAntennaData();
 
-    const [time, setTime] = useState([]);
-    const [frequencyWidthData, setFrequencyWidthData] = useState([]);
-
-    useEffect(() => {
-        if (antenna.status !== "GOOD" || antenna.freqw == null) return;
-            setFrequencyWidthData((prev) => {
-                return [...prev, antenna.freqw].slice(-20);
-            });
-            setTime((prev) => {
-                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-20);
-            });
-    }, [antenna.status, antenna.freqw]);
-
-    return (    
-        <Box sx={{width: '75%'}}>
-            <LineChart
-                height={300}
-                width={400}
-                skipAnimation
-                series={[
-                {   
-                    data:frequencyWidthData, id: 'FrequencyWidth', label: 'Frequency Width (MHz)'
-                },]}
-                xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Frequency Width (MHz)', width: 50 }]}
-            />
-        
-            <Button
-                variant="outlined"
-                sx={{ ml:1, width: 'auto'}}
-                onClick={() => {
-                setFrequencyWidthData([]);
-                setTime([]);
-                }}
-            >
-                reset
-            </Button>
-        </Box>
-    );
-}
 function TxRxGraph() {
     const antenna = useAntennaData();
 
@@ -236,7 +187,7 @@ function TxRxGraph() {
         <Box sx={{width: '75%'}}>
             <LineChart
                 height={300}
-                width={400}
+                width={500}
                 skipAnimation
                 series={[
                 { data:TxData, id: 'Tx', label: 'Tx (Mbps)'},
@@ -248,54 +199,10 @@ function TxRxGraph() {
         
             <Button
                 variant="outlined"
-                sx={{ ml:1, width: 'auto'}}
+                sx={{ ml:1, width: 'auto', fontSize:12}}
                 onClick={() => {
                 setTxData([]);
                 setRxData([]);
-                setTime([]);
-                }}
-            >
-                reset
-            </Button>
-        </Box>
-    );
-}
-function FrequencyGraph() {
-    const antenna = useAntennaData();
-
-    const [time, setTime] = useState([]);
-    const [frequencyData, setFrequencyData] = useState([]);
-
-    useEffect(() => {
-        if (antenna.status !== "GOOD" || antenna.freq == null) return;
-            setFrequencyData((prev) => {
-                return [...prev, antenna.freq].slice(-20);
-            });
-            setTime((prev) => {
-                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-20);
-            });
-    }, [antenna.status, antenna.freq]);
-
-    return (    
-        <Box sx={{width: '75%'}}>
-            <LineChart
-                height={300}
-                width={400}
-                skipAnimation
-                series={[
-                {   
-                    data:frequencyData, id: 'Frequency', label: 'Frequency (MHz)'
-                },]}
-                xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Frequency (MHz)', width: 50 }]}
-            />
-        
-            <Button
-                variant="outlined"
-                sx={{ ml:1, width: 'auto'}}
-                onClick={() => {
-                setFrequencyData([]);
                 setTime([]);
                 }}
             >
