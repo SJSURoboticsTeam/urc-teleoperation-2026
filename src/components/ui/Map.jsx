@@ -4,8 +4,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { robotsocket } from "../socket.io/socket";
 
 class LockOnControl {
-  constructor(coordLabelRef, signalRef, buttonRef, onToggle) {
-    this._coordLabelRef = coordLabelRef;
+  constructor(latLabelRef, longLabelRef, signalRef, buttonRef, onToggle) {
+    this._latLabelRef = latLabelRef;
+    this._longLabelRef = longLabelRef;
     this._signalRef = signalRef;
     this._buttonRef = buttonRef;
     this._onToggle = onToggle;
@@ -23,29 +24,93 @@ class LockOnControl {
     this._container.style.borderStyle = "solid";
     this._container.style.borderWidth = "1px";
 
-    this._label = document.createElement("span");
-    this._label.textContent = "Latitude: --- \nLongitude: ---";
-    this._coordLabelRef.current = this._label;
+    this._latLabel = document.createElement("span");
+    this._latLabel.textContent = "Latitude: --- ";
+    this._latLabelRef.current = this._latLabel;
+
+    this._longLabel = document.createElement("span");
+    this._longLabel.textContent = "Longitude: ---";
+    this._longLabelRef.current = this._longLabel;
 
     this._signal = document.createElement("span");
-    this._signal.textContent = "Last Received GPS: ---";
+    this._signal.textContent = "Last Read: ---";
     this._signalRef.current = this._signal;
 
-    this._button = document.createElement("button");
-    this._button.textContent = "Toggle Lock-On";
-    this._button.style.marginLeft = "10px";
-    this._button.style.backgroundColor = "#880808";
-    this._button.addEventListener("click", () => this._onToggle());
-    this._buttonRef.current = this._button;
+    // this._button = document.createElement("button);
+    // this._button.textContent = "Toggle Lock-On";
+    // this._button.style.marginLeft = "10px";
+    // this._button.style.backgroundColor = "#880808";
+    // this._button.addEventListener("click", () => this._onToggle());
+    // this._buttonRef.current = this._button;
 
-    this._container.appendChild(this._label);
+    this._wrapper = document.createElement("div");
+    this._wrapper.style.display = "flex";
+    this._wrapper.style.alignItems = "center";
+    this._wrapper.style.gap = "10px";
+    this._wrapper.style.padding = "4px";
+    this._toggleLabel = document.createElement("span");
+    this._toggleLabel.textContent = "Lock-On";
+    this._button = document.createElement("input");
+    this._button.type = "checkbox";
+    this._button.id = "switch";
+    this._button.textContent = "Toggle Lock-On";
+    this._style = document.createElement("label");
+    this._style.htmlFor = "switch";
+    this._style.className = "toggle";
+    this._buttonRef.current = this._button;
+    this._button.addEventListener("click", () => this._onToggle());
+
+    this._wrapper.appendChild(this._toggleLabel);
+    this._wrapper.appendChild(this._button);
+    this._wrapper.appendChild(this._style);
+
+    const style = document.createElement("style");
+    style.textContent = `
+        .toggle {
+            width: 40px;
+            height: 20px;
+            background: #890707;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            display: inline-block;
+            transition: background 0.2;
+        }
+        .toggle::before {
+            content: "";
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.2;
+        }
+        input {
+          display: none;  
+        }
+        input:checked + .toggle {
+            background: #0a890e;
+        }
+        input:checked + .toggle::before {
+            left: 21px;
+        }
+    `;
+    this._container.appendChild(style);
+
+    this._container.appendChild(this._latLabel);
+    this._container.appendChild(this._longLabel);
     this._container.appendChild(this._signal);
-    this._container.appendChild(this._button);
+    this._container.appendChild(this._wrapper);
     return this._container;
   }
   onRemove() {
     this._container.parentNode.removeChild(this._container);
-    this._coordLabelRef.current = null;
+    this._latLabelRef.current = null;
+    this._longLabelRef.current = null;
+    this._signalRef.current = null;
+    this._buttonRef.current = null;
   }
 }
 
@@ -53,13 +118,18 @@ export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const marker = useRef(null);
-  const coordLabelRef = useRef(null);
+  const latLabelRef = useRef(null);
+  const longLabelRef = useRef(null);
   const signalRef = useRef(null);
   const buttonRef = useRef(null);
 
   const [coordinates, setCoordinates] = useState({
-      long:0,
-      lat:0
+    long:0,
+    lat:0
+  });
+
+  const [lastSignalTime, setLastSignalTime] = useState({
+    time: 0,
   });
 
   const [isLockedOn, setIsLockedOn] = useState(false);
@@ -91,7 +161,7 @@ export default function Map() {
     mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
-    const lockOnControl = new LockOnControl(coordLabelRef, signalRef, buttonRef, () =>
+    const lockOnControl = new LockOnControl(latLabelRef, longLabelRef, signalRef, buttonRef, () =>
       setIsLockedOn((prev) => !prev)
     );
     map.addControl(lockOnControl, "bottom-left");
@@ -165,15 +235,24 @@ export default function Map() {
       console.log("Received GPS data:", data);
       setCoordinates({
         long: data.longitude,
-        lat: data.latitude
+        lat: data.latitude,
+      });
+      setLastSignalTime({
+        time: data.time,
       });
     };
 
     robotsocket.on("gpsData", handler);
     marker.current.setLngLat([coordinates.long, coordinates.lat]);
 
-    if(coordLabelRef.current) {
-      coordLabelRef.current.textContent = `Latitude/Longitude: ${coordinates.lat.toFixed(4)}, ${coordinates.long.toFixed(4)}`;
+    if(latLabelRef.current) {
+      latLabelRef.current.textContent = `Latitude: ${coordinates.lat.toFixed(4)}`;
+    }
+    if(longLabelRef.current) {
+      longLabelRef.current.textContent = `Longitude: ${coordinates.long.toFixed(4)}`;
+    }
+    if(signalRef.current) {
+      signalRef.current.textContent = `Last Read: ${lastSignalTime.time.toFixed(2)}s ago`;
     }
 
     if(isLockedOn && mapRef.current) {
