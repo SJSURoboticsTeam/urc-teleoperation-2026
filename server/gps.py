@@ -16,9 +16,11 @@ class GNRMC:
 class GPS:
     latitude: float
     longitude: float
+    time: float  
 
 
 class ZEDF9P:
+    start_time = time.time()
     def __init__(self, port, baudrate, timeout: float = 0.01):
         self.gps_port = serial.Serial(port, baudrate, timeout=timeout)
         self.lines = []
@@ -58,7 +60,10 @@ class ZEDF9P:
         (not castable to float)
         """
         val = self.gnrmc
-        return GPS(longitude=val.longitude, latitude=val.latitude)
+        new_time = time.time()
+        signal_time = new_time - self.start_time
+        self.start_time = new_time
+        return GPS(longitude=val.longitude, latitude=val.latitude, time=signal_time)
 
     def has_gps_lock(self) -> bool:
         """
@@ -100,6 +105,7 @@ async def read_gps_data(serial_ports, sio):
                 data = {
                         'latitude': position.latitude,
                         'longitude': position.longitude,
+                        'time': position.time,
                 }
                 await sio.emit("gpsData", data)
                 # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
