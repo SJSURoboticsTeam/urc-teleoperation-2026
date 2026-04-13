@@ -266,7 +266,7 @@ async def connect(sid,environ):
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
     if not arm_position_task_started:
         arm_position_task_started = True
-        sio.start_background_task(request_arm_position_loop, serial_ports)
+        # sio.start_background_task(request_arm_position_loop, serial_ports)
     if not can_error_message_started:
         can_error_message_started = True
         sio.start_background_task(send_drive_status_request,serial_ports)

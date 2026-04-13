@@ -264,9 +264,9 @@ export default function GamepadPanel({ currentView }) {
       }
 
       const armInputs = {
-        elbow: clean(gp.axes[1]),
-        shoulder: clean(gp.axes[5]),
-        track: clean(gp.axes[0]),
+        elbow: gp.buttons[2].pressed ? clean(gp.axes[1]) : 0, 
+        shoulder: gp.buttons[3].pressed ? -1 *clean(gp.axes[1]) : 0, 
+        track: !gp.buttons[2].pressed && !gp.buttons[3].pressed ? clean(gp.axes[0]) : 0, 
         // treat full up/down as hard limits for better control at extremes
         pitch: 
           gp.axes[9] === -1 
@@ -280,18 +280,20 @@ export default function GamepadPanel({ currentView }) {
             : gp.axes[9] < -0.42 && gp.axes[9] > -0.43 
               ? 1 
               : 0,
-        clamp: clean(gp.axes[6]),
+        clamp: clean(gp.axes[3]),
+        uniSens: -0.5 * (gp.axes[6]) + 0.5, // range [0, 1], inverted so up is more sensitive
       };
-      //console.log("Arm Inputs: ", armInputs);
+      console.log("Arm Inputs: ", armInputs);
 
       const inputSens = {
-        elbow: 0.5 * uniSens,
-        shoulder: 0.5 * uniSens,
-        track: 0.5 * uniSens,
-        pitch: 0.75 * uniSens,
-        roll: 0.75 * uniSens,
-        clamp: 0.5 * uniSens,
+        elbow: 0.5 * armInputs.uniSens,
+        shoulder: 0.5 * armInputs.uniSens,
+        track: 5 * armInputs.uniSens,
+        pitch: 0.75 * armInputs.uniSens,
+        roll: 0.75 * armInputs.uniSens,
+        clamp: 0.5 * armInputs.uniSens,
       };
+      //console.log("Sens: ", inputSens);
 
       const nextVal = {
         elbow: clamp(
@@ -325,6 +327,7 @@ export default function GamepadPanel({ currentView }) {
           ARM_LIMITS.clamp.max,
         ),
       };
+      //console.log("Arm Commands: ", nextVal);
 
       const changed = Object.keys(nextVal).some((key) =>
         differsEnough(nextVal[key], prevVal[key], 0.1),
