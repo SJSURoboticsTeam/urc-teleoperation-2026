@@ -117,8 +117,8 @@ export default function Map() {
   const buttonRef = useRef(null);
 
   const [coordinates, setCoordinates] = useState({
-    long:0,
-    lat:0
+    long: -121.881194,
+    lat: 37.336847
   });
 
   const [lastSignalTime, setLastSignalTime] = useState({
@@ -148,8 +148,9 @@ export default function Map() {
       container,
       style: urls,
       center: target,
-      zoom: 3,
-      pitch: 0,
+      zoom: 17,
+      pitch: 60,
+      bearing: -20
     });
     mapRef.current = map;
 
@@ -249,14 +250,11 @@ export default function Map() {
     }
 
     if(isLockedOn && mapRef.current) {
-      mapRef.current.flyTo({
+      mapRef.current.easeTo({
         center: [coordinates.long, coordinates.lat],
-        zoom: 18,
         speed: 3,
         curve: 1,
         essential: true,
-        pitch: 60,
-        bearing: -20,
       });
       buttonRef.current.style.backgroundColor = "#276221"; // Green when locked on
     }
