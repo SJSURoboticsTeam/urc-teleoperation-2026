@@ -30,19 +30,20 @@ export default function MetricsGraph() {
 function SignalGraph() {
     const antenna = useAntennaData();
 
+    const [running, setRunning] = useState(false);
     const [time, setTime] = useState([]);
     const [signalData, setSignalData] = useState([]);
 
     useEffect(() => {
-        if (antenna.status !== "GOOD" || antenna.roverRSSI == null) return;
+        if (!running || antenna.status !== "GOOD" || antenna.roverRSSI == null) return;
             setSignalData((prev) => {
-                return [...prev, antenna.roverRSSI].slice(-20);
+                return [...prev, antenna.roverRSSI].slice(-30);
             });
             setTime((prev) => {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-20);
+                    return [...prev, updateTime].slice(-30);
             });
-    }, [antenna.status, antenna.roverRSSI]);
+    }, [antenna.status, antenna.roverRSSI, running]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -58,6 +59,12 @@ function SignalGraph() {
                 yAxis={[{ label: 'Signal Strength (dBm)', width: 50 }]}
             />
         
+            <Button 
+                variant="contained" 
+                onClick={() => setRunning((p) => !p)}
+                sx={{width: 'auto'}}>
+                {running ? 'stop' : 'start'}
+            </Button>
             <Button
                 variant="outlined"
                 sx={{ ml:1, width: 'auto', fontSize:12}}
@@ -75,19 +82,20 @@ function SignalGraph() {
 function NoiseGraph() {
     const antenna = useAntennaData();
 
+    const [running, setRunning] = useState(false);
     const [time, setTime] = useState([]);
     const [noiseData, setNoiseData] = useState([]);
 
     useEffect(() => {
-        if (antenna.status !== "GOOD" || antenna.noise == null) return;
+        if (!running || antenna.status !== "GOOD" || antenna.noise == null) return;
             setNoiseData((prev) => {
-                return [...prev, antenna.noise].slice(-20);
+                return [...prev, antenna.noise].slice(-30);
             });
             setTime((prev) => {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-20);
+                    return [...prev, updateTime].slice(-30);
             });
-    }, [antenna.status, antenna.noise]);
+    }, [antenna.status, antenna.noise, running]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -102,7 +110,13 @@ function NoiseGraph() {
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
                 yAxis={[{ label: 'Noise (dBm)', width: 50 }]}
             />
-        
+
+            <Button 
+                variant="contained" 
+                onClick={() => setRunning((p) => !p)}
+                sx={{width: 'auto'}}>
+                {running ? 'stop' : 'start'}
+            </Button>
             <Button
                 variant="outlined"
                 sx={{ ml:1, width: 'auto', fontSize:12}}
@@ -121,18 +135,19 @@ function EfficiencyGraph() {
     const antenna = useAntennaData();
 
     const [time, setTime] = useState([]);
+    const [running, setRunning] = useState(false);
     const [efficiencyData, setEfficiencyData] = useState([]);
 
     useEffect(() => {
-        if (antenna.status !== "GOOD" || antenna.efficiency == null) return;
+        if (!running || antenna.status !== "GOOD" || antenna.efficiency == null) return;
             setEfficiencyData((prev) => {
-                return [...prev, antenna.efficiency].slice(-20);
+                return [...prev, antenna.efficiency].slice(-30);
             });
             setTime((prev) => {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-20);
+                    return [...prev, updateTime].slice(-30);
             });
-    }, [antenna.status, antenna.efficiency]);
+    }, [antenna.status, antenna.efficiency, running]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -148,6 +163,12 @@ function EfficiencyGraph() {
                 yAxis={[{ label: 'Efficiency (%)', width: 50 }]}
             />
         
+            <Button
+                variant="contained" 
+                onClick={() => setRunning((p) => !p)}
+                sx={{width: 'auto'}}>
+                {running ? 'stop' : 'start'}
+            </Button>
             <Button
                 variant="outlined"
                 sx={{ ml:1, width: 'auto', fontSize:12}}
@@ -168,20 +189,21 @@ function TxRxGraph() {
     const [time, setTime] = useState([]);
     const [TxData, setTxData] = useState([]);
     const [RxData, setRxData] = useState([]);
+    const [running, setRunning] = useState(false);
 
     useEffect(() => {
-        if (antenna.status !== "GOOD" || antenna.txrate == null || antenna.rxrate == null) return;
+        if (!running || antenna.status !== "GOOD" || antenna.txrate == null || antenna.rxrate == null) return;
             setTxData((prev) => {
-                return [...prev, antenna.txrate].slice(-20);
+                return [...prev, antenna.txrate].slice(-30);
             });
             setRxData((prev) => {
-                return [...prev, antenna.rxrate].slice(-20);
+                return [...prev, antenna.rxrate].slice(-30);
             });
             setTime((prev) => {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-20);
+                    return [...prev, updateTime].slice(-30);
             });
-    }, [antenna.status, antenna.txrate, antenna.rxrate]);
+    }, [antenna.status, antenna.txrate, antenna.rxrate, running]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -197,6 +219,12 @@ function TxRxGraph() {
                 yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
             />
         
+            <Button
+                variant="contained" 
+                onClick={() => setRunning((p) => !p)}
+                sx={{width: 'auto'}}>
+                {running ? 'stop' : 'start'}
+            </Button>
             <Button
                 variant="outlined"
                 sx={{ ml:1, width: 'auto', fontSize:12}}
