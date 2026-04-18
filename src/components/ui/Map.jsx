@@ -76,14 +76,11 @@ export default function Map() {
   const mapRef = useRef(null);
   const marker = useRef(null);
   const controlRef = useRef(null);
+  const lastSignalTime = useRef(Date.now()); 
 
   const [coordinates, setCoordinates] = useState({
     long: -121.881194,
     lat: 37.336847
-  });
-
-  const [lastSignalTime, setLastSignalTime] = useState({
-    time: 0,
   });
 
   const [isLockedOn, setIsLockedOn] = useState(false);
@@ -178,14 +175,14 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
+    const newTime = Date.now();
+    const signalDiff = (newTime - lastSignalTime.current) / 1000;
+    lastSignalTime.current = newTime;
     const handler = (data) => {
       console.log("Received GPS data:", data);
       setCoordinates({
         long: data.longitude,
         lat: data.latitude,
-      });
-      setLastSignalTime({
-        time: data.time,
       });
     };
 
@@ -196,7 +193,7 @@ export default function Map() {
       controlRef.current.update(
         coordinates.lat.toFixed(4),
         coordinates.long.toFixed(4),
-        lastSignalTime.time.toFixed(2),
+        signalDiff.toFixed(2),
         isLockedOn,
       );
     }
