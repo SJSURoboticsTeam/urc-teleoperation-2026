@@ -1,23 +1,18 @@
-import "react-resizable/css/styles.css"; // keep global resizable styles if used elsewhere
 import MetricsGraph from "../components/metrics/metricsGraph";
-import Box from "@mui/material/Box";
-import Map from "../components/ui/Map";
 import { useState } from "react";
 import Button from "@mui/material/Button";
 
 // Fullscreen map view — map should receive its full height from the parent Box
 export default function ExtrasView() {
-  const [currentView, setcurrentView] = useState("Map");
+  const [currentView, setcurrentView] = useState("Graphs");
 
   function switcher() {
-    if (currentView == "Files") {
-      return <RecordingsView />;
+    if (currentView == "Graphs") {
+      return <Graphs />;
     } else if (currentView == "SpeedTest") {
       return <SpeedTestView />;
-    } else if (currentView == "Map") {
-      return <Map />;
-    } else if (currentView == "MetricsTest") {
-      return <MetricsTestView />;
+    } else if (currentView == "Files") {
+      return <Files />;
     } else {
       return "No pane selected.";
     }
@@ -28,10 +23,10 @@ export default function ExtrasView() {
       <div className="flex flex-row items-center justify-center">
         <Button
           style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("Map")}
+          onClick={() => setcurrentView("Graphs")}
           variant="contained"
         >
-          Large Map
+          Graphs
         </Button>
         <Button
           style={{ marginRight: 5, marginLeft: 5 }}
@@ -46,13 +41,6 @@ export default function ExtrasView() {
           variant="contained"
         >
           SpeedTest
-        </Button>
-        <Button
-          style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("MetricsTest")}
-          variant="contained"
-        >
-          Metrics Test
         </Button>
       </div>
       {switcher()}
@@ -69,14 +57,14 @@ export function SpeedTestView() {
         width: "100%",
         border: "none",
       }}
-      src="http://192.168.1.110:3000"
+      src="http://192.168.1.100:3000"
       title="Speed Test"
       allow="fullscreen; autoplay"
     ></iframe>
   );
 }
 
-export function RecordingsView() {
+export function Files() {
   return (
     <iframe
       style={{
@@ -85,14 +73,13 @@ export function RecordingsView() {
         width: "100%",
         border: "none",
       }}
-      src="http://192.168.1.110:80"
-      title="Speed Test"
+      src="http://192.168.1.100:80"
+      title="Files"
       allow="fullscreen; autoplay"
     ></iframe>
   );
 }
-
-export function MetricsTestView() {
+export function Graphs() {
   return (
       <MetricsGraph />
   );
