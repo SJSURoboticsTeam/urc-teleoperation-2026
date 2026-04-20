@@ -5,10 +5,7 @@ import AnalyticsIcon from "@mui/icons-material/Analytics";
 import { useRobotSocketStatus, useBaseSocketStatus } from "../socket.io/socket";
 import { Box } from "@mui/system";
 
-export default function Metrics({ openPane, setOpenPane }) {
-  const isRobotConnected = useRobotSocketStatus();
-  const isBaseConnected = useBaseSocketStatus();
-  // antenna telemtry
+export function useAntennaData(){
   const [antenna, setantennadata] = useState({
     status: "NO DATA YET",
     roverRSSI: null,
@@ -18,19 +15,6 @@ export default function Metrics({ openPane, setOpenPane }) {
     efficiency : null,
     freq: null,
     freqw: null,
-  });
-
-  const [robotRPIData, setRobotRPIData] = useState({
-    status: "NO DATA YET",
-    cpupercent: null,
-    rampercent: null,
-    cputemp: null,
-  });
-  const [baseRPIData, setBaseRPIData] = useState({
-    status: "NO DATA YET",
-    cpupercent: null,
-    rampercent: null,
-    cputemp: null,
   });
 
   useEffect(() => {
@@ -54,6 +38,29 @@ export default function Metrics({ openPane, setOpenPane }) {
       basesocket.off("antennastats", handler); // cleanup so no duplicate listeners
     };
   }, []);
+
+  return antenna;
+}
+
+export default function Metrics({ openPane, setOpenPane }) {
+  const isRobotConnected = useRobotSocketStatus();
+  const isBaseConnected = useBaseSocketStatus();
+  // antenna telemtry
+
+  const antenna = useAntennaData();
+
+  const [robotRPIData, setRobotRPIData] = useState({
+    status: "NO DATA YET",
+    cpupercent: null,
+    rampercent: null,
+    cputemp: null,
+  });
+  const [baseRPIData, setBaseRPIData] = useState({
+    status: "NO DATA YET",
+    cpupercent: null,
+    rampercent: null,
+    cputemp: null,
+  });
 
   // robot
   useEffect(() => {
