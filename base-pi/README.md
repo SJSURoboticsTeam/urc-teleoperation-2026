@@ -10,12 +10,16 @@ INSTALL:  ```./install.sh```
 UPDATE:  ```./update.sh```   
 RUN:  ```./run.sh```   
   
-
 OR DIRECT INSTALL(RISKY!):  
 ```bash
 pip install -r requirements.txt  
 ```
   
+## Fake Input
+To fake data you can run the following:  
+Mac/Linux: `./run.sh --offline`  
+Windows: `python py_server.py --offline`  
+
 ## SSH requires three things (For Antenna Metrics)
 
 ### Secrets Install
