@@ -32,10 +32,10 @@ export function useAntennaData(){
       });
     };
 
-    basesocket.on("antennastats", handler);
+    basesocket.on("antennastats900", handler);
 
     return () => {
-      basesocket.off("antennastats", handler); // cleanup so no duplicate listeners
+      basesocket.off("antennastats900", handler); // cleanup so no duplicate listeners
     };
   }, []);
 
