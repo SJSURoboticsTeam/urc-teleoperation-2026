@@ -155,6 +155,9 @@ export default function ScienceView() {
                   className="flex flex-row gap-4 mb-4"
                   style={{ flex: 1, minWidth: 0 }}
                 >
+                  <Box sx={{ mb: 2, fontWeight: "bold", textAlign: "center" }}>
+                    Abs = -log10(colored vial / clear vial)
+                  </Box>
                   <Box sx={{ width: "65%" }}>
                     <LineChart
                       series={[
