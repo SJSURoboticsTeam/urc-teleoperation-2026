@@ -34,3 +34,8 @@ cd urc-teleoperation-2026
 
 ## Known Issues
 - Firefox does not support the controller API. Use Chrome, Edge, other other Chrome/Chromium Fork.
+
+## Contributing  
+  
+See `CONTRIBUTING.md`  
+  
