@@ -205,6 +205,15 @@ export default function Metrics({ openPane, setOpenPane }) {
                       {antenna5.noise} dBm
                     </Typography>
 
+                    <Box
+                      sx={{
+                        gridColumn: "1 / -1",
+                        backgroundColor: "gray",
+                        borderTop: "1px solid gray",
+                        height: 0
+                      }}
+                    />
+
                     <Typography sx={{ color: "black" }}>Efficiency</Typography>
                     <Typography sx={{ color: "black" }}>
                       {antenna900.efficiency}%
@@ -233,9 +242,9 @@ export default function Metrics({ openPane, setOpenPane }) {
                     <Box
                       sx={{
                         gridColumn: "1 / -1",
-                        height: "1px",
                         backgroundColor: "gray",
-                        my: 0.25,
+                        borderTop: "1px solid gray",
+                        height: 0
                       }}
                     />
 
@@ -244,7 +253,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                       {antenna900.freq} MHz
                     </Typography>
                     <Typography sx={{ color: "black" }}>
-                      {antenna900.freq} MHz
+                      {antenna5.freq} MHz
                     </Typography>
 
                     <Typography sx={{ color: "black" }}>Width</Typography>
@@ -252,7 +261,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                       {antenna900.freqw} MHz
                     </Typography>
                     <Typography sx={{ color: "black" }}>
-                      {antenna900.freqw} MHz
+                      {antenna5.freqw} MHz
                     </Typography>
                   </Box>
                 </div>
