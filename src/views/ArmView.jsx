@@ -343,7 +343,7 @@ export default function ArmView() {
                   min={min}
                   max={max}
                   step={1}
-                  sx={{ width: "100%" }}
+                  sx={{ width: "90%" }}
                   valueLabelDisplay="auto"
                 />
               ) : (
@@ -354,7 +354,7 @@ export default function ArmView() {
                     max={max}
                     step={1}
                     disabled
-                    sx={{ width: "100%" }}
+                    sx={{ width: "90%" }}
                   />
                 </Box>
               )}
