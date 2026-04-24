@@ -307,7 +307,7 @@ export default function GamepadPanel({ currentView }) {
             border: "1px solid gray",
             padding: "10px",
             width: "300px",
-            borderRadius: "4px",
+            borderRadius: "12px",
           }}
         >
           <Button
