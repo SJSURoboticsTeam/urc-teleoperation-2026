@@ -156,7 +156,7 @@ export default function Metrics({ openPane, setOpenPane }) {
             border: "1px solid gray",
             padding: "10px",
             minWidth: "300px",
-            borderRadius: "4px",
+            borderRadius: "12px",
           }}
         >
           {isRobotConnected || isBaseConnected ? (
@@ -333,10 +333,10 @@ export default function Metrics({ openPane, setOpenPane }) {
                 </Typography>
               )}
 
-              <hr className="border-t border-gray-300 my-4" />
+              {/* <hr className="border-t border-gray-300 my-4" />
               <Typography sx={{ color: "black" }} variant="h6">
                 ROBOT
-              </Typography>
+              </Typography> */}
             </div>
           ) : (
             <Typography sx={{ color: "black" }}>
