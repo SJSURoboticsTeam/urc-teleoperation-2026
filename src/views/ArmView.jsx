@@ -80,7 +80,7 @@ export default function ArmView() {
 
   const gamepadMode = armConnectedOne != null;
   const controlModeLabel = gamepadMode ? "Gamepad Control" : "Slider Control";
-  const sendModeLabel = gamepadMode ? "Auto" : txon ? "Auto" : "Manual";
+  const sendModeLabel = txon ? "Auto" : "Manual";
 
   const initializedDefaults = useMemo(() => ARM_DEFAULTS, []);
 
@@ -109,13 +109,6 @@ export default function ArmView() {
       prevDisplayCommandsRef.current = initializedDefaults;
     }
   }, [armConnectedOne, initializedDefaults, setArmCommands]);
-
-  // Gamepad mode always uses auto send
-  useEffect(() => {
-    if (gamepadMode && !txon) {
-      settxon(true);
-    }
-  }, [gamepadMode, txon]);
 
   // AUTO TX: emit only joints whose values changed meaningfully since last interval
   useEffect(() => {
@@ -392,13 +385,12 @@ export default function ArmView() {
               <Switch
                 checked={txon}
                 onChange={(e) => settxon(e.target.checked)}
-                disabled={gamepadMode}
               />
             }
             label="AUTO TX"
           />
 
-          {!txon && !gamepadMode && (
+          {!txon && (
             <Button
               variant="contained"
               onClick={handleManualUpdate}
