@@ -5,41 +5,67 @@ import AnalyticsIcon from "@mui/icons-material/Analytics";
 import { useRobotSocketStatus, useBaseSocketStatus } from "../socket.io/socket";
 import { Box } from "@mui/system";
 
-export function useAntennaData(){
-  const [antenna, setantennadata] = useState({
+export function useAntennaData() {
+  const [antenna900, setantennadata900] = useState({
     status: "NO DATA YET",
     roverRSSI: null,
     txrate: null,
     rxrate: null,
     noise: null,
-    efficiency : null,
+    efficiency: null,
+    freq: null,
+    freqw: null,
+  });
+  const [antenna5, setantennadata5] = useState({
+    status: "NO DATA YET",
+    roverRSSI: null,
+    txrate: null,
+    rxrate: null,
+    noise: null,
+    efficiency: null,
     freq: null,
     freqw: null,
   });
 
   useEffect(() => {
-    const handler = (data) => {
+    const handler900 = (data) => {
       // console.log("antenna data:", data);
-      setantennadata({
+      setantennadata900({
         status: data.status,
         roverRSSI: data.dbm,
         txrate: data.txrate,
         rxrate: data.rxrate,
         noise: data.noise,
-        efficiency : data.efficiency,
+        efficiency: data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
       });
     };
 
-    basesocket.on("antennastats", handler);
+    const handler5 = (data) => {
+      // console.log("antenna data:", data);
+      setantennadata5({
+        status: data.status,
+        roverRSSI: data.dbm,
+        txrate: data.txrate,
+        rxrate: data.rxrate,
+        noise: data.noise,
+        efficiency: data.efficiency,
+        freq: data.freq,
+        freqw: data.freqwidth,
+      });
+    };
+
+    basesocket.on("antennastats900", handler900);
+    basesocket.on("antennastats5", handler5);
 
     return () => {
-      basesocket.off("antennastats", handler); // cleanup so no duplicate listeners
+      basesocket.off("antennastats900", handler900); // cleanup so no duplicate listeners
+      basesocket.off("antennastats5", handler5); // cleanup so no duplicate listeners
     };
   }, []);
 
-  return antenna;
+  return [antenna900, antenna5];
 }
 
 export default function Metrics({ openPane, setOpenPane }) {
@@ -47,7 +73,7 @@ export default function Metrics({ openPane, setOpenPane }) {
   const isBaseConnected = useBaseSocketStatus();
   // antenna telemtry
 
-  const antenna = useAntennaData();
+  const [antenna900, antenna5] = useAntennaData();
 
   const [robotRPIData, setRobotRPIData] = useState({
     status: "NO DATA YET",
@@ -139,32 +165,100 @@ export default function Metrics({ openPane, setOpenPane }) {
                 ROVER ANTENNA
               </Typography>
 
-              {antenna.status === "GOOD" ? (
+              {antenna900.status === "GOOD" || antenna5.status === "GOOD" ? (
                 <div>
-                  <Typography sx={{ color: "black" }}>
-                    Strength: {antenna.roverRSSI} dBm
-                  </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    Noise: {antenna.noise} dBm
-                  </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    Efficiency: {antenna.efficiency}%
-                  </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    TX & RX: {antenna.txrate}, {antenna.rxrate} Mbps
-                  </Typography>
-                  <hr className="border-t border-gray-300 my-2 w-1/2 mx-auto" />
-                  <Typography sx={{ color: "black" }}>
-                    Frequency: {antenna.freq} MHz
-                  </Typography>
-                  <Typography sx={{ color: "black" }}>
-                    Frequency Width: {antenna.freqw} MHz
-                  </Typography>
-                  
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gap: 0.5,
+                      backgroundColor: "#ebebeb",
+                      p: 1,
+                      borderRadius: 2,
+                      mt: -0.25,
+                    }}
+                  >
+                    {/* Headers */}
+                    <Typography sx={{ color: "black" }} fontWeight={600}>
+                      Antenna
+                    </Typography>
+                    <Typography sx={{ color: "black" }} fontWeight={600}>
+                      900Mhz
+                    </Typography>
+                    <Typography sx={{ color: "black" }} fontWeight={600}>
+                      5Ghz
+                    </Typography>
+
+                    <Typography sx={{ color: "black" }}>Strength</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.roverRSSI} dBm
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna5.roverRSSI} dBm
+                    </Typography>
+
+                    <Typography sx={{ color: "black" }}>Noise</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.noise} dBm
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna5.noise} dBm
+                    </Typography>
+
+                    <Typography sx={{ color: "black" }}>Efficiency</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.efficiency}%
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna5.efficiency}%
+                    </Typography>
+
+                    <Typography sx={{ color: "black" }}>TX</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.txrate}
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna5.txrate}
+                    </Typography>
+
+                    <Typography sx={{ color: "black" }}>RX</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.rxrate}
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna5.rxrate}
+                    </Typography>
+
+                    {/* Divider row */}
+                    <Box
+                      sx={{
+                        gridColumn: "1 / -1",
+                        height: "1px",
+                        backgroundColor: "gray",
+                        my: 0.25,
+                      }}
+                    />
+
+                    <Typography sx={{ color: "black" }}>Frequency</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.freq} MHz
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.freq} MHz
+                    </Typography>
+
+                    <Typography sx={{ color: "black" }}>Width</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.freqw} MHz
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.freqw} MHz
+                    </Typography>
+                  </Box>
                 </div>
               ) : (
                 <Typography sx={{ color: "black" }}>
-                  {antenna.status}{" "}
+                  {antenna900.status}{" "}
                 </Typography>
               )}
 
