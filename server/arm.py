@@ -67,6 +67,21 @@ ARM_TEST_JOINTS = None
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
 
+def invalidate_arm_connection(serial_ports, reason="unknown"):
+    """
+    Close and clear backend arm connection state after serial failure
+    """
+    try:
+        arm_serial = serial_ports.get("arm")
+        if arm_serial is not None:
+            arm_serial.close()
+    except Exception:
+        pass
+
+    serial_ports["arm"] = None
+    serial_ports["armId"] = "disconnect"
+    print(f"[ARM] Connection invalidated: {reason}")
+
 def encode_arm_value(value):
     """
     Firmware expects fixed-point values scaled by 2^6
@@ -147,6 +162,7 @@ async def send_arm_joint(serial_ports, joint_name, value):
         return True
     except Exception as e:
         print(f"[ARM] {joint_name} send failed: {e}")
+        invalidate_arm_connection(serial_ports, f"send failure on {joint_name}")
         return False
     
 async def request_arm_joint_position(serial_ports, joint_name):
@@ -175,6 +191,7 @@ async def request_arm_joint_position(serial_ports, joint_name):
         return True
     except Exception as e:
         print(f"[ARM] {joint_name} read request failed: {e}")
+        invalidate_arm_connection(serial_ports, f"read request failure on {joint_name}")
         return False
 
 def parse_receive_stop():
@@ -367,6 +384,7 @@ async def request_arm_position_loop(serial_ports):
 
         except Exception as e:
             print(f"[ARM] position request loop error: {e}")
+            invalidate_arm_connection(serial_ports, "position request loop failure")
             await asyncio.sleep(0.25)
 
 async def read_arm_can_loop(serial_ports, sio):
@@ -395,5 +413,6 @@ async def read_arm_can_loop(serial_ports, sio):
 
         except Exception as e:
             print(f"Arm CAN thread error: {e}")
+            invalidate_arm_connection(serial_ports, "read loop failure")
             await asyncio.sleep(0.25)
             
