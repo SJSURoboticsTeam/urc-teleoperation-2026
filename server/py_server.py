@@ -144,18 +144,26 @@ async def connectArm(sid,data):
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
-    if serial_ports["armId"]!= "disconnect":
-        print("ARM WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
     try:
+        if serial_ports["arm"] is not None:
+            try:
+                serial_ports["arm"].close()
+            except Exception:
+                pass
+
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+
+        print("Connecting to " + str(data))
         serial_ports["arm"] = CanSerial(data)
         serial_ports["armId"] = data
         print("Arm connected.")
-        return("OK")
+        return "OK"
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
-        return("ERROR")
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("FAILURE TO CONNECT ARM: " + str(e))
+        return "ERROR"
 
 @sio.event
 async def disconnectArm(sid):
@@ -164,17 +172,16 @@ async def disconnectArm(sid):
     try:
         if serial_ports["arm"]:
             serial_ports["arm"].close()
-            serial_ports["arm"] = None
-            serial_ports["armId"] = "disconnect"
-            print("Arm serial closed.")
-            return("OK")
-        else:
-            print("Arm was never connected.")
-            return("ERROR")
+
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("Arm serial closed.")
+        return "OK"
     except Exception:
-        print("ARM WAS NOT DISCONNECTED!!!")
-        return("ERROR")
-        pass
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
+        return "ERROR"
 
 @sio.event
 async def connectScience(sid,data):
