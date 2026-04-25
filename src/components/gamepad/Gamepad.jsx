@@ -32,17 +32,6 @@ export default function GamepadPanel({ currentView }) {
   const armConnectedOne = connectedGamepads.arm;
   const armAnimationIdRef = useRef(null);
 
-  const gpList =
-    page === "Drive"
-      ? Object.values(connectedGamepads?.driveGPList || {})
-      : Object.values(connectedGamepads?.armGPList || {});
-
-  // setters that update only the selected index in the shared context
-  const setDriveConnectedOne = (index) =>
-    setConnectedGamepads((prev) => ({ ...prev, drive: index }));
-  const setArmConnectedOne = (index) =>
-    setConnectedGamepads((prev) => ({ ...prev, arm: index }));
-
   // Handle gamepad connections and disconnections
   useEffect(() => {
     const handleConnect = (e) => {
@@ -65,8 +54,6 @@ export default function GamepadPanel({ currentView }) {
     // rest: collects the remaining properties into a new object
     // Clear selected controller if the unplugged gamepad was active
     // Prevents stale drive/arm indices after disconnect
-    // Clear selected controller if the unplugged gamepad was active
-    // Prevents stale drive/arm indices after disconnect
     const handleDisconnect = (e) => {
       const gpIndex = e.gamepad.index;
 
@@ -74,35 +61,21 @@ export default function GamepadPanel({ currentView }) {
       setConnectedGamepads((prev) => {
         if (prev.driveGPList?.[gpIndex]) {
           const { [gpIndex]: _, ...rest } = prev.driveGPList;
-          return { 
-            ...prev, 
+          return {
+            ...prev,
             driveGPList: rest,
             drive: prev.drive === gpIndex ? null : prev.drive,
           };
-        } 
-        
-        if (prev.armGPList?.[gpIndex]) {
-          return { 
-            ...prev, 
-            driveGPList: rest,
-            drive: prev.drive === gpIndex ? null : prev.drive,
-          };
-        } 
-        
+        }
+
         if (prev.armGPList?.[gpIndex]) {
           const { [gpIndex]: _, ...rest } = prev.armGPList;
-          return { 
-            ...prev, 
-            armGPList: rest,
-            arm: prev.arm === gpIndex ? null : prev.arm,
-          };
-          return { 
-            ...prev, 
+          return {
+            ...prev,
             armGPList: rest,
             arm: prev.arm === gpIndex ? null : prev.arm,
           };
         }
-
 
         return prev;
       });
@@ -244,27 +217,27 @@ export default function GamepadPanel({ currentView }) {
     }
 
     let prevVal = {
-      elbow: 
+      elbow:
         typeof armCommands?.elbow === "number"
           ? armCommands.elbow
           : ARM_LIMITS.elbow.initial,
-      shoulder: 
+      shoulder:
         typeof armCommands?.shoulder === "number"
           ? armCommands.shoulder
           : ARM_LIMITS.shoulder.initial,
-      track: 
+      track:
         typeof armCommands?.track === "number"
           ? armCommands.track
           : ARM_LIMITS.track.initial,
-      pitch: 
+      pitch:
         typeof armCommands?.pitch === "number"
           ? armCommands.pitch
           : ARM_LIMITS.pitch.initial,
-      roll: 
+      roll:
         typeof armCommands?.roll === "number"
           ? armCommands.roll
           : ARM_LIMITS.roll.initial,
-      clamp: 
+      clamp:
         typeof armCommands?.clamp === "number"
           ? armCommands.clamp
           : ARM_LIMITS.clamp.initial,
@@ -272,13 +245,6 @@ export default function GamepadPanel({ currentView }) {
 
     const pollAxes = () => {
       const gp = navigator.getGamepads()[armConnectedOne];
-
-      // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
-      // so stale arm commands do not persist after disconnect
-      if (!gp) {
-        armAnimationIdRef.current = requestAnimationFrame(pollAxes);
-        return;
-      }
 
       // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
       // so stale arm commands do not persist after disconnect
@@ -367,18 +333,13 @@ export default function GamepadPanel({ currentView }) {
 
     armAnimationIdRef.current = requestAnimationFrame(pollAxes);
 
-
     return () => {
       if (armAnimationIdRef.current) {
         cancelAnimationFrame(armAnimationIdRef.current);
         armAnimationIdRef.current = null;
       }
-      if (armAnimationIdRef.current) {
-        cancelAnimationFrame(armAnimationIdRef.current);
-        armAnimationIdRef.current = null;
-      }
     };
-  }, [armConnectedOne, setArmCommands]);
+  }, [armConnectedOne, armCommands, setArmCommands]);
 
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
@@ -402,7 +363,7 @@ export default function GamepadPanel({ currentView }) {
     } else {
       setInfo(""); // empty string if neither view
     }
-  }, [currentView, driveConnectedOne, connectedGamepads.arm]);
+  }, [currentView, driveConnectedOne, armConnectedOne]);
 
   return (
     <div
@@ -428,7 +389,7 @@ export default function GamepadPanel({ currentView }) {
         GAMEPADS{info}
       </span>
 
-      {open == true && (
+      {open === true && (
         <div
           style={{
             position: "absolute",
