@@ -105,6 +105,11 @@ async def read_gps_data(serial_ports, sio):
                 # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
             else:
                 print("No GPS lock")
+                data = {
+                        'latitude': "???",
+                        'longitude': "???",
+                }
+                await sio.emit("gpsData", data)
             # time.sleep(0.01)
         except Exception as e:
             print(f'GPS thread error: {e}')

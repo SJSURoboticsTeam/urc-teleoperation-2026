@@ -20,7 +20,7 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
     >
       <Typography variant="body2">Latitude: {lat}</Typography>
       <Typography variant="body2">Longitude: {long}</Typography>
-      <Typography variant="body2">Last Read: {lastRead}s ago</Typography>
+      <Typography variant="body2">Last Read: {lastRead}</Typography>
       <FormControlLabel
         control={
           <Switch
@@ -40,6 +40,10 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
 
 class LockOnControl {
   constructor(onToggle) {
+    this._latitude = null;
+    this._longitude = null;
+    this._lastRead = null;
+    this._isLockedOn = null;
     this._onToggle = onToggle;
     this._root = null;
   }
@@ -48,13 +52,17 @@ class LockOnControl {
     this._container = document.createElement("div");
     this._container.className = "maplibregl-ctrl my-custom-control";
     this._root = ReactDOM.createRoot(this._container);
-    this.update("---", "---", "---", false);
+    this.update("---", "---", "---", true);
     return this._container;
   }
   update(lat, long, lastRead, isLockedOn) {
     if(!this._root) {
       return;
     }
+    this._latitude = lat;
+    this._longitude = long;
+    this._lastRead = lastRead;
+    this._isLockedOn = isLockedOn;
     this._root.render(
       <LockOnControlUI
         lat = {lat}  
@@ -77,13 +85,15 @@ export default function Map() {
   const marker = useRef(null);
   const controlRef = useRef(null);
   const lastSignalTime = useRef(Date.now()); 
+  const signalDiff = useRef();
 
   const [coordinates, setCoordinates] = useState({
     long: -121.881194,
-    lat: 37.336847
+    lat: 37.336847,
+    receive: false,
   });
 
-  const [isLockedOn, setIsLockedOn] = useState(false);
+  const [isLockedOn, setIsLockedOn] = useState(true);
 
   useEffect(() => {
     const target = [coordinates.long, coordinates.lat];
@@ -121,7 +131,7 @@ export default function Map() {
 
     const lockOnControl = new LockOnControl(() =>
       setIsLockedOn((prev) => !prev)
-    )
+    );
 
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
@@ -176,13 +186,14 @@ export default function Map() {
 
   useEffect(() => {
     const newTime = Date.now();
-    const signalDiff = (newTime - lastSignalTime.current) / 1000;
+    signalDiff.current = (newTime - lastSignalTime.current) / 1000;
     lastSignalTime.current = newTime;
     const handler = (data) => {
       console.log("Received GPS data:", data);
       setCoordinates({
         long: data.longitude,
         lat: data.latitude,
+        receive: true,
       });
     };
 
@@ -193,7 +204,7 @@ export default function Map() {
       controlRef.current.update(
         coordinates.lat.toFixed(4),
         coordinates.long.toFixed(4),
-        signalDiff.toFixed(2),
+        coordinates.receive ? signalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
         isLockedOn,
       );
     }
@@ -205,12 +216,11 @@ export default function Map() {
         curve: 1,
         essential: true,
       });
-      //buttonRef.current.style.backgroundColor = "#276221"; // Green when locked on
     }
     return () => {
       robotsocket.off("gpsData", handler);
     }
-  }, [coordinates]);
+  }, [coordinates, isLockedOn]);
 
   // Use full height so the map fills any explicit-height parent container
   return <div ref={mapContainer} className="w-full h-full bg-gray-200" />;
