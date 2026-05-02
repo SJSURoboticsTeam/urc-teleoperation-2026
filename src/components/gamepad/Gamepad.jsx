@@ -20,7 +20,7 @@ export default function GamepadPanel({ currentView }) {
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
-  const [driveCommands, setDriveCommands] = useDriveCommands();
+  const [_driveCommands, setDriveCommands] = useDriveCommands();
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
@@ -203,6 +203,16 @@ export default function GamepadPanel({ currentView }) {
   useEffect(() => {
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
+    // Normalize motion so it behaves consistently across frame rates.
+    // We treat the old per-frame integration (at ~60fps) as the baseline.
+    const framesFromRafTime = (prevTimeMs, timeMs) => {
+      if (prevTimeMs == null || timeMs == null) return 1;
+      const deltaMs = timeMs - prevTimeMs;
+      // Convert ms -> "60fps frames" and clamp to avoid huge jumps
+      // (e.g., if the tab was backgrounded).
+      return clamp(deltaMs / (1000 / 60), 0, 3);
+    };
+
     const clean = (v, deadzone = 0.15) => {
       if (Math.abs(v) < deadzone) return 0;
       return Math.round(v * 100) / 100;
@@ -243,7 +253,13 @@ export default function GamepadPanel({ currentView }) {
           : ARM_LIMITS.clamp.initial,
     };
 
-    const pollAxes = () => {
+    let lastTimeMs = null;
+    let lastPublishMs = 0;
+    let lastPublishedVal = { ...prevVal };
+
+    const publishPeriodMs = 33; // ~30Hz UI/state publish rate
+
+    const pollAxes = (timeMs) => {
       const gp = navigator.getGamepads()[armConnectedOne];
 
       // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
@@ -296,47 +312,75 @@ export default function GamepadPanel({ currentView }) {
       };
       //console.log("Sens: ", inputSens);
 
+      const frameScale = framesFromRafTime(lastTimeMs, timeMs);
+      lastTimeMs = timeMs;
+
       const nextVal = {
         elbow: clamp(
-          prevVal.elbow + armInputs.elbow * inputSens.elbow,
+          prevVal.elbow + armInputs.elbow * inputSens.elbow * frameScale,
           ARM_LIMITS.elbow.min,
           ARM_LIMITS.elbow.max,
         ),
         shoulder: clamp(
-          prevVal.shoulder + armInputs.shoulder * inputSens.shoulder,
+          prevVal.shoulder + armInputs.shoulder * inputSens.shoulder * frameScale,
           ARM_LIMITS.shoulder.min,
           ARM_LIMITS.shoulder.max,
         ),
         track: clamp(
-          prevVal.track + armInputs.track * inputSens.track,
+          prevVal.track + armInputs.track * inputSens.track * frameScale,
           ARM_LIMITS.track.min,
           ARM_LIMITS.track.max,
         ),
         pitch: clamp(
-          prevVal.pitch + armInputs.pitch * inputSens.pitch,
+          prevVal.pitch + armInputs.pitch * inputSens.pitch * frameScale,
           ARM_LIMITS.pitch.min,
           ARM_LIMITS.pitch.max,
         ),
         roll: clamp(
-          prevVal.roll + armInputs.roll * inputSens.roll,
+          prevVal.roll + armInputs.roll * inputSens.roll * frameScale,
           ARM_LIMITS.roll.min,
           ARM_LIMITS.roll.max,
         ),
         clamp: clamp(
-          prevVal.clamp + armInputs.clamp * inputSens.clamp,
+          prevVal.clamp + armInputs.clamp * inputSens.clamp * frameScale,
           ARM_LIMITS.clamp.min,
           ARM_LIMITS.clamp.max,
         ),
       };
       //console.log("Arm Commands: ", nextVal);
 
-      const changed = Object.keys(nextVal).some((key) =>
-        differsEnough(nextVal[key], prevVal[key], 0.1),
-      );
+      // Always advance the integration state (so motion remains smooth),
+      // but throttle publishing into React state to avoid starving UI paints.
+      prevVal = nextVal;
 
-      if (changed) {
-        setArmCommands(nextVal);
-        prevVal = nextVal;
+      const inputsActive =
+        Math.abs(armInputs.elbow) > 0 ||
+        Math.abs(armInputs.shoulder) > 0 ||
+        Math.abs(armInputs.track) > 0 ||
+        Math.abs(armInputs.pitch) > 0 ||
+        Math.abs(armInputs.roll) > 0 ||
+        Math.abs(armInputs.clamp) > 0;
+
+      const publishDue = timeMs - lastPublishMs >= publishPeriodMs;
+
+      // Publish regularly while inputs are active (throttled), and also publish
+      // once when inputs stop to flush the final value to the UI.
+      if (inputsActive) {
+        if (publishDue) {
+          setArmCommands(nextVal);
+          lastPublishedVal = nextVal;
+          lastPublishMs = timeMs;
+        }
+      } else {
+        const differsFromLastPublish = Object.keys(nextVal).some((key) =>
+          differsEnough(nextVal[key], lastPublishedVal[key], 0.01),
+        );
+
+        if (differsFromLastPublish) {
+          setArmCommands(nextVal);
+          lastPublishedVal = nextVal;
+          lastPublishMs = timeMs;
+        }
       }
 
       armAnimationIdRef.current = requestAnimationFrame(pollAxes);
