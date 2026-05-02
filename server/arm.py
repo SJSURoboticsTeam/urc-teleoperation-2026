@@ -6,6 +6,27 @@
 # - emitting feedback to frontend
 
 import asyncio
+import time
+
+ARM_DEBUG = False
+ARM_DEBUG_RATE_LIMIT_SEC = 1.0
+
+_last_arm_log_times = {}
+
+def arm_debug_log(key, message):
+    """
+    Rate-limited debug logging for noisy arm TX/RX paths
+    Errors should still use normal print()
+    """
+    if not ARM_DEBUG:
+        return
+
+    now = time.time()
+    last = _last_arm_log_times.get(key, 0)
+
+    if now - last >= ARM_DEBUG_RATE_LIMIT_SEC:
+        print(message)
+        _last_arm_log_times[key] = now
 
 # Track Servo Address: 0x121 
 # Shoulder Servo Address: 0x122,
@@ -82,15 +103,16 @@ def invalidate_arm_connection(serial_ports, reason="unknown"):
     serial_ports["armId"] = "disconnect"
     print(f"[ARM] Connection invalidated: {reason}")
 
-def encode_arm_value(value):
+def encode_arm_value(value, joint_name="unknown"):
     """
     Firmware expects fixed-point values scaled by 2^6
     """
     try:
         scaled = int(float(value) * (2 ** 6))
-        print(
-            f"[ARM DEBUG] raw={value}, scaled={scaled}, "
-            f"hex={scaled.to_bytes(2, 'big', signed=True).hex()}"
+        arm_debug_log(
+            f"encode:{joint_name}",
+            f"[ARM DEBUG] {joint_name} raw={value}, scaled={scaled}, "
+            f"hex={scaled.to_bytes(2, 'big', signed=True).hex()}",
         )
     except Exception:
         scaled = 0
@@ -152,12 +174,15 @@ async def send_arm_joint(serial_ports, joint_name, value):
         print(f"[ARM] Unknown joint: {joint_name}")
         return False
 
-    payload = encode_arm_value(value)
+    payload = encode_arm_value(value, joint_name)
     can_key = JOINT_TO_CAN_KEY[joint_name]
     can_msg = f"t{arm_send_ID[can_key]}312{payload}\r"
 
     try:
-        print(f"[ARM] {joint_name}: {can_msg.strip()}")
+        arm_debug_log(
+            f"send:{joint_name}",
+            f"[ARM TX] {joint_name}: {can_msg.strip()}",
+        )
         await asyncio.to_thread(arm_serial.write, can_msg.encode())
         return True
     except Exception as e:
@@ -212,7 +237,10 @@ def parse_arm_ack(frame_info):
     payload = frame_info["payload_bytes"]
 
     if frame_info["dlc"] == 1 and len(payload) >= 1 and payload[0] == 0x62:
-        print(f"[ARM ACK] {joint_name}: set-position ACK -> {frame_info['frame']}")
+        arm_debug_log(
+            f"ack:{joint_name}",
+            f"[ARM ACK] {joint_name}: set-position ACK -> {frame_info['frame']}",
+        )
         return {
             "type": "ack",
             "joint": joint_name,
@@ -249,9 +277,10 @@ def parse_arm_position_response(frame_info):
     position_raw = int.from_bytes(payload[1:3], byteorder="big", signed=True)
     position_approx = position_raw / 64.0
 
-    print(
+    arm_debug_log(
+        f"pos:{joint_name}",
         f"[ARM RX] {joint_name} raw={position_raw}, "
-        f"approx={position_approx}, frame={frame_info['frame']}"
+        f"approx={position_approx}, frame={frame_info['frame']}",
     )
 
     return {
@@ -299,7 +328,7 @@ def register_arm_events(sio, serial_ports):
             print(f"[{sid}] armCommands ignored: arm not connected")
             return "ERROR"
 
-        print(f"[{sid}] armCommands payload: {data}")
+        arm_debug_log(f"manual:{sid}", f"[{sid}] armCommands payload: {data}")
 
         joint_order = ["track", "shoulder", "elbow", "pitch", "roll", "clamp"]
 
@@ -312,7 +341,7 @@ def register_arm_events(sio, serial_ports):
             if not ok:
                 return "ERROR"
 
-        print(f"[{sid}] armCommands sent successfully")
+        arm_debug_log(f"manual_ok:{sid}", f"[{sid}] armCommands sent successfully")
         return "OK"
 
     @sio.event
@@ -327,7 +356,7 @@ def register_arm_events(sio, serial_ports):
         joint_name = data.get("joint")
         value = data.get("value", 0)
 
-        print(f"[{sid}] armJointCommand payload: {data}")
+        arm_debug_log(f"joint:{joint_name}", f"[{sid}] armJointCommand payload: {data}")
 
         if not should_send_joint(joint_name):
             print(f"[{sid}] armJointCommand skipped by test filter: {joint_name}")

@@ -7,41 +7,13 @@ import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
 import { useRobotSocketStatus, robotsocket } from "../components/socket.io/socket";
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
-
-const ARM_JOINT_KEYS = [
-  "track", 
-  "shoulder", 
-  "elbow", 
-  "pitch", 
-  "roll", 
-  "clamp"
-];
-
-const ARM_JOINT_CONFIG = [
-  { label: "Elbow (deg)", key: "elbow", min: -100, max: -20, initial: -20 },
-  { label: "Shoulder (deg)", key: "shoulder", min: -20, max: 65, initial: 0 },
-  { label: "Track (mm)", key: "track", min: 0, max: 300, initial: 0 },
-  { label: "Pitch (deg)", key: "pitch", min: 0, max: 180, initial: 0 },
-  { label: "Roll (deg)", key: "roll", min: 0, max: 360, initial: 0 },
-  { label: "Clamp", key: "clamp", min: 0, max: 20, initial: 0 },
-];
-
-const ARM_JOINT_META = Object.fromEntries(
-  ARM_JOINT_CONFIG.map((joint) => [joint.key, joint]),
-);
-
-const ARM_DEFAULTS = Object.fromEntries(
-  ARM_JOINT_CONFIG.map((joint) => [joint.key, joint.initial]),
-);
-
-const ARM_CHANGE_EPSILON = {
-  track: 0.5,
-  shoulder: 0.5,
-  elbow: 0.5,
-  pitch: 0.5,
-  roll: 0.5,
-  clamp: 0.25,
-};
+import {
+  ARM_JOINT_KEYS,
+  ARM_JOINT_CONFIG,
+  ARM_JOINT_META,
+  ARM_DEFAULTS,
+  ARM_CHANGE_EPSILON,
+} from "../constants/armConfig";
 
 function round2(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
@@ -61,7 +33,6 @@ export default function ArmView() {
   const [txon, settxon] = useState(false);
   const [txPulse, setTxPulse] = useState(false);
   const [recentlyChanged, setRecentlyChanged] = useState({});
-
   const [armFeedback, setArmFeedback] = useState({
     track: null,
     shoulder: null,
@@ -101,20 +72,25 @@ export default function ArmView() {
     }
   }, [armCommands, initializedDefaults, setArmCommands]);
 
-  // When leaving gamepad mode, restore manual default
+  // preserve current values when leaving gamepad mode instead of resetting defaults
   useEffect(() => {
     if (armConnectedOne == null) {
-      setArmCommands(initializedDefaults);
-      prevArmCommandsRef.current = initializedDefaults;
-      prevDisplayCommandsRef.current = initializedDefaults;
+      const currentCommands = armCommandsRef.current ?? armCommands;
+      const hasAllCommands = ARM_JOINT_KEYS.every(
+        (key) => typeof currentCommands?.[key] === "number",
+      );
+
+      if (hasAllCommands) {
+        const snapshot = { ...currentCommands };
+        prevArmCommandsRef.current = snapshot;
+        prevDisplayCommandsRef.current = snapshot;
+      }
     }
-  }, [armConnectedOne, initializedDefaults, setArmCommands]);
+  }, [armConnectedOne, armCommands]);
 
   // AUTO TX: emit only joints whose values changed meaningfully since last interval
   useEffect(() => {
     if (!serverConnected || !txon) return;
-
-    // console.log("[ARM] Starting auto TX (changed joints only)");
 
     const intervalId = setInterval(() => {
       const current = armCommandsRef.current;
@@ -137,9 +113,6 @@ export default function ArmView() {
 
       const now = Date.now();
       if (now - emitCounterRef.current.lastReset >= 1000) {
-        // console.log(
-        //   `[ARM TX RATE] full=${emitCounterRef.current.full}/s joint=${emitCounterRef.current.joint}/s`,
-        // );
         emitCounterRef.current.full = 0;
         emitCounterRef.current.joint = 0;
         emitCounterRef.current.lastReset = now;
@@ -209,15 +182,14 @@ export default function ArmView() {
 
   useEffect(() => {
     const pulseTimeouts = pulseTimeoutsRef.current;
-    const txPulseTimeout = txPulseTimeoutRef;
 
     return () => {
       Object.values(pulseTimeouts).forEach((timeoutId) => {
         if (timeoutId) clearTimeout(timeoutId);
       });
 
-      if (txPulseTimeout.current) {
-        clearTimeout(txPulseTimeout.current);
+      if (txPulseTimeoutRef.current) {
+        clearTimeout(txPulseTimeoutRef.current);
       }
     };
   }, []);
@@ -229,8 +201,6 @@ export default function ArmView() {
     robotsocket.emit("armCommands", armCommands);
     emitCounterRef.current.full += 1;
     pulseTx();
-
-    // console.log("[ARM MANUAL TX]", armCommands);
   };
 
   // When sliders are used, update armCommands state
@@ -285,7 +255,7 @@ export default function ArmView() {
         >
           Arm · {controlModeLabel} · {sendModeLabel}
         </Typography>
-            
+
         <Box
           sx={{
             display: "grid",
@@ -297,7 +267,7 @@ export default function ArmView() {
             width: "100%",
           }}
         >
-          {ARM_JOINT_CONFIG.map(({ label, key, min = 0, max }) => (
+          {ARM_JOINT_CONFIG.map(({ label, key, min, max }) => (
             <Box
               key={label}
               sx={{
@@ -326,7 +296,7 @@ export default function ArmView() {
                   : "none",
               }}
             >
-              <Typography 
+              <Typography
                 gutterBottom
                 sx={{
                   textAlign: "center",
@@ -358,7 +328,7 @@ export default function ArmView() {
                   />
                 </Box>
               )}
-                  
+
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
                 Cmd: {round2(armCommands[key] ?? ARM_JOINT_META[key].initial)}
               </Typography>
@@ -424,6 +394,6 @@ export default function ArmView() {
           </Typography>
         </Box>
       </Box>
-  </Box>
+    </Box>
   );
 }

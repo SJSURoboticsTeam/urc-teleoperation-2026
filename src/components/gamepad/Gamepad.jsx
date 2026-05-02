@@ -10,6 +10,8 @@ import { useDriveCommands } from "../../contexts/DriveCommandContext";
 import { useConnectedGamepads } from "../../contexts/GamepadContext";
 import { useMastCommands } from "../../contexts/MastCommandContext";
 
+import { ARM_LIMITS, ARM_DEFAULTS } from "../../constants/armConfig";
+
 // Handles gamepad connections and state
 export default function GamepadPanel({ currentView }) {
   // general vars
@@ -31,6 +33,11 @@ export default function GamepadPanel({ currentView }) {
   const [armCommands, setArmCommands] = useArmCommands();
   const armConnectedOne = connectedGamepads.arm;
   const armAnimationIdRef = useRef(null);
+  const armCommandsRef = useRef(armCommands);
+
+  useEffect(() => {
+    armCommandsRef.current = armCommands;
+  }, [armCommands]);
 
   // Handle gamepad connections and disconnections
   useEffect(() => {
@@ -194,15 +201,6 @@ export default function GamepadPanel({ currentView }) {
 
   // Polling for arm gamepad input
   useEffect(() => {
-    const ARM_LIMITS = {
-      elbow: { min: -100, max: -20, initial: -20 },
-      shoulder: { min: -20, max: 65, initial: 0 },
-      track: { min: 0, max: 300, initial: 0 },
-      pitch: { min: 0, max: 180, initial: 0 },
-      roll: { min: 0, max: 360, initial: 0 },
-      clamp: { min: 0, max: 20, initial: 0 },
-    };
-
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
     const clean = (v, deadzone = 0.15) => {
@@ -216,30 +214,32 @@ export default function GamepadPanel({ currentView }) {
       return;
     }
 
+    const currentArm = armCommandsRef.current;
+
     let prevVal = {
       elbow:
-        typeof armCommands?.elbow === "number"
-          ? armCommands.elbow
+        typeof currentArm?.elbow === "number"
+          ? currentArm.elbow
           : ARM_LIMITS.elbow.initial,
       shoulder:
-        typeof armCommands?.shoulder === "number"
-          ? armCommands.shoulder
+        typeof currentArm?.shoulder === "number"
+          ? currentArm.shoulder
           : ARM_LIMITS.shoulder.initial,
       track:
-        typeof armCommands?.track === "number"
-          ? armCommands.track
+        typeof currentArm?.track === "number"
+          ? currentArm.track
           : ARM_LIMITS.track.initial,
       pitch:
-        typeof armCommands?.pitch === "number"
-          ? armCommands.pitch
+        typeof currentArm?.pitch === "number"
+          ? currentArm.pitch
           : ARM_LIMITS.pitch.initial,
       roll:
-        typeof armCommands?.roll === "number"
-          ? armCommands.roll
+        typeof currentArm?.roll === "number"
+          ? currentArm.roll
           : ARM_LIMITS.roll.initial,
       clamp:
-        typeof armCommands?.clamp === "number"
-          ? armCommands.clamp
+        typeof currentArm?.clamp === "number"
+          ? currentArm.clamp
           : ARM_LIMITS.clamp.initial,
     };
 
@@ -249,31 +249,33 @@ export default function GamepadPanel({ currentView }) {
       // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
       // so stale arm commands do not persist after disconnect
       if (!gp) {
-        armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+        setArmCommands(ARM_DEFAULTS);
         return;
       }
 
       const armInputs = {
-        elbow: gp.buttons[2].pressed ? clean(gp.axes[1]) : 0, 
-        shoulder: gp.buttons[3].pressed ? -1 *clean(gp.axes[1]) : 0, 
-        track: !gp.buttons[2].pressed && !gp.buttons[3].pressed ? clean(gp.axes[0]) : 0, 
+        elbow: gp.buttons[2]?.pressed ? clean(gp.axes[1]) : 0,
+        shoulder: gp.buttons[3]?.pressed ? -clean(gp.axes[1]) : 0,
+        track:
+          !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed
+            ? clean(gp.axes[0])
+            : 0,
         // treat full up/down as hard limits for better control at extremes
-        pitch: 
-          gp.axes[9] === -1 
-            ? -1 
-            : gp.axes[9] < 0.15 && gp.axes[9] > 0.14 
-              ? 1 
-              : 0, 
-        roll: 
-          gp.axes[9] < 0.72 && gp.axes[9] > 0.71 
-            ? -1 
-            : gp.axes[9] < -0.42 && gp.axes[9] > -0.43 
-              ? 1 
+        pitch:
+          gp.axes[9] === -1
+            ? -1
+            : gp.axes[9] < 0.15 && gp.axes[9] > 0.14
+              ? 1
+              : 0,
+        roll:
+          gp.axes[9] < 0.72 && gp.axes[9] > 0.71
+            ? -1
+            : gp.axes[9] < -0.42 && gp.axes[9] > -0.43
+              ? 1
               : 0,
         clamp: clean(gp.axes[3]),
-        uniSens: -0.5 * (gp.axes[6]) + 0.5, // range [0, 1], inverted so up is more sensitive
+        uniSens: -0.5 * gp.axes[6] + 0.5,
       };
-      console.log("Arm Inputs: ", armInputs);
 
       const inputSens = {
         elbow: 0.5 * armInputs.uniSens,
@@ -322,7 +324,7 @@ export default function GamepadPanel({ currentView }) {
       const changed = Object.keys(nextVal).some((key) =>
         differsEnough(nextVal[key], prevVal[key], 0.1),
       );
-        
+
       if (changed) {
         setArmCommands(nextVal);
         prevVal = nextVal;
@@ -339,7 +341,7 @@ export default function GamepadPanel({ currentView }) {
         armAnimationIdRef.current = null;
       }
     };
-  }, [armConnectedOne, armCommands, setArmCommands]);
+  }, [armConnectedOne, setArmCommands]);
 
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
