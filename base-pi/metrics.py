@@ -16,7 +16,7 @@ RpiPollingRate = 2
 # [antenna] : ip, socketio topic name
 antennadata = {
     "900MHZ": {"ip": "192.168.1.20", "topic": "antennastats900"},
-    "5GHZ": {"ip": "192.168.5.30", "topic": "antennastats5"}
+    "5GHZ": {"ip": "192.168.5.20", "topic": "antennastats5"}
 }
 #-----------------------#
 
