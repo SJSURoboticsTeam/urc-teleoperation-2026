@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import "react-resizable/css/styles.css";
 import { Typography, Box, Slider, Button } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -73,9 +73,12 @@ export default function ArmView() {
   }, [armCommands, initializedDefaults, setArmCommands]);
 
   // preserve current values when leaving gamepad mode instead of resetting defaults
+  // Preserve current values when leaving gamepad mode instead of resetting defaults.
+  // Only run when the selected arm gamepad changes.
   useEffect(() => {
     if (armConnectedOne == null) {
-      const currentCommands = armCommandsRef.current ?? armCommands;
+      const currentCommands = armCommandsRef.current;
+
       const hasAllCommands = ARM_JOINT_KEYS.every(
         (key) => typeof currentCommands?.[key] === "number",
       );
@@ -86,7 +89,39 @@ export default function ArmView() {
         prevDisplayCommandsRef.current = snapshot;
       }
     }
-  }, [armConnectedOne, armCommands]);
+  }, [armConnectedOne]);
+
+  const pulseJoint = useCallback((key) => {
+    if (pulseTimeoutsRef.current[key]) {
+      clearTimeout(pulseTimeoutsRef.current[key]);
+    }
+
+    setRecentlyChanged((prev) => ({
+      ...prev,
+      [key]: true,
+    }));
+
+    pulseTimeoutsRef.current[key] = setTimeout(() => {
+      setRecentlyChanged((prev) => ({
+        ...prev,
+        [key]: false,
+      }));
+      pulseTimeoutsRef.current[key] = null;
+    }, 500);
+  }, []);
+
+  const pulseTx = () => {
+    if (txPulseTimeoutRef.current) {
+      clearTimeout(txPulseTimeoutRef.current);
+    }
+
+    setTxPulse(true);
+
+    txPulseTimeoutRef.current = setTimeout(() => {
+      setTxPulse(false);
+      txPulseTimeoutRef.current = null;
+    }, 180);
+  };
 
   // AUTO TX: emit only joints whose values changed meaningfully since last interval
   useEffect(() => {
@@ -107,6 +142,7 @@ export default function ArmView() {
           });
 
           emitCounterRef.current.joint += 1;
+          pulseJoint(joint);
           sentAny = true;
         }
       });
@@ -126,7 +162,7 @@ export default function ArmView() {
     }, FrameRateConstant);
 
     return () => clearInterval(intervalId);
-  }, [serverConnected, txon]);
+  }, [serverConnected, txon, pulseJoint]);
 
   useEffect(() => {
     const handleArmFeedback = (data) => {
@@ -147,38 +183,6 @@ export default function ArmView() {
       robotsocket.off("armFeedback", handleArmFeedback);
     };
   }, []);
-
-  const pulseJoint = (key) => {
-    if (pulseTimeoutsRef.current[key]) {
-      clearTimeout(pulseTimeoutsRef.current[key]);
-    }
-
-    setRecentlyChanged((prev) => ({
-      ...prev,
-      [key]: true,
-    }));
-
-    pulseTimeoutsRef.current[key] = setTimeout(() => {
-      setRecentlyChanged((prev) => ({
-        ...prev,
-        [key]: false,
-      }));
-      pulseTimeoutsRef.current[key] = null;
-    }, 500);
-  };
-
-  const pulseTx = () => {
-    if (txPulseTimeoutRef.current) {
-      clearTimeout(txPulseTimeoutRef.current);
-    }
-
-    setTxPulse(true);
-
-    txPulseTimeoutRef.current = setTimeout(() => {
-      setTxPulse(false);
-      txPulseTimeoutRef.current = null;
-    }, 180);
-  };
 
   useEffect(() => {
     const pulseTimeouts = pulseTimeoutsRef.current;
@@ -220,7 +224,7 @@ export default function ArmView() {
     });
 
     prevDisplayCommandsRef.current = armCommands;
-  }, [armCommands]);
+  }, [armCommands, pulseJoint]);
   
   return (
     <Box
