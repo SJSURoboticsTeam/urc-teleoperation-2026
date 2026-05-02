@@ -10,6 +10,8 @@ import { useDriveCommands } from "../../contexts/DriveCommandContext";
 import { useConnectedGamepads } from "../../contexts/GamepadContext";
 import { useMastCommands } from "../../contexts/MastCommandContext";
 
+import { ARM_LIMITS, ARM_DEFAULTS } from "../../constants/armConfig";
+
 // Handles gamepad connections and state
 export default function GamepadPanel({ currentView }) {
   // general vars
@@ -18,7 +20,7 @@ export default function GamepadPanel({ currentView }) {
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
-  const [driveCommands, setDriveCommands] = useDriveCommands();
+  const [_driveCommands, setDriveCommands] = useDriveCommands();
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
@@ -31,17 +33,11 @@ export default function GamepadPanel({ currentView }) {
   const [armCommands, setArmCommands] = useArmCommands();
   const armConnectedOne = connectedGamepads.arm;
   const armAnimationIdRef = useRef(null);
+  const armCommandsRef = useRef(armCommands);
 
-  const gpList =
-    page === "Drive"
-      ? Object.values(connectedGamepads?.driveGPList || {})
-      : Object.values(connectedGamepads?.armGPList || {});
-
-  // setters that update only the selected index in the shared context
-  const setDriveConnectedOne = (index) =>
-    setConnectedGamepads((prev) => ({ ...prev, drive: index }));
-  const setArmConnectedOne = (index) =>
-    setConnectedGamepads((prev) => ({ ...prev, arm: index }));
+  useEffect(() => {
+    armCommandsRef.current = armCommands;
+  }, [armCommands]);
 
   // Handle gamepad connections and disconnections
   useEffect(() => {
@@ -63,16 +59,31 @@ export default function GamepadPanel({ currentView }) {
     // ?. optional chaining: if undefined, yields undefined instead of throwing
     // _ : binds to gpIndex as a throw-away variable
     // rest: collects the remaining properties into a new object
+    // Clear selected controller if the unplugged gamepad was active
+    // Prevents stale drive/arm indices after disconnect
     const handleDisconnect = (e) => {
       const gpIndex = e.gamepad.index;
+
+
       setConnectedGamepads((prev) => {
         if (prev.driveGPList?.[gpIndex]) {
           const { [gpIndex]: _, ...rest } = prev.driveGPList;
-          return { ...prev, driveGPList: rest };
-        } else if (prev.armGPList?.[gpIndex]) {
-          const { [gpIndex]: _, ...rest } = prev.armGPList;
-          return { ...prev, armGPList: rest };
+          return {
+            ...prev,
+            driveGPList: rest,
+            drive: prev.drive === gpIndex ? null : prev.drive,
+          };
         }
+
+        if (prev.armGPList?.[gpIndex]) {
+          const { [gpIndex]: _, ...rest } = prev.armGPList;
+          return {
+            ...prev,
+            armGPList: rest,
+            arm: prev.arm === gpIndex ? null : prev.arm,
+          };
+        }
+
         return prev;
       });
     };
@@ -189,52 +200,186 @@ export default function GamepadPanel({ currentView }) {
   }, [driveConnectedOne, mastCommands?.panSpeed, setMastCommands]);
 
   // Polling for arm gamepad input
-  const [armManualDisconnect, setArmManualDisconnect] = useState(false);
   useEffect(() => {
-    if (armManualDisconnect || armConnectedOne == null) {
-      setArmCommands({
-        track: 0,
-        shoulder: 0,
-        elbow: 0,
-        pitch: 0,
-        roll: 0,
-        clamp: 0,
-      });
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+    // Normalize motion so it behaves consistently across frame rates.
+    // We treat the old per-frame integration (at ~60fps) as the baseline.
+    const framesFromRafTime = (prevTimeMs, timeMs) => {
+      if (prevTimeMs == null || timeMs == null) return 1;
+      const deltaMs = timeMs - prevTimeMs;
+      // Convert ms -> "60fps frames" and clamp to avoid huge jumps
+      // (e.g., if the tab was backgrounded).
+      return clamp(deltaMs / (1000 / 60), 0, 3);
+    };
+
+    const clean = (v, deadzone = 0.15) => {
+      if (Math.abs(v) < deadzone) return 0;
+      return Math.round(v * 100) / 100;
+    };
+
+    const differsEnough = (a, b, epsilon = 0.1) => Math.abs(a - b) > epsilon;
+
+    if (armConnectedOne == null) {
       return;
     }
 
+    const currentArm = armCommandsRef.current;
+
     let prevVal = {
-      elbow: 0,
-      shoulder: 0,
-      track: 0,
-      pitch: 0,
-      roll: 0,
-      clamp: 0,
+      elbow:
+        typeof currentArm?.elbow === "number"
+          ? currentArm.elbow
+          : ARM_LIMITS.elbow.initial,
+      shoulder:
+        typeof currentArm?.shoulder === "number"
+          ? currentArm.shoulder
+          : ARM_LIMITS.shoulder.initial,
+      track:
+        typeof currentArm?.track === "number"
+          ? currentArm.track
+          : ARM_LIMITS.track.initial,
+      pitch:
+        typeof currentArm?.pitch === "number"
+          ? currentArm.pitch
+          : ARM_LIMITS.pitch.initial,
+      roll:
+        typeof currentArm?.roll === "number"
+          ? currentArm.roll
+          : ARM_LIMITS.roll.initial,
+      clamp:
+        typeof currentArm?.clamp === "number"
+          ? currentArm.clamp
+          : ARM_LIMITS.clamp.initial,
     };
 
-    const pollAxes = () => {
+    let lastTimeMs = null;
+    let lastPublishMs = 0;
+    let lastPublishedVal = { ...prevVal };
+
+    const publishPeriodMs = 33; // ~30Hz UI/state publish rate
+
+    const pollAxes = (timeMs) => {
       const gp = navigator.getGamepads()[armConnectedOne];
-      if (gp) {
-        const clean = (v, deadzone = 0.08) => {
-          if (Math.abs(v) < deadzone) return 0;
-          return Math.round(v * 100) / 100;
-        };
 
-        const newVal = {
-          elbow: clean(gp.axes[9]),
-          shoulder: clean(gp.axes[1]),
-          track: clean(gp.axes[3]),
-          pitch: clean(gp.axes[0]),
-          roll: clean(gp.axes[5]),
-          clamp: clean(gp.axes[6]),
-        };
+      // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
+      // so stale arm commands do not persist after disconnect
+      if (!gp) {
+        setConnectedGamepads((prev) => ({
+          ...prev,
+          arm: null,
+        }));
 
-        const changed = Object.keys(newVal).some(
-          (key) => newVal[key] !== prevVal[key],
+        if (armAnimationIdRef.current) {
+          cancelAnimationFrame(armAnimationIdRef.current);
+          armAnimationIdRef.current = null;
+        }
+
+        return;
+      }
+
+      const armInputs = {
+        elbow: gp.buttons[2]?.pressed ? clean(gp.axes[1]) : 0,
+        shoulder: gp.buttons[3]?.pressed ? -clean(gp.axes[1]) : 0,
+        track:
+          !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed
+            ? clean(gp.axes[0])
+            : 0,
+        // treat full up/down as hard limits for better control at extremes
+        pitch:
+          gp.axes[9] === -1
+            ? -1
+            : gp.axes[9] < 0.15 && gp.axes[9] > 0.14
+              ? 1
+              : 0,
+        roll:
+          gp.axes[9] < 0.72 && gp.axes[9] > 0.71
+            ? -1
+            : gp.axes[9] < -0.42 && gp.axes[9] > -0.43
+              ? 1
+              : 0,
+        clamp: clean(gp.axes[3]),
+        uniSens: -0.5 * gp.axes[6] + 0.5,
+      };
+
+      const inputSens = {
+        elbow: 0.5 * armInputs.uniSens,
+        shoulder: 0.5 * armInputs.uniSens,
+        track: 5 * armInputs.uniSens,
+        pitch: 0.75 * armInputs.uniSens,
+        roll: 0.75 * armInputs.uniSens,
+        clamp: 0.5 * armInputs.uniSens,
+      };
+      //console.log("Sens: ", inputSens);
+
+      const frameScale = framesFromRafTime(lastTimeMs, timeMs);
+      lastTimeMs = timeMs;
+
+      const nextVal = {
+        elbow: clamp(
+          prevVal.elbow + armInputs.elbow * inputSens.elbow * frameScale,
+          ARM_LIMITS.elbow.min,
+          ARM_LIMITS.elbow.max,
+        ),
+        shoulder: clamp(
+          prevVal.shoulder + armInputs.shoulder * inputSens.shoulder * frameScale,
+          ARM_LIMITS.shoulder.min,
+          ARM_LIMITS.shoulder.max,
+        ),
+        track: clamp(
+          prevVal.track + armInputs.track * inputSens.track * frameScale,
+          ARM_LIMITS.track.min,
+          ARM_LIMITS.track.max,
+        ),
+        pitch: clamp(
+          prevVal.pitch + armInputs.pitch * inputSens.pitch * frameScale,
+          ARM_LIMITS.pitch.min,
+          ARM_LIMITS.pitch.max,
+        ),
+        roll: clamp(
+          prevVal.roll + armInputs.roll * inputSens.roll * frameScale,
+          ARM_LIMITS.roll.min,
+          ARM_LIMITS.roll.max,
+        ),
+        clamp: clamp(
+          prevVal.clamp + armInputs.clamp * inputSens.clamp * frameScale,
+          ARM_LIMITS.clamp.min,
+          ARM_LIMITS.clamp.max,
+        ),
+      };
+      //console.log("Arm Commands: ", nextVal);
+
+      // Always advance the integration state (so motion remains smooth),
+      // but throttle publishing into React state to avoid starving UI paints.
+      prevVal = nextVal;
+
+      const inputsActive =
+        Math.abs(armInputs.elbow) > 0 ||
+        Math.abs(armInputs.shoulder) > 0 ||
+        Math.abs(armInputs.track) > 0 ||
+        Math.abs(armInputs.pitch) > 0 ||
+        Math.abs(armInputs.roll) > 0 ||
+        Math.abs(armInputs.clamp) > 0;
+
+      const publishDue = timeMs - lastPublishMs >= publishPeriodMs;
+
+      // Publish regularly while inputs are active (throttled), and also publish
+      // once when inputs stop to flush the final value to the UI.
+      if (inputsActive) {
+        if (publishDue) {
+          setArmCommands(nextVal);
+          lastPublishedVal = nextVal;
+          lastPublishMs = timeMs;
+        }
+      } else {
+        const differsFromLastPublish = Object.keys(nextVal).some((key) =>
+          differsEnough(nextVal[key], lastPublishedVal[key], 0.01),
         );
-        if (changed) {
-          setArmCommands(newVal);
-          prevVal = newVal;
+
+        if (differsFromLastPublish) {
+          setArmCommands(nextVal);
+          lastPublishedVal = nextVal;
+          lastPublishMs = timeMs;
         }
       }
 
@@ -242,11 +387,14 @@ export default function GamepadPanel({ currentView }) {
     };
 
     armAnimationIdRef.current = requestAnimationFrame(pollAxes);
+
     return () => {
-      cancelAnimationFrame(armAnimationIdRef.current);
-      armAnimationIdRef.current = null;
+      if (armAnimationIdRef.current) {
+        cancelAnimationFrame(armAnimationIdRef.current);
+        armAnimationIdRef.current = null;
+      }
     };
-  }, [armConnectedOne, setArmCommands]);
+  }, [armConnectedOne, setArmCommands, setConnectedGamepads]);
 
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
@@ -270,7 +418,7 @@ export default function GamepadPanel({ currentView }) {
     } else {
       setInfo(""); // empty string if neither view
     }
-  }, [currentView, driveConnectedOne, connectedGamepads.arm]);
+  }, [currentView, driveConnectedOne, armConnectedOne]);
 
   return (
     <div
@@ -296,7 +444,7 @@ export default function GamepadPanel({ currentView }) {
         GAMEPADS{info}
       </span>
 
-      {open == true && (
+      {open === true && (
         <div
           style={{
             position: "absolute",

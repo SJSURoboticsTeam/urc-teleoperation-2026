@@ -12,6 +12,9 @@ status_flags = {
     7: "Bus Error (BEI), see SJA1000 datasheet"
 }
 
+# Use 'S3' for 100 Kbit, 'S8' for 1 Mbit
+CAN_BITRATE_CMD = 'S8'
+
 class CanSerial(serial.Serial):
 
     def __init__(self, port):
@@ -38,13 +41,13 @@ class CanSerial(serial.Serial):
         if b"\r" not in resp:
             raise ValueError("Carriage Return Not Found-RESPONSE")
 
-        # Check the CAN version to ensure communication with the unit
+        # Check CANUSB version to ensure communication with the unit
         self.write(('V\r').encode())
         if b"\r" not in self.read_can(0.2):
             raise ValueError("Carriage Return Not Found-VERSION")
 
-        # Set up CAN speed - S8 is 1Mbit
-        self.write(('S8\r').encode())
+        # Set up CAN speed before opening the channel
+        self.write((f'{CAN_BITRATE_CMD}\r').encode())
         if b"\r" not in self.read_can(0.2):
             raise ValueError("Carriage Return Not Found-SPEED")
 
