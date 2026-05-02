@@ -86,6 +86,7 @@ export default function Map() {
   const controlRef = useRef(null);
   const lastSignalTime = useRef(Date.now()); 
   const signalDiff = useRef();
+  const signalTimeout = useRef(null);
 
   const [coordinates, setCoordinates] = useState({
     long: -121.881194,
@@ -185,19 +186,40 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    const newTime = Date.now();
-    signalDiff.current = (newTime - lastSignalTime.current) / 1000;
-    lastSignalTime.current = newTime;
     const handler = (data) => {
+      if (signalTimeout.current) {
+        clearTimeout(signalTimeout.current);
+      }
+
+      const newTime = Date.now();
+      signalDiff.current = (newTime - lastSignalTime.current) / 1000;
+      lastSignalTime.current = newTime;
+
       console.log("Received GPS data:", data);
       setCoordinates({
         long: data.longitude,
         lat: data.latitude,
         receive: true,
       });
+
+      signalTimeout.current = setTimeout(() => {
+        setCoordinates((prev) => ({ ...prev, receive: false }));
+      }, 3000);
     };
 
     robotsocket.on("gpsData", handler);
+    signalTimeout.current = setTimeout(() => {
+      setCoordinates((prev) => ({ ...prev, receive: false }));
+    }, 3000);
+    return () => {
+      robotsocket.off("gpsData", handler);
+      if (signalTimeout.current) {
+        clearTimeout(signalTimeout.current);
+      }
+    }
+  })
+
+  useEffect(() => {
     marker.current.setLngLat([coordinates.long, coordinates.lat]);
 
     if(controlRef.current) {
@@ -218,7 +240,7 @@ export default function Map() {
       });
     }
     return () => {
-      robotsocket.off("gpsData", handler);
+
     }
   }, [coordinates, isLockedOn]);
 
