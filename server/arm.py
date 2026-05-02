@@ -7,12 +7,12 @@
 
 import asyncio
 
-# Track Servo Address: 0x120 
-# Shoulder Servo Address: 0x121,
-# Elbow Servo Address: 0x122,
-# Wrist EF1 Servo Address: 0x123,
-# Wrist EF2 Servo Address: 0x124,
-# Clamp Servo Address: 0x125
+# Track Servo Address: 0x121 
+# Shoulder Servo Address: 0x122,
+# Elbow Servo Address: 0x123,
+# Wrist EF1 Servo Address: 0x124,
+# Wrist EF2 Servo Address: 0x125,
+# Clamp Servo Address: 0x126
 
 # Receive = Servo Address + 0x100
 arm_send_ID = {
@@ -21,23 +21,23 @@ arm_send_ID = {
     "HOMING_SEQUENCE": '111',
     # Will handle set and read servo position and velocity
     # PID (send in case defaults are wrong) when getting pid constants, if the defaults are not good, we can callibrate
-    "TRACK": '120',
-    "SHOULDER": '121',
-    "ELBOW": '122',
-    "WRIST_EF1": '123',
-    "WRIST_EF2": '124',
-    "CLAMP": '125',
+    "TRACK": '121',
+    "SHOULDER": '122',
+    "ELBOW": '123',
+    "WRIST_EF1": '124',
+    "WRIST_EF2": '125',
+    "CLAMP": '126',
 }
 
 arm_receive_ID = {
     "RECEIVE_STOP": "00D",
     # Heartbeat response, Homing response, return ack, position, velocity, PID acks
-    "TRACK": '220',
-    "SHOULDER": '221',
-    "ELBOW": '222',
-    "WRIST_EF1": '223',
-    "WRIST_EF2": '224',
-    "CLAMP": '225',
+    "TRACK": '221',
+    "SHOULDER": '222',
+    "ELBOW": '223',
+    "WRIST_EF1": '224',
+    "WRIST_EF2": '225',
+    "CLAMP": '226',
 } 
 
 JOINT_TO_CAN_KEY = {
@@ -50,12 +50,12 @@ JOINT_TO_CAN_KEY = {
 }
 
 RECEIVE_ID_TO_JOINT = {
-    "220": "track",
-    "221": "shoulder",
-    "222": "elbow",
-    "223": "pitch",
-    "224": "roll",
-    "225": "clamp",
+    "221": "track",
+    "222": "shoulder",
+    "223": "elbow",
+    "224": "pitch",
+    "225": "roll",
+    "226": "clamp",
 }
 
 # Optional temporary test filter for hardware bring-up
