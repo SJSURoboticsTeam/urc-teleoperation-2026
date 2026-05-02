@@ -330,11 +330,11 @@ export default function ArmView() {
               )}
 
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                Cmd: {round2(armCommands[key] ?? ARM_JOINT_META[key].initial)}
+                Cmd: {round2(armCommands[key] ?? ARM_JOINT_META[key].initial).toFixed(2)}
               </Typography>
 
               <Typography variant="body2" color="text.secondary">
-                Fb: {armFeedback[key] == null ? "--" : round2(armFeedback[key])}
+                Fb: {armFeedback[key] == null ? "--" : round2(armFeedback[key]).toFixed(2)}
               </Typography>
             </Box>
           ))}
