@@ -70,13 +70,3 @@ can bit rate of 1Mbit
 
 make sure CAN ids are correct
 
-## Arm Controller Scheme
-Track: left/right on control stick
-
-Shoulder: forward/backward on control stick while holding button 4
-
-Elbow: forward/backward on control stick while holding button 3
-
-Wrist: 
-- Tilt: Left/Right Thumbstick
-- Pivot: Up/Down Thumbstick
