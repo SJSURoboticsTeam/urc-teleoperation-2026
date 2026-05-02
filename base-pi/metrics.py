@@ -132,8 +132,8 @@ async def send_fake_antenna_stats(sio,antenna):
                 'dbm': random.randint(-100, -45),             # signal strength
                 'txrate': round(random.uniform(1, 7), 1),  # Mbps
                 'rxrate': round(random.uniform(1, 7), 1),  # Mbps
-                'freq': random.choice([904, 914, 924]),   # MHz
-                'freqwidth': random.choice([3, 5, 8, 20]),
+                'freq': random.choice([907, 914, 924]),   # MHz
+                'freqwidth': random.choice([3, 5, 8]),
                 'noise': random.randint(-100, -70),          # dBm
                 'efficiency': round(random.uniform(0, 100), 2)  # %
             }
@@ -141,10 +141,10 @@ async def send_fake_antenna_stats(sio,antenna):
             data = {
                 'status': "GOOD", # Reports good if link is successful
                 'dbm': random.randint(-75, -30),             # signal strength
-                'txrate': round(random.uniform(20, 60), 1),  # Mbps
-                'rxrate': round(random.uniform(20, 60), 1),  # Mbps
-                'freq': random.choice([5800, 5820, 5840]),   # MHz
-                'freqwidth': random.choice([10, 20, 40, 80]),
+                'txrate': round(random.uniform(15, 45), 1),  # Mbps
+                'rxrate': round(random.uniform(15, 45), 1),  # Mbps
+                'freq': random.choice([5745, 5765, 5785]),   # MHz
+                'freqwidth': random.choice([10, 20, 40]),
                 'noise': random.randint(-100, -70),          # dBm
                 'efficiency': round(random.uniform(0, 100), 2)  # %
             }
