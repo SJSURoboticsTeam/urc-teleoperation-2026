@@ -249,7 +249,16 @@ export default function GamepadPanel({ currentView }) {
       // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
       // so stale arm commands do not persist after disconnect
       if (!gp) {
-        setArmCommands(ARM_DEFAULTS);
+        setConnectedGamepads((prev) => ({
+          ...prev,
+          arm: null,
+        }));
+
+        if (armAnimationIdRef.current) {
+          cancelAnimationFrame(armAnimationIdRef.current);
+          armAnimationIdRef.current = null;
+        }
+
         return;
       }
 
@@ -341,7 +350,7 @@ export default function GamepadPanel({ currentView }) {
         armAnimationIdRef.current = null;
       }
     };
-  }, [armConnectedOne, setArmCommands]);
+  }, [armConnectedOne, setArmCommands, setConnectedGamepads]);
 
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
