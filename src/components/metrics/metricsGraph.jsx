@@ -15,7 +15,14 @@ export default function MetricsGraph() {
     const handleChange = (event) => {
         setPoints(event.target.value);
     };
-
+    
+    const colors = {
+   "900": '#fe2a1a',
+   "900-alt": '#ebd400',
+   "5": '#2522f6',
+   "5-alt": '#00e1e1'
+};
+    
     return(
         <div className="flex flex-col">
             <div style={{ display: 'flex', gap: '8px', marginLeft: '8px', marginBottom: '16px' }}>
@@ -57,6 +64,7 @@ export default function MetricsGraph() {
                         running={running} 
                         setRunning={setRunning}
                         reset={reset}
+                        colors={colors}
                         points={points}/>
                 </Box>
                 <Box>
@@ -66,6 +74,7 @@ export default function MetricsGraph() {
                         running={running} 
                         setRunning={setRunning}
                         reset={reset}
+                        colors={colors}
                         points={points}/>
                 </Box>
             </div>
@@ -76,6 +85,7 @@ export default function MetricsGraph() {
                         running={running} 
                         setRunning={setRunning}
                         reset={reset}
+                        colors={colors}
                         points={points}/>
                 </Box>
                 <Box>
@@ -84,6 +94,7 @@ export default function MetricsGraph() {
                         running={running} 
                         setRunning={setRunning}
                         reset={reset}
+                        colors={colors}
                         points={points}/>
                 </Box>
             </div>
@@ -91,7 +102,7 @@ export default function MetricsGraph() {
     )
 }
 
-function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points }) {
+function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points, colors }) {
     const [time, setTime] = useState([]);
     const [signalData900, setSignalData900] = useState([]);
     const [signalData5, setSignalData5] = useState([]);
@@ -128,10 +139,10 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points 
                 skipAnimation
                 series={[
                 {   
-                    data:signalData900, id: 'Signal Strength 900MHz', label: 'Signal Strength 900MHz (dBm)'
+                    data:signalData900, color: colors["900"], id: 'Signal Strength 900MHz', label: 'Signal Strength 900MHz (dBm)'
                 },
                 {   
-                    data:signalData5, id: 'Signal Strength 5GHz', label: 'Signal Strength 5GHz (dBm)'
+                    data:signalData5, color: colors["5"], id: 'Signal Strength 5GHz', label: 'Signal Strength 5GHz (dBm)'
                 },]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
                 yAxis={[{ label: 'Signal Strength (dBm)', width: 50 }]}
@@ -140,7 +151,7 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points 
     );
 }
 
-function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points }) {
+function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, colors }) {
     const [time, setTime] = useState([]);
     const [noiseData900, setNoiseData900] = useState([]);
     const [noiseData5, setNoiseData5] = useState([]);
@@ -177,10 +188,10 @@ function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points }
                 skipAnimation
                 series={[
                 {   
-                    data:noiseData900, id: 'Noise 900MHz', label: 'Noise 900MHz (dBm)'
+                    data:noiseData900, color: colors["900"], id: 'Noise 900MHz', label: 'Noise 900MHz (dBm)'
                 },
                 {   
-                    data:noiseData5, id: 'Noise 5GHz', label: 'Noise 5GHz (dBm)'
+                    data:noiseData5, color: colors["5"], id: 'Noise 5GHz', label: 'Noise 5GHz (dBm)'
                 },]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
                 yAxis={[{ label: 'Noise (dBm)', width: 50 }]}
@@ -189,7 +200,7 @@ function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points }
     );
 }
 
-function TxRx900Graph({ antenna900, running, setRunning, reset, points }) {
+function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors }) {
     const [time, setTime] = useState([]);
     const [TxData900, setTxData900] = useState([]);
     const [RxData900, setRxData900] = useState([]);
@@ -221,8 +232,8 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points }) {
                 width={500}
                 skipAnimation
                 series={[
-                { data:TxData900, id: 'Tx 900MHz', label: 'Tx 900MHz (Mbps)'},
-                { data:RxData900, id: 'Rx 900MHz', label: 'Rx 900MHz (Mbps)'},
+                { data:TxData900, color: colors["900"], id: 'Tx 900MHz', label: 'Tx 900MHz (Mbps)'},
+                { data:RxData900,  color: colors["900-alt"], id: 'Rx 900MHz', label: 'Rx 900MHz (Mbps)'},
                 ]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
                 yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
@@ -231,7 +242,7 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points }) {
     );
 }
 
-function TxRx5Graph({ antenna5, running, setRunning, reset, points }) {
+function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors }) {
     const [time, setTime] = useState([]);
     const [TxData5, setTxData5] = useState([]);
     const [RxData5, setRxData5] = useState([]);
@@ -263,8 +274,8 @@ function TxRx5Graph({ antenna5, running, setRunning, reset, points }) {
                 width={500}
                 skipAnimation
                 series={[
-                { data:TxData5, id: 'Tx 5GHz', label: 'Tx 5GHz (Mbps)'},
-                { data:RxData5, id: 'Rx 5GHz', label: 'Rx 5GHz (Mbps)'},
+                { data:TxData5, id: 'Tx 5GHz', color: colors["5"], label: 'Tx 5GHz (Mbps)'},
+                { data:RxData5, id: 'Rx 5GHz', color: colors["5-alt"], label: 'Rx 5GHz (Mbps)'},
                 ]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
                 yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
