@@ -145,7 +145,7 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points,
                     data:signalData5, color: colors["5"], id: 'Signal Strength 5GHz', label: 'Signal Strength 5GHz (dBm)'
                 },]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Signal Strength (dBm)', width: 50 }]}
+                yAxis={[{ label: 'Signal Strength (dBm)', width: 55 }]}
             />
         </Box>
     );
@@ -194,7 +194,7 @@ function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, 
                     data:noiseData5, color: colors["5"], id: 'Noise 5GHz', label: 'Noise 5GHz (dBm)'
                 },]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Noise (dBm)', width: 50 }]}
+                yAxis={[{ label: 'Noise (dBm)', width: 55 }]}
             />
         </Box>
     );
@@ -236,7 +236,7 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors }
                 { data:RxData900,  color: colors["900-alt"], id: 'Rx 900MHz', label: 'Rx 900MHz (Mbps)'},
                 ]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
+                yAxis={[{ label: 'Tx/Rx (Mbps)', width: 55 }]}
             />
         </Box>
     );
@@ -278,7 +278,7 @@ function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors }) {
                 { data:RxData5, id: 'Rx 5GHz', color: colors["5-alt"], label: 'Rx 5GHz (Mbps)'},
                 ]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
+                yAxis={[{ label: 'Tx/Rx (Mbps)', width: 55 }]}
             />
         </Box>
     );
