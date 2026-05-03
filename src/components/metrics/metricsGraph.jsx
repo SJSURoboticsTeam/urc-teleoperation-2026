@@ -10,7 +10,7 @@ export default function MetricsGraph() {
     const [reset, setReset] = useState(0);
     const [antenna900, antenna5] = useAntennaData();
 
-    const [points, setPoints] = useState('');
+    const [points, setPoints] = useState(10);
 
     const handleChange = (event) => {
         setPoints(event.target.value);
@@ -27,18 +27,19 @@ export default function MetricsGraph() {
                 </Button>
                 <Button 
                     variant="contained" 
+                    color="warning"
                     onClick={() => setReset(c => c + 1)}
                     sx={{width: '125px', fontSize: 16}}>
-                    reset all
+                    CLEAR ALL
                 </Button>
-                <Box sx={{ minWidth: 100 }}>
-                    <FormControl fullWidth>
+                <Box sx={{ minWidth: 110 }}>
+                    <FormControl size="small" fullWidth>
                         <InputLabel id="demo-simple-select-label">Points</InputLabel>
                         <Select
                         labelId="demo-simple-select-label"
                         id="demo-simple-select"
                         value={points}
-                        label="Points"
+                        label="POINTS"
                         onChange={handleChange}
                         >
                             <MenuItem value={10}>Ten</MenuItem>
