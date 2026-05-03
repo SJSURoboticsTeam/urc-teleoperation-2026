@@ -224,7 +224,7 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points }) {
                 { data:RxData900, id: 'Rx 900MHz', label: 'Rx 900MHz (Mbps)'},
                 ]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
+                yAxis={[{ label: 'Tx/Rx 900MHz (Mbps)', width: 50 }]}
             />
         </Box>
     );
@@ -266,7 +266,7 @@ function TxRx5Graph({ antenna5, running, setRunning, reset, points }) {
                 { data:RxData5, id: 'Rx 5GHz', label: 'Rx 5GHz (Mbps)'},
                 ]}
                 xAxis={[{ type: 'linear', data: time, label: 'Time (s)' }]}
-                yAxis={[{ label: 'Tx/Rx (Mbps)', width: 50 }]}
+                yAxis={[{ label: 'Tx/Rx 5GHz (Mbps)', width: 50 }]}
             />
         </Box>
     );
