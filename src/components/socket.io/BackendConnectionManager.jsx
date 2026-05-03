@@ -410,7 +410,7 @@ export default function NavConnectionStatus({
             border: "1px solid gray",
             padding: "10px",
             width: "300px",
-            borderRadius: "4px",
+            borderRadius: "12px",
           }}
         >
           <Box
