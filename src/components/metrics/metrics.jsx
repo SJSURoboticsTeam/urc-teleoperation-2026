@@ -266,9 +266,14 @@ export default function Metrics({ openPane, setOpenPane }) {
                   </Box>
                 </div>
               ) : (
+                <div>
                 <Typography sx={{ color: "black" }}>
-                  {antenna900.status}{" "}
+                  900: {antenna900.status}{" "}
                 </Typography>
+                <Typography sx={{ color: "black" }}>
+                  5: {antenna5.status}{" "}
+                </Typography>
+                </div>
               )}
 
               <hr className="border-t border-gray-300 my-4" />
