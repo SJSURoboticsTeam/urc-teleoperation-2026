@@ -125,7 +125,8 @@ export default function Map() {
       center: target,
       zoom: 17,
       pitch: 60,
-      bearing: -20
+      bearing: -20,
+      maxPitch: 80
     });
     mapRef.current = map;
 
