@@ -69,4 +69,3 @@ resistor in "on" position off rover
 can bit rate of 1Mbit
 
 make sure CAN ids are correct
-
