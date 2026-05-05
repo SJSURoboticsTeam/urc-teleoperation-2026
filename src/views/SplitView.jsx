@@ -21,6 +21,8 @@ export default function DriveView({ CurrentView, selectedElements }) {
     Array(DEFAULT_CAMERA_NUM).fill(DEFAULT_CAMERA),
   );
   const [hydrated, setHydrated] = useState(false);
+  const dragRafRef = useRef(null);
+  const dragClientXRef = useRef(0);
 
   useEffect(() => {
     try {
@@ -53,17 +55,32 @@ export default function DriveView({ CurrentView, selectedElements }) {
 
     container.setPointerCapture?.(pointerId);
 
-    const onPointerMove = (ev) => {
+    const commitDragPosition = () => {
+      dragRafRef.current = null;
       const rect = container.getBoundingClientRect();
-      let pct = ((ev.clientX - rect.left) / rect.width) * 100;
+      let pct = ((dragClientXRef.current - rect.left) / rect.width) * 100;
       pct = Math.min(100, Math.max(35, pct));
       setLeftPct(pct);
+    };
+
+    const onPointerMove = (ev) => {
+      // Throttle layout + MapLibre resizes to ~1x per animation frame.
+      dragClientXRef.current = ev.clientX;
+      if (dragRafRef.current == null) {
+        dragRafRef.current = requestAnimationFrame(commitDragPosition);
+      }
     };
 
     const onPointerUp = () => {
       container.releasePointerCapture?.(pointerId);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      if (dragRafRef.current != null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+      // Let MapLibre do a single re-measure at the end of the drag to avoid flicker.
+      window.dispatchEvent(new Event("resize"));
     };
 
     window.addEventListener("pointermove", onPointerMove);
