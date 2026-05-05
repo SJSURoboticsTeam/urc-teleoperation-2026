@@ -241,6 +241,7 @@ export default function TopAppBar({
         sx={{
           "& .MuiDrawer-paper": {
             width: 240,
+            borderRadius: "12px"
           },
         }}
       >
