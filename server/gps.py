@@ -1,4 +1,3 @@
-import socket
 import random
 import serial
 from dataclasses import dataclass
@@ -32,7 +31,7 @@ class ZEDF9P:
         self._read_all_available_sentences()
         return self.__gnrmc
 
-    def process_gnrmc(self, line: str) -> None:
+    def process_gnrmc(self, line: str) -> GNRMC:
         # parse the gnrmc sentences according to
         # https://www.sparkfun.com/datasheets/GPS/NMEA%20Reference%20Manual-Rev2.1-Dec07.pdf
         line = line.strip()
@@ -90,10 +89,16 @@ class ZEDF9P:
         for line in self.lines:
             if "$GNRMC" in line:
                 self.__gnrmc = self.process_gnrmc(line)
+    
+    def close(self) -> None:
+        self.gps_port.close()
 
 async def read_gps_data(serial_ports, sio):
     while True:
         gps = serial_ports['gps']
+        if gps is None:
+            await asyncio.sleep(0.5)  # Sleep briefly while waiting for GPS to connect
+            continue
         try:
             if gps.has_gps_lock():
                 position = gps.get_position()
@@ -105,11 +110,6 @@ async def read_gps_data(serial_ports, sio):
                 # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
             else:
                 print("No GPS lock")
-                data = {
-                        'latitude': "???",
-                        'longitude': "???",
-                }
-                await sio.emit("gpsData", data)
             # time.sleep(0.01)
         except Exception as e:
             print(f'GPS thread error: {e}')

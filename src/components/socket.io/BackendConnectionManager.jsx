@@ -373,7 +373,7 @@ export default function NavConnectionStatus({
           gpsState: "active",
         }));
       } else {
-        enqueueSnackbar("GPS didn't connect, auto-updating to current state");
+        enqueueSnackbar("GPS didn't connect. Refreshing...", { variant: 'error' });
         requestCanInfo();
       }
     });

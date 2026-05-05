@@ -1,4 +1,4 @@
-import React, { use, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -28,7 +28,7 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
             onChange={onToggle}
             sx={{
               "& .MuiSwitch-thumb": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
-              "& .MuiSwitch-track": { bgcolor: isLockedOn ? "#0a890e)" : "#890707" },
+              "& .MuiSwitch-track": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
             }}
           />
         }
@@ -74,8 +74,14 @@ class LockOnControl {
     );
   }
   onRemove() {
-    this._container.parentNode.removeChild(this._container);
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
     this._root = null;
+    this._container = null;
   }
 }
 
@@ -195,7 +201,7 @@ export default function Map() {
       signalDiff.current = (newTime - lastSignalTime.current) / 1000;
       lastSignalTime.current = newTime;
 
-      console.log("Received GPS data:", data);
+      // console.log("Received GPS data:", data);
       setCoordinates({
         long: data.longitude,
         lat: data.latitude,
@@ -217,7 +223,7 @@ export default function Map() {
         clearTimeout(signalTimeout.current);
       }
     }
-  })
+  }, []);
 
   useEffect(() => {
     marker.current.setLngLat([coordinates.long, coordinates.lat]);
