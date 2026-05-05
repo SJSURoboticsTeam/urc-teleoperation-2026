@@ -16,8 +16,6 @@ from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_driv
 # ex: drive has the canserial object,
 # while driveId holds the canopener name so frontend can sync with backend status
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
-from uart_drive_serial import UartDriveSerial
-from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
@@ -28,11 +26,19 @@ else:
 
 
 
-from uart_drive_serial import UartDriveSerial
-from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
-
 # ex: drive has the canserial object,
 # while driveId holds the canopener name so frontend can sync with backend status
+from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+
+# run python 3 py_server.py --offline to send fake data instead for ssh
+offline = "--offline" in sys.argv
+if (offline):
+    print("Offline mode enabled, using mock data instead")
+else:
+    print("Online mode, GPS ready... ")
+
+
+
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
@@ -117,6 +123,9 @@ print("Preparing for CAN...")
 
 #print("Preparing for CAN...")
 print("Preparing for serial connections...")
+print("Preparing for CAN...")
+
+
 
 
 # =================== CAN connections ===================
@@ -316,6 +325,8 @@ gps_task_started = False
 arm_position_task_started = False
 drive_heartbeat_started = False
 drive_heartbeat_started = False
+gps_task_started = False
+arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -337,8 +348,6 @@ async def connect(sid,environ):
     global gps_task_started
     global async_ssh_started
     global arm_position_task_started
-    global cpu_started
-    global drive_heartbeat_started
     global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
@@ -363,6 +372,19 @@ async def connect(sid,environ):
     if not drive_heartbeat_started:
         drive_heartbeat_started = True
         sio.start_background_task(send_drive_heartbeat, serial_ports)
+        sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not arm_position_task_started:
+        arm_position_task_started = True
+        # sio.start_background_task(request_arm_position_loop, serial_ports)
+    if not gps_task_started:
+        gps_task_started = True
+        if offline:
+            sio.start_background_task(send_fake_gps_data, sio)
+        else:
+            sio.start_background_task(read_gps_data, serial_ports, sio)
+    if not async_ssh_started:
+       async_ssh_started = True
+       #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
