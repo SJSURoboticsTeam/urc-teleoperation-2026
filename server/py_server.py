@@ -111,7 +111,7 @@ async def getCanInfo(sid):
     # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
-        #print(f"{port.device} ")
+        print(f"{port.device} ")
 
         if(port.device.find("serial") != -1 or port.device.find("COM") != -1):
             # loose check to remove system serial interfaces
