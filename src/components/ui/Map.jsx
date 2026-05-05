@@ -171,17 +171,15 @@ export default function Map() {
 
     map.on("load", onLoad);
 
-    // ResizeObserver keeps the map in sync with container size changes
-    const ro = new ResizeObserver(() => {
-      if (map && typeof map.resize === "function") map.resize();
-    });
-    ro.observe(container);
+    // Ensure first paint uses the correct container size.
+    const initialResizeRaf = requestAnimationFrame(() => map.resize());
 
-    // ensure initial sizing
-    setTimeout(() => map.resize(), 0);
+    const onWindowResize = () => map.resize();
+    window.addEventListener("resize", onWindowResize);
 
     return () => {
-      ro.disconnect();
+      cancelAnimationFrame(initialResizeRaf);
+      window.removeEventListener("resize", onWindowResize);
       map.off("load", onLoad);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
@@ -251,5 +249,5 @@ export default function Map() {
   }, [coordinates, isLockedOn]);
 
   // Use full height so the map fills any explicit-height parent container
-  return <div ref={mapContainer} className="w-full h-full bg-gray-200" />;
+  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
 }
