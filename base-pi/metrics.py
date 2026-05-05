@@ -3,17 +3,32 @@ import asyncssh
 from dotenv import load_dotenv
 import os
 import asyncio
-import config # holds config values
 import psutil
 import random
 from pathlib import Path
 
-numClients = 0
+#-----------------------#
+# User Config
+silenceSSHErrors = False
+AntennaPollingRate = 2
+RpiPollingRate = 2
+
+# [antenna] : ip, socketio topic name
+antennadata = {
+    "900MHZ": {"ip": "192.168.1.20", "topic": "antennastats900"},
+    "5GHZ": {"ip": "192.168.5.20", "topic": "antennastats5"}
+}
+#-----------------------#
+
 
 # get data from secrets
 load_dotenv()  # loads from .env
 username = os.getenv("SSH_USER")
 password = os.getenv("SSH_PASSWORD")
+
+
+# var initialization
+numClients = 0
 
 
 async def cpuloop(sio):
@@ -45,10 +60,10 @@ async def cpuloop(sio):
             print("Error with metrics!", e)
             await sio.emit('pistats', {'status': "ERROR"})
         #print("Sleeping")
-        await asyncio.sleep(config.RpiPollingRate)
+        await asyncio.sleep(RpiPollingRate)
 
 
-async def asyncsshloop(sio):
+async def asyncsshloop(sio, antenna):
     conn = None
 
     while True:
@@ -62,7 +77,7 @@ async def asyncsshloop(sio):
             if conn is None:
                 async with asyncio.timeout(10):
                     conn = await asyncssh.connect(
-                        "192.168.1.20",
+                        antennadata[antenna]["ip"], # from the array, find the antenna, get its ip
                         username=username,
                         password=password,
                     )
@@ -90,10 +105,10 @@ async def asyncsshloop(sio):
                 "efficiency" : parsed.get('wlanPollingCapacity')
             }
 
-            await sio.emit('antennastats', data)
+            await sio.emit(antennadata[antenna]["topic"], data)
 
         except Exception as e:
-            if not config.silenceSSHErrors:
+            if not silenceSSHErrors:
                 print("SSH error:", e)
 
             await sio.emit('antennastats', {'status': "ERROR: OFFLINE"})
@@ -104,26 +119,38 @@ async def asyncsshloop(sio):
                 await conn.wait_closed()
                 conn = None
 
-        await asyncio.sleep(config.AntennaPollingRate)
+        await asyncio.sleep(AntennaPollingRate)
 
 
 
 # function to generate and send fake data, pass in --offline flag to server to use
-async def send_fake_antenna_stats(sio):
+async def send_fake_antenna_stats(sio,antenna):
     while True:
-        data = {
-            'status': "GOOD", # Reports good if link is successful
-            'dbm': random.randint(-90, -30),             # signal strength
-            'txrate': round(random.uniform(1, 10), 1),  # Mbps
-            'rxrate': round(random.uniform(1, 10), 1),  # Mbps
-            'freq': random.choice([904, 914, 924]),   # MHz
-            'freqwidth': random.choice([3, 5, 8, 20]),
-            'noise': random.randint(-100, -70),          # dBm
-            'efficiency': round(random.uniform(0, 100), 2)  # %
-        }
-
-        await sio.emit('antennastats', data)
-        await asyncio.sleep(config.AntennaPollingRate)
+        if (antenna == "900MHZ"):
+            data = {
+                'status': "GOOD", # Reports good if link is successful
+                'dbm': random.randint(-100, -45),             # signal strength
+                'txrate': round(random.uniform(1, 7), 1),  # Mbps
+                'rxrate': round(random.uniform(1, 7), 1),  # Mbps
+                'freq': random.choice([907, 914, 924]),   # MHz
+                'freqwidth': random.choice([3, 5, 8]),
+                'noise': random.randint(-100, -70),          # dBm
+                'efficiency': round(random.uniform(0, 100), 2)  # %
+            }
+        else:
+            data = {
+                'status': "GOOD", # Reports good if link is successful
+                'dbm': random.randint(-75, -30),             # signal strength
+                'txrate': round(random.uniform(15, 45), 1),  # Mbps
+                'rxrate': round(random.uniform(15, 45), 1),  # Mbps
+                'freq': random.choice([5745, 5765, 5785]),   # MHz
+                'freqwidth': random.choice([10, 20, 40]),
+                'noise': random.randint(-100, -70),          # dBm
+                'efficiency': round(random.uniform(0, 100), 2)  # %
+            }
+        # antennadata[antenna]["topic"] is the topic name
+        await sio.emit(antennadata[antenna]["topic"], data)
+        await asyncio.sleep(AntennaPollingRate)
 
 
 

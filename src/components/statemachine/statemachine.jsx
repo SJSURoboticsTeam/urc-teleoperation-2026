@@ -34,6 +34,7 @@ export default function StateMachine({ openPane, setOpenPane, missionMode }) {
               border: "1px solid gray",
               padding: "10px",
               minWidth: "250px",
+              borderRadius: "12px",
             }}
           >
     
