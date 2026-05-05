@@ -8,7 +8,7 @@ import signal
 import sys
 from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
-from arm import read_arm_can_loop, register_arm_events
+from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 
@@ -168,18 +168,26 @@ async def connectArm(sid,data):
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
-    if serial_ports["armId"]!= "disconnect":
-        print("ARM WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
     try:
+        if serial_ports["arm"] is not None:
+            try:
+                serial_ports["arm"].close()
+            except Exception:
+                pass
+
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+
+        print("Connecting to " + str(data))
         serial_ports["arm"] = CanSerial(data)
         serial_ports["armId"] = data
         print("Arm connected.")
-        return("OK")
+        return "OK"
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
-        return("ERROR")
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("FAILURE TO CONNECT ARM: " + str(e))
+        return "ERROR"
 
 @sio.event
 async def disconnectArm(sid):
@@ -188,17 +196,16 @@ async def disconnectArm(sid):
     try:
         if serial_ports["arm"]:
             serial_ports["arm"].close()
-            serial_ports["arm"] = None
-            serial_ports["armId"] = "disconnect"
-            print("Arm serial closed.")
-            return("OK")
-        else:
-            print("Arm was never connected.")
-            return("ERROR")
+
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("Arm serial closed.")
+        return "OK"
     except Exception:
-        print("ARM WAS NOT DISCONNECTED!!!")
-        return("ERROR")
-        pass
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
+        return "ERROR"
 
 @sio.event
 async def connectScience(sid,data):
@@ -290,6 +297,7 @@ can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
 gps_task_started = False
+arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -309,6 +317,7 @@ async def connect(sid,environ):
     global arm_task_started
     global gps_task_started
     global async_ssh_started
+    global arm_position_task_started
     global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
@@ -324,7 +333,10 @@ async def connect(sid,environ):
         sio.start_background_task(read_drive_can_loop,serial_ports)
     if not arm_task_started:
         arm_task_started = True
-        sio.start_background_task(read_arm_can_loop, serial_ports)
+        sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not arm_position_task_started:
+        arm_position_task_started = True
+        # sio.start_background_task(request_arm_position_loop, serial_ports)
     if not gps_task_started:
         gps_task_started = True
         if offline:
