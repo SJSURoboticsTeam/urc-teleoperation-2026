@@ -124,33 +124,38 @@ async def asyncsshloop(sio, antenna):
 
 
 # function to generate and send fake data, pass in --offline flag to server to use
-async def send_fake_antenna_stats(sio,antenna):
+async def send_fake_antenna_stats(sio, antenna):
+    data = None
+
     while True:
-        if (antenna == "900MHZ"):
-            data = {
-                'status': "GOOD", # Reports good if link is successful
-                'dbm': random.randint(-100, -45),             # signal strength
-                'txrate': round(random.uniform(1, 7), 1),  # Mbps
-                'rxrate': round(random.uniform(1, 7), 1),  # Mbps
-                'freq': random.choice([907, 914, 924]),   # MHz
-                'freqwidth': random.choice([3, 5, 8]),
-                'noise': random.randint(-100, -70),          # dBm
-                'efficiency': round(random.uniform(0, 100), 2)  # %
-            }
-        else:
-            data = {
-                'status': "GOOD", # Reports good if link is successful
-                'dbm': random.randint(-75, -30),             # signal strength
-                'txrate': round(random.uniform(15, 45), 1),  # Mbps
-                'rxrate': round(random.uniform(15, 45), 1),  # Mbps
-                'freq': random.choice([5745, 5765, 5785]),   # MHz
-                'freqwidth': random.choice([10, 20, 40]),
-                'noise': random.randint(-100, -70),          # dBm
-                'efficiency': round(random.uniform(0, 100), 2)  # %
-            }
-        # antennadata[antenna]["topic"] is the topic name
+        # regenerate 1/5 of the time (or first run)
+        if data is None or random.randint(1, 5) == 1:
+            if antenna == "900MHZ":
+                data = {
+                    "status": "GOOD",
+                    "dbm": random.randint(-100, -45),
+                    "txrate": round(random.uniform(1, 7), 1),
+                    "rxrate": round(random.uniform(1, 7), 1),
+                    "freq": random.choice([907, 914, 924]),
+                    "freqwidth": random.choice([3, 5, 8]),
+                    "noise": random.randint(-100, -70),
+                    "efficiency": round(random.uniform(0, 100), 2),
+                }
+            else:
+                data = {
+                    "status": "GOOD",
+                    "dbm": random.randint(-75, -30),
+                    "txrate": round(random.uniform(15, 45), 1),
+                    "rxrate": round(random.uniform(15, 45), 1),
+                    "freq": random.choice([5745, 5765, 5785]),
+                    "freqwidth": random.choice([10, 20, 40]),
+                    "noise": random.randint(-100, -70),
+                    "efficiency": round(random.uniform(0, 100), 2),
+                }
+
+        # always emit (even if unchanged)
         await sio.emit(antennadata[antenna]["topic"], data)
-        await asyncio.sleep(AntennaPollingRate)
+        await asyncio.sleep(1)
 
 
 
