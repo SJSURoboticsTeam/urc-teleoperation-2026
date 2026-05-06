@@ -129,13 +129,15 @@ async def send_fake_antenna_stats(sio, antenna):
         freq = random.choice([907, 914, 924])
         freqwidth = random.choice([3, 5, 8])
         noise = random.randint(-100, -70)
+        txrate = round(random.uniform(1, 7), 1)
+        rxrate = round(random.uniform(1, 7), 1)
 
         def generate_data():
             return {
                 "status": "GOOD",
                 "dbm": random.randint(-100, -45),
-                "txrate": round(random.uniform(1, 7), 1),
-                "rxrate": round(random.uniform(1, 7), 1),
+                "txrate": txrate,
+                "rxrate": rxrate,
                 "freq": freq,
                 "freqwidth": freqwidth,
                 "noise": noise,
@@ -145,13 +147,15 @@ async def send_fake_antenna_stats(sio, antenna):
         freq = random.choice([5745, 5765, 5785])
         freqwidth = random.choice([10, 20, 40])
         noise = random.randint(-100, -70)
+        txrate = round(random.uniform(15, 45), 1)
+        rxrate = round(random.uniform(15, 45), 1)
 
         def generate_data():
             return {
                 "status": "GOOD",
                 "dbm": random.randint(-75, -30),
-                "txrate": round(random.uniform(15, 45), 1),
-                "rxrate": round(random.uniform(15, 45), 1),
+                "txrate": txrate,
+                "rxrate": rxrate,
                 "freq": freq,
                 "freqwidth": freqwidth,
                 "noise": noise,
@@ -164,7 +168,13 @@ async def send_fake_antenna_stats(sio, antenna):
         if random.randint(1, 3) == 1:
             if random.randint(1, 6) == 1:
                 noise = random.randint(-100, -70)
-
+            if random.randint(1, 6) == 1:
+                if antenna == "900MHZ":
+                    txrate = round(random.uniform(15, 45), 1)
+                    rxrate = round(random.uniform(15, 45), 1)
+                else:
+                    txrate = round(random.uniform(1, 7), 1)
+                    rxrate = round(random.uniform(1, 7), 1)
             data = generate_data()
 
         await sio.emit(antennadata[antenna]["topic"], data)
