@@ -168,7 +168,7 @@ async def send_fake_antenna_stats(sio, antenna):
             data = generate_data()
 
         await sio.emit(antennadata[antenna]["topic"], data)
-        await asyncio.sleep(random.uniform(0.1, 3))
+        await asyncio.sleep(random.uniform(0.1, 5))
 
 
 

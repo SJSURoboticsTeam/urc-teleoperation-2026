@@ -1,5 +1,5 @@
 import { basesocket, robotsocket } from "../socket.io/socket";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Typography from "@mui/material/Typography";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import { useRobotSocketStatus, useBaseSocketStatus } from "../socket.io/socket";
@@ -15,6 +15,7 @@ export function useAntennaData() {
     efficiency: null,
     freq: null,
     freqw: null,
+    delay: null,
   });
   const [antenna5, setantennadata5] = useState({
     status: "NO DATA YET",
@@ -25,12 +26,45 @@ export function useAntennaData() {
     efficiency: null,
     freq: null,
     freqw: null,
+    delay: null,
   });
+
+  const timestamp900 = useRef();
+  const timestamp5 = useRef();
+
+  //900 mhz
+  useEffect(() => {
+    let interval;
+    // send a ping to the server every 750ms and measure latency
+    function checkLatency5() {
+      setantennadata900((prev) => ({
+        ...prev,
+        delay: Math.round(((Date.now() - timestamp900.current) / 1000))
+      }));
+    }
+    interval = setInterval(checkLatency5, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+    //5 ghz
+  useEffect(() => {
+    let interval;
+    // send a ping to the server every 750ms and measure latency
+    function checkLatency5() {
+      setantennadata5((prev) => ({
+        ...prev,
+        delay: Math.round(((Date.now() - timestamp5.current) / 1000) )
+      }));
+    }
+    interval = setInterval(checkLatency5, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handler900 = (data) => {
       // console.log("antenna data:", data);
-      setantennadata900({
+      setantennadata900( (prev) => ({
+        ...prev,
         status: data.status,
         roverRSSI: data.dbm,
         txrate: data.txrate,
@@ -39,12 +73,14 @@ export function useAntennaData() {
         efficiency: data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
-      });
+      }));
+      timestamp900.current = Date.now();
     };
 
     const handler5 = (data) => {
       // console.log("antenna data:", data);
-      setantennadata5({
+      setantennadata5( (prev) => ({
+        ...prev,
         status: data.status,
         roverRSSI: data.dbm,
         txrate: data.txrate,
@@ -53,7 +89,8 @@ export function useAntennaData() {
         efficiency: data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
-      });
+      }));
+      timestamp5.current = Date.now();
     };
 
     basesocket.on("antennastats900", handler900);
@@ -263,16 +300,24 @@ export default function Metrics({ openPane, setOpenPane }) {
                     <Typography sx={{ color: "black" }}>
                       {antenna5.freqw} MHz
                     </Typography>
+
+                    <Typography sx={{ color: "black" }}>Delay</Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna900.delay} s
+                    </Typography>
+                    <Typography sx={{ color: "black" }}>
+                      {antenna5.delay} s
+                    </Typography>
                   </Box>
                 </div>
               ) : (
                 <div>
-                <Typography sx={{ color: "black" }}>
-                  900: {antenna900.status}{" "}
-                </Typography>
-                <Typography sx={{ color: "black" }}>
-                  5: {antenna5.status}{" "}
-                </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    900: {antenna900.status}{" "}
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    5: {antenna5.status}{" "}
+                  </Typography>
                 </div>
               )}
 
