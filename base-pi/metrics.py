@@ -102,7 +102,7 @@ async def asyncsshloop(sio, antenna):
                 'freq': parsed.get('centerFreq'),
                 'freqwidth': parsed.get('chanbw'),
                 'noise': parsed.get('noise'),
-                "efficiency" : parsed.get('wlanPollingCapacity')
+                "efficiency" : 0
             }
 
             await sio.emit(antennadata[antenna]["topic"], data)
