@@ -436,9 +436,6 @@ export default function AutonomyControls() {
   // Main UI render
   return (
     <Box sx={{ width: "100%", maxWidth: 1100, position: "relative" }}>
-      <Typography className="text-md font-semibold">
-        Autonomy Controls
-      </Typography>
 
       {/* Start autonomy confirmation dialog */}
       <StartPopup
