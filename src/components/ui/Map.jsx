@@ -1,20 +1,117 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { robotsocket } from "../socket.io/socket";
+import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
+
+function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 180,
+      }}
+    >
+      <Typography variant="body2">Latitude: {lat}</Typography>
+      <Typography variant="body2">Longitude: {long}</Typography>
+      <Typography variant="body2">Last Read: {lastRead}</Typography>
+      <FormControlLabel
+        control={
+          <Switch
+            checked={isLockedOn}
+            onChange={onToggle}
+            sx={{
+              "& .MuiSwitch-thumb": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
+              "& .MuiSwitch-track": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
+            }}
+          />
+        }
+        label={<Typography variant="body2">Lock-On</Typography>}
+      />
+    </Box>
+  );
+}
+
+class LockOnControl {
+  constructor(onToggle) {
+    this._latitude = null;
+    this._longitude = null;
+    this._lastRead = null;
+    this._isLockedOn = null;
+    this._onToggle = onToggle;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update("---", "---", "---", true);
+    return this._container;
+  }
+  update(lat, long, lastRead, isLockedOn) {
+    if(!this._root) {
+      return;
+    }
+    this._latitude = lat;
+    this._longitude = long;
+    this._lastRead = lastRead;
+    this._isLockedOn = isLockedOn;
+    this._root.render(
+      <LockOnControlUI
+        lat = {lat}  
+        long = {long}  
+        lastRead = {lastRead}  
+        isLockedOn = {isLockedOn}  
+        onToggle = {this._onToggle}
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
 
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
+  const marker = useRef(null);
+  const controlRef = useRef(null);
+  const lastSignalTime = useRef(Date.now()); 
+  const signalDiff = useRef();
+  const signalTimeout = useRef(null);
+
+  const [coordinates, setCoordinates] = useState({
+    long: -121.881194,
+    lat: 37.336847,
+    receive: false,
+  });
+
+  const [isLockedOn, setIsLockedOn] = useState(true);
 
   useEffect(() => {
-    const target = [-121.881194, 37.336847]; // San Jose area
+    const target = [coordinates.long, coordinates.lat];
+    //const target = [-121.881194, 37.336847]; // San Jose area 
     //const target = [-110.768401, 38.372207]; // Utah
     // https://www.gps-coordinates.net/ for coordinates
 
     const urls =
       import.meta.env.MODE === "production" || import.meta.env.MODE === "prod"
         ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
-        : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+        : "https://tiles.openfreemap.org/styles/bright";
     // Use local tileserver in production, demo for off-network development
 
     if (mapRef.current) return;
@@ -26,29 +123,27 @@ export default function Map() {
       container,
       style: urls,
       center: target,
-      zoom: 3,
-      pitch: 0,
+      zoom: 17,
+      pitch: 60,
+      bearing: -20,
+      maxPitch: 80
     });
     mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    new maplibregl.Marker({ color: "#ff0000" })
+    marker.current = new maplibregl.Marker({ color: "#ff0000" })
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
       .addTo(map);
 
+    const lockOnControl = new LockOnControl(() =>
+      setIsLockedOn((prev) => !prev)
+    );
+
     const onLoad = () => {
-      // Smooth camera fly-in
-      map.flyTo({
-        center: target,
-        zoom: 18,
-        speed: 3,
-        curve: 1,
-        essential: true,
-        pitch: 60,
-        bearing: -20,
-      });
+      map.addControl(lockOnControl, "bottom-left");
+      controlRef.current = lockOnControl;
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -77,17 +172,15 @@ export default function Map() {
 
     map.on("load", onLoad);
 
-    // ResizeObserver keeps the map in sync with container size changes
-    const ro = new ResizeObserver(() => {
-      if (map && typeof map.resize === "function") map.resize();
-    });
-    ro.observe(container);
+    // Ensure first paint uses the correct container size.
+    const initialResizeRaf = requestAnimationFrame(() => map.resize());
 
-    // ensure initial sizing
-    setTimeout(() => map.resize(), 0);
+    const onWindowResize = () => map.resize();
+    window.addEventListener("resize", onWindowResize);
 
     return () => {
-      ro.disconnect();
+      cancelAnimationFrame(initialResizeRaf);
+      window.removeEventListener("resize", onWindowResize);
       map.off("load", onLoad);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
@@ -97,6 +190,65 @@ export default function Map() {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = (data) => {
+      if (signalTimeout.current) {
+        clearTimeout(signalTimeout.current);
+      }
+
+      const newTime = Date.now();
+      signalDiff.current = (newTime - lastSignalTime.current) / 1000;
+      lastSignalTime.current = newTime;
+
+      // console.log("Received GPS data:", data);
+      setCoordinates({
+        long: data.longitude,
+        lat: data.latitude,
+        receive: true,
+      });
+
+      signalTimeout.current = setTimeout(() => {
+        setCoordinates((prev) => ({ ...prev, receive: false }));
+      }, 3000);
+    };
+
+    robotsocket.on("gpsData", handler);
+    signalTimeout.current = setTimeout(() => {
+      setCoordinates((prev) => ({ ...prev, receive: false }));
+    }, 3000);
+    return () => {
+      robotsocket.off("gpsData", handler);
+      if (signalTimeout.current) {
+        clearTimeout(signalTimeout.current);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    marker.current.setLngLat([coordinates.long, coordinates.lat]);
+
+    if(controlRef.current) {
+      controlRef.current.update(
+        coordinates.lat.toFixed(4),
+        coordinates.long.toFixed(4),
+        coordinates.receive ? signalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
+        isLockedOn,
+      );
+    }
+
+    if(isLockedOn && mapRef.current) {
+      mapRef.current.easeTo({
+        center: [coordinates.long, coordinates.lat],
+        speed: 3,
+        curve: 1,
+        essential: true,
+      });
+    }
+    return () => {
+
+    }
+  }, [coordinates, isLockedOn]);
+
   // Use full height so the map fills any explicit-height parent container
-  return <div ref={mapContainer} className="w-full h-full bg-gray-200" />;
+  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
 }

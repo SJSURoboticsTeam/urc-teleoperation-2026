@@ -85,9 +85,11 @@ async def connect(sid,environ):
     if not async_ssh_started:
         async_ssh_started = True
         if offline:
-            sio.start_background_task(send_fake_antenna_stats,sio)
+            sio.start_background_task(send_fake_antenna_stats,sio,"900MHZ")
+            sio.start_background_task(send_fake_antenna_stats,sio,"5GHZ")
         else:
-            sio.start_background_task(asyncsshloop,sio)
+            sio.start_background_task(asyncsshloop, sio, "900MHZ")
+            sio.start_background_task(asyncsshloop, sio, "5GHZ")
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

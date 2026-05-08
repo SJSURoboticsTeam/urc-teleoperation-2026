@@ -8,15 +8,26 @@ import signal
 import sys
 from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
-from arm import read_arm_can_loop, register_arm_events
+from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-# ex: drive has the canserial object,
-# while driveId holds the canopener name so frontend can sync with backend status
+from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+
+# run python 3 py_server.py --offline to send fake data instead for ssh
+offline = "--offline" in sys.argv
+if (offline):
+    print("Offline mode enabled, using mock data instead")
+else:
+    print("Online mode, GPS ready... ")
+
+
+
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
     "arm": None,
     "armId" : "disconnect",
+    "gps": None,
+    "gpsId" : "disconnect",
     "science": None,
     "scienceId" : "disconnect"
 }
@@ -67,6 +78,16 @@ def shutdown():
     except Exception:
         print("SCIENCE WAS NOT DISCONNECTED!!!")
         pass
+    #gps
+    try:
+        if serial_ports["gps"]:
+            serial_ports["gps"].close()
+            print("GPS serial closed.")
+        else:
+            print("GPS was never connected.")
+    except Exception:
+        print("GPS WAS NOT DISCONNECTED!!!")
+        pass
     sys.exit(0)
 # =================== Setup, CAN connections ===================
 
@@ -82,6 +103,8 @@ app = socketio.ASGIApp(sio)
 print("Preparing for CAN...")
 
 
+
+
 # =================== CAN connections ===================
 @sio.event
 async def getCanInfo(sid):
@@ -90,7 +113,7 @@ async def getCanInfo(sid):
     for port in list_ports.comports():
         #print(f"{port.device} ")
 
-        if(port.device.find("serial") != -1):
+        if(port.device.find("serial") != -1 or port.device.find("COM") != -1):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
     data = {
@@ -99,6 +122,7 @@ async def getCanInfo(sid):
     'driveId' : serial_ports["driveId"],
     'armId' : serial_ports["armId"],
     'scienceId' : serial_ports["scienceId"],
+    'gpsId' : serial_ports["gpsId"],
     }
     return data
 
@@ -144,18 +168,26 @@ async def connectArm(sid,data):
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
-    if serial_ports["armId"]!= "disconnect":
-        print("ARM WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
     try:
+        if serial_ports["arm"] is not None:
+            try:
+                serial_ports["arm"].close()
+            except Exception:
+                pass
+
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+
+        print("Connecting to " + str(data))
         serial_ports["arm"] = CanSerial(data)
         serial_ports["armId"] = data
         print("Arm connected.")
-        return("OK")
+        return "OK"
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
-        return("ERROR")
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("FAILURE TO CONNECT ARM: " + str(e))
+        return "ERROR"
 
 @sio.event
 async def disconnectArm(sid):
@@ -164,17 +196,16 @@ async def disconnectArm(sid):
     try:
         if serial_ports["arm"]:
             serial_ports["arm"].close()
-            serial_ports["arm"] = None
-            serial_ports["armId"] = "disconnect"
-            print("Arm serial closed.")
-            return("OK")
-        else:
-            print("Arm was never connected.")
-            return("ERROR")
+
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("Arm serial closed.")
+        return "OK"
     except Exception:
-        print("ARM WAS NOT DISCONNECTED!!!")
-        return("ERROR")
-        pass
+        serial_ports["arm"] = None
+        serial_ports["armId"] = "disconnect"
+        print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
+        return "ERROR"
 
 @sio.event
 async def connectScience(sid,data):
@@ -213,6 +244,42 @@ async def disconnectScience(sid):
         return("ERROR")
         pass
 
+# =================== GPS connections ===================
+@sio.event
+async def connectGPS(sid, data):
+    # connect to gps serial port
+    global serial_ports
+    if serial_ports["gpsId"] != "disconnect":
+        print("GPS WAS ALREADY CONNECTED!")
+        return("ERROR")
+    print("Connecting to " + str(data))
+    try:
+        serial_ports["gps"] = ZEDF9P(data, 57600) 
+        serial_ports["gpsId"] = data
+        print("GPS connected.")
+        return("OK")
+    except Exception as e:
+        print("FAILURE TO CONNECT GPS: " + str(e))
+        return("ERROR")
+
+@sio.event
+async def disconnectGPS(sid):
+    global serial_ports
+    try:
+        if serial_ports["gps"]:
+            serial_ports["gps"].close()
+            serial_ports["gps"] = None
+            serial_ports["gpsId"] = "disconnect"
+            print("GPS serial closed.")
+            return("OK")
+        else:
+            print("GPS was never connected.")
+            return("ERROR")
+    except Exception:
+        print("GPS WAS NOT DISCONNECTED!!!")
+        return("ERROR")
+        pass
+
 @sio.event
 async def E_STOP(sid):
     # shut everything down
@@ -222,13 +289,15 @@ async def E_STOP(sid):
     # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(0.2, shutdown)
     return("OK")
-
+    
 
 # =================== Initialization ===================
 # Background task guard
 can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
+gps_task_started = False
+arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -246,6 +315,9 @@ async def connect(sid,environ):
     global can_error_message_started
     global drive_task_started
     global arm_task_started
+    global gps_task_started
+    global async_ssh_started
+    global arm_position_task_started
     global cpu_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
@@ -261,10 +333,22 @@ async def connect(sid,environ):
         sio.start_background_task(read_drive_can_loop,serial_ports)
     if not arm_task_started:
         arm_task_started = True
-        sio.start_background_task(read_arm_can_loop, serial_ports)
+        sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not arm_position_task_started:
+        arm_position_task_started = True
+        # sio.start_background_task(request_arm_position_loop, serial_ports)
+    if not gps_task_started:
+        gps_task_started = True
+        if offline:
+            sio.start_background_task(send_fake_gps_data, sio)
+        else:
+            sio.start_background_task(read_gps_data, serial_ports, sio)
     if not can_error_message_started:
         can_error_message_started = True
-        sio.start_background_task(send_drive_status_request,serial_ports)
+        sio.start_background_task(send_drive_status_request, serial_ports)
+    if not async_ssh_started:
+       async_ssh_started = True
+       #sio.start_background_task(asyncsshloop,sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
