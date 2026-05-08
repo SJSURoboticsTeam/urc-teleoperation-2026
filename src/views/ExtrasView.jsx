@@ -1,83 +1,40 @@
-import "react-resizable/css/styles.css"; // keep global resizable styles if used elsewhere
-import Box from "@mui/material/Box";
 import Map from "../components/ui/Map";
-import { useState } from "react";
-import Button from "@mui/material/Button";
+import DriveManualInput from "../components/gamepad/DriveWidget";
+import { useRef } from "react";
+import { Typography, Box } from "@mui/material";
+import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 
-// Fullscreen map view — map should receive its full height from the parent Box
-export default function ExtrasView() {
-  const [currentView, setcurrentView] = useState("Map");
+export default function DriveComponents({}) {
+  const containerRef = useRef(null);
 
-  function switcher() {
-    if (currentView == "Files") {
-      return <RecordingsView />;
-    } else if (currentView == "SpeedTest") {
-      return <SpeedTestView />;
-    } else if (currentView == "Map") {
-      return <Map />;
-    } else {
-      return "No pane selected.";
-    }
-  }
-  // Let the parent (App) control the viewport height. Use flex:1 so Map fills available space.
+  // Read global autonomy state
+  const { autonomyEnabled } = useAutonomyMode();
+
+  // Lock drive controls whenever autonomy is enabled
+  const controlsLocked = autonomyEnabled;
+
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex flex-row items-center justify-center">
-        <Button
-          style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("Map")}
-          variant="contained"
-        >
-          Large Map
-        </Button>
-        <Button
-          style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("Files")}
-          variant="contained"
-        >
-          Files
-        </Button>
-        <Button
-          style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("SpeedTest")}
-          variant="contained"
-        >
-          SpeedTest
-        </Button>
+    // top-level flex row that fills available height
+    <div
+      ref={containerRef}
+      className="flex flex-1 h-full min-h-0"
+      style={{ userSelect: "none" }}
+    >
+      <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
+        <div className="flex flex-row items-center justify-center gap-6">
+          {controlsLocked ? (
+            <Box sx={{ textAlign: "center", my: 2 }}>
+              <Typography color="error" fontWeight={700}>
+                Drive controls are disabled while autonomy is active.
+              </Typography>
+            </Box>
+          ) : (
+            <DriveManualInput />
+          )}
+        </div>
+
+        <Map />
       </div>
-      {switcher()}
     </div>
-  );
-}
-
-export function SpeedTestView() {
-  return (
-    <iframe
-      style={{
-        flex: 1,
-        minHeight: 0,
-        width: "100%",
-        border: "none",
-      }}
-      src="http://192.168.1.110:3000"
-      title="Speed Test"
-      allow="fullscreen; autoplay"
-    ></iframe>
-  );
-}
-
-export function RecordingsView() {
-  return (
-    <iframe
-      style={{
-        flex: 1,
-        minHeight: 0,
-        width: "100%",
-        border: "none",
-      }}
-      src="http://192.168.1.110:80"
-      title="Speed Test"
-      allow="fullscreen; autoplay"
-    ></iframe>
   );
 }

@@ -1,3 +1,4 @@
+import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import { green } from "@mui/material/colors";
 import { useState, useRef, useEffect } from "react";
 import "react-resizable/css/styles.css";
@@ -10,7 +11,7 @@ import { useRobotSocketStatus, robotsocket } from "../components/socket.io/socke
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
 
-// View for arm controls, handles both manual slider input and gamepad input (if connected)
+// View for arm controls, handles both manual slider input and gamepad input if connected
 export default function ArmView({}) {
   const [armCommands, setArmCommands] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
@@ -18,31 +19,56 @@ export default function ArmView({}) {
   const serverConnected = useRobotSocketStatus();
   const [txon, settxon] = useState(false);
 
+  // Read global autonomy state
+  const { autonomyEnabled } = useAutonomyMode();
+
+  // Lock this view whenever autonomy is enabled
+  const controlsLocked = autonomyEnabled;
+
   const armCommandsRef = useRef(armCommands);
+
   useEffect(() => {
     armCommandsRef.current = armCommands;
   }, [armCommands]);
 
-  // Continuously transmit arm commands
+  // If autonomy starts, immediately stop auto-transmission
   useEffect(() => {
-    if (!serverConnected || armConnectedOne == null || !txon) return;
+    if (controlsLocked) {
+      settxon(false);
+    }
+  }, [controlsLocked]);
+
+  // Continuously transmit arm commands only when controls are not locked
+  useEffect(() => {
+    if (
+      controlsLocked ||
+      !serverConnected ||
+      armConnectedOne == null ||
+      !txon
+    ) {
+      return;
+    }
+
     console.log("Starting arm command transmission");
+
     const intervalId = setInterval(() => {
       robotsocket.emit("armCommands", armCommandsRef.current);
     }, FrameRateConstant);
 
     return () => clearInterval(intervalId);
-  }, [serverConnected, armConnectedOne, txon]);
+  }, [serverConnected, armConnectedOne, txon, controlsLocked]);
 
   // Test transmission manually
   const handleManualUpdate = () => {
-    if (!serverConnected) return;
+    if (controlsLocked || !serverConnected) return;
+
     robotsocket.emit("armCommands", armCommands);
-    // console.log("Manual arm commands sent:", JSON.stringify(armCommands));
   };
 
   // When sliders are used, update armCommands state
   const handleSliderChange = (key, value) => {
+    if (controlsLocked) return;
+
     setArmCommands((prev) => ({
       ...prev,
       [key]: Number(value),
@@ -59,6 +85,12 @@ export default function ArmView({}) {
         overflowY: "auto",
       }}
     >
+      {controlsLocked && (
+        <Typography sx={{ mt: 2, mb: 1 }} color="error" fontWeight={700}>
+          Arm controls are disabled while autonomy is active.
+        </Typography>
+      )}
+
       {/* If arm controller is not connected, use sliders -- else use controllers */}
       {armConnectedOne == null ? (
         <>
@@ -66,6 +98,7 @@ export default function ArmView({}) {
             <Typography sx={{ textAlign: "center", mb: 2 }} variant="h5">
               Manual Controls
             </Typography>
+
             <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
               {[
                 { label: "Elbow", key: "elbow", max: 90 },
@@ -84,9 +117,11 @@ export default function ArmView({}) {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
+                    opacity: controlsLocked ? 0.55 : 1,
                   }}
                 >
                   <Typography gutterBottom>{label}</Typography>
+
                   <Slider
                     value={armCommands[key] || 0}
                     onChange={(_, v) => handleSliderChange(key, v)}
@@ -95,13 +130,16 @@ export default function ArmView({}) {
                     step={1}
                     sx={{ width: 200 }}
                     valueLabelDisplay="auto"
+                    disabled={controlsLocked}
                   />
+
                   <Typography variant="body2">
                     {armCommands[key] || 0}
                   </Typography>
                 </Grid>
               ))}
             </Grid>
+
             <Box
               sx={{
                 display: "flex",
@@ -116,6 +154,7 @@ export default function ArmView({}) {
                   <Switch
                     checked={txon}
                     onChange={(e) => settxon(e.target.checked)}
+                    disabled={controlsLocked}
                   />
                 }
                 label="AUTO TX"
@@ -124,7 +163,7 @@ export default function ArmView({}) {
               <Button
                 variant="contained"
                 onClick={handleManualUpdate}
-                disabled={!serverConnected}
+                disabled={controlsLocked || !serverConnected}
               >
                 Manual TX
               </Button>
@@ -139,11 +178,21 @@ export default function ArmView({}) {
               justifyContent: "center",
               alignItems: "center",
               mb: 2,
+              opacity: controlsLocked ? 0.55 : 1,
             }}
           >
             <SportsEsportsIcon sx={{ color: green[500], fontSize: 60 }} />
           </Box>
-          <Grid container spacing={2} sx={{ mt: 1, maxWidth: 500 }}>
+
+          <Grid
+            container
+            spacing={2}
+            sx={{
+              mt: 1,
+              maxWidth: 500,
+              opacity: controlsLocked ? 0.55 : 1,
+            }}
+          >
             {[
               { label: "Elbow", key: "elbow" },
               { label: "Shoulder", key: "shoulder" },
@@ -170,17 +219,20 @@ export default function ArmView({}) {
                 >
                   {label}
                 </Typography>
+
                 <Typography variant="h6">
                   {Math.round((armCommands[key] || 0) * 100) / 100}
                 </Typography>
               </Grid>
             ))}
           </Grid>
+
           <FormControlLabel
             control={
               <Switch
                 checked={txon}
                 onChange={(e) => settxon(e.target.checked)}
+                disabled={controlsLocked}
               />
             }
             label="AUTO TX"
