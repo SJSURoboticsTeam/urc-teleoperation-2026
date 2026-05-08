@@ -107,6 +107,8 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points,
     const [signalData900, setSignalData900] = useState([]);
     const [signalData5, setSignalData5] = useState([]);
 
+    let intervalId;
+    
     useEffect(() => {
         setSignalData900([]);
         setSignalData5([]);
@@ -114,15 +116,24 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points,
     }, [reset]);
 
     useEffect(() => {
-        if (!running || antenna900.status !== "GOOD" || antenna900.roverRSSI == null) return;
-            setSignalData900((prev) => {
-                return [...prev, antenna900.roverRSSI].slice(-30);
-            });
+        if (!running || antenna900.status !== "GOOD" || antenna900.roverRSSI == null || antenna5.status !== "GOOD" || antenna5.roverRSSI == null) return;
+        const intervalId = setInterval(() => {
             setTime((prev) => {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
                     return [...prev, updateTime].slice(-(points));
             });
-    }, [antenna900.status, antenna900.roverRSSI, running]);
+            setSignalData900((prev) => {
+                return [...prev, antenna900.roverRSSI].slice(-(points));
+            });
+            setSignalData5((prev) => {
+                return [...prev, antenna5.roverRSSI].slice(-(points));
+            });
+        }, 1000);
+        return () => {
+                clearInterval(intervalId);
+            };
+        }, [antenna900.status, antenna900.roverRSSI, antenna5.status, antenna5.roverRSSI, running, points]);
+
 
     useEffect(() => {
         if (!running || antenna5.status !== "GOOD" || antenna5.roverRSSI == null) return;
@@ -163,22 +174,23 @@ function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, 
     }, [reset]);
 
     useEffect(() => {
-        if (!running || antenna900.status !== "GOOD" || antenna900.noise == null) return;
+        if (!running || antenna900.status !== "GOOD" || antenna900.noise == null || antenna5.status !== "GOOD" || antenna5.noise == null) return;
+        const intervalId = setInterval(() => {
             setNoiseData900((prev) => {
                 return [...prev, antenna900.noise].slice(-(points));
+            });
+            setNoiseData5((prev) => {
+                return [...prev, antenna5.noise].slice(-(points));
             });
             setTime((prev) => {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
                     return [...prev, updateTime].slice(-(points));
             });
-    }, [antenna900.status, antenna900.noise, running]);
-
-    useEffect(() => {
-        if (!running || antenna5.status !== "GOOD" || antenna5.noise == null) return;
-            setNoiseData5((prev) => {
-                return [...prev, antenna5.noise].slice(-(points));
-            });
-    }, [antenna5.status, antenna5.noise, running]);
+        }, 1000);
+        return () => {
+                clearInterval(intervalId);
+            };
+        }, [antenna900.status, antenna900.noise, antenna5.status, antenna5.noise, running, points]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -213,6 +225,7 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors }
 
     useEffect(() => {
         if (!running || antenna900.status !== "GOOD" || antenna900.txrate == null || antenna900.rxrate == null) return;
+        const intervalId = setInterval(() => {
             setTxData900((prev) => {
                 return [...prev, antenna900.txrate].slice(-(points));
             });
@@ -223,7 +236,11 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors }
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
                     return [...prev, updateTime].slice(-(points));
             });
-    }, [antenna900.status, antenna900.txrate, antenna900.rxrate, running]);
+        }, 1000);
+        return () => {
+                clearInterval(intervalId);
+            };
+        }, [antenna900.status, antenna900.txrate, antenna900.rxrate, running, points]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -255,6 +272,7 @@ function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors }) {
 
     useEffect(() => {
         if (!running || antenna5.status !== "GOOD" || antenna5.txrate == null || antenna5.rxrate == null) return;
+        const intervalId = setInterval(() => {   
             setTxData5((prev) => {
                 return [...prev, antenna5.txrate].slice(-(points));
             });
@@ -265,7 +283,11 @@ function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors }) {
                     const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
                     return [...prev, updateTime].slice(-(points));
             });
-    }, [antenna5.status, antenna5.txrate, antenna5.rxrate, running]);
+        }, 1000);
+        return () => {
+                clearInterval(intervalId);
+            };
+        }, [antenna5.status, antenna5.txrate, antenna5.rxrate, running, points]);
 
     return (    
         <Box sx={{width: '75%'}}>
