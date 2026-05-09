@@ -40,7 +40,7 @@ try:
 except Exception as e:
     print("FAILURE TO CONNECT SCIENCE: " + str(e))
 
-@sio.event
-async def scienceCommands(sid, data):
+# @sio.event
+# async def scienceCommands(sid, data):
     
     
