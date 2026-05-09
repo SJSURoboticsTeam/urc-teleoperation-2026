@@ -1,0 +1,110 @@
+name: tests
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  base-pi:
+    name: Base-Pi python smoke
+    runs-on: ubuntu-latest
+    env:
+      # `act` runs jobs in parallel with a shared toolcache volume; isolate to avoid races.
+      RUNNER_TOOL_CACHE: ${{ github.workspace }}/.toolcache/${{ github.job }}
+      AGENT_TOOLSDIRECTORY: ${{ github.workspace }}/.toolcache/${{ github.job }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r base-pi/requirements.txt
+
+      - name: Compile
+        run: python -m compileall base-pi
+
+      - name: Smoke run (offline)
+        run: |
+          set +e
+          out_file="$(mktemp)"
+          timeout 10s python base-pi/py_server.py --offline >"$out_file" 2>&1
+          code=$?
+          set -e
+
+          # timeout returns 124 when it kills the process; allow that.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            cat "$out_file"
+            exit "$code"
+          fi
+
+          # Assert it actually got far enough to start.
+          grep -q "Server Starting" "$out_file"
+
+  server:
+    name: Rover server python smoke
+    runs-on: ubuntu-latest
+    env:
+      # `act` runs jobs in parallel with a shared toolcache volume; isolate to avoid races.
+      RUNNER_TOOL_CACHE: ${{ github.workspace }}/.toolcache/${{ github.job }}
+      AGENT_TOOLSDIRECTORY: ${{ github.workspace }}/.toolcache/${{ github.job }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r server/requirements.txt
+
+      - name: Compile
+        run: python -m compileall server
+
+      - name: Smoke run
+        run: |
+          set +e
+          out_file="$(mktemp)"
+          timeout 10s python server/py_server.py >"$out_file" 2>&1
+          code=$?
+          set -e
+
+          # timeout returns 124 when it kills the process; allow that.
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            cat "$out_file"
+            exit "$code"
+          fi
+
+          # Assert it actually got far enough to start.
+          grep -q "Server Starting" "$out_file"
