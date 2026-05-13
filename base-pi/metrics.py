@@ -84,7 +84,7 @@ async def asyncsshloop(sio, antenna):
             # single command to reduce round-trips
             async with asyncio.timeout(10):
                 res = await conn.run(
-                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw|noise|wlanPollingCapacity'",
+                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw|noise'",
                     check=False
                 )
 
@@ -102,7 +102,6 @@ async def asyncsshloop(sio, antenna):
                 'freq': parsed.get('centerFreq'),
                 'freqwidth': parsed.get('chanbw'),
                 'noise': parsed.get('noise'),
-                "efficiency" : 0
             }
 
             await sio.emit(antennadata[antenna]["topic"], data)
@@ -141,7 +140,6 @@ async def send_fake_antenna_stats(sio, antenna):
                 "freq": freq,
                 "freqwidth": freqwidth,
                 "noise": noise,
-                "efficiency": round(random.uniform(0, 100), 2),
             }
     else:
         freq = random.choice([5745, 5765, 5785])
@@ -159,7 +157,6 @@ async def send_fake_antenna_stats(sio, antenna):
                 "freq": freq,
                 "freqwidth": freqwidth,
                 "noise": noise,
-                "efficiency": round(random.uniform(0, 100), 2),
             }
 
     data = generate_data()

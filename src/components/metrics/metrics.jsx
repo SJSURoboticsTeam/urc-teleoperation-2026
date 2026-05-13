@@ -12,7 +12,6 @@ export function useAntennaData() {
     txrate: null,
     rxrate: null,
     noise: null,
-    efficiency: null,
     freq: null,
     freqw: null,
     delay: null,
@@ -23,7 +22,6 @@ export function useAntennaData() {
     txrate: null,
     rxrate: null,
     noise: null,
-    efficiency: null,
     freq: null,
     freqw: null,
     delay: null,
@@ -70,7 +68,6 @@ export function useAntennaData() {
         txrate: data.txrate,
         rxrate: data.rxrate,
         noise: data.noise,
-        efficiency: data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
       }));
@@ -86,7 +83,6 @@ export function useAntennaData() {
         txrate: data.txrate,
         rxrate: data.rxrate,
         noise: data.noise,
-        efficiency: data.efficiency,
         freq: data.freq,
         freqw: data.freqwidth,
       }));
@@ -251,14 +247,6 @@ export default function Metrics({ openPane, setOpenPane }) {
                       }}
                     />
 
-                    <Typography sx={{ color: "black" }}>Efficiency</Typography>
-                    <Typography sx={{ color: "black" }}>
-                      {antenna900.efficiency}%
-                    </Typography>
-                    <Typography sx={{ color: "black" }}>
-                      {antenna5.efficiency}%
-                    </Typography>
-
                     <Typography sx={{ color: "black" }}>TX</Typography>
                     <Typography sx={{ color: "black" }}>
                       {antenna900.txrate}
@@ -299,7 +287,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                     </Typography>
                     <Typography sx={{ color: "black" }}>
                       {antenna5.freqw} MHz
-                    </Typography>
+                    </Typography>  
 
                     <Typography sx={{ color: "black" }}>Delay</Typography>
                     <Typography sx={{ color: "black" }}>
