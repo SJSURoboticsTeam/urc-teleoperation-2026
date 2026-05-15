@@ -96,7 +96,7 @@ function App() {
             CurrentView={<ExtrasView />}
             selectedElements={selectedElements}
             teleopBlocked={autonomyEnabled}
-            showTeleopOverlay={true}
+            showTeleopOverlay={false}
           />
         );
       case "ScienceView":
