@@ -101,7 +101,7 @@ async def asyncsshloop(sio, antenna):
                 'rxrate': parsed.get('wlanRxRate'),
                 'freq': parsed.get('centerFreq'),
                 'freqwidth': parsed.get('chanbw'),
-                'noise': parsed.get('noise'),
+                'noise': parsed.get('noise')
             }
 
             await sio.emit(antennadata[antenna]["topic"], data)
@@ -167,11 +167,11 @@ async def send_fake_antenna_stats(sio, antenna):
                 noise = random.randint(-100, -70)
             if random.randint(1, 6) == 1:
                 if antenna == "900MHZ":
-                    txrate = round(random.uniform(15, 45), 1)
-                    rxrate = round(random.uniform(15, 45), 1)
-                else:
                     txrate = round(random.uniform(1, 7), 1)
                     rxrate = round(random.uniform(1, 7), 1)
+                else:
+                    txrate = round(random.uniform(15, 45), 1)
+                    rxrate = round(random.uniform(15, 45), 1)
             data = generate_data()
 
         await sio.emit(antennadata[antenna]["topic"], data)

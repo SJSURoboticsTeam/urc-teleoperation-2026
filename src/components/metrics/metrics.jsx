@@ -27,13 +27,13 @@ export function useAntennaData() {
     delay: null,
   });
 
-  const timestamp900 = useRef();
-  const timestamp5 = useRef();
+  const timestamp900 = useRef(0);
+  const timestamp5 = useRef(0);
 
   //900 mhz
   useEffect(() => {
     let interval;
-    // send a ping to the server every 750ms and measure latency
+    // calculate the delay from the previous message, and update this every second
     function checkLatency5() {
       setantennadata900((prev) => ({
         ...prev,
@@ -47,7 +47,7 @@ export function useAntennaData() {
     //5 ghz
   useEffect(() => {
     let interval;
-    // send a ping to the server every 750ms and measure latency
+    // calculate the delay from the previous message, and update this every second
     function checkLatency5() {
       setantennadata5((prev) => ({
         ...prev,
