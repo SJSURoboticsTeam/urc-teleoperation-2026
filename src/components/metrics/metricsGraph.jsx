@@ -15,6 +15,24 @@ export default function MetricsGraph() {
     const handleChange = (event) => {
         setPoints(event.target.value);
     };
+
+    const [time, setTime] = useState([]);
+
+    // single interval — the clock for everything
+    useEffect(() => {
+        if (!running) return;
+        const intervalId = setInterval(() => {
+            setTime(prev => {
+                const next = prev.length === 0 ? 0 : prev.at(-1) + 1;
+                return [...prev, next].slice(-points);
+            });
+        }, 1000);
+        return () => clearInterval(intervalId);
+    }, [running, points]);
+
+    useEffect(() => {
+        setTime([]);
+    }, [reset]);
     
     const colors = {
    "900": '#fe2a1a',
@@ -65,7 +83,8 @@ export default function MetricsGraph() {
                         setRunning={setRunning}
                         reset={reset}
                         colors={colors}
-                        points={points}/>
+                        points={points}
+                        time={time}/>
                 </Box>
                 <Box>
                     <NoiseGraph 
@@ -75,7 +94,8 @@ export default function MetricsGraph() {
                         setRunning={setRunning}
                         reset={reset}
                         colors={colors}
-                        points={points}/>
+                        points={points}
+                        time={time}/>
                 </Box>
             </div>
             <div className="flex flex-row">  
@@ -86,7 +106,8 @@ export default function MetricsGraph() {
                         setRunning={setRunning}
                         reset={reset}
                         colors={colors}
-                        points={points}/>
+                        points={points}
+                        time={time}/>
                 </Box>
                 <Box>
                     <TxRx5Graph 
@@ -95,41 +116,28 @@ export default function MetricsGraph() {
                         setRunning={setRunning}
                         reset={reset}
                         colors={colors}
-                        points={points}/>
+                        points={points}
+                        time={time}/>
                 </Box>
             </div>
         </div>
     )
 }
 
-function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points, colors }) {
-    const [time, setTime] = useState([]);
+function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points, colors, time }) {
     const [signalData900, setSignalData900] = useState([]);
     const [signalData5, setSignalData5] = useState([]);
-
+    
     useEffect(() => {
         setSignalData900([]);
         setSignalData5([]);
-        setTime([]);
     }, [reset]);
 
     useEffect(() => {
-        if (!running || antenna900.status !== "GOOD" || antenna900.roverRSSI == null) return;
-            setSignalData900((prev) => {
-                return [...prev, antenna900.roverRSSI].slice(-30);
-            });
-            setTime((prev) => {
-                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-(points));
-            });
-    }, [antenna900.status, antenna900.roverRSSI, running]);
-
-    useEffect(() => {
-        if (!running || antenna5.status !== "GOOD" || antenna5.roverRSSI == null) return;
-            setSignalData5((prev) => {
-                return [...prev, antenna5.roverRSSI].slice(-(points));
-            });
-    }, [antenna5.status, antenna5.roverRSSI, running]);
+    if (!running) return;
+        setSignalData900(prev => [...prev, antenna900.roverRSSI ?? null].slice(-points));
+        setSignalData5(prev =>   [...prev, antenna5.roverRSSI   ?? null].slice(-points));
+}, [time]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -151,34 +159,20 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points,
     );
 }
 
-function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, colors }) {
-    const [time, setTime] = useState([]);
+function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, colors, time }) {
     const [noiseData900, setNoiseData900] = useState([]);
     const [noiseData5, setNoiseData5] = useState([]);
 
     useEffect(() => {
         setNoiseData900([]);
         setNoiseData5([]);
-        setTime([]);
     }, [reset]);
 
     useEffect(() => {
-        if (!running || antenna900.status !== "GOOD" || antenna900.noise == null) return;
-            setNoiseData900((prev) => {
-                return [...prev, antenna900.noise].slice(-(points));
-            });
-            setTime((prev) => {
-                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-(points));
-            });
-    }, [antenna900.status, antenna900.noise, running]);
-
-    useEffect(() => {
-        if (!running || antenna5.status !== "GOOD" || antenna5.noise == null) return;
-            setNoiseData5((prev) => {
-                return [...prev, antenna5.noise].slice(-(points));
-            });
-    }, [antenna5.status, antenna5.noise, running]);
+        if (!running) return;
+        setNoiseData900(prev => [...prev, antenna900.noise ?? null].slice(-points));
+        setNoiseData5(prev => [...prev, antenna5.noise ?? null].slice(-points));
+    }, [time]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -200,30 +194,20 @@ function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, 
     );
 }
 
-function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors }) {
-    const [time, setTime] = useState([]);
+function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors, time }) {
     const [TxData900, setTxData900] = useState([]);
     const [RxData900, setRxData900] = useState([]);
 
     useEffect(() => {
         setTxData900([]);
         setRxData900([]);
-        setTime([]);
     }, [reset]);
 
     useEffect(() => {
-        if (!running || antenna900.status !== "GOOD" || antenna900.txrate == null || antenna900.rxrate == null) return;
-            setTxData900((prev) => {
-                return [...prev, antenna900.txrate].slice(-(points));
-            });
-            setRxData900((prev) => {
-                return [...prev, antenna900.rxrate].slice(-(points));
-            });
-            setTime((prev) => {
-                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-(points));
-            });
-    }, [antenna900.status, antenna900.txrate, antenna900.rxrate, running]);
+        if (!running) return;
+        setTxData900(prev => [...prev, antenna900.txrate ?? null].slice(-points));
+        setRxData900(prev => [...prev, antenna900.rxrate ?? null].slice(-points));
+    }, [time]);
 
     return (    
         <Box sx={{width: '75%'}}>
@@ -242,30 +226,20 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors }
     );
 }
 
-function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors }) {
-    const [time, setTime] = useState([]);
+function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors, time }) {
     const [TxData5, setTxData5] = useState([]);
     const [RxData5, setRxData5] = useState([]);
 
     useEffect(() => {
         setTxData5([]);
         setRxData5([]);
-        setTime([]);
     }, [reset]);
 
     useEffect(() => {
-        if (!running || antenna5.status !== "GOOD" || antenna5.txrate == null || antenna5.rxrate == null) return;
-            setTxData5((prev) => {
-                return [...prev, antenna5.txrate].slice(-(points));
-            });
-            setRxData5((prev) => {
-                return [...prev, antenna5.rxrate].slice(-(points));
-            });
-            setTime((prev) => {
-                    const updateTime = prev.length === 0 ? 0 : prev.at(-1) + 1;
-                    return [...prev, updateTime].slice(-(points));
-            });
-    }, [antenna5.status, antenna5.txrate, antenna5.rxrate, running]);
+        if (!running) return;
+        setTxData5(prev => [...prev, antenna5.txrate ?? null].slice(-points));
+        setRxData5(prev => [...prev, antenna5.rxrate ?? null].slice(-points));
+    }, [time]);
 
     return (    
         <Box sx={{width: '75%'}}>

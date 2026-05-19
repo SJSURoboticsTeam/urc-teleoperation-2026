@@ -117,9 +117,9 @@ async def getSerialInfo(sid):
     # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
-        #print(f"{port.device} ")
+        print(f"{port.device} ")
 
-        if(port.device.find("serial") != -1 or port.device.find("COM") != -1):
+        if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) ):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
     data = {
@@ -375,6 +375,7 @@ config = uvicorn.Config(
 )
 server = uvicorn.Server(config)
 try:
+    # THIS PRINT STATEMENT IS EXPECTED FOR TESTS TO PASS
     print("Server Starting...")
     server.run()
 finally:

@@ -11,38 +11,67 @@ import {
   Button,
 } from "@mui/material";
 
-export default function CameraPane({ cameraValue, onCameraChange }){
-    const [camera, setCamera] = useState(cameraValue ?? 'Standby');
+export default function CameraPane({ cameraValue, onCameraChange }) {
+  const [camera, setCamera] = useState(cameraValue ?? "Standby");
 
-    useEffect(() => {
-        if (cameraValue !== undefined) {
-            setCamera(cameraValue);
-        }
-    }, [cameraValue]);
+  useEffect(() => {
+    if (cameraValue !== undefined) {
+      setCamera(cameraValue);
+    }
+  }, [cameraValue]);
 
-    const handleChange = (event) => {
+  const handleChange = (event) => {
     setCamera(event.target.value);
     const nextValue = event.target.value;
     setCamera(nextValue);
     if (onCameraChange) {
-        onCameraChange(nextValue);
+      onCameraChange(nextValue);
     }
-    };
-    const cameras = [
-      { value: "Standby", mediatype: "image", name: "Standby", url: "/mars.jpg" },
-      {
-        value: "Mast Camera",
-        mediatype: "iframe",
-        name: "Mast",
-        url: "http://192.168.1.2:8889/mast/",
-      },
-      {
-        value: "Demo",
-        mediatype: "iframe",
-        name: "Demo",
-        url: "http://192.168.1.2:8889/masttesting/",
-      },
-    ];
+  };
+  const cameras = [
+    {
+      value: "Standby",
+      mediatype: "image",
+      name: "Standby",
+      url: "/mars.jpg",
+      allowed: true,
+    },
+    {
+      value: "Mast Camera",
+      mediatype: "iframe",
+      name: "Mast",
+      url: "http://192.168.1.2:8889/mast/",
+      allowed: true,
+    },
+    {
+      value: "wheels",
+      mediatype: "iframe",
+      name: "Wheels",
+      url: "http://192.168.1.2:8889/wheels/",
+      allowed: false,
+    },
+    {
+      value: "arm1",
+      mediatype: "iframe",
+      name: "Arm Cam 1",
+      url: "http://192.168.1.2:8889/arm1/",
+      allowed: false,
+    },
+    {
+      value: "arm2",
+      mediatype: "iframe",
+      name: "Arm Cam",
+      url: "http://192.168.1.2:8889/arm2/",
+      allowed: false,
+    },
+    {
+      value: "science",
+      mediatype: "iframe",
+      name: "Science Cam",
+      url: "http://192.168.1.2:8889/science/",
+      allowed: false,
+    },
+  ];
 
   const selectedCamera = cameras.find((cam) => cam.value == camera);
   const [loading, setLoading] = useState(true);
@@ -89,11 +118,7 @@ export default function CameraPane({ cameraValue, onCameraChange }){
           mb: 0.5,
         }}
       >
-        <InputLabel
-          id="camera-select-label"
-        >
-          Camera
-        </InputLabel>
+        <InputLabel id="camera-select-label">Camera</InputLabel>
         <Select
           labelId="camera-select-label"
           id="camera-select"
@@ -110,7 +135,7 @@ export default function CameraPane({ cameraValue, onCameraChange }){
           }}
         >
           {cameras.map((cam) => (
-            <MenuItem key={cam.value} value={cam.value}>
+            <MenuItem disabled={!cam.allowed} key={cam.value} value={cam.value}>
               {cam.name}
             </MenuItem>
           ))}
