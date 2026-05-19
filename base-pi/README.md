@@ -37,18 +37,21 @@ SSH_PASSWORD=???
 ### SSH Config
 
 We need to make a few changes to how SSH works to connect.
-The first line allows a weaker encryption protocol, and the last two bypasses fingerprint checking.    
-Doing this by IP allows full functionality without fully endangering your computer to SSH attacks.  
+Doing this by IP allows full functionality on weak encryption without endangering your computer to anything else.
 
 ADD THIS IN YOUR `~/.ssh/config` FILE ON THE BASE-PI SERVER:
 
 ```bash
 Host 192.168.1.20
     HostKeyAlgorithms +ssh-rsa
-    StrictHostKeyChecking no
-    UserKnownHostsFile /dev/null
+    PubkeyAcceptedAlgorithms +ssh-rsa
+Host 192.168.1.25
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
 Host 192.168.5.20
     HostKeyAlgorithms +ssh-rsa
-    StrictHostKeyChecking no
-    UserKnownHostsFile /dev/null
+    PubkeyAcceptedAlgorithms +ssh-rsa
+Host 192.168.5.25
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
 ```

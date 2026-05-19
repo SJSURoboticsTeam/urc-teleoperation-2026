@@ -229,8 +229,8 @@ export default function Map() {
 
     if(controlRef.current) {
       controlRef.current.update(
-        coordinates.lat.toFixed(4),
-        coordinates.long.toFixed(4),
+        coordinates.lat.toFixed(6),
+        coordinates.long.toFixed(6),
         coordinates.receive ? signalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
         isLockedOn,
       );

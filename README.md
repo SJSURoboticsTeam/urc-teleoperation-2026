@@ -20,7 +20,7 @@ Instructions are in `base-pi/README.md`
 
 Make sure you have the following installed on your machine:
 
-- [Node.js](https://nodejs.org/) (LTS version recommended)
+- [Node.js](https://nodejs.org/) (v24 LTS)
 - [npm](https://www.npmjs.com/) (comes with Node.js) or [yarn](https://yarnpkg.com/)
 - Python3 and pip
 

@@ -109,6 +109,7 @@ config = uvicorn.Config(
 )
 server = uvicorn.Server(config)
 try:
+    # THIS PRINT STATEMENT IS EXPECTED FOR TESTS TO PASS
     print("Server Starting...")
     server.run()
 finally:
