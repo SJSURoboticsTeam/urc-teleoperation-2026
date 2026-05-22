@@ -23,8 +23,6 @@ const STORAGE_KEY = "missionControl.cameraLayout";
 export default function DriveView({
   CurrentView,
   selectedElements,
-  teleopBlocked = false,
-  showTeleopOverlay = true,
 }) {
   const containerRef = useRef(null);
   const [leftPct, setLeftPct] = useState(65);
@@ -161,42 +159,6 @@ export default function DriveView({
           ) : typeof CurrentView === "function" ? (
             <CurrentView />
           ) : null}
-
-          {/* Disabled overlay centered only inside the UI pane */}
-          {teleopBlocked && showTeleopOverlay && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 2000,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pointerEvents: "none",
-                background: "rgba(255,255,255,0.14)",
-                backdropFilter: "grayscale(0.45)",
-              }}
-            >
-              <Paper
-                elevation={4}
-                sx={{
-                  px: 2.5,
-                  py: 1.75,
-                  borderRadius: 2,
-                  bgcolor: "rgba(255,255,255,0.96)",
-                  textAlign: "center",
-                  pointerEvents: "none",
-                }}
-              >
-                <Typography fontWeight={800}>
-                  Teleoperation Disabled
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Rover is operating autonomously.
-                </Typography>
-              </Paper>
-            </div>
-          )}
         </div>
       )}
 

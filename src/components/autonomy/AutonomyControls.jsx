@@ -510,7 +510,7 @@ export default function AutonomyControls() {
               Current Mode
             </Typography>
             <Typography variant="subtitle1" fontWeight={800}>
-              {autonomyEnabled ? "AUTONOMY" : "TELEOP"}
+              {autonomyEnabled ? "AUTONOMY" : "TELEOPERATION"}
             </Typography>
           </Paper>
 
@@ -914,7 +914,7 @@ function ArmPanel({
             <Box
               key={item.id}
               sx={{
-                width: 52,
+                width: 58,
                 height: 64,
                 borderRadius: 2,
                 border: "2px solid",
@@ -1172,8 +1172,7 @@ export function StartPopup({ setPopupOpen, popupOpen, startAutonomy }) {
       </DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
-          You are about to start autonomous mode. All controllers will be
-          disconnected.
+          Drive, Arm, and Science will be unavailable. Ready to begin?
         </DialogContentText>
       </DialogContent>
       <DialogActions>

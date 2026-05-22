@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { Typography } from "@mui/material";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 
-export default function DriveComponents({}) {
+export default function DriveComponents() {
   const containerRef = useRef(null);
 
   // Read global autonomy state

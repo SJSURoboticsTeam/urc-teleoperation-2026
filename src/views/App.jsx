@@ -77,8 +77,6 @@ function App() {
           <SplitView
             CurrentView={<ArmView />}
             selectedElements={selectedElements}
-            teleopBlocked={autonomyEnabled}
-            showTeleopOverlay={true}
           />
         );
       case "DriveView":
@@ -86,8 +84,6 @@ function App() {
           <SplitView
             CurrentView={<DriveComponents />}
             selectedElements={selectedElements}
-            teleopBlocked={autonomyEnabled}
-            showTeleopOverlay={true}
           />
         );
       case "ExtrasView":
@@ -95,8 +91,6 @@ function App() {
           <SplitView
             CurrentView={<ExtrasView />}
             selectedElements={selectedElements}
-            teleopBlocked={autonomyEnabled}
-            showTeleopOverlay={false}
           />
         );
       case "ScienceView":
@@ -104,8 +98,6 @@ function App() {
           <SplitView
             CurrentView={<ScienceView />}
             selectedElements={selectedElements}
-            teleopBlocked={autonomyEnabled}
-            showTeleopOverlay={true}
           />
         );
       case "AutonomyView":
@@ -113,8 +105,6 @@ function App() {
           <SplitView
             CurrentView={<AutonomyView />}
             selectedElements={selectedElements}
-            teleopBlocked={autonomyEnabled}
-            showTeleopOverlay={false}
           />
         );
       default:
