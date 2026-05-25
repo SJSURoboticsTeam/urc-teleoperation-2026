@@ -7,10 +7,18 @@ import asyncio
 import signal
 import sys
 from metrics import cpuloop, register_metric_events
-from drive import read_drive_can_loop, send_drive_status_request, register_drive_events
+from drive import read_drive_can_loop, send_drive_status_request
+from uart_drive_serial import UartDriveSerial
+from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+
+
+# Toggle drive communication transport for testing / fallback
+# True = UART drive path
+# False = original CAN drive path
+USE_UART_DRIVE = True
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
@@ -136,9 +144,15 @@ async def connectDrive(sid,data):
         return("ERROR")
     print("Connecting to " + str(data))
     try:
-        serial_ports["drive"] = CanSerial(data)
+        # Use UART as a backup / alternative to CAN for drive communication
+        if USE_UART_DRIVE:
+            serial_ports["drive"] = UartDriveSerial(data)
+            print("Drive UART connected.")
+        else:
+            serial_ports["drive"] = CanSerial(data)
+            print("Drive CAN connected.")
+
         serial_ports["driveId"] = data
-        print("Drive connected.")
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
@@ -295,6 +309,7 @@ async def E_STOP(sid):
 # Background task guard
 can_error_message_started = False
 drive_task_started = False
+drive_heartbeat_started = False
 arm_task_started = False
 gps_task_started = False
 arm_position_task_started = False
@@ -314,6 +329,7 @@ async def connect(sid,environ):
     """On first client connect, start background CAN read loop."""
     global can_error_message_started
     global drive_task_started
+    global drive_heartbeat_started
     global arm_task_started
     global gps_task_started
     global async_ssh_started
@@ -329,8 +345,12 @@ async def connect(sid,environ):
 
     # Start background CAN loop once
     if not drive_task_started:
+        # Start either UART or CAN drive loop depending on selected transport
         drive_task_started = True
-        sio.start_background_task(read_drive_can_loop,serial_ports)
+        if USE_UART_DRIVE:
+            sio.start_background_task(read_drive_uart_loop, serial_ports)
+        else:
+            sio.start_background_task(read_drive_can_loop, serial_ports)
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
@@ -343,9 +363,15 @@ async def connect(sid,environ):
             sio.start_background_task(send_fake_gps_data, sio)
         else:
             sio.start_background_task(read_gps_data, serial_ports, sio)
-    if not can_error_message_started:
-        can_error_message_started = True
-        sio.start_background_task(send_drive_status_request, serial_ports)
+    # UART drive path uses heartbeat instead of CANUSB status polling
+    if USE_UART_DRIVE:
+        if not drive_heartbeat_started:
+            drive_heartbeat_started = True
+            sio.start_background_task(send_drive_heartbeat, serial_ports)
+    else:
+        if not can_error_message_started:
+            can_error_message_started = True
+            sio.start_background_task(send_drive_status_request, serial_ports)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)
