@@ -84,7 +84,7 @@ async def asyncsshloop(sio, antenna):
             # single command to reduce round-trips
             async with asyncio.timeout(10):
                 res = await conn.run(
-                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw|noise|wlanPollingCapacity'",
+                    "mca-status | grep -E 'signal|wlanTxRate|wlanRxRate|centerFreq|chanbw|noise'",
                     check=False
                 )
 
@@ -101,8 +101,7 @@ async def asyncsshloop(sio, antenna):
                 'rxrate': parsed.get('wlanRxRate'),
                 'freq': parsed.get('centerFreq'),
                 'freqwidth': parsed.get('chanbw'),
-                'noise': parsed.get('noise'),
-                "efficiency" : parsed.get('wlanPollingCapacity')
+                'noise': parsed.get('noise')
             }
 
             await sio.emit(antennadata[antenna]["topic"], data)
@@ -124,33 +123,59 @@ async def asyncsshloop(sio, antenna):
 
 
 # function to generate and send fake data, pass in --offline flag to server to use
-async def send_fake_antenna_stats(sio,antenna):
+async def send_fake_antenna_stats(sio, antenna):
+    if antenna == "900MHZ":
+        freq = random.choice([907, 914, 924])
+        freqwidth = random.choice([3, 5, 8])
+        noise = random.randint(-100, -70)
+        txrate = round(random.uniform(1, 7), 1)
+        rxrate = round(random.uniform(1, 7), 1)
+
+        def generate_data():
+            return {
+                "status": "GOOD",
+                "dbm": random.randint(-100, -45),
+                "txrate": txrate,
+                "rxrate": rxrate,
+                "freq": freq,
+                "freqwidth": freqwidth,
+                "noise": noise,
+            }
+    else:
+        freq = random.choice([5745, 5765, 5785])
+        freqwidth = random.choice([10, 20, 40])
+        noise = random.randint(-100, -70)
+        txrate = round(random.uniform(15, 45), 1)
+        rxrate = round(random.uniform(15, 45), 1)
+
+        def generate_data():
+            return {
+                "status": "GOOD",
+                "dbm": random.randint(-75, -30),
+                "txrate": txrate,
+                "rxrate": rxrate,
+                "freq": freq,
+                "freqwidth": freqwidth,
+                "noise": noise,
+            }
+
+    data = generate_data()
+
     while True:
-        if (antenna == "900MHZ"):
-            data = {
-                'status': "GOOD", # Reports good if link is successful
-                'dbm': random.randint(-100, -45),             # signal strength
-                'txrate': round(random.uniform(1, 7), 1),  # Mbps
-                'rxrate': round(random.uniform(1, 7), 1),  # Mbps
-                'freq': random.choice([907, 914, 924]),   # MHz
-                'freqwidth': random.choice([3, 5, 8]),
-                'noise': random.randint(-100, -70),          # dBm
-                'efficiency': round(random.uniform(0, 100), 2)  # %
-            }
-        else:
-            data = {
-                'status': "GOOD", # Reports good if link is successful
-                'dbm': random.randint(-75, -30),             # signal strength
-                'txrate': round(random.uniform(15, 45), 1),  # Mbps
-                'rxrate': round(random.uniform(15, 45), 1),  # Mbps
-                'freq': random.choice([5745, 5765, 5785]),   # MHz
-                'freqwidth': random.choice([10, 20, 40]),
-                'noise': random.randint(-100, -70),          # dBm
-                'efficiency': round(random.uniform(0, 100), 2)  # %
-            }
-        # antennadata[antenna]["topic"] is the topic name
+        if random.randint(1, 3) == 1:
+            if random.randint(1, 6) == 1:
+                noise = random.randint(-100, -70)
+            if random.randint(1, 6) == 1:
+                if antenna == "900MHZ":
+                    txrate = round(random.uniform(1, 7), 1)
+                    rxrate = round(random.uniform(1, 7), 1)
+                else:
+                    txrate = round(random.uniform(15, 45), 1)
+                    rxrate = round(random.uniform(15, 45), 1)
+            data = generate_data()
+
         await sio.emit(antennadata[antenna]["topic"], data)
-        await asyncio.sleep(AntennaPollingRate)
+        await asyncio.sleep(random.uniform(0.1, 5))
 
 
 
