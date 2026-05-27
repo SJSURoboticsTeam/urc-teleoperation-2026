@@ -12,6 +12,7 @@ from uart_drive_serial import UartDriveSerial
 from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
+from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 
 
@@ -315,6 +316,7 @@ gps_task_started = False
 arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
+autonomy_started= False
 
 
 register_metric_events(sio)
@@ -336,6 +338,7 @@ async def connect(sid,environ):
     global arm_position_task_started
     global cpu_started
     global numClients
+    global autonomy_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -378,6 +381,10 @@ async def connect(sid,environ):
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
+    if not autonomy_started:
+        print("I got here")
+        autonomy_started = True
+        sio.start_background_task(get_autonomy_states,sio)
 
 
 @sio.event
