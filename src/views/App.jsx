@@ -4,8 +4,6 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
 
-
-
 // Local imports
 import TopAppBar from "../components/ui/TopAppBar";
 import DriveComponents from "./DriveView";
@@ -21,10 +19,15 @@ import ArmCommandContext from "../contexts/ArmCommandContext";
 import DriveCommandContext from "../contexts/DriveCommandContext";
 import GamepadContext from "../contexts/GamepadContext";
 import MastCommandContext from "../contexts/MastCommandContext";
+import AutonomyModeProvider from "../contexts/AutonomyModeContext";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
 function App() {
   const [currentView, setCurrentView] = useState("DriveView");
+
+  // Global autonomy state so every view can react to it
+  // Start in TELEOP mode on initial load
+  const [autonomyEnabled, setAutonomyEnabled] = useState(false);
 
   //snackbar
   const { enqueueSnackbar } = useSnackbar();
@@ -71,7 +74,10 @@ function App() {
     switch (currentView) {
       case "ArmView":
         return (
-          <SplitView CurrentView={<ArmView />} selectedElements={selectedElements}/>
+          <SplitView
+            CurrentView={<ArmView />}
+            selectedElements={selectedElements}
+          />
         );
       case "DriveView":
         return (
@@ -118,50 +124,55 @@ function App() {
     >
       {/* snackbar */}
       <SnackbarProvider maxSnack={5}>
-        <ArmCommandContext
-          armCommands={armCommands}
-          setArmCommands={setArmCommands}
+        <AutonomyModeProvider
+          autonomyEnabled={autonomyEnabled}
+          setAutonomyEnabled={setAutonomyEnabled}
         >
-          <GamepadContext
-            connectedGamepads={connectedGamepads}
-            setConnectedGamepads={setConnectedGamepads}
+          <ArmCommandContext
+            armCommands={armCommands}
+            setArmCommands={setArmCommands}
           >
-            <DriveCommandContext
-              driveCommands={driveCommands}
-              setDriveCommands={setDriveCommands}
+            <GamepadContext
+              connectedGamepads={connectedGamepads}
+              setConnectedGamepads={setConnectedGamepads}
             >
-              <MastCommandContext
-                mastCommands={mastCommands}
-                setMastCommands={setMastCommands}
+              <DriveCommandContext
+                driveCommands={driveCommands}
+                setDriveCommands={setDriveCommands}
               >
-                <CssBaseline />
-                {/* Normalizes styles */}
-                <TopAppBar
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                  selectedElements={selectedElements}
-                  setSelectedElements={setSelectedElements}
-                  addSnackbarMessage={addSnackbarMessage}
-                />
-
-                <Box
-                  component="main"
-                  sx={{
-                    flexGrow: 1,
-                    p: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    overflow: "hidden",
-                    minHeight: 0,
-                    marginTop: "60px",
-                  }}
+                <MastCommandContext
+                  mastCommands={mastCommands}
+                  setMastCommands={setMastCommands}
                 >
-                  {renderView()}
-                </Box>
-              </MastCommandContext>
-            </DriveCommandContext>
-          </GamepadContext>
-        </ArmCommandContext>
+                  <CssBaseline />
+                  {/* Normalizes styles */}
+                  <TopAppBar
+                    currentView={currentView}
+                    setCurrentView={setCurrentView}
+                    selectedElements={selectedElements}
+                    setSelectedElements={setSelectedElements}
+                    addSnackbarMessage={addSnackbarMessage}
+                  />
+
+                  <Box
+                    component="main"
+                    sx={{
+                      flexGrow: 1,
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                      minHeight: 0,
+                      marginTop: "60px",
+                    }}
+                  >
+                    {renderView()}
+                  </Box>
+                </MastCommandContext>
+              </DriveCommandContext>
+            </GamepadContext>
+          </ArmCommandContext>
+        </AutonomyModeProvider>
       </SnackbarProvider>
     </Box>
   );

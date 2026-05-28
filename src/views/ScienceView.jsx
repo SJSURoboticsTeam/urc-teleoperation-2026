@@ -1,6 +1,6 @@
 import "react-resizable/css/styles.css";
 import { useState } from "react";
-import { Box, Button, Paper } from "@mui/material";
+import { Box, Button, Paper, Typography } from "@mui/material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import {
@@ -12,26 +12,42 @@ import {
   TableRow,
 } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
+import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+
 function createData(vials, initialNM, finalNM, delta) {
   return { vials, initialNM, finalNM, delta };
 }
+
 export default function ScienceView() {
   const rows = [
     createData("V1", 0, 0, 0),
     createData("V2", 0, 0, 0),
     createData("V3", 0, 0, 0),
   ];
+
   const [TabContent, setTabContent] = useState(0);
+
+  // Read global autonomy state
+  const { autonomyEnabled } = useAutonomyMode();
+
+  // Lock science controls whenever autonomy is enabled
+  const controlsLocked = autonomyEnabled;
+
   const tabNum = [0, 1, 2];
+
   const handleChange = (event, newTabContent) => {
+    if (controlsLocked) return;
     setTabContent(newTabContent);
   };
+
   const exampleFrequency1 = [
     515, 500, 515, 520, 515, 500, 525, 510, 500, 515, 500,
   ];
+
   const exampleFrequency2 = [
     545, 540, 545, 550, 540, 555, 545, 540, 545, 535, 545,
   ];
+
   const exampleSteps = [
     "Start",
     "Step 1",
@@ -45,15 +61,28 @@ export default function ScienceView() {
     "Step 9",
     "Step 10",
   ];
+
   const xTime = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+
   return (
     <div
       className="flex flex-1 flex-col overflow-auto h-full min-h-0"
       style={{ userSelect: "none" }}
     >
+      {controlsLocked && (
+        <Typography
+          color="error"
+          fontWeight={700}
+          sx={{ textAlign: "center", mb: 1 }}
+        >
+          Science controls are disabled while autonomy is active.
+        </Typography>
+      )}
+
       <div className="flex flex-row justify-center">
         <Button
           variant="contained"
+          disabled={controlsLocked}
           sx={{
             border: 1,
             borderColor: "black",
@@ -67,8 +96,10 @@ export default function ScienceView() {
         >
           Start Site Investigation
         </Button>
+
         <Button
           variant="contained"
+          disabled={controlsLocked}
           sx={{
             border: 1,
             borderColor: "black",
@@ -82,12 +113,14 @@ export default function ScienceView() {
         >
           Step
         </Button>
+
         <Button
           variant="contained"
+          disabled={controlsLocked}
           sx={{
             border: 1,
             borderColor: "black",
-            backgroundColor: "red",
+            backgroundColor: controlsLocked ? undefined : "red",
             height: 40,
             width: "auto",
             display: "flex",
@@ -99,12 +132,14 @@ export default function ScienceView() {
           Science E-Stop
         </Button>
       </div>
+
       <div className="steps flex justify-center">
         <div className="step step-accent">Start</div>
         <div className="step step-accent">Site 1</div>
         <div className="step step-accent">Site 2</div>
         <div className="step step-accent">Site 3</div>
       </div>
+
       <Box sx={{ flex: 1, height: 400 }}>
         <Box sx={{ border: 1, borderRadius: 2, borderColor: "divider" }}>
           <Tabs
@@ -112,11 +147,24 @@ export default function ScienceView() {
             onChange={handleChange}
             sx={{ minHeight: 32, width: "auto" }}
           >
-            <Tab label="Site 1" sx={{ fontSize: "0.75rem", minHeight: 32 }} />
-            <Tab label="Site 2" sx={{ fontSize: "0.75rem", minHeight: 32 }} />
-            <Tab label="Site 3" sx={{ fontSize: "0.75rem", minHeight: 32 }} />
+            <Tab
+              label="Site 1"
+              sx={{ fontSize: "0.75rem", minHeight: 32 }}
+              disabled={controlsLocked}
+            />
+            <Tab
+              label="Site 2"
+              sx={{ fontSize: "0.75rem", minHeight: 32 }}
+              disabled={controlsLocked}
+            />
+            <Tab
+              label="Site 3"
+              sx={{ fontSize: "0.75rem", minHeight: 32 }}
+              disabled={controlsLocked}
+            />
           </Tabs>
         </Box>
+
         <Box sx={{ p: 1 }}>
           {tabNum.map((num) =>
             TabContent === num ? (
@@ -131,12 +179,14 @@ export default function ScienceView() {
                       ))}
                     </div>
                   </Box>
+
                   <Box className="flex flex-row" sx={{ ml: 4 }}>
-                    {" "}
                     Coordinates: (_,_) <br /> Accuracy: ___ <br /> Range: ___{" "}
                     <br />
+
                     <Button
                       variant="contained"
+                      disabled={controlsLocked}
                       sx={{
                         border: 1,
                         borderColor: "black",
@@ -151,6 +201,7 @@ export default function ScienceView() {
                     </Button>
                   </Box>
                 </div>
+
                 <div
                   className="flex flex-row gap-4 mb-4"
                   style={{ flex: 1, minWidth: 0 }}
@@ -165,6 +216,7 @@ export default function ScienceView() {
                       yAxis={[{ width: 45 }]}
                     />
                   </Box>
+
                   <Box sx={{ width: "35%", minHeight: 300 }}>
                     <TableContainer component={Paper}>
                       <Table aria-label="simple table">
@@ -176,6 +228,7 @@ export default function ScienceView() {
                             <TableCell align="right">delta</TableCell>
                           </TableRow>
                         </TableHead>
+
                         <TableBody>
                           {rows.map((row) => (
                             <TableRow

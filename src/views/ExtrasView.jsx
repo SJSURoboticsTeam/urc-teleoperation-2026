@@ -1,49 +1,63 @@
+import "react-resizable/css/styles.css";
+
 import MetricsGraph from "../components/metrics/metricsGraph";
 import { useState } from "react";
 import Button from "@mui/material/Button";
 
-// Fullscreen map view — map should receive its full height from the parent Box
+const SPEED_TEST_URL = "http://192.168.5.49:3000";
+const FILES_URL = "http://192.168.5.49:80";
+
+// Extras view for large map, metrics graphs, recordings/files, and speed test.
 export default function ExtrasView() {
-  const [currentView, setcurrentView] = useState("Graphs");
+  const [currentView, setCurrentView] = useState("Graphs");
 
   function switcher() {
-    if (currentView == "Graphs") {
+    if (currentView === "Graphs") {
       return <Graphs />;
-    } else if (currentView == "SpeedTest") {
-      return <SpeedTestView />;
-    } else if (currentView == "Files") {
-      return <Files />;
-    } else {
-      return "No pane selected.";
     }
+
+    else if (currentView === "Files") {
+      return <Files />;
+    }
+
+    else if (currentView === "SpeedTest") {
+      return <SpeedTestView />;
+    }
+
+    return "No pane selected.";
   }
-  // Let the parent (App) control the viewport height. Use flex:1 so Map fills available space.
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex flex-row items-center justify-center">
         <Button
           style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("Graphs")}
+          onClick={() => setCurrentView("Graphs")}
           variant="contained"
         >
           Graphs
         </Button>
+
         <Button
           style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("Files")}
+          onClick={() => setCurrentView("Files")}
           variant="contained"
         >
           Files
         </Button>
+
         <Button
           style={{ marginRight: 5, marginLeft: 5 }}
-          onClick={() => setcurrentView("SpeedTest")}
+          onClick={() => setCurrentView("SpeedTest")}
           variant="contained"
         >
           SpeedTest
         </Button>
       </div>
-      {switcher()}
+
+      <div className="flex-1 flex flex-col min-h-0">
+        {switcher()}
+      </div>
     </div>
   );
 }
@@ -57,10 +71,10 @@ export function SpeedTestView() {
         width: "100%",
         border: "none",
       }}
-      src="http://192.168.1.100:3000"
+      src={SPEED_TEST_URL}
       title="Speed Test"
       allow="fullscreen; autoplay"
-    ></iframe>
+    />
   );
 }
 
@@ -73,14 +87,13 @@ export function Files() {
         width: "100%",
         border: "none",
       }}
-      src="http://192.168.1.100:80"
+      src={FILES_URL}
       title="Files"
       allow="fullscreen; autoplay"
-    ></iframe>
+    />
   );
 }
+
 export function Graphs() {
-  return (
-      <MetricsGraph />
-  );
+  return <MetricsGraph />;
 }

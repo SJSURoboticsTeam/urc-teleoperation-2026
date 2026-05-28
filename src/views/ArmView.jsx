@@ -3,10 +3,16 @@ import "react-resizable/css/styles.css";
 import { Typography, Box, Slider, Button } from "@mui/material";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
+
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
-import { useRobotSocketStatus, robotsocket } from "../components/socket.io/socket";
+import {
+  useRobotSocketStatus,
+  robotsocket,
+} from "../components/socket.io/socket";
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
+import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+
 import {
   ARM_JOINT_KEYS,
   ARM_JOINT_CONFIG,
@@ -23,12 +29,19 @@ function valuesDiffer(a, b, epsilon = 0.01) {
   return Math.abs((a ?? 0) - (b ?? 0)) > epsilon;
 }
 
-// View for arm controls, handles both manual slider input and gamepad input (if connected)
+// View for arm controls.
+// Handles manual sliders, gamepad-driven display, feedback, TX status,
+// and autonomy lockout.
 export default function ArmView() {
   const [armCommands, setArmCommands] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
-  const armConnectedOne = connectedGamepads.arm;
   const serverConnected = useRobotSocketStatus();
+
+  const { autonomyEnabled } = useAutonomyMode();
+
+  const armConnectedOne = connectedGamepads.arm;
+  const gamepadMode = armConnectedOne != null;
+  const controlsLocked = autonomyEnabled;
 
   const [txon, settxon] = useState(false);
   const [txPulse, setTxPulse] = useState(false);
@@ -42,22 +55,26 @@ export default function ArmView() {
     clamp: null,
   });
 
-  const armCommandsRef = useRef(armCommands);
-  const prevArmCommandsRef = useRef(armCommands);
-  const prevDisplayCommandsRef = useRef(armCommands);
+  const initializedDefaults = useMemo(() => ARM_DEFAULTS, []);
+  const safeArmCommands = armCommands ?? initializedDefaults;
+
+  const armCommandsRef = useRef(safeArmCommands);
+  const prevArmCommandsRef = useRef(safeArmCommands);
+  const prevDisplayCommandsRef = useRef(safeArmCommands);
   const pulseTimeoutsRef = useRef({});
   const txPulseTimeoutRef = useRef(null);
-  const emitCounterRef = useRef({ full: 0, joint: 0, lastReset: Date.now() });
+  const emitCounterRef = useRef({
+    full: 0,
+    joint: 0,
+    lastReset: Date.now(),
+  });
 
-  const gamepadMode = armConnectedOne != null;
   const controlModeLabel = gamepadMode ? "Gamepad Control" : "Slider Control";
-  const sendModeLabel = txon ? "Auto" : "Manual";
-
-  const initializedDefaults = useMemo(() => ARM_DEFAULTS, []);
+  const sendModeLabel = controlsLocked ? "Locked" : txon ? "Auto" : "Manual";
 
   useEffect(() => {
-    armCommandsRef.current = armCommands;
-  }, [armCommands]);
+    armCommandsRef.current = safeArmCommands;
+  }, [safeArmCommands]);
 
   // Initialize to config-based defaults if commands are missing or invalid.
   useEffect(() => {
@@ -66,15 +83,30 @@ export default function ArmView() {
     );
 
     if (hasMissing) {
-      setArmCommands(initializedDefaults);
-      prevArmCommandsRef.current = initializedDefaults;
-      prevDisplayCommandsRef.current = initializedDefaults;
+      const nextCommands = ARM_JOINT_KEYS.reduce((acc, key) => {
+        acc[key] =
+          typeof armCommands?.[key] === "number"
+            ? armCommands[key]
+            : initializedDefaults[key];
+
+        return acc;
+      }, {});
+
+      setArmCommands(nextCommands);
+      prevArmCommandsRef.current = nextCommands;
+      prevDisplayCommandsRef.current = nextCommands;
+      armCommandsRef.current = nextCommands;
     }
   }, [armCommands, initializedDefaults, setArmCommands]);
 
-  // preserve current values when leaving gamepad mode instead of resetting defaults
+  // If autonomy starts, immediately stop auto-transmission.
+  useEffect(() => {
+    if (controlsLocked && txon) {
+      settxon(false);
+    }
+  }, [controlsLocked, txon]);
+
   // Preserve current values when leaving gamepad mode instead of resetting defaults.
-  // Only run when the selected arm gamepad changes.
   useEffect(() => {
     if (armConnectedOne == null) {
       const currentCommands = armCommandsRef.current;
@@ -106,11 +138,12 @@ export default function ArmView() {
         ...prev,
         [key]: false,
       }));
+
       pulseTimeoutsRef.current[key] = null;
     }, 500);
   }, []);
 
-  const pulseTx = () => {
+  const pulseTx = useCallback(() => {
     if (txPulseTimeoutRef.current) {
       clearTimeout(txPulseTimeoutRef.current);
     }
@@ -121,11 +154,13 @@ export default function ArmView() {
       setTxPulse(false);
       txPulseTimeoutRef.current = null;
     }, 180);
-  };
+  }, []);
 
-  // AUTO TX: emit only joints whose values changed meaningfully since last interval
+  // AUTO TX:
+  // Emit only joints whose values changed meaningfully since the last interval.
+  // Disabled whenever autonomy is active.
   useEffect(() => {
-    if (!serverConnected || !txon) return;
+    if (controlsLocked || !serverConnected || !txon) return;
 
     const intervalId = setInterval(() => {
       const current = armCommandsRef.current;
@@ -148,6 +183,7 @@ export default function ArmView() {
       });
 
       const now = Date.now();
+
       if (now - emitCounterRef.current.lastReset >= 1000) {
         emitCounterRef.current.full = 0;
         emitCounterRef.current.joint = 0;
@@ -162,8 +198,9 @@ export default function ArmView() {
     }, FrameRateConstant);
 
     return () => clearInterval(intervalId);
-  }, [serverConnected, txon, pulseJoint]);
+  }, [controlsLocked, serverConnected, txon, pulseJoint, pulseTx]);
 
+  // Listen for arm feedback from the robot.
   useEffect(() => {
     const handleArmFeedback = (data) => {
       const joint = data?.joint;
@@ -184,6 +221,7 @@ export default function ArmView() {
     };
   }, []);
 
+  // Clear pulse timers on unmount.
   useEffect(() => {
     const pulseTimeouts = pulseTimeoutsRef.current;
 
@@ -198,34 +236,43 @@ export default function ArmView() {
     };
   }, []);
 
-  // Manual TX sends the full arm state in one payload
+  // Manual TX sends the full arm state in one payload.
   const handleManualUpdate = () => {
-    if (!serverConnected) return;
+    if (controlsLocked || !serverConnected) return;
 
-    robotsocket.emit("armCommands", armCommands);
+    robotsocket.emit("armCommands", safeArmCommands);
+
     emitCounterRef.current.full += 1;
     pulseTx();
   };
 
-  // When sliders are used, update armCommands state
+  // When sliders are used, update armCommands state.
   const handleSliderChange = (key, value) => {
+    if (controlsLocked) return;
+
     setArmCommands((prev) => ({
       ...prev,
       [key]: Number(value),
     }));
   };
 
-  // Highlight joints whose displayed values changed recently
+  // Highlight joints whose displayed values changed recently.
   useEffect(() => {
     ARM_JOINT_KEYS.forEach((key) => {
-      if (valuesDiffer(armCommands[key], prevDisplayCommandsRef.current[key], 0.01)) {
+      if (
+        valuesDiffer(
+          safeArmCommands[key],
+          prevDisplayCommandsRef.current[key],
+          0.01,
+        )
+      ) {
         pulseJoint(key);
       }
     });
 
-    prevDisplayCommandsRef.current = armCommands;
-  }, [armCommands, pulseJoint]);
-  
+    prevDisplayCommandsRef.current = { ...safeArmCommands };
+  }, [safeArmCommands, pulseJoint]);
+
   return (
     <Box
       sx={{
@@ -240,7 +287,6 @@ export default function ArmView() {
         boxSizing: "border-box",
       }}
     >
-      {/* If arm controller is not connected, use sliders -- else use controllers */}
       <Box
         sx={{
           mt: 2,
@@ -253,12 +299,25 @@ export default function ArmView() {
           variant="h6"
           sx={{
             textAlign: "center",
-            mb: 2,
+            mb: 1,
             fontWeight: 500,
           }}
         >
           Arm · {controlModeLabel} · {sendModeLabel}
         </Typography>
+
+        {controlsLocked && (
+          <Typography
+            sx={{
+              textAlign: "center",
+              mb: 2,
+              fontWeight: 700,
+            }}
+            color="error"
+          >
+            Arm controls are disabled while autonomy is active.
+          </Typography>
+        )}
 
         <Box
           sx={{
@@ -269,6 +328,7 @@ export default function ArmView() {
             },
             gap: 2,
             width: "100%",
+            opacity: controlsLocked ? 0.55 : 1,
           }}
         >
           {ARM_JOINT_CONFIG.map(({ label, key, min, max }) => (
@@ -292,7 +352,7 @@ export default function ArmView() {
                 boxSizing: "border-box",
                 overflow: "hidden",
                 transition:
-                  "background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
+                  "background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease",
                 boxShadow: recentlyChanged[key]
                   ? gamepadMode
                     ? "0 0 0 1px rgba(25, 118, 210, 0.10)"
@@ -312,18 +372,19 @@ export default function ArmView() {
 
               {!gamepadMode ? (
                 <Slider
-                  value={armCommands[key] ?? ARM_JOINT_META[key].initial}
+                  value={safeArmCommands[key] ?? ARM_JOINT_META[key].initial}
                   onChange={(_, v) => handleSliderChange(key, v)}
                   min={min}
                   max={max}
                   step={1}
                   sx={{ width: "90%" }}
                   valueLabelDisplay="auto"
+                  disabled={controlsLocked}
                 />
               ) : (
                 <Box sx={{ width: "100%", py: 1 }}>
                   <Slider
-                    value={armCommands[key] ?? ARM_JOINT_META[key].initial}
+                    value={safeArmCommands[key] ?? ARM_JOINT_META[key].initial}
                     min={min}
                     max={max}
                     step={1}
@@ -334,11 +395,17 @@ export default function ArmView() {
               )}
 
               <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                Cmd: {round2(armCommands[key] ?? ARM_JOINT_META[key].initial).toFixed(1)}
+                Cmd:{" "}
+                {round2(
+                  safeArmCommands[key] ?? ARM_JOINT_META[key].initial,
+                ).toFixed(1)}
               </Typography>
 
               <Typography variant="body2" color="text.secondary">
-                Fb: {armFeedback[key] == null ? "--" : round2(armFeedback[key]).toFixed(1)}
+                Fb:{" "}
+                {armFeedback[key] == null
+                  ? "--"
+                  : round2(armFeedback[key]).toFixed(1)}
               </Typography>
             </Box>
           ))}
@@ -359,6 +426,7 @@ export default function ArmView() {
               <Switch
                 checked={txon}
                 onChange={(e) => settxon(e.target.checked)}
+                disabled={controlsLocked}
               />
             }
             label="AUTO TX"
@@ -368,7 +436,7 @@ export default function ArmView() {
             <Button
               variant="contained"
               onClick={handleManualUpdate}
-              disabled={!serverConnected}
+              disabled={controlsLocked || !serverConnected}
             >
               MANUAL TX
             </Button>
@@ -393,6 +461,7 @@ export default function ArmView() {
               transition: "background-color 0.15s ease",
             }}
           />
+
           <Typography variant="body2" color="text.secondary">
             TX Activity
           </Typography>
