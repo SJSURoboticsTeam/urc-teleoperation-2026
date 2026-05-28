@@ -31,7 +31,7 @@ jobs:
         run: npm run build
 
       - name: Run browser smoke tests
-        run: npm run test:e2e
+        run: npm run playwright
 
   base-pi:
     name: Base-Pi python smoke
