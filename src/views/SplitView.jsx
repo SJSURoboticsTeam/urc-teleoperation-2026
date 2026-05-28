@@ -7,13 +7,23 @@ import {
   useEffect,
 } from "react";
 import CameraPane from "../components/cameras/CameraPane";
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Paper,
+  Typography,
+} from "@mui/material";
 
 const DEFAULT_CAMERA = "Standby";
 const DEFAULT_CAMERA_NUM = 2;
 const STORAGE_KEY = "missionControl.cameraLayout";
 
-export default function DriveView({ CurrentView, selectedElements }) {
+export default function DriveView({
+  CurrentView,
+  selectedElements,
+}) {
   const containerRef = useRef(null);
   const [leftPct, setLeftPct] = useState(65);
   const [cameraNum, setCameraNum] = useState(DEFAULT_CAMERA_NUM);
@@ -87,7 +97,7 @@ export default function DriveView({ CurrentView, selectedElements }) {
     window.addEventListener("pointerup", onPointerUp);
   }, []);
 
-    const effectiveLeftPct = (selectedElements == "ui" ) ? 100 : leftPct;
+  const effectiveLeftPct = selectedElements == "ui" ? 100 : leftPct;
 
   useEffect(() => {
     if (!hydrated) return;
@@ -133,12 +143,15 @@ export default function DriveView({ CurrentView, selectedElements }) {
     <div
       ref={containerRef}
       className="flex flex-1 h-full min-h-0"
-      style={{ userSelect: "none" }}
+      style={{ userSelect: "none", position: "relative" }}
     >
       {(selectedElements == "ui" || selectedElements == "both") && (
         <div
           className="flex flex-col gap-2 p-2 bg-gray-100 min-h-0"
-          style={{ flex: `0 0 ${effectiveLeftPct}%` }}
+          style={{
+            flex: `0 0 ${effectiveLeftPct}%`,
+            position: "relative",
+          }}
         >
           {/* embed the current view */}
           {isValidElement(CurrentView) ? (
@@ -199,6 +212,7 @@ export default function DriveView({ CurrentView, selectedElements }) {
             <MenuItem value={4}>4 Cameras</MenuItem>
           </Select>
         </FormControl>
+
         <div
           className="flex-1 min-h-0 overflow-auto"
           style={{

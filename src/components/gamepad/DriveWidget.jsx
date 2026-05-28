@@ -2,7 +2,7 @@ import "react-resizable/css/styles.css";
 import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { basesocket, robotsocket } from "../socket.io/socket";
+import { robotsocket } from "../socket.io/socket";
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
 import { useRobotSocketStatus } from "../socket.io/socket";
@@ -17,13 +17,13 @@ import { useConnectedGamepads } from "../../contexts/GamepadContext.jsx";
 
 const HEADER_HEIGHT = 56;
 
-export default function DriveManualInput({}) {
+export default function DriveManualInput({ controlsLocked = false }) {
   // Server connection status
   const serverConnected = useRobotSocketStatus();
   const [txon, settxon] = useState(false);
 
   // Drive
-  const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+  const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
   const [driveCommands] = useDriveCommands();
@@ -36,46 +36,66 @@ export default function DriveManualInput({}) {
 
   // Mast
   const [mastCommands, setMastCommands] = useMastCommands();
-  const { px: panX, py: panY, panSpeed } = mastCommands; // destructure mastCommands
+  const { px: panX, py: panY, panSpeed } = mastCommands;
 
-  // refs update whenever Mast panning changes
+  // refs update whenever mast panning changes
   const panXRef = useRef(panX);
   const panYRef = useRef(panY);
+
   useEffect(() => {
     panXRef.current = panX;
   }, [panX]);
+
   useEffect(() => {
     panYRef.current = panY;
   }, [panY]);
 
   const driveCommandsRef = useRef(driveCommands);
+
   useEffect(() => {
     driveCommandsRef.current = driveCommands;
   }, [driveCommands]);
 
-  // Emit drive commands
+  // If autonomy starts, immediately turn off AUTO TX.
   useEffect(() => {
-  const interval = setInterval(() => {
-    if (!serverConnected || driveConnectedOne == null || !txon) return;
-    //console.log("Starting drive command transmission");
+    if (controlsLocked) {
+      settxon(false);
+    }
+  }, [controlsLocked]);
 
-    robotsocket.emit("driveCommands", {
-      xVel: driveCommandsRef.current.sidewaysVelocity,
-      yVel: driveCommandsRef.current.forwardsVelocity,
-      rotVel: driveCommandsRef.current.rotationalVelocity,
-      moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
-    });
-  }, FrameRateConstant);
-
-  return () => clearInterval(interval);
-}, [serverConnected, driveConnectedOne, txon]);
-
-  const handleHoming = () => robotsocket.emit("driveHoming");
-
-  // Emit mast pan commands
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!serverConnected || driveConnectedOne == null || !txon) return;
+      if (
+        controlsLocked ||
+        !serverConnected ||
+        driveConnectedOne == null ||
+        !txon
+      ) {
+        return;
+      }
+
+      robotsocket.emit("driveCommands", {
+        xVel: driveCommandsRef.current.sidewaysVelocity,
+        yVel: driveCommandsRef.current.forwardsVelocity,
+        rotVel: driveCommandsRef.current.rotationalVelocity,
+        moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
+      });
+    }, FrameRateConstant);
+
+    return () => clearInterval(interval);
+  }, [controlsLocked, serverConnected, driveConnectedOne, txon]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (
+        controlsLocked ||
+        !serverConnected ||
+        driveConnectedOne == null ||
+        !txon
+      ) {
+        return;
+      }
+
       robotsocket.emit("mastCommands", {
         xVel: panXRef.current,
         yVel: panYRef.current,
@@ -83,11 +103,19 @@ export default function DriveManualInput({}) {
     }, FrameRateConstant);
 
     return () => clearInterval(interval);
-  }, [serverConnected, driveConnectedOne, txon]);
+  }, [controlsLocked, serverConnected, driveConnectedOne, txon]);
+
+  const handleHoming = () => {
+    if (controlsLocked || !serverConnected) return;
+
+    robotsocket.emit("driveHoming");
+  };
 
   const handleManualTx = () => {
-    if (!serverConnected) return;
+    if (controlsLocked || !serverConnected) return;
+
     console.log("Manual TX");
+
     robotsocket.emit("driveCommands", {
       xVel: sidewaysVelocity,
       yVel: forwardsVelocity,
@@ -101,9 +129,22 @@ export default function DriveManualInput({}) {
     });
   };
 
+  const handlePanSpeedChange = (_, value) => {
+    if (controlsLocked) return;
+
+    setMastCommands((prev) => ({
+      ...prev,
+      panSpeed: value,
+    }));
+  };
+
   const VelocityItem = ({ value, label }) => (
     <Box
-      sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
     >
       <Box
         sx={{
@@ -114,10 +155,12 @@ export default function DriveManualInput({}) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          opacity: controlsLocked ? 0.55 : 1,
         }}
       >
         <Typography variant="body1">{value}</Typography>
       </Box>
+
       <Typography variant="body2" sx={{ marginTop: 0.5 }}>
         {label}
       </Typography>
@@ -126,8 +169,13 @@ export default function DriveManualInput({}) {
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center" }}>
-      <Box sx={{ display: "flex", gap: 2.5 }}>
-        {/* LEFT COLUMN */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2.5,
+          opacity: controlsLocked ? 0.65 : 1,
+        }}
+      >
         <Box
           sx={{
             border: 1.5,
@@ -138,7 +186,6 @@ export default function DriveManualInput({}) {
             borderColor: "gray",
           }}
         >
-          {/* HEADER */}
           <Box
             sx={{
               height: HEADER_HEIGHT,
@@ -153,6 +200,7 @@ export default function DriveManualInput({}) {
                 <Switch
                   checked={txon}
                   onChange={(e) => settxon(e.target.checked)}
+                  disabled={controlsLocked}
                 />
               }
               label="AUTO TX"
@@ -162,25 +210,26 @@ export default function DriveManualInput({}) {
                 },
               }}
             />
+
             <Button
               variant="contained"
               onClick={handleHoming}
               sx={{ whiteSpace: "nowrap" }}
-              disabled={!serverConnected}
+              disabled={controlsLocked || !serverConnected}
             >
               Homing
             </Button>
+
             <Button
               variant="contained"
               onClick={handleManualTx}
               sx={{ whiteSpace: "nowrap" }}
-              disabled={!serverConnected}
+              disabled={controlsLocked || !serverConnected}
             >
               MANUAL TX
             </Button>
           </Box>
 
-          {/* CONTENT */}
           <Box
             sx={{
               height: 120,
@@ -199,7 +248,6 @@ export default function DriveManualInput({}) {
           </Box>
         </Box>
 
-        {/* RIGHT COLUMN */}
         <Box
           sx={{
             border: 1.5,
@@ -210,7 +258,6 @@ export default function DriveManualInput({}) {
             borderColor: "gray",
           }}
         >
-          {/* HEADER */}
           <Box
             sx={{
               height: HEADER_HEIGHT,
@@ -223,17 +270,15 @@ export default function DriveManualInput({}) {
               step={10}
               marks
               value={panSpeed}
-              onChange={(_, value) =>
-                setMastCommands((prev) => ({ ...prev, panSpeed: value }))
-              }
+              onChange={handlePanSpeedChange}
               min={10}
               max={100}
               valueLabelDisplay="auto"
               sx={{ width: 150 }}
+              disabled={controlsLocked}
             />
           </Box>
 
-          {/* CONTENT */}
           <Box
             sx={{
               height: 120,
@@ -247,6 +292,7 @@ export default function DriveManualInput({}) {
             <VelocityItem value={panY} label="Pan H" />
           </Box>
         </Box>
+
         <Box
           sx={{
             border: 1.5,
@@ -255,14 +301,13 @@ export default function DriveManualInput({}) {
             flexDirection: "column",
             p: 1,
             borderColor: "gray",
+            opacity: controlsLocked ? 0.55 : 1,
+            pointerEvents: controlsLocked ? "none" : "auto",
           }}
         >
-          {/* WHEEL */}
           <Wheel />
         </Box>
       </Box>
     </Box>
   );
 }
-
-<Wheel />;
