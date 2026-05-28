@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   frontend-build:
-    name: Frontend build
+    name: Frontend build and smoke run
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,11 +21,17 @@ jobs:
           node-version: "24"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install dependencies for build
         run: npm ci
+
+      - name: Install Playwright for dev testing
+        run: npx playwright install --with-deps chromium
 
       - name: Build
         run: npm run build
+
+      - name: Run browser smoke tests
+        run: npm run playwright
 
   base-pi:
     name: Base-Pi python smoke

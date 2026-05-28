@@ -31,7 +31,6 @@ export default function Wheel() {
       <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="-50 0 350 350"
-        alignItems="center"
       >
         <defs>
           <style>
