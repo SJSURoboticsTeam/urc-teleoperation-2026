@@ -112,7 +112,9 @@ export default function TopAppBar({
           <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
             {/* Buttons to change between views */}
             <Tabs
-              value={location.pathname}
+              // we only track the first path, 
+              // so truncate /extras/graphs to /extras so it stays highlighted
+              value={"/" + location.pathname.split("/")[1]}
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
@@ -225,7 +227,9 @@ export default function TopAppBar({
             </ListItem>
             <Tabs
               orientation="vertical"
-              value={location.pathname}
+              // we only track the first path, 
+              // so truncate /extras/graphs to /extras so it stays highlighted
+              value={"/" + location.pathname.split("/")[1]}
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
