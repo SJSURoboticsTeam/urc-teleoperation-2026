@@ -21,11 +21,11 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
-import NavConnectionStatus from "../socket.io/BackendConnectionManager";
-import GamepadPanel from "../gamepad/Gamepad";
-import Metrics from "../metrics/metrics";
-import StateMachine from "../statemachine/statemachine";
-import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
+import NavConnectionStatus from "../components/socket.io/BackendConnectionManager";
+import GamepadPanel from "../components/gamepad/Gamepad";
+import Metrics from "../components/metrics/metrics";
+import StateMachine from "../components/statemachine/statemachine";
+import { robotsocket, useRobotSocketStatus } from "../components/socket.io/socket";
 import { useNavigate } from "react-router-dom";
 
 export default function TopAppBar({

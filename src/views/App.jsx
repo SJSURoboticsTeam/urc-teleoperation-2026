@@ -9,7 +9,7 @@ import { Outlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Local imports
-import TopAppBar from "../components/ui/TopAppBar";
+import TopAppBar from "./TopAppBar";
 import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
@@ -121,18 +121,7 @@ function App() {
                   >
                     <SplitView selectedElements={selectedElements}>
                       {/* we pass all these elements as "children" into SplitView */}
-                      <AnimatePresence mode="wait">
-                        {/* smooth animations */}
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.1 }}
-                          style={{ height: "100%" }}
-                        >
                           <Outlet />
-                        </motion.div>
-                      </AnimatePresence>
                     </SplitView>
                   </Box>
                 </MastCommandContext>
