@@ -12,7 +12,7 @@ from uart_drive_serial import UartDriveSerial
 from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 
 
 # Toggle drive communication transport for testing / fallback

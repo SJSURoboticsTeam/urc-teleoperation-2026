@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { robotsocket } from "../socket.io/socket";
+import { robotsocket, basesocket } from "../socket.io/socket";
 import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
 
 function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
@@ -89,12 +89,19 @@ export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const marker = useRef(null);
+  const baseMarker = useRef(null);
   const controlRef = useRef(null);
   const lastSignalTime = useRef(Date.now()); 
   const signalDiff = useRef();
   const signalTimeout = useRef(null);
 
   const [coordinates, setCoordinates] = useState({
+    long: -121.881194,
+    lat: 37.336847,
+    receive: false,
+  });
+
+  const [baseCoordinates, setBaseCoordinates] = useState({
     long: -121.881194,
     lat: 37.336847,
     receive: false,
@@ -135,6 +142,11 @@ export default function Map() {
     marker.current = new maplibregl.Marker({ color: "#ff0000" })
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
+      .addTo(map);
+
+    baseMarker.current = new maplibregl.Marker({ color: "#0077ff" })
+      .setLngLat(target)
+      .setPopup(new maplibregl.Popup().setText("Base Target"))
       .addTo(map);
 
     const lockOnControl = new LockOnControl(() =>
@@ -191,7 +203,7 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    const handler = (data) => {
+    const robotHandler = (data) => {
       if (signalTimeout.current) {
         clearTimeout(signalTimeout.current);
       }
@@ -212,12 +224,36 @@ export default function Map() {
       }, 3000);
     };
 
-    robotsocket.on("gpsData", handler);
+    const baseHandler = (data) => {
+      if (signalTimeout.current) {
+        clearTimeout(signalTimeout.current);
+      }
+
+      const newTime = Date.now();
+      signalDiff.current = (newTime - lastSignalTime.current) / 1000;
+      lastSignalTime.current = newTime;
+
+      // console.log("Received GPS data:", data);
+      setBaseCoordinates({
+        long: data.longitude,
+        lat: data.latitude,
+        receive: true,
+      });
+
+      signalTimeout.current = setTimeout(() => {
+        setBaseCoordinates((prev) => ({ ...prev, receive: false }));
+      }, 3000);
+    };
+
+    robotsocket.on("gpsData", robotHandler);
+    basesocket.on("gpsData2", baseHandler);
+    basesocket
     signalTimeout.current = setTimeout(() => {
       setCoordinates((prev) => ({ ...prev, receive: false }));
     }, 3000);
     return () => {
-      robotsocket.off("gpsData", handler);
+      robotsocket.off("gpsData", robotHandler);
+      basesocket.off("gpsData2", baseHandler);
       if (signalTimeout.current) {
         clearTimeout(signalTimeout.current);
       }
@@ -226,6 +262,7 @@ export default function Map() {
 
   useEffect(() => {
     marker.current.setLngLat([coordinates.long, coordinates.lat]);
+    baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
 
     if(controlRef.current) {
       controlRef.current.update(
