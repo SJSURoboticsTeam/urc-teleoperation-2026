@@ -9,7 +9,26 @@ concurrency:
 
 jobs:
   frontend-build:
-    name: Frontend build and smoke run
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies for build
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  frontend-playwright:
+    name: Frontend playwright tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,11 +46,29 @@ jobs:
       - name: Install Playwright for dev testing
         run: npx playwright install --with-deps chromium
 
-      - name: Build
-        run: npm run build
-
       - name: Run browser smoke tests
         run: npm run playwright
+
+  frontend-eslint:
+    name: Frontend linter (EXPECTED TO FAIL FOR NOW)
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies for build
+        run: npm ci
+
+      - name: Lint
+        # we don't care about errors, hence eslint-quiet
+        run: npm run lint-quiet
 
   base-pi:
     name: Base-Pi python smoke

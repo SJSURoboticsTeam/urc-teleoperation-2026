@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   useCallback,
-  isValidElement,
   useEffect,
 } from "react";
 import CameraPane from "../components/cameras/CameraPane";
@@ -20,8 +19,8 @@ const DEFAULT_CAMERA = "Standby";
 const DEFAULT_CAMERA_NUM = 2;
 const STORAGE_KEY = "missionControl.cameraLayout";
 
-export default function DriveView({
-  CurrentView,
+export default function SplitView({
+  children,
   selectedElements,
 }) {
   const containerRef = useRef(null);
@@ -153,12 +152,9 @@ export default function DriveView({
             position: "relative",
           }}
         >
-          {/* embed the current view */}
-          {isValidElement(CurrentView) ? (
-            CurrentView
-          ) : typeof CurrentView === "function" ? (
-            <CurrentView />
-          ) : null}
+          {/* This is where React Router starts  */}
+          {/* Go to main.jsx to see the embeds */}
+          {children}
         </div>
       )}
 

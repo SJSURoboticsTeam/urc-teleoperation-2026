@@ -4,6 +4,7 @@ import GamepadDiv from "./GamepadManager";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import { green } from "@mui/material/colors";
 import { red } from "@mui/material/colors";
+import { useLocation } from "react-router-dom";
 
 import { useArmCommands } from "../../contexts/ArmCommandContext";
 import { useDriveCommands } from "../../contexts/DriveCommandContext";
@@ -13,10 +14,18 @@ import { useMastCommands } from "../../contexts/MastCommandContext";
 import { ARM_LIMITS, ARM_DEFAULTS } from "../../constants/armConfig";
 
 // Handles gamepad connections and state
-export default function GamepadPanel({ currentView }) {
+export default function GamepadPanel() {
   // general vars
   const [open, setOpen] = useState(false);
-  const [page, setPage] = useState("Drive");
+    const location = useLocation();
+
+  const [page, setPage] = useState(location.pathname);
+
+  useEffect(() => {
+
+    setPage(location.pathname);
+
+  }, [location.pathname]);
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
   // drive
@@ -399,7 +408,7 @@ export default function GamepadPanel({ currentView }) {
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
   useEffect(() => {
-    if (currentView === "DriveView") {
+    if (location.pathname === "/drive") {
       setInfo(
         driveConnectedOne !== null ? (
           <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
@@ -407,7 +416,7 @@ export default function GamepadPanel({ currentView }) {
           <SportsEsportsIcon sx={{ color: red[500], fontSize: 40 }} />
         ),
       );
-    } else if (currentView === "ArmView") {
+    } else if (location.pathname === "/arm") {
       setInfo(
         armConnectedOne !== null ? (
           <SportsEsportsIcon sx={{ color: green[500], fontSize: 40 }} />
@@ -418,7 +427,7 @@ export default function GamepadPanel({ currentView }) {
     } else {
       setInfo(""); // empty string if neither view
     }
-  }, [currentView, driveConnectedOne, armConnectedOne]);
+  }, [ location.pathname, driveConnectedOne, armConnectedOne]);
 
   return (
     <div
@@ -461,26 +470,26 @@ export default function GamepadPanel({ currentView }) {
           <Button
             size="small"
             sx={{
-              textDecoration: page === "Drive" ? "underline" : "none",
-              color: page === "Drive" ? "black" : "gray",
+              textDecoration: page === "/drive" ? "underline" : "none",
+              color: page === "/drive" ? "black" : "gray",
               "&:hover": {
-                textDecoration: page === "Drive" ? "underline" : "none",
+                textDecoration: page === "/drive" ? "underline" : "none",
               },
             }}
-            onClick={() => setPage("Drive")}
+            onClick={() => setPage("/drive")}
           >
             Drive
           </Button>
           <Button
             size="small"
             sx={{
-              textDecoration: page === "Arm" ? "underline" : "none",
-              color: page === "Arm" ? "black" : "gray",
+              textDecoration: page === "/arm" ? "underline" : "none",
+              color: page === "/arm" ? "black" : "gray",
               "&:hover": {
-                textDecoration: page === "Arm" ? "underline" : "none",
+                textDecoration: page === "/arm" ? "underline" : "none",
               },
             }}
-            onClick={() => setPage("Arm")}
+            onClick={() => setPage("/arm")}
           >
             Arm
           </Button>
