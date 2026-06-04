@@ -2,25 +2,82 @@ import {
   Typography,
   Box,
   Button,
-  ListItem,
   FormControlLabel,
   Switch,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
 } from "@mui/material";
+import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
+import EjectIcon from "@mui/icons-material/Eject";
+import { useState } from "react";
 import { useConnectedGamepads } from "../../contexts/GamepadContext";
 import { useDriveCommands } from "../../contexts/DriveCommandContext";
+import useArmMimicSerial from "../../hooks/useArmMimicSerial";
+
+const ARM_MIMIC_INDEX = "arm-mimic";
 
 // Handles UI for connecting and disconnecting gamepads
 export default function GamepadDiv({ name }) {
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
+
+  const [driveCommands, setDriveCommands] = useDriveCommands();
+  const moduleConflicts = driveCommands.moduleConflicts;
+
+  const [selectedArmMimic, setSelectedArmMimic] = useState("disconnect");
+  const mimicAvailable = selectedArmMimic === "mimic";
+
+  const { isSupported, isConnected, connect, disconnect } = useArmMimicSerial({
+    onLine: (line) => {
+      console.log("Received from Arm Mimic:", line);
+    },
+  });
+
   const gpList =
     name === "/drive"
       ? Object.values(connectedGamepads?.driveGPList || {})
       : Object.values(connectedGamepads?.armGPList || {});
+
   const connectedOne =
     name === "/drive" ? connectedGamepads?.drive : connectedGamepads?.arm;
 
-  const [driveCommands, setDriveCommands] = useDriveCommands();
-  const moduleConflicts = driveCommands.moduleConflicts;
+  const handlePhysicalGamepadSelect = (gp) => {
+    setConnectedGamepads((prev) =>
+      name === "Drive"
+        ? {
+            ...prev,
+            drive: prev.drive === gp.index ? null : gp.index,
+          }
+        : {
+            ...prev,
+            arm: prev.arm === gp.index ? null : gp.index,
+          },
+    );
+  };
+
+  const handleArmMimicConnect = async () => {
+    if (isConnected) {
+      await disconnect();
+
+      setConnectedGamepads((prev) => ({
+        ...prev,
+        arm: prev.arm === ARM_MIMIC_INDEX ? null : prev.arm,
+      }));
+
+      setSelectedArmMimic("disconnect");
+      return;
+    }
+
+    const connected = await connect();
+
+    if (connected) {
+      setConnectedGamepads((prev) => ({
+        ...prev,
+        arm: ARM_MIMIC_INDEX,
+      }));
+    }
+  };
 
   return (
     <div style={{ padding: 2, marginTop: 2 }}>
@@ -64,9 +121,11 @@ export default function GamepadDiv({ name }) {
             <Typography sx={{ color: "black" }} variant="subtitle1">
               Gamepad {gp.index}
             </Typography>
+
             <Typography sx={{ color: "black" }} variant="body2">
               ID: {gp.id}
             </Typography>
+
             <Button
               variant="outlined"
               size="small"
@@ -92,6 +151,46 @@ export default function GamepadDiv({ name }) {
             </Button>
           </Box>
         ))
+      )}
+
+      {name === "Arm" && (
+        <div>
+          <hr className="border-t border-gray-300 my-4" />
+
+          <Typography sx={{ color: "black", mt: -1 }} variant="h6">
+            ARM MIMIC SERIAL
+          </Typography>
+
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
+            <FormControl sx={{ flex: 1 }} size="small">
+              <InputLabel id="arm-mimic-select-label">MIMIC</InputLabel>
+              <Select
+                labelId="arm-mimic-select-label"
+                value={isConnected ? "mimic" : selectedArmMimic}
+                label="MIMIC"
+                disabled={isConnected}
+                onChange={(event) => setSelectedArmMimic(event.target.value)}
+                fullWidth
+              >
+                <MenuItem value="disconnect">Disconnect</MenuItem>
+
+                {isSupported && (
+                  <MenuItem value="mimic">Mimic</MenuItem>
+                )}
+              </Select>
+            </FormControl>
+
+            <Button
+              color={isConnected ? "error" : "success"}
+              variant="contained"
+              disabled={!isSupported || (!isConnected && !mimicAvailable)}
+              onClick={handleArmMimicConnect}
+              sx={{ width: 50, minWidth: 0 }}
+            >
+              {isConnected ? <EjectIcon /> : <ElectricalServicesIcon />}
+            </Button>
+          </Box>
+        </div>
       )}
     </div>
   );
