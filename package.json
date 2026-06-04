@@ -13,6 +13,7 @@
     "lan": "vite --mode prod --open",
     "build": "vite build",
     "lint": "eslint .",
+    "lint-quiet": "eslint . --quiet",
     "preview": "vite preview",
     "playwright": "playwright test"
   },
@@ -26,7 +27,6 @@
     "@rolldown/pluginutils": "^1.0.0-beta.42",
     "@vis.gl/react-maplibre": "^8.0.4",
     "express": "^4.21.2",
-    "framer-motion": "^12.40.0",
     "maplibre-gl": "^5.8.0",
     "notistack": "^3.0.2",
     "react": "^19.1.0",

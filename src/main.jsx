@@ -14,7 +14,7 @@ import ScienceView from "./views/ScienceView";
 import AutonomyView from "./views/AutonomyView";
 import ExtrasView from "./views/ExtrasView";
 // extras panes
-import {Graphs, Files, SpeedTestView}  from "./views/ExtrasView";
+import { Graphs, Files, SpeedTestView } from "./views/ExtrasView";
 
 const approuter = createBrowserRouter([
   {
@@ -50,13 +50,9 @@ const approuter = createBrowserRouter([
         path: "extras",
         element: <ExtrasView />,
         children: [
-                {
-        index: true,
-        element: <Navigate to="/extras/graphs" replace />,
-      },
           {
             index: true,
-            element: <Graphs />,
+            element: <Navigate to="/extras/graphs" replace />,
           },
           {
             path: "graphs",

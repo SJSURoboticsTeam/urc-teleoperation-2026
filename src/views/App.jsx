@@ -5,8 +5,6 @@ import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
 // React router components
 import { Outlet } from "react-router-dom";
-// MOTION IS TOTALLY USED
-import { AnimatePresence, motion } from "framer-motion";
 
 // Local imports
 import TopAppBar from "./TopAppBar";

@@ -25,13 +25,13 @@ import NavConnectionStatus from "../components/socket.io/BackendConnectionManage
 import GamepadPanel from "../components/gamepad/Gamepad";
 import Metrics from "../components/metrics/metrics";
 import StateMachine from "../components/statemachine/statemachine";
-import { robotsocket, useRobotSocketStatus } from "../components/socket.io/socket";
+import {
+  robotsocket,
+  useRobotSocketStatus,
+} from "../components/socket.io/socket";
 import { useNavigate } from "react-router-dom";
 
-export default function TopAppBar({
-  selectedElements,
-  setSelectedElements,
-}) {
+export default function TopAppBar({ selectedElements, setSelectedElements }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
 
@@ -40,7 +40,6 @@ export default function TopAppBar({
   };
 
   const navigate = useNavigate();
-
 
   const [capsLockActive, setCapsLockState] = useState(false);
   const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
@@ -112,9 +111,13 @@ export default function TopAppBar({
           <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
             {/* Buttons to change between views */}
             <Tabs
-              // we only track the first path, 
-              // so truncate /extras/graphs to /extras so it stays highlighted
-              value={"/" + location.pathname.split("/")[1]}
+              // To prevent MUI console warning pretend it's on drive before / redirect
+              // then truncate path for matchability, (/extras/graphs to /extras)
+              value={
+                location.pathname === "/"
+                  ? "/drive"
+                  : "/" + location.pathname.split("/")[1]
+              }
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
@@ -227,7 +230,7 @@ export default function TopAppBar({
             </ListItem>
             <Tabs
               orientation="vertical"
-              // we only track the first path, 
+              // we only track the first path,
               // so truncate /extras/graphs to /extras so it stays highlighted
               value={"/" + location.pathname.split("/")[1]}
               onChange={(e, value) => navigate(value)}
@@ -250,7 +253,7 @@ export default function TopAppBar({
 
                 "& .MuiTab-root.Mui-selected": {
                   color: "black",
-                   backgroundColor: "rgba(0,0,0,0.24)",
+                  backgroundColor: "rgba(0,0,0,0.24)",
                   borderRadius: "8px 0 0 8px",
                 },
               }}

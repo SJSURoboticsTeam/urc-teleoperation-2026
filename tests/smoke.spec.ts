@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 const routes = [
+  "/",
   "/drive",
   "/arm",
   "/science",
   "/autonomy",
+  "/extras",
   "/extras/graphs",
   "/extras/files",
   "/extras/speedtest",
@@ -17,6 +19,7 @@ for (const route of routes) {
     page.on("console", (msg) => {
       if (msg.type() === "error") {
         consoleErrors.push(msg.text());
+        console.log(msg.text());
       }
     });
 
@@ -24,6 +27,7 @@ for (const route of routes) {
 
     expect(response?.ok()).toBeTruthy();
     await expect(page.locator("#root")).not.toBeEmpty();
+await expect(page.getByText('Teleoperations', { exact: true })).toBeVisible();
 
     expect(consoleErrors).toEqual([]);
   });
