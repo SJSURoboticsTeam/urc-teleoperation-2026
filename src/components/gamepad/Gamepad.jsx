@@ -244,7 +244,7 @@ export default function GamepadPanel() {
 
     const differsEnough = (a, b, epsilon = 0.1) => Math.abs(a - b) > epsilon;
 
-    if (armConnectedOne == null) {
+    if (armConnectedOne == null || armConnectedOne === "arm-mimic") {
       return;
     }
 
