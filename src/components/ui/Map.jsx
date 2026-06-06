@@ -5,7 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { robotsocket, basesocket } from "../socket.io/socket";
 import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
 
-function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
+function CoordUI({ lat, long, lastRead }) {
   return (
     <Box
       sx={{
@@ -21,6 +21,65 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
       <Typography variant="body2">Latitude: {lat}</Typography>
       <Typography variant="body2">Longitude: {long}</Typography>
       <Typography variant="body2">Last Read: {lastRead}</Typography>
+    </Box>
+  );
+}
+
+class CoordControl {
+  constructor() {
+    this._latitude = null;
+    this._longitude = null;
+    this._lastRead = null;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update("---", "---", "---", true);
+    return this._container;
+  }
+  update(lat, long, lastRead) {
+    if(!this._root) {
+      return;
+    }
+    this._latitude = lat;
+    this._longitude = long;
+    this._lastRead = lastRead;
+    this._root.render(
+      <CoordUI
+        lat = {lat}  
+        long = {long}  
+        lastRead = {lastRead}  
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
+
+function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 180,
+      }}
+    >
       <FormControlLabel
         control={
           <Switch
@@ -40,9 +99,6 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
 
 class LockOnControl {
   constructor(onToggle) {
-    this._latitude = null;
-    this._longitude = null;
-    this._lastRead = null;
     this._isLockedOn = null;
     this._onToggle = onToggle;
     this._root = null;
@@ -59,15 +115,9 @@ class LockOnControl {
     if(!this._root) {
       return;
     }
-    this._latitude = lat;
-    this._longitude = long;
-    this._lastRead = lastRead;
     this._isLockedOn = isLockedOn;
     this._root.render(
       <LockOnControlUI
-        lat = {lat}  
-        long = {long}  
-        lastRead = {lastRead}  
         isLockedOn = {isLockedOn}  
         onToggle = {this._onToggle}
       />
@@ -91,8 +141,12 @@ export default function Map() {
   const marker = useRef(null);
   const baseMarker = useRef(null);
   const controlRef = useRef(null);
+  const coordRef = useRef(null);
+  const coordRef2 = useRef(null);
   const lastSignalTime = useRef(Date.now()); 
+  const lastSignalTimeBase = useRef(Date.now()); 
   const signalDiff = useRef();
+  const signalDiffBase = useRef();
   const signalTimeout = useRef(null);
 
   const [coordinates, setCoordinates] = useState({
@@ -152,10 +206,17 @@ export default function Map() {
     const lockOnControl = new LockOnControl(() =>
       setIsLockedOn((prev) => !prev)
     );
+    const coordControl = new CoordControl();
+    const coordControl2 = new CoordControl();
 
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
       controlRef.current = lockOnControl;
+      map.addControl(coordControl, "bottom-left");
+      coordRef.current = coordControl;
+
+      map.addControl(coordControl2, "bottom-left");
+      coordRef2.current = coordControl2;
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -230,8 +291,8 @@ export default function Map() {
       }
 
       const newTime = Date.now();
-      signalDiff.current = (newTime - lastSignalTime.current) / 1000;
-      lastSignalTime.current = newTime;
+      signalDiffBase.current = (newTime - lastSignalTimeBase.current) / 1000;
+      lastSignalTimeBase.current = newTime;
 
       // console.log("Received GPS data:", data);
       setBaseCoordinates({
@@ -251,6 +312,9 @@ export default function Map() {
     signalTimeout.current = setTimeout(() => {
       setCoordinates((prev) => ({ ...prev, receive: false }));
     }, 3000);
+    signalTimeout.current = setTimeout(() => {
+      setBaseCoordinates((prev) => ({ ...prev, receive: false }));
+    }, 3000);
     return () => {
       robotsocket.off("gpsData", robotHandler);
       basesocket.off("gpsData2", baseHandler);
@@ -264,12 +328,20 @@ export default function Map() {
     marker.current.setLngLat([coordinates.long, coordinates.lat]);
     baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
 
-    if(controlRef.current) {
-      controlRef.current.update(
+    if(coordRef.current) {
+      coordRef.current.update(
         coordinates.lat.toFixed(6),
         coordinates.long.toFixed(6),
         coordinates.receive ? signalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
         isLockedOn,
+      );
+    }
+
+    if(coordRef2.current) {
+      coordRef2.current.update(
+        baseCoordinates.lat.toFixed(6),
+        baseCoordinates.long.toFixed(6),
+        baseCoordinates.receive ? signalDiffBase.current.toFixed(2) + "s ago" : "NO SIGNAL",
       );
     }
 
@@ -284,7 +356,7 @@ export default function Map() {
     return () => {
 
     }
-  }, [coordinates, isLockedOn]);
+  }, [coordinates, baseCoordinates, isLockedOn]);
 
   // Use full height so the map fills any explicit-height parent container
   return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
