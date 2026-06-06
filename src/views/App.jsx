@@ -3,16 +3,13 @@ import { useState } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
+// React router components
+import { Outlet } from "react-router-dom";
 
 // Local imports
-import TopAppBar from "../components/ui/TopAppBar";
-import DriveComponents from "./DriveView";
-import ArmView from "./ArmView";
-import ScienceView from "./ScienceView";
-import AutonomyView from "./AutonomyView";
+import TopAppBar from "./TopAppBar";
 import SplitView from "./SplitView";
-import ExtrasView from "./ExtrasView";
-import Alert from "@mui/material/Alert";
+// PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
 // Context imports
 import ArmCommandContext from "../contexts/ArmCommandContext";
@@ -23,8 +20,6 @@ import AutonomyModeProvider from "../contexts/AutonomyModeContext";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
 function App() {
-  const [currentView, setCurrentView] = useState("DriveView");
-
   // Global autonomy state so every view can react to it
   // Start in TELEOP mode on initial load
   const [autonomyEnabled, setAutonomyEnabled] = useState(false);
@@ -66,51 +61,9 @@ function App() {
     py: 0,
     panSpeed: 30,
   });
-
+  
+// controls whether to render cams, content, or both
   const [selectedElements, setSelectedElements] = useState("both");
-
-  // Select which view we want to display
-  function renderView() {
-    switch (currentView) {
-      case "ArmView":
-        return (
-          <SplitView
-            CurrentView={<ArmView />}
-            selectedElements={selectedElements}
-          />
-        );
-      case "DriveView":
-        return (
-          <SplitView
-            CurrentView={<DriveComponents />}
-            selectedElements={selectedElements}
-          />
-        );
-      case "ExtrasView":
-        return (
-          <SplitView
-            CurrentView={<ExtrasView />}
-            selectedElements={selectedElements}
-          />
-        );
-      case "ScienceView":
-        return (
-          <SplitView
-            CurrentView={<ScienceView />}
-            selectedElements={selectedElements}
-          />
-        );
-      case "AutonomyView":
-        return (
-          <SplitView
-            CurrentView={<AutonomyView />}
-            selectedElements={selectedElements}
-          />
-        );
-      default:
-        return <div>Select a view</div>;
-    }
-  }
 
   return (
     <Box
@@ -147,8 +100,6 @@ function App() {
                   <CssBaseline />
                   {/* Normalizes styles */}
                   <TopAppBar
-                    currentView={currentView}
-                    setCurrentView={setCurrentView}
                     selectedElements={selectedElements}
                     setSelectedElements={setSelectedElements}
                     addSnackbarMessage={addSnackbarMessage}
@@ -166,7 +117,10 @@ function App() {
                       marginTop: "60px",
                     }}
                   >
-                    {renderView()}
+                    <SplitView selectedElements={selectedElements}>
+                      {/* we pass all these elements as "children" into SplitView */}
+                          <Outlet />
+                    </SplitView>
                   </Box>
                 </MastCommandContext>
               </DriveCommandContext>

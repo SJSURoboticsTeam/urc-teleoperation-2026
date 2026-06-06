@@ -1,7 +1,7 @@
 import "react-resizable/css/styles.css";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Box from "@mui/material/Box";
-import { basesocket, robotsocket } from "../socket.io/socket";
+import { robotsocket } from "../socket.io/socket";
 
 export default function Wheel() {
   const [wheelAngles, setWheelAngles] = useState({

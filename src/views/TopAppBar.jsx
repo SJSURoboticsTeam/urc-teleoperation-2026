@@ -13,24 +13,25 @@ import {
   Tooltip,
   ListItemButton,
   Box,
+  Tabs,
+  Tab,
   ToggleButtonGroup,
-  ToggleButton
+  ToggleButton,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
-import NavConnectionStatus from "../socket.io/BackendConnectionManager";
-import GamepadPanel from "../gamepad/Gamepad";
-import Metrics from "../metrics/metrics";
-import StateMachine from "../statemachine/statemachine";
-import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
+import NavConnectionStatus from "../components/socket.io/BackendConnectionManager";
+import GamepadPanel from "../components/gamepad/Gamepad";
+import Metrics from "../components/metrics/metrics";
+import StateMachine from "../components/statemachine/statemachine";
+import {
+  robotsocket,
+  useRobotSocketStatus,
+} from "../components/socket.io/socket";
+import { useNavigate } from "react-router-dom";
 
-export default function TopAppBar({
-  setCurrentView,
-  currentView,
-  selectedElements, 
-  setSelectedElements
-}) {
+export default function TopAppBar({ selectedElements, setSelectedElements }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
 
@@ -38,7 +39,7 @@ export default function TopAppBar({
     setDrawerOpen(open);
   };
 
-  const handleViewChange = (view) => setCurrentView(view);
+  const navigate = useNavigate();
 
   const [capsLockActive, setCapsLockState] = useState(false);
   const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
@@ -71,8 +72,8 @@ export default function TopAppBar({
   }, []);
 
   const changeElements = (event, newAlignment) => {
-    if(newAlignment !== null){
-    setSelectedElements(newAlignment);
+    if (newAlignment !== null) {
+      setSelectedElements(newAlignment);
     }
   };
 
@@ -109,66 +110,42 @@ export default function TopAppBar({
           </Typography>
           <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
             {/* Buttons to change between views */}
-            <Button
-              color="inherit"
-              onClick={() => handleViewChange("DriveView")}
+            <Tabs
+              // To prevent MUI console warning pretend it's on drive before / redirect
+              // then truncate path for matchability, (/extras/graphs to /extras)
+              value={
+                location.pathname === "/"
+                  ? "/drive"
+                  : "/" + location.pathname.split("/")[1]
+              }
+              onChange={(e, value) => navigate(value)}
+              role="navigation"
+              TabIndicatorProps={{
+                style: {
+                  backgroundColor: "white",
+                },
+              }}
               sx={{
-                bgcolor:
-                  currentView === "DriveView"
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
+                "& .MuiTab-root": {
+                  color: "white",
+                  transition: "all 0.2s ease",
+                  minWidth: "unset",
+                  padding: "6px 12px",
+                },
+
+                "& .MuiTab-root.Mui-selected": {
+                  color: "white",
+                  backgroundColor: "rgba(255,255,255,0.12)",
+                  borderRadius: "8px 8px 0 0",
+                },
               }}
             >
-              Drive
-            </Button>
-            <Button
-              color="inherit"
-              onClick={() => handleViewChange("ArmView")}
-              sx={{
-                bgcolor:
-                  currentView === "ArmView"
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
-              }}
-            >
-              Arm
-            </Button>
-            <Button
-              color="inherit"
-              onClick={() => handleViewChange("ScienceView")}
-              sx={{
-                bgcolor:
-                  currentView === "ScienceView"
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
-              }}
-            >
-              Science
-            </Button>
-            <Button
-              color="inherit"
-              onClick={() => handleViewChange("AutonomyView")}
-              sx={{
-                bgcolor:
-                  currentView === "AutonomyView"
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
-              }}
-            >
-              Autonomy
-            </Button>
-            <Button
-              color="inherit"
-              onClick={() => handleViewChange("ExtrasView")}
-              sx={{
-                bgcolor:
-                  currentView === "ExtrasView"
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
-              }}
-            >
-              Extras
-            </Button>
+              <Tab label="Drive" value="/drive" />
+              <Tab label="Arm" value="/arm" />
+              <Tab label="Science" value="/science" />
+              <Tab label="Autonomy" value="/autonomy" />
+              <Tab label="Extras" value="/extras" />
+            </Tabs>
           </Box>
 
           {/* fill the space between the buttons and the connection status */}
@@ -212,7 +189,6 @@ export default function TopAppBar({
             openPane={openPane}
             setOpenPane={setOpenPane}
             name="Drive"
-            currentView={currentView}
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />
@@ -241,7 +217,7 @@ export default function TopAppBar({
         sx={{
           "& .MuiDrawer-paper": {
             width: 240,
-            borderRadius: "12px"
+            borderRadius: "12px",
           },
         }}
       >
@@ -252,68 +228,42 @@ export default function TopAppBar({
                 VIEWS
               </Typography>
             </ListItem>
-            <ListItemButton
-              onClick={() => handleViewChange("DriveView")}
-              sx={{
-                bgcolor:
-                  currentView === "DriveView"
-                    ? "rgba(0, 0, 0, 0.2)"
-                    : "transparent",
+            <Tabs
+              orientation="vertical"
+              // we only track the first path,
+              // so truncate /extras/graphs to /extras so it stays highlighted
+              value={"/" + location.pathname.split("/")[1]}
+              onChange={(e, value) => navigate(value)}
+              role="navigation"
+              TabIndicatorProps={{
+                style: {
+                  backgroundColor: "black",
+                },
               }}
-            >
-              <Typography sx={{ color: "black" }}>Drive</Typography>
-            </ListItemButton>
+              sx={{
+                borderRight: "3px solid rgba(0,0,0,0.12)",
 
-            <ListItemButton
-              button
-              onClick={() => handleViewChange("ArmView")}
-              sx={{
-                bgcolor:
-                  currentView === "ArmView"
-                    ? "rgba(0, 0, 0, 0.2)"
-                    : "transparent",
-              }}
-            >
-              <Typography sx={{ color: "black" }}>Arm</Typography>
-            </ListItemButton>
+                "& .MuiTab-root": {
+                  color: "black",
+                  transition: "all 0.2s ease",
+                  minWidth: "unset",
+                  padding: "6px 12px",
+                  alignItems: "flex-start",
+                },
 
-            <ListItemButton
-              button
-              onClick={() => handleViewChange("ScienceView")}
-              sx={{
-                bgcolor:
-                  currentView === "ScienceView"
-                    ? "rgba(0, 0, 0, 0.2)"
-                    : "transparent",
+                "& .MuiTab-root.Mui-selected": {
+                  color: "black",
+                  backgroundColor: "rgba(0,0,0,0.24)",
+                  borderRadius: "8px 0 0 8px",
+                },
               }}
             >
-              <Typography sx={{ color: "black" }}>Science</Typography>
-            </ListItemButton>
-
-            <ListItemButton
-              onClick={() => handleViewChange("AutonomyView")}
-              sx={{
-                bgcolor:
-                  currentView === "AutonomyView"
-                    ? "rgba(0, 0, 0, 0.2)"
-                    : "transparent",
-              }}
-            >
-              <Typography sx={{ color: "black" }}>Autonomy</Typography>
-            </ListItemButton>
-
-            <ListItemButton
-              button
-              onClick={() => handleViewChange("ExtrasView")}
-              sx={{
-                bgcolor:
-                  currentView === "ExtrasView"
-                    ? "rgba(0, 0, 0, 0.2)"
-                    : "transparent",
-              }}
-            >
-              <Typography sx={{ color: "black" }}>Extras</Typography>
-            </ListItemButton>
+              <Tab label="Drive" value="/drive" />
+              <Tab label="Arm" value="/arm" />
+              <Tab label="Science" value="/science" />
+              <Tab label="Autonomy" value="/autonomy" />
+              <Tab label="Extras" value="/extras" />
+            </Tabs>
           </Box>
           <ListItem>
             <Typography sx={{ color: "black" }} variant="h6">

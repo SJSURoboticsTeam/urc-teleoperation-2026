@@ -124,7 +124,7 @@ export default function MetricsGraph() {
     )
 }
 
-function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points, colors, time }) {
+function SignalGraph({ antenna900, antenna5, running, reset, points, colors, time }) {
     const [signalData900, setSignalData900] = useState([]);
     const [signalData5, setSignalData5] = useState([]);
     
@@ -159,7 +159,7 @@ function SignalGraph({ antenna900, antenna5, running, setRunning, reset, points,
     );
 }
 
-function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, colors, time }) {
+function NoiseGraph({ antenna900, antenna5, running, reset, points, colors, time }) {
     const [noiseData900, setNoiseData900] = useState([]);
     const [noiseData5, setNoiseData5] = useState([]);
 
@@ -194,7 +194,7 @@ function NoiseGraph({ antenna900, antenna5, running, setRunning, reset, points, 
     );
 }
 
-function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors, time }) {
+function TxRx900Graph({ antenna900, running, reset, points, colors, time }) {
     const [TxData900, setTxData900] = useState([]);
     const [RxData900, setRxData900] = useState([]);
 
@@ -226,7 +226,7 @@ function TxRx900Graph({ antenna900, running, setRunning, reset, points, colors, 
     );
 }
 
-function TxRx5Graph({ antenna5, running, setRunning, reset, points, colors, time }) {
+function TxRx5Graph({ antenna5, running, reset, points, colors, time }) {
     const [TxData5, setTxData5] = useState([]);
     const [RxData5, setRxData5] = useState([]);
 

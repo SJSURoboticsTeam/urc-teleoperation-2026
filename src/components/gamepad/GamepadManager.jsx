@@ -13,18 +13,18 @@ import { useDriveCommands } from "../../contexts/DriveCommandContext";
 export default function GamepadDiv({ name }) {
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
   const gpList =
-    name === "Drive"
+    name === "/drive"
       ? Object.values(connectedGamepads?.driveGPList || {})
       : Object.values(connectedGamepads?.armGPList || {});
   const connectedOne =
-    name === "Drive" ? connectedGamepads?.drive : connectedGamepads?.arm;
+    name === "/drive" ? connectedGamepads?.drive : connectedGamepads?.arm;
 
   const [driveCommands, setDriveCommands] = useDriveCommands();
   const moduleConflicts = driveCommands.moduleConflicts;
 
   return (
     <div style={{ padding: 2, marginTop: 2 }}>
-      {name == "Drive" && (
+      {name == "/drive" && (
         <div style={{ marginBottom: 5 }}>
           <FormControlLabel
             sx={{ color: "black" }}
@@ -45,7 +45,7 @@ export default function GamepadDiv({ name }) {
       )}
       {gpList.length === 0 ? (
         <Typography sx={{ color: "black" }}>
-          No {name === "Drive" ? "Xbox/Playstation" : "Logitech Extreme"}{" "}
+          No {name === "/drive" ? "Xbox/Playstation" : "Logitech Extreme"}{" "}
           gamepads connected.
         </Typography>
       ) : (
@@ -73,7 +73,7 @@ export default function GamepadDiv({ name }) {
               sx={{ marginTop: 1 }}
               onClick={() => {
                 setConnectedGamepads((prev) =>
-                  name === "Drive"
+                  name === "/drive"
                     ? {
                         ...prev,
                         drive: prev.drive === gp.index ? null : gp.index,
@@ -82,7 +82,7 @@ export default function GamepadDiv({ name }) {
                 );
               }}
             >
-              {name === "Drive"
+              {name === "/drive"
                 ? connectedGamepads.drive === gp.index
                   ? "Disconnect"
                   : "Select"
