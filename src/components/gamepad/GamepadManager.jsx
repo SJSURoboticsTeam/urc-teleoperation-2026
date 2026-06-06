@@ -157,8 +157,8 @@ export default function GamepadDiv({ name }) {
         <div>
           <hr className="border-t border-gray-300 my-4" />
 
-          <Typography sx={{ color: "black", mt: -1 }} variant="h6">
-            ARM MIMIC SERIAL
+          <Typography sx={{ color: "black", mt: -1 }} variant="subtitle1">
+            ARM MIMIC
           </Typography>
 
           <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
@@ -166,24 +166,20 @@ export default function GamepadDiv({ name }) {
               <InputLabel id="arm-mimic-select-label">MIMIC</InputLabel>
               <Select
                 labelId="arm-mimic-select-label"
-                value={isConnected ? "mimic" : selectedArmMimic}
+                value={isConnected ? "mimic" : "disconnect"}
                 label="MIMIC"
-                disabled={isConnected}
-                onChange={(event) => setSelectedArmMimic(event.target.value)}
+                disabled
                 fullWidth
               >
                 <MenuItem value="disconnect">Disconnect</MenuItem>
-
-                {isSupported && (
-                  <MenuItem value="mimic">Mimic</MenuItem>
-                )}
+                <MenuItem value="mimic">Mimic</MenuItem>
               </Select>
             </FormControl>
 
             <Button
               color={isConnected ? "error" : "success"}
               variant="contained"
-              disabled={!isSupported || (!isConnected && !mimicAvailable)}
+              disabled={!isSupported}
               onClick={handleArmMimicConnect}
               sx={{ width: 50, minWidth: 0 }}
             >
