@@ -138,18 +138,19 @@ class LockOnControl {
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
-  const marker = useRef(null);
+  const robotMarker = useRef(null);
   const baseMarker = useRef(null);
   const controlRef = useRef(null);
   const coordRef = useRef(null);
   const coordRef2 = useRef(null);
-  const lastSignalTime = useRef(Date.now()); 
-  const lastSignalTimeBase = useRef(Date.now()); 
-  const signalDiff = useRef();
-  const signalDiffBase = useRef();
-  const signalTimeout = useRef(null);
+  const robotLastSignalTime = useRef(Date.now()); 
+  const baseLastSignalTime = useRef(Date.now()); 
+  const robotSignalDiff = useRef();
+  const baseSignalDiff = useRef();
+  const robotSignalTimeout = useRef(null);
+  const baseSignalTimeout = useRef(null);
 
-  const [coordinates, setCoordinates] = useState({
+  const [robotCoordinates, setRobotCoordinates] = useState({
     long: -121.881194,
     lat: 37.336847,
     receive: false,
@@ -164,7 +165,7 @@ export default function Map() {
   const [isLockedOn, setIsLockedOn] = useState(true);
 
   useEffect(() => {
-    const target = [coordinates.long, coordinates.lat];
+    const target = [robotCoordinates.long, robotCoordinates.lat];
     //const target = [-121.881194, 37.336847]; // San Jose area 
     //const target = [-110.768401, 38.372207]; // Utah
     // https://www.gps-coordinates.net/ for coordinates
@@ -193,7 +194,7 @@ export default function Map() {
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    marker.current = new maplibregl.Marker({ color: "#ff0000" })
+    robotMarker.current = new maplibregl.Marker({ color: "#ff0000" })
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
       .addTo(map);
@@ -212,6 +213,7 @@ export default function Map() {
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
       controlRef.current = lockOnControl;
+
       map.addControl(coordControl, "bottom-left");
       coordRef.current = coordControl;
 
@@ -265,34 +267,34 @@ export default function Map() {
 
   useEffect(() => {
     const robotHandler = (data) => {
-      if (signalTimeout.current) {
-        clearTimeout(signalTimeout.current);
+      if (robotSignalTimeout.current) {
+        clearTimeout(robotSignalTimeout.current);
       }
 
       const newTime = Date.now();
-      signalDiff.current = (newTime - lastSignalTime.current) / 1000;
-      lastSignalTime.current = newTime;
+      robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
+      robotLastSignalTime.current = newTime;
 
       // console.log("Received GPS data:", data);
-      setCoordinates({
+      setRobotCoordinates({
         long: data.longitude,
         lat: data.latitude,
         receive: true,
       });
 
-      signalTimeout.current = setTimeout(() => {
-        setCoordinates((prev) => ({ ...prev, receive: false }));
+      robotSignalTimeout.current = setTimeout(() => {
+        setRobotCoordinates((prev) => ({ ...prev, receive: false }));
       }, 3000);
     };
 
     const baseHandler = (data) => {
-      if (signalTimeout.current) {
-        clearTimeout(signalTimeout.current);
+      if (baseSignalTimeout.current) {
+        clearTimeout(baseSignalTimeout.current);
       }
 
       const newTime = Date.now();
-      signalDiffBase.current = (newTime - lastSignalTimeBase.current) / 1000;
-      lastSignalTimeBase.current = newTime;
+      baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
+      baseLastSignalTime.current = newTime;
 
       // console.log("Received GPS data:", data);
       setBaseCoordinates({
@@ -301,7 +303,7 @@ export default function Map() {
         receive: true,
       });
 
-      signalTimeout.current = setTimeout(() => {
+      baseSignalTimeout.current = setTimeout(() => {
         setBaseCoordinates((prev) => ({ ...prev, receive: false }));
       }, 3000);
     };
@@ -309,30 +311,33 @@ export default function Map() {
     robotsocket.on("gpsData", robotHandler);
     basesocket.on("gpsData2", baseHandler);
     basesocket
-    signalTimeout.current = setTimeout(() => {
-      setCoordinates((prev) => ({ ...prev, receive: false }));
+    robotSignalTimeout.current = setTimeout(() => {
+      setRobotCoordinates((prev) => ({ ...prev, receive: false }));
     }, 3000);
-    signalTimeout.current = setTimeout(() => {
+    baseSignalTimeout.current = setTimeout(() => {
       setBaseCoordinates((prev) => ({ ...prev, receive: false }));
     }, 3000);
     return () => {
       robotsocket.off("gpsData", robotHandler);
       basesocket.off("gpsData2", baseHandler);
-      if (signalTimeout.current) {
-        clearTimeout(signalTimeout.current);
+      if (robotSignalTimeout.current) {
+        clearTimeout(robotSignalTimeout.current);
+      }
+      if (baseSignalTimeout.current) {
+        clearTimeout(baseSignalTimeout.current);
       }
     }
   }, []);
 
   useEffect(() => {
-    marker.current.setLngLat([coordinates.long, coordinates.lat]);
+    robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
     baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
 
     if(coordRef.current) {
       coordRef.current.update(
-        coordinates.lat.toFixed(6),
-        coordinates.long.toFixed(6),
-        coordinates.receive ? signalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
+        robotCoordinates.lat.toFixed(6),
+        robotCoordinates.long.toFixed(6),
+        robotCoordinates.receive ? robotSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
         isLockedOn,
       );
     }
@@ -341,13 +346,13 @@ export default function Map() {
       coordRef2.current.update(
         baseCoordinates.lat.toFixed(6),
         baseCoordinates.long.toFixed(6),
-        baseCoordinates.receive ? signalDiffBase.current.toFixed(2) + "s ago" : "NO SIGNAL",
+        baseCoordinates.receive ? baseSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
       );
     }
 
     if(isLockedOn && mapRef.current) {
       mapRef.current.easeTo({
-        center: [coordinates.long, coordinates.lat],
+        center: [robotCoordinates.long, robotCoordinates.lat],
         speed: 3,
         curve: 1,
         essential: true,
@@ -356,7 +361,7 @@ export default function Map() {
     return () => {
 
     }
-  }, [coordinates, baseCoordinates, isLockedOn]);
+  }, [robotCoordinates, baseCoordinates, isLockedOn]);
 
   // Use full height so the map fills any explicit-height parent container
   return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
