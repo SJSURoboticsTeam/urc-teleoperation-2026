@@ -9,7 +9,7 @@ export const ARM_JOINT_KEYS = [
 
 export const ARM_JOINT_CONFIG = [
   { label: "Elbow (deg)", key: "elbow", min: -100, max: -20, initial: -20 },
-  { label: "Shoulder (deg)", key: "shoulder", min: -20, max: 65, initial: 0 },
+  { label: "Shoulder (deg)", key: "shoulder", min: -20, max: 90, initial: 0 },
   { label: "Track (mm)", key: "track", min: 0, max: 300, initial: 0 },
   { label: "Pitch (deg)", key: "pitch", min: 0, max: 180, initial: 0 },
   { label: "Roll (deg)", key: "roll", min: 0, max: 360, initial: 0 },
