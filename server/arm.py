@@ -51,7 +51,8 @@ arm_send_ID = {
 }
 
 arm_receive_ID = {
-    "RECEIVE_STOP": "00D",
+    # ACK is send address + 0x100 = 0x00C + 0x100 = 0x10C
+    "RECEIVE_STOP": "10C",
     # Heartbeat response, Homing response, return ack, position, velocity, PID acks
     "TRACK": '221',
     "SHOULDER": '222',
@@ -103,21 +104,56 @@ def invalidate_arm_connection(serial_ports, reason="unknown"):
     serial_ports["armId"] = "disconnect"
     print(f"[ARM] Connection invalidated: {reason}")
 
+# ---------------------------------------------------------------------------
+# Position encoding
+#
+# position is a fraction of full rotation
+#   fraction = degrees / 360.0   (or cm / 30.0 for track)
+#   mantissa = int(fraction * 2^EXPONENT)  →  2-byte signed big-endian
+#
+# wire format for Set Servo Target Position (DLC=4):
+#   Data[0] = 0x12
+#   Data[1] = Exponent (14)
+#   Data[2] = mantissa MSB
+#   Data[3] = mantissa LSB
+# ---------------------------------------------------------------------------
+POSITION_EXPONENT = 14
+POSITION_SCALE    = 2 ** POSITION_EXPONENT  # 16384
+
+# full physical range per joint, used to convert to fraction-of-rotation
+JOINT_FULL_RANGE = {
+    "track":    30.0,   # cm
+    "shoulder": 360.0,  # deg
+    "elbow":    360.0,
+    "pitch":    360.0,
+    "roll":     360.0,
+    "clamp":    360.0,
+}
+
 def encode_arm_value(value, joint_name="unknown"):
     """
-    Firmware expects fixed-point values scaled by 2^6
+    Encode a physical joint value into the 3-byte payload for Data[1..3]
+    Returns a 6-char hex string: EE HHHH (exponent byte + 2-byte mantissa)
+    The full Data field sent on wire is: 0x12 + this output
     """
     try:
-        scaled = int(float(value) * (2 ** 6))
+        full_range = JOINT_FULL_RANGE.get(joint_name, 360.0)
+        fraction   = float(value) / full_range
+        mantissa   = int(fraction * POSITION_SCALE)
+        mantissa   = max(-32768, min(32767, mantissa))  # clamp to int16
+
+        exp_hex      = f"{POSITION_EXPONENT:02X}"
+        mantissa_hex = mantissa.to_bytes(2, "big", signed=True).hex()
+
         arm_debug_log(
             f"encode:{joint_name}",
-            f"[ARM DEBUG] {joint_name} raw={value}, scaled={scaled}, "
-            f"hex={scaled.to_bytes(2, 'big', signed=True).hex()}",
+            f"[ARM DEBUG] {joint_name} val={value} frac={fraction:.4f} "
+            f"mant={mantissa} wire={exp_hex}{mantissa_hex}",
         )
-    except Exception:
-        scaled = 0
+        return exp_hex + mantissa_hex
 
-    return scaled.to_bytes(2, "big", signed=True).hex()
+    except Exception:
+        return f"{POSITION_EXPONENT:02X}0000"
 
 def decode_canusb_frame(data):
     """
@@ -158,12 +194,13 @@ async def send_arm_joint(serial_ports, joint_name, value):
     """
     Send a single joint set-position command over CAN
 
-    Firmware doc:
-      Set Servo Position:
-      ID = servo address
-      Len = 3
+    Set Servo Target Position:
+      ID      = servo address (0x12X)
+      Len/DLC = 4
       Data[0] = 0x12
-      Data[1:2] = position bytes
+      Data[1] = Exponent (14)
+      Data[2] = Position MSB  } 2-byte signed mantissa
+      Data[3] = Position LSB  }   = (degrees/360) * 2^14
     """
     arm_serial = serial_ports.get("arm")
     if arm_serial is None:
@@ -176,7 +213,8 @@ async def send_arm_joint(serial_ports, joint_name, value):
 
     payload = encode_arm_value(value, joint_name)
     can_key = JOINT_TO_CAN_KEY[joint_name]
-    can_msg = f"t{arm_send_ID[can_key]}312{payload}\r"
+    # DLC 3→4, payload is now exponent + 2-byte mantissa (6 hex chars)
+    can_msg = f"t{arm_send_ID[can_key]}412{payload}\r"
 
     try:
         arm_debug_log(
@@ -192,13 +230,12 @@ async def send_arm_joint(serial_ports, joint_name, value):
     
 async def request_arm_joint_position(serial_ports, joint_name):
     """
-    Send a read-position request over CAN
+    Send a read-position request over CAN.
 
-    Firmware doc:
-      Read Servo Position:
-      ID = servo address
-      Len = 1
-      Data[0] = 0x20
+    Read Servo Position Reading:
+      ID      = servo address (0x12X)
+      Len/DLC = 1
+      Data[0] = 0x23   (actual encoder value; 0x22 would read target position)
     """
     arm_serial = serial_ports.get("arm")
     if arm_serial is None:
@@ -209,7 +246,8 @@ async def request_arm_joint_position(serial_ports, joint_name):
         return False
 
     can_key = JOINT_TO_CAN_KEY[joint_name]
-    can_msg = f"t{arm_send_ID[can_key]}120\r"
+    # command byte is 0x23
+    can_msg = f"t{arm_send_ID[can_key]}123\r"
 
     try:
         await asyncio.to_thread(arm_serial.write, can_msg.encode())
@@ -225,18 +263,20 @@ def parse_receive_stop():
 
 def parse_arm_ack(frame_info):
     """
-    ACK for set-position command.
+    ACK for set-position command
 
-    Firmware doc:
-      Return ACK
-      ID = servo address + 0x100
-      Len = 1
-      Data[0] = 0x12 + 0x50 = 0x62
+    Return ACK for 0x12:
+      ID      = servo address + 0x100
+      Len/DLC = 4
+      Data[0] = 0x12  (echoed command byte)
+      Data[1..3]      (echoed exponent + mantissa)
+
+    echoes full frame
     """
     joint_name = RECEIVE_ID_TO_JOINT.get(frame_info["id"], "unknown")
     payload = frame_info["payload_bytes"]
 
-    if frame_info["dlc"] == 1 and len(payload) >= 1 and payload[0] == 0x62:
+    if frame_info["dlc"] == 4 and len(payload) >= 1 and payload[0] == 0x12:
         arm_debug_log(
             f"ack:{joint_name}",
             f"[ARM ACK] {joint_name}: set-position ACK -> {frame_info['frame']}",
@@ -247,46 +287,51 @@ def parse_arm_ack(frame_info):
             "frame": frame_info["frame"],
         }
 
-    print(f"[ARM RX] {joint_name}: unexpected short reply -> {frame_info['frame']}")
+    print(f"[ARM RX] {joint_name}: unexpected ACK frame -> {frame_info['frame']}")
     return None
 
 
 def parse_arm_position_response(frame_info):
     """
-    Position response.
+    Position reading response
 
-    Firmware doc:
-      Return Servo Position
-      ID = servo address + 0x100
-      Len = 8
-      Data[0] = 0x20 + 0x50 = 0x70
-      Data[1] = position[0]
-      Data[2] = position[1]
+    Return Servo Position Reading:
+      ID      = servo address + 0x100
+      Len/DLC = 4
+      Data[0] = 0x23
+      Data[1] = Exponent
+      Data[2] = Position MSB  } 2-byte signed mantissa
+      Data[3] = Position LSB  }   physical = (mantissa / 2^exponent) * full_range
     """
     joint_name = RECEIVE_ID_TO_JOINT.get(frame_info["id"], "unknown")
     payload = frame_info["payload_bytes"]
 
-    if frame_info["dlc"] != 8 or len(payload) < 3:
+    if frame_info["dlc"] != 4 or len(payload) < 4:
         print(f"[ARM RX] {joint_name}: invalid position frame -> {frame_info['frame']}")
         return None
 
-    if payload[0] != 0x70:
-        print(f"[ARM RX] {joint_name}: unexpected 8-byte frame -> {frame_info['frame']}")
+    if payload[0] != 0x23:
+        arm_debug_log(
+            f"rx_unknown:{joint_name}",
+            f"[ARM RX] {joint_name}: unhandled 4-byte cmd=0x{payload[0]:02X} -> {frame_info['frame']}",
+        )
         return None
 
-    position_raw = int.from_bytes(payload[1:3], byteorder="big", signed=True)
-    position_approx = position_raw / 64.0
+    exponent     = payload[1]
+    mantissa     = int.from_bytes(payload[2:4], byteorder="big", signed=True)
+    fraction     = mantissa / (2 ** exponent)
+    full_range   = JOINT_FULL_RANGE.get(joint_name, 360.0)
+    position_approx = round(fraction * full_range, 2)
 
     arm_debug_log(
         f"pos:{joint_name}",
-        f"[ARM RX] {joint_name} raw={position_raw}, "
+        f"[ARM RX] {joint_name} exp={exponent} mant={mantissa} "
         f"approx={position_approx}, frame={frame_info['frame']}",
     )
 
     return {
         "type": "position",
         "joint": joint_name,
-        "raw": position_raw,
         "approx": position_approx,
         "frame": frame_info["frame"],
     }
@@ -306,11 +351,13 @@ def parse_arm_data(data):
         return parse_receive_stop()
 
     if can_id in RECEIVE_ID_TO_JOINT:
-        if frame_info["dlc"] == 1:
-            return parse_arm_ack(frame_info)
-
-        if frame_info["dlc"] == 8:
-            return parse_arm_position_response(frame_info)
+        # both ACK and position are DLC=4; route by Data[0]
+        if frame_info["dlc"] == 4:
+            payload = frame_info["payload_bytes"]
+            if payload and payload[0] == 0x12:
+                return parse_arm_ack(frame_info)
+            if payload and payload[0] == 0x23:
+                return parse_arm_position_response(frame_info)
 
         print(f"[ARM RX] Unhandled servo frame -> {frame_info['frame']}")
         return None
@@ -386,11 +433,9 @@ async def request_arm_position_loop(serial_ports):
     """
     Periodically request servo position for all enabled joints
 
-    Firmware doc:
-      Read Servo Position
-      ID = servo address
-      Len = 1
-      Data[0] = 0x20
+    Sends 0x23 (Read Servo Position Reading) to each servo in round-robin
+    NOTE: 
+    firmware is exploring auto-push on settle — this loop may be reduced or removed once that lands
     """
     joint_order = ["track", "shoulder", "elbow", "pitch", "roll", "clamp"]
 
@@ -444,4 +489,3 @@ async def read_arm_can_loop(serial_ports, sio):
             print(f"Arm CAN thread error: {e}")
             invalidate_arm_connection(serial_ports, "read loop failure")
             await asyncio.sleep(0.25)
-            
