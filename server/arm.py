@@ -192,15 +192,23 @@ def decode_canusb_frame(data):
     
 async def send_arm_joint(serial_ports, joint_name, value):
     """
-    Send a single joint set-position command over CAN
+    Send a single joint set-position command over CAN.
 
-    Set Servo Target Position:
+    PDF spec (CAN_Frames.pdf p.2) — Set Servo Target Position:
       ID      = servo address (0x12X)
       Len/DLC = 4
       Data[0] = 0x12
       Data[1] = Exponent (14)
       Data[2] = Position MSB  } 2-byte signed mantissa
       Data[3] = Position LSB  }   = (degrees/360) * 2^14
+
+    WRIST NOTE (confirmed with firmware 2025-06-11):
+      Wrist is a differential drive — both motors must be sent together.
+      Pitch/roll are decomposed into motor values before sending:
+        WRIST_EF1 (0x124) = pitch + roll
+        WRIST_EF2 (0x125) = -pitch + roll
+      This function handles one motor at a time; call send_wrist_joints()
+      instead when you have both pitch and roll values available.
     """
     arm_serial = serial_ports.get("arm")
     if arm_serial is None:
@@ -213,7 +221,6 @@ async def send_arm_joint(serial_ports, joint_name, value):
 
     payload = encode_arm_value(value, joint_name)
     can_key = JOINT_TO_CAN_KEY[joint_name]
-    # DLC 3→4, payload is now exponent + 2-byte mantissa (6 hex chars)
     can_msg = f"t{arm_send_ID[can_key]}412{payload}\r"
 
     try:
@@ -227,6 +234,29 @@ async def send_arm_joint(serial_ports, joint_name, value):
         print(f"[ARM] {joint_name} send failed: {e}")
         invalidate_arm_connection(serial_ports, f"send failure on {joint_name}")
         return False
+
+async def send_wrist_joints(serial_ports, pitch, roll):
+    """
+    Send both wrist motors atomically using differential decomposition
+
+    wrist is differential drive.
+      WRIST_EF1 (0x124) = pitch + roll
+      WRIST_EF2 (0x125) = -pitch + roll
+
+    Always send both motors together — sending only one will produce
+    unexpected combined motion since firmware applies values directly
+    """
+    ef1 = pitch + roll
+    ef2 = -pitch + roll
+
+    arm_debug_log(
+        "wrist",
+        f"[ARM TX] wrist pitch={pitch} roll={roll} → EF1={ef1} EF2={ef2}",
+    )
+
+    ok1 = await send_arm_joint(serial_ports, "pitch", ef1)
+    ok2 = await send_arm_joint(serial_ports, "roll", ef2)
+    return ok1 and ok2
     
 async def request_arm_joint_position(serial_ports, joint_name):
     """
@@ -366,6 +396,11 @@ def parse_arm_data(data):
     return None
 
 def register_arm_events(sio, serial_ports):
+
+    # _last_wrist lives here (closure scope) so it persists across calls
+    # AUTO TX sends one joint at a time, but wrist needs both motors together
+    _last_wrist = {"pitch": 0.0, "roll": 0.0}
+
     @sio.event
     async def armCommands(sid, data):
         """
@@ -377,14 +412,23 @@ def register_arm_events(sio, serial_ports):
 
         arm_debug_log(f"manual:{sid}", f"[{sid}] armCommands payload: {data}")
 
-        joint_order = ["track", "shoulder", "elbow", "pitch", "roll", "clamp"]
+        joint_order = ["track", "shoulder", "elbow", "clamp"]  # wrist handled separately
 
         for joint_name in joint_order:
             if not should_send_joint(joint_name):
                 continue
-
             value = data.get(joint_name, 0)
             ok = await send_arm_joint(serial_ports, joint_name, value)
+            if not ok:
+                return "ERROR"
+
+        # wrist always sent together as a differential pair
+        if should_send_joint("pitch") or should_send_joint("roll"):
+            ok = await send_wrist_joints(
+                serial_ports,
+                data.get("pitch", 0),
+                data.get("roll", 0),
+            )
             if not ok:
                 return "ERROR"
 
@@ -395,6 +439,7 @@ def register_arm_events(sio, serial_ports):
     async def armJointCommand(sid, data):
         """
         AUTO TX: send only the updated joint
+        For wrist joints, always sends both motors using last known values
         """
         if serial_ports.get("arm") is None:
             print(f"[{sid}] armJointCommand ignored: arm not connected")
@@ -409,13 +454,23 @@ def register_arm_events(sio, serial_ports):
             print(f"[{sid}] armJointCommand skipped by test filter: {joint_name}")
             return "OK"
 
-        ok = await send_arm_joint(serial_ports, joint_name, value)
+        if joint_name in ("pitch", "roll"):
+            # update whichever changed, then send both together
+            _last_wrist[joint_name] = value
+            ok = await send_wrist_joints(
+                serial_ports,
+                _last_wrist["pitch"],
+                _last_wrist["roll"],
+            )
+        else:
+            ok = await send_arm_joint(serial_ports, joint_name, value)
+
         return "OK" if ok else "ERROR"
 
     @sio.event
     async def armReadPosition(sid, data):
         """
-        Optional explicit read-position request from frontend or test tools.
+        Optional explicit read-position request from frontend or test tools
         Expects: { "joint": "elbow" }
         """
         if serial_ports.get("arm") is None:
