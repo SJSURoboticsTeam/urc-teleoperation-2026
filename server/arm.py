@@ -101,7 +101,7 @@ RECEIVE_ID_TO_JOINT = {
 # Limits which joints are actually sent to CAN
 # Ex: {"track"}, {"shoulder"}, {"elbow"}, {"pitch"}, {"roll"}, {"clamp"}
 # Set to None to send all joints normally
-ARM_TEST_JOINTS = None
+ARM_TEST_JOINTS = {"shoulder", "elbow", "pitch", "roll", "clamp"}
 
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
@@ -160,7 +160,8 @@ def encode_arm_value(value, joint_name="unknown"):
         mantissa   = max(-32768, min(32767, mantissa))  # clamp to int16
 
         exp_hex      = f"{POSITION_EXPONENT:02X}"
-        mantissa_hex = mantissa.to_bytes(2, "big", signed=True).hex()
+        # 4-byte mantissa
+        mantissa_hex = mantissa.to_bytes(4, "big", signed=True).hex()
 
         arm_debug_log(
             f"encode:{joint_name}",
@@ -239,7 +240,8 @@ async def send_arm_joint(serial_ports, joint_name, value):
 
     payload = encode_arm_value(value, joint_name)
     can_key = JOINT_TO_CAN_KEY[joint_name]
-    can_msg = f"t{arm_send_ID[can_key]}412{payload}\r"
+    # DLC=6: cmd(1) + exponent(1) + mantissa(4)
+    can_msg = f"t{arm_send_ID[can_key]}612{payload}\r"
 
     try:
         arm_debug_log(
