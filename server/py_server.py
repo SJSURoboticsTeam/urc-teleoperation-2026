@@ -13,7 +13,7 @@ from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_driv
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
-
+from arm import dump_session_log
 
 # Toggle drive communication transport for testing / fallback
 # True = UART drive path
@@ -96,6 +96,7 @@ def shutdown():
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
         pass
+    dump_session_log()  # saves arm_session.log on exit
     sys.exit(0)
 # =================== Setup, CAN connections ===================
 

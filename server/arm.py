@@ -7,8 +7,25 @@
 
 import asyncio
 import time
+import datetime
 
-ARM_DEBUG = False
+_session_log = []
+
+def log_frame(direction, raw):
+    """direction: 'TX' or 'RX'"""
+    _session_log.append({
+        "t": datetime.datetime.now().isoformat(),
+        "dir": direction,
+        "raw": raw,
+    })
+
+def dump_session_log(path="arm_session.log"):
+    with open(path, "w") as f:
+        for entry in _session_log:
+            f.write(f"{entry['t']} {entry['dir']} {entry['raw']}\n")
+    print(f"[ARM] Session log saved to {path}")
+
+ARM_DEBUG = True
 ARM_DEBUG_RATE_LIMIT_SEC = 1.0
 
 _last_arm_log_times = {}
@@ -178,6 +195,7 @@ def decode_canusb_frame(data):
         payload_hex = string_data[5:]
         payload_bytes = bytes.fromhex(payload_hex) if payload_hex else b""
 
+        log_frame("RX", string_data)
         return {
             "frame": string_data,
             "id": can_id,
@@ -228,6 +246,7 @@ async def send_arm_joint(serial_ports, joint_name, value):
             f"send:{joint_name}",
             f"[ARM TX] {joint_name}: {can_msg.strip()}",
         )
+        log_frame("TX", can_msg.strip())
         await asyncio.to_thread(arm_serial.write, can_msg.encode())
         return True
     except Exception as e:
@@ -256,6 +275,7 @@ async def send_wrist_joints(serial_ports, pitch, roll):
 
     ok1 = await send_arm_joint(serial_ports, "pitch", ef1)
     ok2 = await send_arm_joint(serial_ports, "roll", ef2)
+    print(f"[WRIST] pitch={pitch} roll={roll} → EF1={ef1} EF2={ef2}")
     return ok1 and ok2
     
 async def request_arm_joint_position(serial_ports, joint_name):
