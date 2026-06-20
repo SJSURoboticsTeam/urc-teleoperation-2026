@@ -379,12 +379,30 @@ async def connect(sid,environ):
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
 
+async def stop_drive_motors():
+    # Send stop command to drive motors for safety when no clients are connected
+    if serial_ports["drive"]:
+        try:
+            if USE_UART_DRIVE:
+                serial_ports["drive"].ser.write(bytes([0x00, 0x00, 0x00, 0x00]))
+                print("UART: 0 clients connected. Sent stop command to drive motors.")
+            else:
+                serial_ports["drive"].send_can(0x0, [0x00, 0x00, 0x00, 0x00])
+                print("CAN: 0 clients connected. Sent stop command to drive motors.")
+        except Exception as e:
+            print(f"Failed to send stop command: {e}")
+    else:
+        print("No drive serial connected. Cannot send stop command.")
+
 
 @sio.event
 async def disconnect(sid):
     print(f'Client disconnected: {sid}')
-    metrics.numClients -= 1
 
+    metrics.numClients = max(0, metrics.numClients - 1)
+
+    if metrics.numClients == 0:
+        await stop_drive_motors()
 
 config = uvicorn.Config(
     app,
