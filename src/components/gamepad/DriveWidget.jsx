@@ -75,8 +75,8 @@ export default function DriveManualInput({ controlsLocked = false }) {
       }
 
       robotsocket.emit("driveCommands", {
-        xVel: driveCommandsRef.current.sidewaysVelocity,
-        yVel: driveCommandsRef.current.forwardsVelocity,
+        xVel: driveCommandsRef.current.forwardsVelocity,
+        yVel: driveCommandsRef.current.sidewaysVelocity,
         rotVel: driveCommandsRef.current.rotationalVelocity,
         moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
       });
@@ -117,8 +117,8 @@ export default function DriveManualInput({ controlsLocked = false }) {
     console.log("Manual TX");
 
     robotsocket.emit("driveCommands", {
-      xVel: sidewaysVelocity,
-      yVel: forwardsVelocity,
+      xVel: forwardsVelocity,
+      yVel: sidewaysVelocity,
       rotVel: rotationalVelocity,
       moduleConflicts: Number(moduleConflicts),
     });
