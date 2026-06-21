@@ -1,5 +1,5 @@
 // React imports
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -61,9 +61,35 @@ function App() {
     py: 0,
     panSpeed: 30,
   });
-  
-// controls whether to render cams, content, or both
+
+  // controls whether to render cams, content, or both
+  const STORAGE_KEY = "missionControl.splitmode";
   const [selectedElements, setSelectedElements] = useState("both");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const value = typeof parsed === "string" ? parsed : "both";
+        setSelectedElements(value);
+        console.log(value);
+      }
+    } catch {
+      // ignore storage errors
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedElements));
+    } catch {
+      // ignore errors
+    }
+  }, [selectedElements, hydrated]);
 
   return (
     <Box
@@ -119,7 +145,7 @@ function App() {
                   >
                     <SplitView selectedElements={selectedElements}>
                       {/* we pass all these elements as "children" into SplitView */}
-                          <Outlet />
+                      <Outlet />
                     </SplitView>
                   </Box>
                 </MastCommandContext>
