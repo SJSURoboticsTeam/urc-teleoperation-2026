@@ -73,8 +73,11 @@ function App() {
       if (raw) {
         const parsed = JSON.parse(raw);
         const value = typeof parsed === "string" ? parsed : "both";
-        setSelectedElements(value);
-        console.log(value);
+        const next =
+          value === "ui" || value === "both" || value === "cameras"
+            ? value
+            : "both";
+        setSelectedElements(next);
       }
     } catch {
       // ignore storage errors

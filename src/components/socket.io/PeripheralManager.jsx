@@ -2,8 +2,6 @@ import { robotsocket } from "./socket";
 import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
-import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
@@ -11,7 +9,6 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
 import EjectIcon from "@mui/icons-material/Eject";
-import Paper from "@mui/material/Paper";
 import { useSnackbar } from 'notistack';
 
 export default function PeripheralManager({openPane}) {
@@ -274,7 +271,8 @@ export default function PeripheralManager({openPane}) {
           disabled={
             canState.driveState != "active" &&
             canState.armState != "active" &&
-            canState.scienceState != "active"
+            canState.scienceState != "active" &&
+            canState.gpsState != "active"
           }
           color="error"
           variant="contained"

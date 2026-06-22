@@ -7,13 +7,6 @@ import { useRobotSocketStatus, useBaseSocketStatus } from "./socket";
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
-import EjectIcon from "@mui/icons-material/Eject";
-import Paper from "@mui/material/Paper";
 import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 

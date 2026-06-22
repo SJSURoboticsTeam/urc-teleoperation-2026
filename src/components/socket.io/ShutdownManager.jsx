@@ -2,8 +2,6 @@ import {
   Button,
   Dialog,
   DialogTitle,
-  DialogContent,
-  DialogContentText,
   DialogActions,
   Checkbox,
   FormControlLabel,
