@@ -5,7 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { robotsocket, basesocket } from "../socket.io/socket";
 import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
 
-function CoordUI({ lat, long, lastRead }) {
+function CoordUI({ lat, long, lastRead, color }) {
   return (
     <Box
       sx={{
@@ -14,7 +14,8 @@ function CoordUI({ lat, long, lastRead }) {
         bgcolor: "rgba(255,255,255,0.9)",
         p: 1,
         borderRadius: 1,
-        border: "1px solid black",
+        border: "2px solid",
+        borderColor: color,
         minWidth: 180,
       }}
     >
@@ -26,10 +27,11 @@ function CoordUI({ lat, long, lastRead }) {
 }
 
 class CoordControl {
-  constructor() {
+  constructor(color) {
     this._latitude = null;
     this._longitude = null;
     this._lastRead = null;
+    this.color = color;
     this._root = null;
   }
   onAdd(map) {
@@ -37,7 +39,7 @@ class CoordControl {
     this._container = document.createElement("div");
     this._container.className = "maplibregl-ctrl my-custom-control";
     this._root = ReactDOM.createRoot(this._container);
-    this.update("---", "---", "---", true);
+    this.update("---", "---", "---");
     return this._container;
   }
   update(lat, long, lastRead) {
@@ -52,6 +54,7 @@ class CoordControl {
         lat = {lat}  
         long = {long}  
         lastRead = {lastRead}  
+        color = {this.color}
       />
     );
   }
@@ -67,7 +70,7 @@ class CoordControl {
   }
 }
 
-function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
+function LockOnControlUI({ isLockedOn, isCentered, onToggleLock, onToggleCenter }) {
   return (
     <Box
       sx={{
@@ -84,7 +87,7 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
         control={
           <Switch
             checked={isLockedOn}
-            onChange={onToggle}
+            onChange={onToggleLock}
             sx={{
               "& .MuiSwitch-thumb": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
               "& .MuiSwitch-track": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
@@ -93,14 +96,29 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
         }
         label={<Typography variant="body2">Lock-On</Typography>}
       />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={isCentered}
+            onChange={onToggleCenter}
+            sx={{
+              "& .MuiSwitch-thumb": { bgcolor: isCentered ? "#0a890e" : "#890707" },
+              "& .MuiSwitch-track": { bgcolor: isCentered ? "#0a890e" : "#890707" },
+            }}
+          />
+        }
+        label={<Typography variant="body2">Include Base</Typography>}
+      />
     </Box>
   );
 }
 
 class LockOnControl {
-  constructor(onToggle) {
+  constructor(onToggleLock, onToggleCenter) {
     this._isLockedOn = null;
-    this._onToggle = onToggle;
+    this._isCentered = null;
+    this._onToggleLock = onToggleLock;
+    this._onToggleCenter = onToggleCenter;
     this._root = null;
   }
   onAdd(map) {
@@ -108,18 +126,21 @@ class LockOnControl {
     this._container = document.createElement("div");
     this._container.className = "maplibregl-ctrl my-custom-control";
     this._root = ReactDOM.createRoot(this._container);
-    this.update("---", "---", "---", true);
+    this.update(true, false);
     return this._container;
   }
-  update(lat, long, lastRead, isLockedOn) {
+  update(isLockedOn, isCentered) {
     if(!this._root) {
       return;
     }
     this._isLockedOn = isLockedOn;
+    this._isCentered = isCentered;
     this._root.render(
       <LockOnControlUI
         isLockedOn = {isLockedOn}  
-        onToggle = {this._onToggle}
+        isCentered = {isCentered}
+        onToggleLock = {this._onToggleLock}
+        onToggleCenter = {this._onToggleCenter}
       />
     );
   }
@@ -163,6 +184,7 @@ export default function Map() {
   });
 
   const [isLockedOn, setIsLockedOn] = useState(true);
+  const [isCentered, setIsCentered] = useState(false);
 
   useEffect(() => {
     const target = [robotCoordinates.long, robotCoordinates.lat];
@@ -205,10 +227,11 @@ export default function Map() {
       .addTo(map);
 
     const lockOnControl = new LockOnControl(() =>
-      setIsLockedOn((prev) => !prev)
+      setIsLockedOn((prev) => !prev), 
+      ()  => setIsCentered((prev) => !prev)
     );
-    const coordControl = new CoordControl();
-    const coordControl2 = new CoordControl();
+    const coordControl = new CoordControl("#ff0000");
+    const coordControl2 = new CoordControl("#0077ff");
 
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
@@ -338,7 +361,6 @@ export default function Map() {
         robotCoordinates.lat.toFixed(6),
         robotCoordinates.long.toFixed(6),
         robotCoordinates.receive ? robotSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
-        isLockedOn,
       );
     }
 
@@ -351,17 +373,30 @@ export default function Map() {
     }
 
     if(isLockedOn && mapRef.current) {
-      mapRef.current.easeTo({
-        center: [robotCoordinates.long, robotCoordinates.lat],
-        speed: 3,
-        curve: 1,
-        essential: true,
-      });
+      if(!isCentered) {
+        mapRef.current.easeTo({
+          center: [robotCoordinates.long, robotCoordinates.lat],
+          speed: 3,
+          curve: 1,
+          essential: true,
+        });
+      } else {
+          mapRef.current.easeTo({
+            center: [(robotCoordinates.long + baseCoordinates.long) / 2, (robotCoordinates.lat + baseCoordinates.lat) / 2],
+            speed: 3,
+            curve: 1,
+            essential: true,
+          });
+      }
+    }
+
+    if(controlRef.current) {
+      controlRef.current.update(isLockedOn, isCentered);
     }
     return () => {
 
     }
-  }, [robotCoordinates, baseCoordinates, isLockedOn]);
+  }, [robotCoordinates, baseCoordinates, isLockedOn, isCentered]);
 
   // Use full height so the map fills any explicit-height parent container
   return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
