@@ -1,5 +1,5 @@
 import "react-resizable/css/styles.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, Button, Paper, Typography } from "@mui/material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
@@ -14,16 +14,21 @@ import {
 import { LineChart } from "@mui/x-charts/LineChart";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 
-function createData(vials, initialNM, finalNM, delta) {
-  return { vials, initialNM, finalNM, delta };
+function createData(vials, wavelength, absorbance) {
+  return { vials, wavelength, absorbance };
 }
 
+function calculateAbsorbance(dataSet, clearVialData, index) {
+  const absorbance = -Math.log10(dataSet[index] / clearVialData[index]);
+  return absorbance.toFixed(3);
+}
 export default function ScienceView() {
-  const rows = [
-    createData("V1", 0, 0, 0),
-    createData("V2", 0, 0, 0),
-    createData("V3", 0, 0, 0),
-  ];
+  const [rows, setRows] = useState([
+    createData("clear", 0, 0),
+    createData("purple", 0, 0),
+    createData("blue", 0, 0),
+    createData("red", 0, 0),
+  ]);
 
   const [TabContent, setTabContent] = useState(0);
 
@@ -40,15 +45,7 @@ export default function ScienceView() {
     setTabContent(newTabContent);
   };
 
-  const exampleFrequency1 = [
-    515, 500, 515, 520, 515, 500, 525, 510, 500, 515, 500,
-  ];
-
-  const exampleFrequency2 = [
-    545, 540, 545, 550, 540, 555, 545, 540, 545, 535, 545,
-  ];
-
-  const exampleSteps = [
+const exampleSteps = [
     "Start",
     "Step 1",
     "Step 2",
@@ -62,7 +59,80 @@ export default function ScienceView() {
     "Step 10",
   ];
 
-  const xTime = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+  // Vial spectroscopy data
+  const frequencies = [415, 455, 480, 515, 555, 590, 630, 680]; // wavelengths in nm
+  const clearVialData = [65535, 1364, 696, 568, 1466, 4655, 1140, 338];
+  const purpleVialData = [9875, 136, 78, 68, 166, 494, 117, 37];
+  const blueVialData = [17042, 231, 148, 104, 302, 817, 211, 68];
+  const redVialData = [15923, 281, 271, 171, 276, 1156, 269, 92];
+
+  const [purpleAbsorbance, setPurpleAbsorbance] = useState([]);
+  const [blueAbsorbance, setBlueAbsorbance] = useState([]);
+  const [redAbsorbance, setRedAbsorbance] = useState([]);
+  const [frequency, setFrequency] = useState([]);
+
+
+  const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (!running) return;
+    const interval = setInterval(() => {
+      setIndex((prevIndex) => {
+        if (prevIndex >= frequencies.length) {
+          setRunning(false);
+          setFinished(true);
+          clearInterval(interval);
+          return prevIndex;
+        }
+        const purple = calculateAbsorbance(purpleVialData, clearVialData, prevIndex);
+        const blue = calculateAbsorbance(blueVialData, clearVialData, prevIndex);
+        const red = calculateAbsorbance(redVialData, clearVialData, prevIndex);
+        const wavelength = frequencies[prevIndex];
+
+        setFrequency((prev) => [...prev, wavelength]);
+        setPurpleAbsorbance((prev) => [...prev, purple]);
+        setBlueAbsorbance((prev) => [...prev, blue]);
+        setRedAbsorbance((prev) => [...prev, red]);
+
+        setRows([
+          createData("clear", wavelength, 0),
+          createData("purple", wavelength, purple),
+          createData("blue", wavelength, blue),
+          createData("red", wavelength, red),
+        ]);
+        return prevIndex + 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [running]);
+
+  const start = () => {
+  if (finished) return;
+  setRunning(true);
+  };
+
+  const stop = () => {
+    setRunning(false);
+    setFinished(false);
+
+    // Reset graph
+    setIndex(0);
+    setFrequency([]);
+    setPurpleAbsorbance([]);
+    setBlueAbsorbance([]);
+    setRedAbsorbance([]);
+
+    // Reset table
+    setRows([
+      createData("clear", 0, 0),
+      createData("purple", 0, 0),
+      createData("blue", 0, 0),
+      createData("red", 0, 0),
+    ]);
+  };
 
   return (
     <div
@@ -179,7 +249,6 @@ export default function ScienceView() {
                       ))}
                     </div>
                   </Box>
-
                   <Box className="flex flex-row" sx={{ ml: 4 }}>
                     Coordinates: (_,_) <br /> Accuracy: ___ <br /> Range: ___{" "}
                     <br />
@@ -206,26 +275,34 @@ export default function ScienceView() {
                   className="flex flex-row gap-4 mb-4"
                   style={{ flex: 1, minWidth: 0 }}
                 >
-                  <Box sx={{ width: "65%" }}>
+                  <Box sx={{ width: "65%", height: 450}}>
                     <LineChart
                       series={[
-                        { data: exampleFrequency1, label: "Frequency 1" },
-                        { data: exampleFrequency2, label: "Frequency 2" },
+                        { data: purpleAbsorbance, label: "Purple Vial" },
+                        { data: blueAbsorbance, label: "Blue Vial" },
+                        { data: redAbsorbance, label: "Red Vial" },
                       ]}
-                      xAxis={[{ scaleType: "point", data: xTime, height: 25 }]}
-                      yAxis={[{ width: 45 }]}
+                      xAxis={[{ scaleType: "point", data: frequency, label: "Wavelength (nm)" }]}
+                      yAxis={[{ label: "Absorbance", width: 45 }]}
+                      margin={{ left: 60, bottom: 40 }}
                     />
+                    <Button
+                      variant="contained"
+                      onClick={finished || running ? stop : start}
+                      sx={{ width: "80px", fontSize: 16 }}
+                    >
+                      {finished || running ? "Stop" : "Start"}
+                    </Button>
                   </Box>
 
-                  <Box sx={{ width: "35%", minHeight: 300 }}>
+                  <Box sx={{ width: "35%", minHeight: 300, mt: 5, ml: 3 }}>
                     <TableContainer component={Paper}>
                       <Table aria-label="simple table">
                         <TableHead>
                           <TableRow>
                             <TableCell>vials</TableCell>
-                            <TableCell align="right">initial</TableCell>
-                            <TableCell align="right">final</TableCell>
-                            <TableCell align="right">delta</TableCell>
+                            <TableCell align="right">wavelength</TableCell>
+                            <TableCell align="right">absorbance</TableCell>
                           </TableRow>
                         </TableHead>
 
@@ -243,10 +320,9 @@ export default function ScienceView() {
                                 {row.vials}
                               </TableCell>
                               <TableCell align="right">
-                                {row.initialNM}
+                                {row.wavelength}
                               </TableCell>
-                              <TableCell align="right">{row.finalNM}</TableCell>
-                              <TableCell align="right">{row.delta}</TableCell>
+                              <TableCell align="right">{row.absorbance}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
