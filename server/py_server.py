@@ -17,7 +17,7 @@ from shutdown import register_shutdown_commands
 # Toggle drive communication transport for testing / fallback
 # True = UART drive path
 # False = original CAN drive path
-USE_UART_DRIVE = True
+USE_UART_DRIVE = False
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
