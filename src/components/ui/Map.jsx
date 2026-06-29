@@ -113,6 +113,42 @@ function LockOnControlUI({ isLockedOn, isCentered, onToggleLock, onToggleCenter 
   );
 }
 
+function createFallbackImage() {
+  const size = 32;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+
+  context.clearRect(0, 0, size, size);
+  context.fillStyle = "rgba(70, 70, 70, 0.92)";
+  context.fillRect(4, 4, size - 8, size - 8);
+  context.scale(0.5, 0.5);
+
+  context.strokeStyle = "#ffffff";
+  context.fillStyle = "#ffffff";
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  context.beginPath();
+  context.arc(32, 18, 5, 0, Math.PI * 2);
+  context.fill();
+
+  context.lineWidth = 6;
+  context.beginPath();
+  context.moveTo(32, 28);
+  context.lineTo(32, 48);
+  context.stroke();
+
+  return context.getImageData(0, 0, size, size);
+}
+
+const fallbackImage = createFallbackImage();
+
 class LockOnControl {
   constructor(onToggleLock, onToggleCenter) {
     this._isLockedOn = null;
@@ -225,6 +261,17 @@ export default function Map() {
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Base Target"))
       .addTo(map);
+    const onStyleImageMissing = (event) => {
+      if (map.hasImage(event.id)) {
+        return;
+      }
+
+      if (fallbackImage) {
+        map.addImage(event.id, fallbackImage, { pixelRatio: 2 });
+      }
+    };
+
+    map.on("styleimagemissing", onStyleImageMissing);
 
     const lockOnControl = new LockOnControl(() =>
       setIsLockedOn((prev) => !prev), 
@@ -279,6 +326,7 @@ export default function Map() {
     return () => {
       cancelAnimationFrame(initialResizeRaf);
       window.removeEventListener("resize", onWindowResize);
+      map.off("styleimagemissing", onStyleImageMissing);
       map.off("load", onLoad);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
