@@ -9,17 +9,17 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
 import EjectIcon from "@mui/icons-material/Eject";
-import { useSnackbar } from 'notistack';
+import { useSnackbar } from "notistack";
 
-export default function PeripheralManager({openPane}) {
-    
-    const { enqueueSnackbar } = useSnackbar();
-    // can state
+export default function PeripheralManager({ openPane }) {
+  const { enqueueSnackbar } = useSnackbar();
+  // can state
   const [canState, setcanState] = useState({
     driveState: "idle", // idle, connecting, active
     armState: "idle", // idle, connecting, active
     scienceState: "idle", // idle, connecting, active
     gpsState: "idle", // idle, connecting, active
+    uartMode: "???", // ???, CAN, UART
     loading: true, // lock buttons, dropdowns when refreshing can data
     canIds: [], // array with every possible serial device
     driveId: "disconnect", // selected can id in dropdown or disconnect
@@ -27,8 +27,8 @@ export default function PeripheralManager({openPane}) {
     scienceId: "disconnect", // selected can id in dropdown or disconnect
     gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
-  
-    function requestCanInfo() {
+
+  function requestCanInfo() {
     // lock the ui so user can't do anything while loading
     setcanState((prev) => ({
       ...prev,
@@ -43,6 +43,7 @@ export default function PeripheralManager({openPane}) {
         armId: data["armId"],
         scienceId: data["scienceId"],
         gpsId: data["gpsId"],
+        uartMode: data["uartMode"],
         // assignment if connected or not by text
         driveState: data["driveId"] !== "disconnect" ? "active" : "idle",
         armState: data["armId"] !== "disconnect" ? "active" : "idle",
@@ -256,7 +257,7 @@ export default function PeripheralManager({openPane}) {
   return (
     <div>
       <Typography sx={{ color: "black", mt: -1 }} variant="h6">
-        CAN CONNECTIONS
+        PERIPHERAL MANAGER
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
         <Button
@@ -284,13 +285,15 @@ export default function PeripheralManager({openPane}) {
         </Button>
       </Box>
 
-      {/* DRIVE CAN CONNECTION */}
+      {/* DRIVE CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
-          <InputLabel id="demo-simple-select-label">DRIVE</InputLabel>
+          <InputLabel id="demo-simple-select-label">
+            DRIVE over {canState.uartMode}
+          </InputLabel>
           <Select
             value={canState.driveId}
-            label="DRIVE"
+            label={"DRIVE over " + canState.uartMode}
             disabled={canState.loading || canState.driveState != "idle"}
             onChange={(event) =>
               setcanState((prev) => ({
