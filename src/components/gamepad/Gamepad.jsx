@@ -288,27 +288,31 @@ export default function GamepadPanel() {
       }
 
       const armInputs = {
-        elbow: gp.buttons[2]?.pressed ? clean(gp.axes[1]) : 0,
+        elbow: gp.buttons[2]?.pressed ? -clean(gp.axes[1]) : 0,
         shoulder: gp.buttons[3]?.pressed ? -clean(gp.axes[1]) : 0,
-        track:
-          !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed
-            ? clean(gp.axes[0])
-            : 0,
-        // treat full up/down as hard limits for better control at extremes
-        pitch:
-          gp.axes[9] === -1
-            ? -1
-            : gp.axes[9] < 0.15 && gp.axes[9] > 0.14
-              ? 1
-              : 0,
-        roll:
-          gp.axes[9] < 0.72 && gp.axes[9] > 0.71
-            ? -1
-            : gp.axes[9] < -0.42 && gp.axes[9] > -0.43
-              ? 1
-              : 0,
-        clamp: clean(gp.axes[3]),
-        uniSens: -0.5 * gp.axes[6] + 0.5,
+        // track:
+        //   !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed
+        //     ? clean(gp.axes[0])
+        //     : 0,
+        // // treat full up/down as hard limits for better control at extremes
+        // pitch:
+        //   gp.axes[9] === -1
+        //     ? -1
+        //     : gp.axes[9] < 0.15 && gp.axes[9] > 0.14
+        //       ? 1
+        //       : 0,
+        // roll:
+        //   gp.axes[9] < 0.72 && gp.axes[9] > 0.71
+        //     ? -1
+        //     : gp.axes[9] < -0.42 && gp.axes[9] > -0.43
+        //       ? 1
+        //       : 0,
+        // clamp: clean(gp.axes[3]),
+        // uniSens: -0.5 * gp.axes[6] + 0.5,
+        pitch: -clean(gp.axes[5]),
+        roll: clean(gp.axes[4]),
+        clamp: clean(gp.axes[2]),
+        uniSens: -0.5 * gp.axes[3] + 0.5,
       };
 
       const inputSens = {
