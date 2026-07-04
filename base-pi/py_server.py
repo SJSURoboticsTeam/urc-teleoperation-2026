@@ -5,6 +5,7 @@ import asyncio
 import signal
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
+from shutdown import register_shutdown_commands
 import sys
 
 
@@ -117,6 +118,7 @@ cpu_started = False
 
 
 register_metric_events(sio)
+register_shutdown_commands(sio)
 # =================== Start Server ===================
 
 @sio.event

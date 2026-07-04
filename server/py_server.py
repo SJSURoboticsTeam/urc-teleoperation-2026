@@ -12,13 +12,12 @@ from uart_drive_serial import UartDriveSerial
 from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
-from gps import ZEDF9P, read_gps_data, send_fake_gps_data
-
-
+from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+from shutdown import register_shutdown_commands
 # Toggle drive communication transport for testing / fallback
 # True = UART drive path
 # False = original CAN drive path
-USE_UART_DRIVE = True
+USE_UART_DRIVE = False
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
@@ -321,6 +320,7 @@ register_metric_events(sio)
 register_drive_events(sio,serial_ports)
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
+register_shutdown_commands(sio)
 
 # =================== Start Server ===================
 

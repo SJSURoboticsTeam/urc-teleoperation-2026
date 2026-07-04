@@ -48,14 +48,14 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       mediatype: "iframe",
       name: "Wheels",
       url: "http://192.168.1.2:8889/wheels/",
-      allowed: false,
+      allowed: true,
     },
     {
       value: "arm1",
       mediatype: "iframe",
       name: "Arm Cam 1",
       url: "http://192.168.1.2:8889/arm1/",
-      allowed: false,
+      allowed: true,
     },
     {
       value: "arm2",
