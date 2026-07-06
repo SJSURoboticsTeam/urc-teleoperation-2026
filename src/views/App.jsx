@@ -16,7 +16,7 @@ import ArmCommandContext from "../contexts/ArmCommandContext";
 import DriveCommandContext from "../contexts/DriveCommandContext";
 import GamepadContext from "../contexts/GamepadContext";
 import MastCommandContext from "../contexts/MastCommandContext";
-import AutonomyModeProvider from "../contexts/AutonomyModeContext";
+import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
 function App() {
