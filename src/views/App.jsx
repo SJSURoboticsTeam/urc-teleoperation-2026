@@ -12,7 +12,9 @@ import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
 // Context imports
-import ArmCommandContext from "../contexts/ArmCommandContext";
+import ArmCommandProvider from "../providers/ArmCommandProvider";
+import { ArmCommandContext }  from "../contexts/ArmCommandContext";
+
 import DriveCommandContext from "../contexts/DriveCommandContext";
 import GamepadContext from "../contexts/GamepadContext";
 import MastCommandContext from "../contexts/MastCommandContext";
@@ -110,7 +112,7 @@ function App() {
           autonomyEnabled={autonomyEnabled}
           setAutonomyEnabled={setAutonomyEnabled}
         >
-          <ArmCommandContext
+          <ArmCommandProvider
             armCommands={armCommands}
             setArmCommands={setArmCommands}
           >
@@ -154,7 +156,7 @@ function App() {
                 </MastCommandContext>
               </DriveCommandContext>
             </GamepadContext>
-          </ArmCommandContext>
+          </ArmCommandProvider>
         </AutonomyModeProvider>
       </SnackbarProvider>
     </Box>
