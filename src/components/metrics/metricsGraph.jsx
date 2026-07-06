@@ -1,5 +1,5 @@
 import 'react-resizable/css/styles.css';
-import {useAntennaData} from './metrics';
+import {useAntennaData} from './antennaData';
 import {useState, useEffect} from 'react';
 import {LineChart} from '@mui/x-charts/LineChart';
 import {Button, Box} from '@mui/material';
