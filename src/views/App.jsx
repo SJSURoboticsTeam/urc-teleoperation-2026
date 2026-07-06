@@ -18,8 +18,11 @@ import { ArmCommandContext }  from "../contexts/ArmCommandContext";
 import DriveCommandProvider from "../providers/DriveCommandProvider";
 import { DriveCommandContext} from "../contexts/DriveCommandContext"
 
+import MastCommandProvider from "../providers/MastCommandProvider";
+import { MastCommandContext } from "../contexts/MastCommandContext";
+
 import GamepadContext from "../contexts/GamepadContext";
-import MastCommandContext from "../contexts/MastCommandContext";
+
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
@@ -126,7 +129,7 @@ function App() {
                 driveCommands={driveCommands}
                 setDriveCommands={setDriveCommands}
               >
-                <MastCommandContext
+                <MastCommandProvider
                   mastCommands={mastCommands}
                   setMastCommands={setMastCommands}
                 >
@@ -155,7 +158,7 @@ function App() {
                       <Outlet />
                     </SplitView>
                   </Box>
-                </MastCommandContext>
+                </MastCommandProvider>
               </DriveCommandProvider>
             </GamepadContext>
           </ArmCommandProvider>
