@@ -50,7 +50,7 @@ jobs:
         run: npm run playwright
 
   frontend-eslint:
-    name: Frontend linter (EXPECTED TO FAIL FOR NOW)
+    name: Frontend linter
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
