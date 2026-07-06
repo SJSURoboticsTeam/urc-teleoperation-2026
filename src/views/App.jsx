@@ -21,7 +21,8 @@ import { DriveCommandContext} from "../contexts/DriveCommandContext"
 import MastCommandProvider from "../providers/MastCommandProvider";
 import { MastCommandContext } from "../contexts/MastCommandContext";
 
-import GamepadContext from "../contexts/GamepadContext";
+import GamepadProvider from "../providers/GamepadProvider";
+import { GamepadContext } from "../contexts/GamepadContext";
 
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
@@ -121,7 +122,7 @@ function App() {
             armCommands={armCommands}
             setArmCommands={setArmCommands}
           >
-            <GamepadContext
+            <GamepadProvider
               connectedGamepads={connectedGamepads}
               setConnectedGamepads={setConnectedGamepads}
             >
@@ -160,7 +161,7 @@ function App() {
                   </Box>
                 </MastCommandProvider>
               </DriveCommandProvider>
-            </GamepadContext>
+            </GamepadProvider>
           </ArmCommandProvider>
         </AutonomyModeProvider>
       </SnackbarProvider>
