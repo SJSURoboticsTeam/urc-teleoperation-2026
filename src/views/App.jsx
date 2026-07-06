@@ -15,7 +15,9 @@ import SplitView from "./SplitView";
 import ArmCommandProvider from "../providers/ArmCommandProvider";
 import { ArmCommandContext }  from "../contexts/ArmCommandContext";
 
-import DriveCommandContext from "../contexts/DriveCommandContext";
+import DriveCommandProvider from "../providers/DriveCommandProvider";
+import { DriveCommandContext} from "../contexts/DriveCommandContext"
+
 import GamepadContext from "../contexts/GamepadContext";
 import MastCommandContext from "../contexts/MastCommandContext";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
@@ -120,7 +122,7 @@ function App() {
               connectedGamepads={connectedGamepads}
               setConnectedGamepads={setConnectedGamepads}
             >
-              <DriveCommandContext
+              <DriveCommandProvider
                 driveCommands={driveCommands}
                 setDriveCommands={setDriveCommands}
               >
@@ -154,7 +156,7 @@ function App() {
                     </SplitView>
                   </Box>
                 </MastCommandContext>
-              </DriveCommandContext>
+              </DriveCommandProvider>
             </GamepadContext>
           </ArmCommandProvider>
         </AutonomyModeProvider>
