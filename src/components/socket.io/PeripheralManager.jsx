@@ -288,12 +288,13 @@ export default function PeripheralManager({ openPane }) {
       {/* DRIVE CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
-          <InputLabel id="demo-simple-select-label">
+          <InputLabel id="drive-dropdown-peripheral-id">
             DRIVE over {canState.uartMode}
           </InputLabel>
           <Select
             value={canState.driveId}
             label={"DRIVE over " + canState.uartMode}
+            labelId="drive-dropdown-peripheral-id"
             disabled={canState.loading || canState.driveState != "idle"}
             onChange={(event) =>
               setcanState((prev) => ({
@@ -340,10 +341,11 @@ export default function PeripheralManager({ openPane }) {
       {/* ARM CAN CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
-          <InputLabel id="demo-simple-select-label">ARM</InputLabel>
+          <InputLabel id="arm-dropdown-peripheral-id">ARM</InputLabel>
           <Select
             value={canState.armId}
             label="ARM"
+            labelId="arm-dropdown-peripheral-id"
             disabled={canState.loading || canState.armState != "idle"}
             onChange={(event) =>
               setcanState((prev) => ({
@@ -387,10 +389,11 @@ export default function PeripheralManager({ openPane }) {
       {/* SCIENCE CAN CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
-          <InputLabel id="demo-simple-select-label">SCIENCE</InputLabel>
+          <InputLabel id="science-dropdown-peripheral-id">SCIENCE</InputLabel>
           <Select
             value={canState.scienceId}
             label="SCIENCE"
+            labelId="science-dropdown-peripheral-id"
             disabled={canState.loading || canState.scienceState != "idle"}
             onChange={(event) =>
               setcanState((prev) => ({
@@ -436,10 +439,11 @@ export default function PeripheralManager({ openPane }) {
       {/* GPS CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
-          <InputLabel id="demo-simple-select-label">GPS</InputLabel>
+          <InputLabel id="gps-dropdown-peripheral-id">GPS</InputLabel>
           <Select
             value={canState.gpsId}
             label="GPS"
+            labelId="gps-dropdown-peripheral-id"
             disabled={canState.loading || canState.gpsState != "idle"}
             onChange={(event) =>
               setcanState((prev) => ({
