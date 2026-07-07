@@ -51,7 +51,6 @@ jobs:
 
   frontend-eslint:
     name: Frontend linter
-    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

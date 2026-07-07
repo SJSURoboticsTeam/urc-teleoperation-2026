@@ -1,4 +1,6 @@
 import { DriveCommandContext } from "../contexts/DriveCommandContext";
+
+// Import in App.jsx and wrap around components that need access to it
 export default function DriveCommandProvider({
   driveCommands,
   setDriveCommands,

@@ -6,7 +6,7 @@ export const AutonomyModeContext = createContext({
   setAutonomyEnabled: () => {},
 });
 
-// Hook for consuming autonomy mode state
+// Hook/function for consuming autonomy mode state
 export function useAutonomyMode() {
   return useContext(AutonomyModeContext);
 }

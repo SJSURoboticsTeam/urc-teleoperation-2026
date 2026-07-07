@@ -13,17 +13,9 @@ import SplitView from "./SplitView";
 
 // Context imports
 import ArmCommandProvider from "../providers/ArmCommandProvider";
-import { ArmCommandContext }  from "../contexts/ArmCommandContext";
-
 import DriveCommandProvider from "../providers/DriveCommandProvider";
-import { DriveCommandContext} from "../contexts/DriveCommandContext"
-
 import MastCommandProvider from "../providers/MastCommandProvider";
-import { MastCommandContext } from "../contexts/MastCommandContext";
-
 import GamepadProvider from "../providers/GamepadProvider";
-import { GamepadContext } from "../contexts/GamepadContext";
-
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
