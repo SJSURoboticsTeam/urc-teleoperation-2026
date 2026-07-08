@@ -22,6 +22,8 @@ serial_ports = {
     "gpsId" : "disconnect",
 }
 
+# GPS_AUTO_PORT = "/dev/ttyACM0"
+GPS_AUTO_PORT = "COM9"
 
 
 # =================== Clean Shutdown ===================
@@ -73,39 +75,18 @@ app = socketio.ASGIApp(sio)
 
 # =================== GPS connections ===================
 @sio.event
-async def connectGPS(sid, data):
-    # connect to gps serial port
+async def autoConnectGPS(sid=None, retry_delay=2): 
     global serial_ports
-    if serial_ports["gpsId"] != "disconnect":
-        print("GPS WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
-    try:
-        serial_ports["gps"] = ZEDF9P(data, 57600) 
-        serial_ports["gpsId"] = data
-        print("GPS connected.")
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT GPS: " + str(e))
-        return("ERROR")
-
-@sio.event
-async def disconnectGPS(sid):
-    global serial_ports
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            serial_ports["gps"] = None
-            serial_ports["gpsId"] = "disconnect"
-            print("GPS serial closed.")
+    while serial_ports["gpsId"] == "disconnect":
+        try:
+            print("Auto-connecting to GPS: {GPS_AUTO_PORT}...")
+            serial_ports["gps"] = ZEDF9P(GPS_AUTO_PORT, 57600)
+            serial_ports["gpsId"] = GPS_AUTO_PORT
+            print("GPS auto-connected successfully.")
             return("OK")
-        else:
-            print("GPS was never connected.")
-            return("ERROR")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        return("ERROR")
-        pass
+        except Exception as e:
+            print(f"GPS not available on {GPS_AUTO_PORT} yet: {e}")
+            await asyncio.sleep(retry_delay)
 
 # =================== Initialization ===================
 # Background task guard
@@ -113,6 +94,7 @@ can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
 gps_task_started = False
+gps_auto_connect_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -126,6 +108,7 @@ async def connect(sid,environ):
     global async_ssh_started
     global cpu_started
     global gps_task_started
+    global gps_auto_connect_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -143,6 +126,9 @@ async def connect(sid,environ):
         else:
             sio.start_background_task(asyncsshloop, sio, "900MHZ")
             sio.start_background_task(asyncsshloop, sio, "5GHZ")
+    if not gps_auto_connect_started and not offline:
+        gps_auto_connect_started = True
+        sio.start_background_task(autoConnectGPS)
     if not gps_task_started:
         gps_task_started = True
         if offline:
