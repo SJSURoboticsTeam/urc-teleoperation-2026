@@ -12,11 +12,11 @@ import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
 // Context imports
-import ArmCommandContext from "../contexts/ArmCommandContext";
-import DriveCommandContext from "../contexts/DriveCommandContext";
-import GamepadContext from "../contexts/GamepadContext";
-import MastCommandContext from "../contexts/MastCommandContext";
-import AutonomyModeProvider from "../contexts/AutonomyModeContext";
+import ArmCommandProvider from "../providers/ArmCommandProvider";
+import DriveCommandProvider from "../providers/DriveCommandProvider";
+import MastCommandProvider from "../providers/MastCommandProvider";
+import GamepadProvider from "../providers/GamepadProvider";
+import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
 function App() {
@@ -110,19 +110,19 @@ function App() {
           autonomyEnabled={autonomyEnabled}
           setAutonomyEnabled={setAutonomyEnabled}
         >
-          <ArmCommandContext
+          <ArmCommandProvider
             armCommands={armCommands}
             setArmCommands={setArmCommands}
           >
-            <GamepadContext
+            <GamepadProvider
               connectedGamepads={connectedGamepads}
               setConnectedGamepads={setConnectedGamepads}
             >
-              <DriveCommandContext
+              <DriveCommandProvider
                 driveCommands={driveCommands}
                 setDriveCommands={setDriveCommands}
               >
-                <MastCommandContext
+                <MastCommandProvider
                   mastCommands={mastCommands}
                   setMastCommands={setMastCommands}
                 >
@@ -151,10 +151,10 @@ function App() {
                       <Outlet />
                     </SplitView>
                   </Box>
-                </MastCommandContext>
-              </DriveCommandContext>
-            </GamepadContext>
-          </ArmCommandContext>
+                </MastCommandProvider>
+              </DriveCommandProvider>
+            </GamepadProvider>
+          </ArmCommandProvider>
         </AutonomyModeProvider>
       </SnackbarProvider>
     </Box>
