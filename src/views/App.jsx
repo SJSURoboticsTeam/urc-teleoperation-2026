@@ -1,5 +1,5 @@
 // React imports
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // MUI components
 import Box from "@mui/material/Box";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -12,11 +12,11 @@ import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
 // Context imports
-import ArmCommandContext from "../contexts/ArmCommandContext";
-import DriveCommandContext from "../contexts/DriveCommandContext";
-import GamepadContext from "../contexts/GamepadContext";
-import MastCommandContext from "../contexts/MastCommandContext";
-import AutonomyModeProvider from "../contexts/AutonomyModeContext";
+import ArmCommandProvider from "../providers/ArmCommandProvider";
+import DriveCommandProvider from "../providers/DriveCommandProvider";
+import MastCommandProvider from "../providers/MastCommandProvider";
+import GamepadProvider from "../providers/GamepadProvider";
+import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 
 function App() {
@@ -61,9 +61,38 @@ function App() {
     py: 0,
     panSpeed: 30,
   });
-  
-// controls whether to render cams, content, or both
+
+  // controls whether to render cams, content, or both
+  const STORAGE_KEY = "missionControl.splitmode";
   const [selectedElements, setSelectedElements] = useState("both");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const value = typeof parsed === "string" ? parsed : "both";
+        const next =
+          value === "ui" || value === "both" || value === "cameras"
+            ? value
+            : "both";
+        setSelectedElements(next);
+      }
+    } catch {
+      // ignore storage errors
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedElements));
+    } catch {
+      // ignore errors
+    }
+  }, [selectedElements, hydrated]);
 
   return (
     <Box
@@ -81,19 +110,19 @@ function App() {
           autonomyEnabled={autonomyEnabled}
           setAutonomyEnabled={setAutonomyEnabled}
         >
-          <ArmCommandContext
+          <ArmCommandProvider
             armCommands={armCommands}
             setArmCommands={setArmCommands}
           >
-            <GamepadContext
+            <GamepadProvider
               connectedGamepads={connectedGamepads}
               setConnectedGamepads={setConnectedGamepads}
             >
-              <DriveCommandContext
+              <DriveCommandProvider
                 driveCommands={driveCommands}
                 setDriveCommands={setDriveCommands}
               >
-                <MastCommandContext
+                <MastCommandProvider
                   mastCommands={mastCommands}
                   setMastCommands={setMastCommands}
                 >
@@ -119,13 +148,13 @@ function App() {
                   >
                     <SplitView selectedElements={selectedElements}>
                       {/* we pass all these elements as "children" into SplitView */}
-                          <Outlet />
+                      <Outlet />
                     </SplitView>
                   </Box>
-                </MastCommandContext>
-              </DriveCommandContext>
-            </GamepadContext>
-          </ArmCommandContext>
+                </MastCommandProvider>
+              </DriveCommandProvider>
+            </GamepadProvider>
+          </ArmCommandProvider>
         </AutonomyModeProvider>
       </SnackbarProvider>
     </Box>
