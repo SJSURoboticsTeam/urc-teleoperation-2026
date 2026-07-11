@@ -113,42 +113,6 @@ function LockOnControlUI({ isLockedOn, isCentered, onToggleLock, onToggleCenter 
   );
 }
 
-function createFallbackImage() {
-  const size = 32;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    return null;
-  }
-
-  context.clearRect(0, 0, size, size);
-  context.fillStyle = "rgba(70, 70, 70, 0.92)";
-  context.fillRect(4, 4, size - 8, size - 8);
-  context.scale(0.5, 0.5);
-
-  context.strokeStyle = "#ffffff";
-  context.fillStyle = "#ffffff";
-  context.lineCap = "round";
-  context.lineJoin = "round";
-
-  context.beginPath();
-  context.arc(32, 18, 5, 0, Math.PI * 2);
-  context.fill();
-
-  context.lineWidth = 6;
-  context.beginPath();
-  context.moveTo(32, 28);
-  context.lineTo(32, 48);
-  context.stroke();
-
-  return context.getImageData(0, 0, size, size);
-}
-
-const fallbackImage = createFallbackImage();
-
 class LockOnControl {
   constructor(onToggleLock, onToggleCenter) {
     this._isLockedOn = null;
@@ -248,6 +212,41 @@ class ResetZoomControl {
   }
 }
 
+function createFallbackImage() {
+  const size = 32;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+
+  context.clearRect(0, 0, size, size);
+  context.fillStyle = "rgba(70, 70, 70, 0.92)";
+  context.fillRect(4, 4, size - 8, size - 8);
+  context.scale(0.5, 0.5);
+
+  context.strokeStyle = "#ffffff";
+  context.fillStyle = "#ffffff";
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  context.beginPath();
+  context.arc(32, 18, 5, 0, Math.PI * 2);
+  context.fill();
+
+  context.lineWidth = 6;
+  context.beginPath();
+  context.moveTo(32, 28);
+  context.lineTo(32, 48);
+  context.stroke();
+
+  return context.getImageData(0, 0, size, size);
+}
+
+const fallbackImage = createFallbackImage();
 
 export default function Map() {
   const mapContainer = useRef(null);
@@ -280,6 +279,18 @@ export default function Map() {
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
+
+function resetMapCam(easeOptions) {
+  if (!mapRef.current) { return; }
+  const duration = 500;
+  suppressTrackRef.current = true;
+
+  mapRef.current.easeTo({ ...easeOptions, duration });
+
+  setTimeout(() => {
+    suppressTrackRef.current = false;
+  }, duration + 100);
+}
 
   useEffect(() => {
     const target = [robotCoordinates.long, robotCoordinates.lat];
@@ -339,33 +350,10 @@ export default function Map() {
     const coordControl = new CoordControl("#ff0000");
     const coordControl2 = new CoordControl("#0077ff");
 
-    const resetZoomControl = new ResetZoomControl(() => {
-      if(!mapRef.current) return;  
-      suppressTrackRef.current = true;
-      mapRef.current.once("moveend", () => {
-        suppressTrackRef.current = false;
-      })
-      mapRef.current.easeTo({
-        zoom: 17,
-      });
-      setTimeout(() => {
-        suppressTrackRef.current = false;
-      }, 1000)
-    },
-    () => {
-      if(!mapRef.current) return;  
-      suppressTrackRef.current = true;
-      mapRef.current.once("moveend", () => {
-        suppressTrackRef.current = false;
-      })
-      mapRef.current.easeTo({
-        pitch: 60,
-        bearing: -20,
-      });
-      setTimeout(() => {
-        suppressTrackRef.current = false;
-      }, 1000)
-    });
+    const resetZoomControl = new ResetZoomControl(
+      () => resetMapCam({ zoom: 17 }),
+      () => resetMapCam({ pitch: 60, bearing: -20 })
+    );
 
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
@@ -377,7 +365,7 @@ export default function Map() {
       map.addControl(coordControl2, "bottom-left");
       coordRef2.current = coordControl2;
 
-      map.addControl(resetZoomControl, "top-right");
+      map.addControl(resetZoomControl, "top-left");
       resetZoomRef.current = resetZoomControl;
 
       // Add 3D buildings only if the style provides the expected source

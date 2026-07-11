@@ -23,7 +23,7 @@ serial_ports = {
 }
 
 # GPS_AUTO_PORT = "/dev/ttyACM0"
-GPS_AUTO_PORT = "COM9"
+GPS_AUTO_PORT = "COM9" 
 
 
 # =================== Clean Shutdown ===================
