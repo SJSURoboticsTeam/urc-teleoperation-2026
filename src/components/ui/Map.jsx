@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { robotsocket, basesocket } from "../socket.io/socket";
-import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
 
 function CoordUI({ lat, long, lastRead, color }) {
   return (
@@ -156,6 +156,63 @@ class LockOnControl {
   }
 }
 
+function ResetZoomControlUI({ onClickZoom, onClickPan }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 100,
+      }}
+    >
+      <Button size="small" variant="outlined" onClick = {onClickZoom}>Reset Zoom</Button>
+      <Button size="small" variant="outlined" onClick = {onClickPan}>Reset Pan</Button>
+    </Box>
+  );
+}
+
+class ResetZoomControl {
+  constructor(onClickZoom, onClickPan) {
+    this._onClickZoom = onClickZoom;
+    this._onClickPan = onClickPan;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update();
+    return this._container;
+  }
+  update() {
+    if(!this._root) {
+      return;
+    }
+    this._root.render(
+      <ResetZoomControlUI
+        onClickZoom = {this._onClickZoom}
+        onClickPan = {this._onClickPan}
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
+
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -164,6 +221,8 @@ export default function Map() {
   const controlRef = useRef(null);
   const coordRef = useRef(null);
   const coordRef2 = useRef(null);
+  const resetZoomRef = useRef(null);
+  const suppressTrackRef = useRef(false);
   const robotLastSignalTime = useRef(Date.now()); 
   const baseLastSignalTime = useRef(Date.now()); 
   const robotSignalDiff = useRef();
@@ -233,6 +292,34 @@ export default function Map() {
     const coordControl = new CoordControl("#ff0000");
     const coordControl2 = new CoordControl("#0077ff");
 
+    const resetZoomControl = new ResetZoomControl(() => {
+      if(!mapRef.current) return;  
+      suppressTrackRef.current = true;
+      mapRef.current.once("moveend", () => {
+        suppressTrackRef.current = false;
+      })
+      mapRef.current.easeTo({
+        zoom: 17,
+      });
+      setTimeout(() => {
+        suppressTrackRef.current = false;
+      }, 1000)
+    },
+    () => {
+      if(!mapRef.current) return;  
+      suppressTrackRef.current = true;
+      mapRef.current.once("moveend", () => {
+        suppressTrackRef.current = false;
+      })
+      mapRef.current.easeTo({
+        pitch: 60,
+        bearing: -20,
+      });
+      setTimeout(() => {
+        suppressTrackRef.current = false;
+      }, 1000)
+    });
+
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
       controlRef.current = lockOnControl;
@@ -242,6 +329,9 @@ export default function Map() {
 
       map.addControl(coordControl2, "bottom-left");
       coordRef2.current = coordControl2;
+
+      map.addControl(resetZoomControl, "top-right");
+      resetZoomRef.current = resetZoomControl;
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -372,7 +462,7 @@ export default function Map() {
       );
     }
 
-    if(isLockedOn && mapRef.current) {
+    if(isLockedOn && !suppressTrackRef.current && mapRef.current) {
       if(!isCentered) {
         mapRef.current.easeTo({
           center: [robotCoordinates.long, robotCoordinates.lat],
