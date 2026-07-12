@@ -17,20 +17,30 @@ from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
 
-print("----------------")
+print("\033[0m----------------")
 
-result = subprocess.run(['git', 'log', '-1', '--pretty=format:%h %s'], capture_output=True, text=True)
-if result.returncode == 0:
-    short_hash, message = result.stdout.strip().split(' ', 1)
-    print(f"[{short_hash}] {message}")
+# Get commit hash and message
+commit_result = subprocess.run(['git', 'log', '-1', '--pretty=format:%h %s'], capture_output=True, text=True)
+if commit_result.returncode != 0:
+    print("Failed to retrieve Git commit information.")
 else:
-    print("Failed to retrieve Git information.")
+    short_hash, message = commit_result.stdout.strip().split(' ', 1)
+
+    # Get current branch
+    branch_result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True)
+    if branch_result.returncode != 0:
+        branch = "unknown"
+    else:
+        branch = branch_result.stdout.strip()
+
+    # Format output with color and branch info
+    print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 # Toggle drive communication transport for testing / fallback
 # True = UART drive path
 # False = original CAN drive path
 USE_UART_DRIVE = False
-print("UART_DRIVE: " + str(USE_UART_DRIVE))
+print("\033[92mUART_DRIVE: " + str(USE_UART_DRIVE))
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
@@ -39,11 +49,11 @@ if (offline):
 else:
     print("Online mode, GPS ready... ")
 
-autonomy = "--offline" in sys.argv
+autonomy = "--autonomy" in sys.argv
 if (autonomy):
-    print("Autonomy integration enabled")
+    print("Autonomy integration enabled\033[0m")
 else:
-    print("Autonomy integration disabled ")
+    print("Autonomy integration disabled\033[0m")
 
 
 print("----------------")

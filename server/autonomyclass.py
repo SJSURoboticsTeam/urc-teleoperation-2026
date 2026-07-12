@@ -5,7 +5,7 @@ try:
     from rclpy.executors import SingleThreadedExecutor
     from std_msgs.msg import String
 except ImportError:
-    print("autonomyclass.py dependencies not found!")
+    print("\033[91mautonomyclass.py dependencies not found!")
 import json
 import threading
 
