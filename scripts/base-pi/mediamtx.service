@@ -1,0 +1,17 @@
+[Unit]
+Description=MediaMTX Streaming Server
+After=network.target
+
+[Service]
+Type=simple
+User=robo
+WorkingDirectory=/home/robo/projects/mediamtx
+ExecStart=/home/robo/projects/mediamtx/mediamtx /home/robo/projects/mediamtx/mediamtx.yml
+Restart=always
+RestartSec=5
+
+# Optional: increase limits if needed for streams
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

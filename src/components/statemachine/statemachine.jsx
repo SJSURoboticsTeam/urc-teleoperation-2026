@@ -1,8 +1,28 @@
 import { Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
+import {useState, useEffect} from "react"
+import { basesocket, robotsocket } from "../socket.io/socket";
 
 export default function StateMachine({ openPane, setOpenPane, missionMode }) {
-
+  const [autonomyData, setautonomyData] = useState({
+   isBooted: null,
+   isTeleoperating: null
+});
+  
+  useEffect(() => {
+    const handler = (data) => {
+      console.log("autonomy data:", data);
+      setautonomyData( (prev) => ({
+        ...prev,
+        isBooted: data.isBooted,
+        isTeleoperating: data.isTeleoperating,
+      }));
+    };
+    robotsocket.on("autonomyData", handler);
+    return () => {
+      robotsocket.off("autonomyData", handler); // cleanup so no duplicate listeners
+    };
+  }, []);
   return (
     <div
       onMouseEnter={() => setOpenPane("StateMachine")}
@@ -41,6 +61,12 @@ export default function StateMachine({ openPane, setOpenPane, missionMode }) {
             <Typography  sx={{ color: 'black' }} variant = "h6">STATE MACHINE</Typography>
             <Typography  sx={{ color: 'black' }}>
               Current Mode: {missionMode ?? "UNKNOWN"}
+            </Typography>
+            <Typography  sx={{ color: 'black' }}>
+              Is Teleoperating: {String(autonomyData.isTeleoperating)}
+            </Typography>
+            <Typography  sx={{ color: 'black' }}>
+              isBooted: {String(autonomyData.isBooted)}
             </Typography>
 
 

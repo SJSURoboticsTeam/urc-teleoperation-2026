@@ -1,0 +1,19 @@
+[Unit]
+Description=Shutdown Watcher Script
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=robo
+WorkingDirectory=/home/robo
+ExecStart=/usr/bin/python3 /home/robo/shutdownwatcher.py
+
+Restart=always
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
