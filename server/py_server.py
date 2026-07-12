@@ -417,7 +417,7 @@ async def connect(sid,environ):
         sio.start_background_task(cpuloop,sio)
     if (not autonomy_started) and autonomy:
         autonomy_started = True
-        sio.start_bacckground_task(get_autonomy_states,sio)
+        sio.start_background_task(get_autonomy_states,sio)
 
 
 @sio.event
