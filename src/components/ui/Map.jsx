@@ -309,7 +309,7 @@ function resetMapCam(easeOptions) {
   useEffect(() => {
     const supported = isWebglSupported();
     setWebglSupported(supported);
-    if (!webglSupported) return;
+    if (webglSupported === false) return;
 
     const target = [robotCoordinates.long, robotCoordinates.lat];
     //const target = [-121.881194, 37.336847]; // San Jose area 
@@ -505,10 +505,11 @@ function resetMapCam(easeOptions) {
   }, []);
 
   useEffect(() => {
-if (!webglSupported) return;
+if (webglSupported === false) return;
+    if(robotMarker.current && baseMarker.current){
     robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
     baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
-
+  }
     if(coordRef.current) {
       coordRef.current.update(
         robotCoordinates.lat.toFixed(6),
@@ -552,7 +553,7 @@ if (!webglSupported) return;
   }, [robotCoordinates, baseCoordinates, isLockedOn, isCentered]);
 
   // Use full height so the map fills any explicit-height parent container
-  if (!webglSupported) {
+  if (webglSupported === false) {
   return (
     <div className="w-full flex-1 min-h-0 flex items-center justify-center border-2">
       <div>This map requires WebGL to work, which wasn't detected.</div>
