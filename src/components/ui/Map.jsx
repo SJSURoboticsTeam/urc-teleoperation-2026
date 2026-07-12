@@ -70,6 +70,19 @@ class CoordControl {
   }
 }
 
+function isWebglSupported() {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) ||
+      canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
+
+    return !!(gl && typeof gl.getParameter === "function");
+  } catch {
+    return false;
+  }
+}
+
 function LockOnControlUI({ isLockedOn, isCentered, onToggleLock, onToggleCenter }) {
   return (
     <Box
@@ -279,6 +292,7 @@ export default function Map() {
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(null);
 
 function resetMapCam(easeOptions) {
   if (!mapRef.current) { return; }
@@ -293,6 +307,10 @@ function resetMapCam(easeOptions) {
 }
 
   useEffect(() => {
+    const supported = isWebglSupported();
+    setWebglSupported(supported);
+    if (!webglSupported) return;
+
     const target = [robotCoordinates.long, robotCoordinates.lat];
     //const target = [-121.881194, 37.336847]; // San Jose area 
     //const target = [-110.768401, 38.372207]; // Utah
@@ -309,7 +327,9 @@ function resetMapCam(easeOptions) {
     const container = mapContainer.current;
     if (!container) return;
 
-    const map = new maplibregl.Map({
+    let map;
+    try {
+    map = new maplibregl.Map({
       container,
       style: urls,
       center: target,
@@ -318,6 +338,12 @@ function resetMapCam(easeOptions) {
       bearing: -20,
       maxPitch: 80
     });
+    } catch(e) {
+      console.error("MapLibre init failed:", e);
+      setWebglSupported(false);
+      return;
+    }
+
     mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -479,6 +505,7 @@ function resetMapCam(easeOptions) {
   }, []);
 
   useEffect(() => {
+if (!webglSupported) return;
     robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
     baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
 
@@ -525,5 +552,12 @@ function resetMapCam(easeOptions) {
   }, [robotCoordinates, baseCoordinates, isLockedOn, isCentered]);
 
   // Use full height so the map fills any explicit-height parent container
+  if (!webglSupported) {
+  return (
+    <div className="w-full flex-1 min-h-0 flex items-center justify-center border-2">
+      <div>This map requires WebGL to work, which wasn't detected.</div>
+    </div>
+  )} else {
   return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  }
 }
