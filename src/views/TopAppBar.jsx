@@ -23,7 +23,7 @@ import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
 import NavConnectionStatus from "../components/socket.io/BackendConnectionManager";
 import GamepadPanel from "../components/gamepad/Gamepad";
-import Metrics from "../components/metrics/metrics";
+import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
 import {
   robotsocket,

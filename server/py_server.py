@@ -17,7 +17,7 @@ from shutdown import register_shutdown_commands
 # Toggle drive communication transport for testing / fallback
 # True = UART drive path
 # False = original CAN drive path
-USE_UART_DRIVE = True
+USE_UART_DRIVE = False
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
@@ -115,6 +115,10 @@ print("Preparing for CAN...")
 # =================== CAN connections ===================
 @sio.event
 async def getCanInfo(sid):
+    uart_str = "CAN"
+    if USE_UART_DRIVE:
+        uart_str = "UART"
+
     # can ids for web ui
     canIds_arr = []
     for port in list_ports.comports():
@@ -130,6 +134,7 @@ async def getCanInfo(sid):
     'armId' : serial_ports["armId"],
     'scienceId' : serial_ports["scienceId"],
     'gpsId' : serial_ports["gpsId"],
+    "uartMode" : uart_str,
     }
     return data
 
