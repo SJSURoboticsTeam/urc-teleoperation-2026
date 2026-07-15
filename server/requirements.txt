@@ -9,4 +9,3 @@ psutil
 asyncssh
 dotenv
 pathlib
-subprocess
