@@ -4,7 +4,7 @@ import ipaddress
 
 PORT = 5005
 SHUTDOWN_TOKEN = b"ROBO_SHUTDOWN_BASE"
-ALLOWED_SUBNET = "192.168.1.0/24"
+ALLOWED_SUBNET = ipaddress.ip_network("192.168.1.0/24")
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(("", PORT))

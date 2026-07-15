@@ -9,7 +9,7 @@ and converting them into autostarting services.
 - Test them by running like ./filename.sh when in that folder
 ### Move files ending in .service into the systemd folder (/etc/systemd/system)
 - You will likely need to run this as root with sudo
-- To reload systemtctl : systemctl daemon-reload
+- To reload systemctl : systemctl daemon-reload
 - To install after being moved: sudo systemctl enable file.service
 - To start now : sudo systemctl start file.service
 - To stop : sudo systemctl stop file.service
