@@ -8,7 +8,7 @@ async def get_autonomy_states(sio):
     while True:
         isBooted = client.get("base/isBooted")
         isTeleoperating = client.get("base/isTeleop")
-        print("Data: " + str(isBooted))
+        #print("Data: " + str(isBooted))
         data = {
         'isBooted': isBooted,
         'isTeleoperating': isTeleoperating,

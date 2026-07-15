@@ -10,22 +10,34 @@ import sys, subprocess
 
 print("\033[0m----------------")
 
-# Get commit hash and message
-commit_result = subprocess.run(['git', 'log', '-1', '--pretty=format:%h %s'], capture_output=True, text=True)
-if commit_result.returncode != 0:
-    print("Failed to retrieve Git commit information.")
-else:
-    short_hash, message = commit_result.stdout.strip().split(' ', 1)
 
-    # Get current branch
-    branch_result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True)
-    if branch_result.returncode != 0:
-        branch = "unknown"
-    else:
+short_hash = "unknown"
+message = ""
+branch = "unknown"
+
+try:
+    commit_result = subprocess.run(
+        ["git", "log", "-1", "--pretty=format:%h %s"],
+        capture_output=True,
+        text=True,
+    )
+
+    if commit_result.returncode == 0:
+        short_hash, _, message = commit_result.stdout.strip().partition(" ")
+
+    branch_result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+
+    if branch_result.returncode == 0:
         branch = branch_result.stdout.strip()
 
-    # Format output with color and branch info
-    print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
+except OSError:
+    pass
+
+print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 
 # run python 3 py_server.py --offline to send fake data instead for ssh

@@ -8,8 +8,8 @@ Type=simple
 WorkingDirectory=/home/robo/projects/urc-teleoperation-2026/
 ExecStart=/home/robo/updater.sh
 
-User=robo
-Group=robo
+User=root
+Group=root
 
 Restart=on-failure
 RestartSec=10

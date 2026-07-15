@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=robo
+User=root
 WorkingDirectory=/home/robo
 ExecStart=/usr/bin/python3 /home/robo/shutdownwatcher.py
 

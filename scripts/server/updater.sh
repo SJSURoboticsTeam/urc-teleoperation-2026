@@ -17,13 +17,23 @@ REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
     exit 1
 }
 
-##cd "$REPO_ROOT"
+START_DIR="$(dirname "$START_COMMAND")"
+START_FILE="$(basename "$START_COMMAND")"
 
-echo "Checking internet connectivity..."
-timeout 10 ping -c 1 -W 5 google.com >/dev/null
+FETCH_OK=false
+for i in {1..10}; do
+    if git fetch "$REMOTE"; then
+        FETCH_OK=true
+        break
+    fi
+    sleep 1
+done
 
-echo "Fetching from $REMOTE..."
-git fetch "$REMOTE"
+if ! $FETCH_OK; then
+    echo "Couldn't update; launching existing application."
+    cd "$START_DIR"
+    exec "./$START_FILE"
+fi
 
 CURRENT_BRANCH="$(git branch --show-current)"
 
@@ -43,9 +53,5 @@ git merge --ff-only "$REMOTE/$TARGET_BRANCH"
 
 echo "Launching application..."
 
-START_DIR="$(dirname "$START_COMMAND")"
-START_FILE="$(basename "$START_COMMAND")"
-
 cd "$START_DIR"
-
 exec "./$START_FILE"

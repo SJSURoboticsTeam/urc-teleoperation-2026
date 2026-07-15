@@ -6,6 +6,10 @@ try:
     from std_msgs.msg import String
 except ImportError:
     print("\033[91mautonomyclass.py dependencies not found!")
+    rclpy = None
+    Node = None
+    SingleThreadedExecutor = None
+    String = None
 import json
 import threading
 
@@ -26,6 +30,8 @@ class BlackboardClient:
     """
 
     def __init__(self, read_topic="blackboard_state", write_topic="blackboard_command"):
+        if rclpy is None:
+             raise RuntimeError("Missing critical ROS2 dependencies!!!")
         rclpy.init()
         self._node = Node("blackboard_client")
         self._data = {}
