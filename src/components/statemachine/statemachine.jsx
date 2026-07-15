@@ -1,7 +1,7 @@
 import { Typography } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import {useState, useEffect} from "react"
-import { basesocket, robotsocket } from "../socket.io/socket";
+import {robotsocket } from "../socket.io/socket";
 
 export default function StateMachine({ openPane, setOpenPane, missionMode }) {
   const [autonomyData, setautonomyData] = useState({
