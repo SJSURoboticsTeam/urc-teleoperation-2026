@@ -4,6 +4,7 @@ import metrics
 import asyncio
 import signal
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
+from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
 import sys, subprocess
 
@@ -50,6 +51,12 @@ else:
 print("\033[0m----------------")
 
 
+serial_ports = {
+    "gps": None,
+    "gpsId" : "disconnect",
+}
+
+GPS_AUTO_ID = "1546:01A9"
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -65,7 +72,16 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
-
+    #gps
+    try:
+        if serial_ports["gps"]:
+            serial_ports["gps"].close()
+            print("GPS serial closed.")
+        else:
+            print("GPS was never connected.")
+    except Exception:
+        print("GPS WAS NOT DISCONNECTED!!!")
+        pass
     sys.exit(0)
 # =================== Server Setup ===================
 
@@ -89,6 +105,7 @@ app = socketio.ASGIApp(sio)
 
 # asyncio.run(main())
 
+# =================== GPS connections ===================
 
 
 
@@ -97,6 +114,7 @@ app = socketio.ASGIApp(sio)
 can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
+gps_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -109,6 +127,7 @@ register_shutdown_commands(sio)
 async def connect(sid,environ):
     global async_ssh_started
     global cpu_started
+    global gps_task_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -126,6 +145,12 @@ async def connect(sid,environ):
         else:
             sio.start_background_task(asyncsshloop, sio, "900MHZ")
             sio.start_background_task(asyncsshloop, sio, "5GHZ")
+    if not gps_task_started:
+        gps_task_started = True
+        if offline:
+            sio.start_background_task(send_fake_gps_data, sio)
+        else:
+            sio.start_background_task(read_gps_data, serial_ports, sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
