@@ -101,7 +101,7 @@ RECEIVE_ID_TO_JOINT = {
 # Limits which joints are actually sent to CAN
 # Ex: {"track"}, {"shoulder"}, {"elbow"}, {"pitch"}, {"roll"}, {"clamp"}
 # Set to None to send all joints normally
-ARM_TEST_JOINTS = {"shoulder", "elbow", "pitch", "roll", "clamp"}
+ARM_TEST_JOINTS = {"track", "shoulder", "elbow", "pitch", "roll", "clamp"}
 
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
@@ -157,7 +157,7 @@ def encode_arm_value(value, joint_name="unknown"):
         full_range = JOINT_FULL_RANGE.get(joint_name, 360.0)
         fraction   = float(value) / full_range
         mantissa   = int(fraction * POSITION_SCALE)
-        mantissa   = max(-32768, min(32767, mantissa))  # clamp to int16
+        mantissa   = max(-2147483648, min(2147483647, mantissa))  # clamp to int16
 
         exp_hex      = f"{POSITION_EXPONENT:02X}"
         # 4-byte mantissa

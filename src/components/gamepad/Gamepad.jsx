@@ -288,13 +288,14 @@ export default function GamepadPanel() {
       }
 
       const armInputs = {
-        elbow: gp.buttons[2]?.pressed ? -clean(gp.axes[1]) : 0,
+        elbow: gp.buttons[2]?.pressed ? clean(gp.axes[1]) : 0,
         shoulder: gp.buttons[3]?.pressed ? -clean(gp.axes[1]) : 0,
-        // track:
-        //   !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed
-        //     ? clean(gp.axes[0])
-        //     : 0,
-        // // treat full up/down as hard limits for better control at extremes
+        track:
+          (!gp.buttons[0]?.pressed && !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed)
+            ? clean(gp.axes[0])
+            : 0,
+        // treat full up/down as hard limits for better control at extremes
+        // windows axis
         // pitch:
         //   gp.axes[9] === -1
         //     ? -1
@@ -311,7 +312,7 @@ export default function GamepadPanel() {
         // uniSens: -0.5 * gp.axes[6] + 0.5,
         pitch: -clean(gp.axes[5]),
         roll: clean(gp.axes[4]),
-        clamp: clean(gp.axes[2]),
+        clamp: gp.buttons[0]?.pressed ? -clean(gp.axes[1]) : 0,
         uniSens: -0.5 * gp.axes[3] + 0.5,
       };
 
