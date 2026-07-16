@@ -1,0 +1,1 @@
+ffmpeg -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate 30 -i /dev/video0  -analyzeduration 0 -probesize 32 -vf format=yuv420p   -c:v libx264 -preset ultrafast -tune zerolatency -fflags nobuffer -flags low_delay -b:v 750K -pix_fmt yuv420p -g 30  -an -f rtsp rtsp://192.168.1.2:8554/masttesting

@@ -1,0 +1,19 @@
+[Unit]
+Description=Raspberry Pi Camera RTSP Stream
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=robo
+WorkingDirectory=/home/robo
+ExecStart=/bin/bash /home/robo/cam.sh
+
+Restart=always
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
