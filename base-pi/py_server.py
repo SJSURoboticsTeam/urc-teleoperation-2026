@@ -6,15 +6,49 @@ import signal
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
-import sys
+import sys, subprocess
+
+
+print("\033[0m----------------")
+
+
+short_hash = "unknown"
+message = ""
+branch = "unknown"
+
+try:
+    commit_result = subprocess.run(
+        ["git", "log", "-1", "--pretty=format:%h %s"],
+        capture_output=True,
+        text=True,
+    )
+
+    if commit_result.returncode == 0:
+        short_hash, _, message = commit_result.stdout.strip().partition(" ")
+
+    branch_result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+
+    if branch_result.returncode == 0:
+        branch = branch_result.stdout.strip()
+
+except OSError:
+    pass
+
+print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
 if (offline):
-    print("Offline mode enabled, using mock data instead")
+    print("\033[92mOffline mode enabled, using mock data instead")
 else:
-    print("Online mode, SSH ready... ")
+    print("\033[92mOnline mode, SSH ready... ")
+
+print("\033[0m----------------")
 
 
 serial_ports = {

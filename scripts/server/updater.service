@@ -1,0 +1,18 @@
+[Unit]
+Description=Git Update and Run
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/robo/projects/urc-teleoperation-2026/
+ExecStart=/home/robo/updater.sh
+
+User=robo
+Group=robo
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
