@@ -1,5 +1,6 @@
 import random
 import serial
+from serial.tools import list_ports
 from dataclasses import dataclass
 from typing import Union
 import time
@@ -15,6 +16,8 @@ class GNRMC:
 class GPS_Data:
     latitude: float
     longitude: float
+
+GPS_AUTO_ID = "1546:01A9"
 
 
 class ZEDF9P:
@@ -93,12 +96,33 @@ class ZEDF9P:
     def close(self) -> None:
         self.gps_port.close()
 
+def find_gps_port(vid_pid=GPS_AUTO_ID):
+    """Search connected serial devices for one matching the given VID:PID.
+    Returns the device path or None if not found."""
+    for port in list_ports.comports():
+        if port.hwid and vid_pid.lower() in port.hwid.lower():
+            return port.device
+    return None
+
 async def read_gps_data(serial_ports, sio):
+    disconnect_delay = 2
+    connect_delay = 0.5
     while True:
-        gps = serial_ports['gps']
-        if gps is None:
-            await asyncio.sleep(0.5)  # Sleep briefly while waiting for GPS to connect
+        if serial_ports["gpsId"] == "disconnect":
+            port = find_gps_port()
+            if port is None:
+                await asyncio.sleep(disconnect_delay)
+                continue
+            try:
+                serial_ports["gps"] = await asyncio.to_thread(ZEDF9P, port, 57600)
+                serial_ports["gpsId"] = port
+                print(f"GPS auto-connected on {port}.")
+            except Exception as e:
+                print(f"Failed to connect to GPS on {port}: {e}")
+                await asyncio.sleep(disconnect_delay)
             continue
+
+        gps = serial_ports['gps']
         try:
             if gps.has_gps_lock():
                 position = gps.get_position()
@@ -113,8 +137,12 @@ async def read_gps_data(serial_ports, sio):
             # time.sleep(0.01)
         except Exception as e:
             print(f'GPS thread error: {e}')
+            try: gps.close()
+            except Exception: pass
+            serial_ports["gps"] = None
+            serial_ports["gpsId"] = "disconnect"
         finally:
-            await asyncio.sleep(0.5)  # Sleep briefly to prevent tight loop on error
+            await asyncio.sleep(connect_delay)  # Sleep briefly to prevent tight loop on error
 
 async def send_fake_gps_data(sio):
     while True:
