@@ -58,11 +58,27 @@ class BlackboardClient:
         try:
             self._executor.spin()
         except Exception:
-            pass
+            self._node.get_logger().exception(
+                "Blackboard executor unexpectedly stopped"
+            )
+            raise
 
     def _on_receive(self, msg):
+        # validate data first, then load in
+        try:
+            data = json.loads(msg.data)
+        except json.JSONDecodeError:
+            self._node.get_logger().warning("Received malformed blackboard JSON")
+            return
+
+        if not isinstance(data, dict):
+            self._node.get_logger().warning(
+                f"Expected JSON object, got {type(data).__name__}"
+            )
+            return
+
         with self._lock:
-            self._data = json.loads(msg.data)
+            self._data = data
 
     def start(self):
         """Launch the background ROS thread."""
