@@ -6,3 +6,4 @@ psutil
 asyncssh
 dotenv
 pathlib
+pyserial

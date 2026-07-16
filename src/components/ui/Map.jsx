@@ -309,6 +309,7 @@ function resetMapCam(easeOptions) {
   useEffect(() => {
     const supported = isWebglSupported();
     setWebglSupported(supported);
+    if (supported === false) return;
     if (webglSupported === false) return;
 
     const target = [robotCoordinates.long, robotCoordinates.lat];
@@ -527,7 +528,7 @@ if (webglSupported === false) return;
     }
 
     if(isLockedOn && !suppressTrackRef.current && mapRef.current) {
-      if(!isCentered) {
+      if (!isCentered || !baseCoordinates.receive) {
         mapRef.current.easeTo({
           center: [robotCoordinates.long, robotCoordinates.lat],
           speed: 3,

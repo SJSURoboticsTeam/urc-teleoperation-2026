@@ -91,7 +91,10 @@ class ZEDF9P:
         """
         for line in self.lines:
             if "$GNRMC" in line:
-                self.__gnrmc = self.process_gnrmc(line)
+                try:
+                    self.__gnrmc = self.process_gnrmc(line)
+                except (IndexError, ValueError):
+                    continue
     
     def close(self) -> None:
         self.gps_port.close()
@@ -124,11 +127,11 @@ async def read_gps_data(serial_ports, sio):
 
         gps = serial_ports['gps']
         try:
-            if gps.has_gps_lock():
-                position = gps.get_position()
+            gnrmc = gps.gnrmc
+            if gnrmc.valid:
                 data = {
-                        'latitude': position.latitude,
-                        'longitude': position.longitude,
+                        'latitude': gnrmc.latitude,
+                        'longitude': gnrmc.longitude,
                 }
                 await sio.emit("gpsData2", data)
                 # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
