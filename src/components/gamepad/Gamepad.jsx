@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@mui/material";
 import GamepadDiv from "./GamepadManager";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
-import { green } from "@mui/material/colors";
-import { red } from "@mui/material/colors";
+import { green, red } from "@mui/material/colors";
 import { useLocation } from "react-router-dom";
 
 import { useArmCommands } from "../../contexts/ArmCommandContext";
@@ -17,14 +16,12 @@ import { ARM_LIMITS, ARM_DEFAULTS } from "../../constants/armConfig";
 export default function GamepadPanel() {
   // general vars
   const [open, setOpen] = useState(false);
-    const location = useLocation();
+  const location = useLocation();
 
   const [page, setPage] = useState(location.pathname);
 
   useEffect(() => {
-
     setPage(location.pathname);
-
   }, [location.pathname]);
   const [connectedGamepads, setConnectedGamepads] = useConnectedGamepads();
 
@@ -72,7 +69,6 @@ export default function GamepadPanel() {
     // Prevents stale drive/arm indices after disconnect
     const handleDisconnect = (e) => {
       const gpIndex = e.gamepad.index;
-
 
       setConnectedGamepads((prev) => {
         if (prev.driveGPList?.[gpIndex]) {
@@ -336,7 +332,8 @@ export default function GamepadPanel() {
           ARM_LIMITS.elbow.max,
         ),
         shoulder: clamp(
-          prevVal.shoulder + armInputs.shoulder * inputSens.shoulder * frameScale,
+          prevVal.shoulder +
+            armInputs.shoulder * inputSens.shoulder * frameScale,
           ARM_LIMITS.shoulder.min,
           ARM_LIMITS.shoulder.max,
         ),
@@ -432,7 +429,7 @@ export default function GamepadPanel() {
     } else {
       setInfo(""); // empty string if neither view
     }
-  }, [ location.pathname, driveConnectedOne, armConnectedOne]);
+  }, [location.pathname, driveConnectedOne, armConnectedOne]);
 
   return (
     <div
