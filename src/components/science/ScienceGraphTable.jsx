@@ -39,42 +39,41 @@ export default function ScienceGraphTable({ controlsLocked = false }) {
   const [frequency, setFrequency] = useState([]);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
 
   useEffect(() => {
     if (!running) return;
+
+    let index = 0;
     const interval = setInterval(() => {
-      setStepIndex((prevIndex) => {
-        if (prevIndex >= frequencies.length) {
-          setRunning(false);
-          setFinished(true);
-          clearInterval(interval);
-          return prevIndex;
-        }
+      if (index >= frequencies.length) {
+        setRunning(false);
+        setFinished(true);
+        clearInterval(interval);
+        return;
+      }
 
-        const purple = calculateAbsorbance(
-          purpleVialData,
-          clearVialData,
-          prevIndex,
-        );
-        const blue = calculateAbsorbance(blueVialData, clearVialData, prevIndex);
-        const red = calculateAbsorbance(redVialData, clearVialData, prevIndex);
-        const wavelength = frequencies[prevIndex];
+      const purple = calculateAbsorbance(
+        purpleVialData,
+        clearVialData,
+        index,
+      );
+      const blue = calculateAbsorbance(blueVialData, clearVialData, index);
+      const red = calculateAbsorbance(redVialData, clearVialData, index);
+      const wavelength = frequencies[index];
 
-        setFrequency((prev) => [...prev, wavelength]);
-        setPurpleAbsorbance((prev) => [...prev, purple]);
-        setBlueAbsorbance((prev) => [...prev, blue]);
-        setRedAbsorbance((prev) => [...prev, red]);
+      setFrequency((prev) => [...prev, wavelength]);
+      setPurpleAbsorbance((prev) => [...prev, purple]);
+      setBlueAbsorbance((prev) => [...prev, blue]);
+      setRedAbsorbance((prev) => [...prev, red]);
 
-        setRows([
-          createData("clear", wavelength, 0),
-          createData("purple", wavelength, purple),
-          createData("blue", wavelength, blue),
-          createData("red", wavelength, red),
-        ]);
+      setRows([
+        createData("clear", wavelength, 0),
+        createData("purple", wavelength, purple),
+        createData("blue", wavelength, blue),
+        createData("red", wavelength, red),
+      ]);
 
-        return prevIndex + 1;
-      });
+      index += 1;
     }, 1000);
 
     return () => clearInterval(interval);
@@ -88,7 +87,6 @@ export default function ScienceGraphTable({ controlsLocked = false }) {
   const stop = () => {
     setRunning(false);
     setFinished(false);
-    setStepIndex(0);
     setFrequency([]);
     setPurpleAbsorbance([]);
     setBlueAbsorbance([]);
