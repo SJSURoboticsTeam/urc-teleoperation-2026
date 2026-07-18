@@ -6,7 +6,7 @@ import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 
 export default function ScienceView() {
-  const [TabContent, setTabContent] = useState(0);
+  const [tabContent, setTabContent] = useState(0);
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
@@ -114,7 +114,7 @@ const exampleSteps = [
       <Box sx={{ flex: 1, height: 400 }}>
         <Box sx={{ border: 1, borderRadius: 2, borderColor: "divider" }}>
           <Tabs
-            value={TabContent}
+            value={tabContent}
             onChange={handleChange}
             sx={{ minHeight: 32, width: "auto" }}
           >
@@ -138,11 +138,11 @@ const exampleSteps = [
 
         <Box sx={{ p: 1 }}>
           {tabNum.map((num) =>
-            TabContent === num ? (
+            tabContent === num ? (
               <div key={num}>
                 <div className="flex flex-row">
-                  <Box sx={{ width: "60%", overflowX: "auto" }}>
-                    <div className="steps">
+                  <Box sx={{ width: "60%", overflowX: "auto", minWidth: 0 }}>
+                    <div className="steps inline-flex" style={{ minWidth: "max-content" }}>
                       {exampleSteps.map((step, index) => (
                         <div key={index} className="step step-accent">
                           {step}
@@ -172,7 +172,7 @@ const exampleSteps = [
                   </Box>
                 </div>
 
-                <ScienceGraphTable />
+                <ScienceGraphTable controlsLocked={controlsLocked} />
               </div>
             ) : null,
           )}

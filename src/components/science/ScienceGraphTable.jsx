@@ -20,7 +20,7 @@ function calculateAbsorbance(dataSet, clearVialData, index) {
   return absorbance.toFixed(3);
 }
 
-export default function ScienceGraphTable() {
+export default function ScienceGraphTable({ controlsLocked = false }) {
   const frequencies = [415, 455, 480, 515, 555, 590, 630, 680];
   const clearVialData = [65535, 1364, 696, 568, 1466, 4655, 1140, 338];
   const purpleVialData = [9875, 136, 78, 68, 166, 494, 117, 37];
@@ -39,12 +39,12 @@ export default function ScienceGraphTable() {
   const [frequency, setFrequency] = useState([]);
   const [running, setRunning] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [index, setIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(0);
 
   useEffect(() => {
     if (!running) return;
     const interval = setInterval(() => {
-      setIndex((prevIndex) => {
+      setStepIndex((prevIndex) => {
         if (prevIndex >= frequencies.length) {
           setRunning(false);
           setFinished(true);
@@ -88,7 +88,7 @@ export default function ScienceGraphTable() {
   const stop = () => {
     setRunning(false);
     setFinished(false);
-    setIndex(0);
+    setStepIndex(0);
     setFrequency([]);
     setPurpleAbsorbance([]);
     setBlueAbsorbance([]);
@@ -123,6 +123,7 @@ export default function ScienceGraphTable() {
         <Button
           variant="contained"
           onClick={finished || running ? stop : start}
+          disabled={controlsLocked}
           sx={{ width: "80px", fontSize: 16 }}
         >
           {finished || running ? "Stop" : "Start"}
