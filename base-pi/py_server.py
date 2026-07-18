@@ -4,18 +4,59 @@ import metrics
 import asyncio
 import signal
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
+from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
-import sys
+import sys, subprocess
+
+
+print("\033[0m----------------")
+
+
+short_hash = "unknown"
+message = ""
+branch = "unknown"
+
+try:
+    commit_result = subprocess.run(
+        ["git", "log", "-1", "--pretty=format:%h %s"],
+        capture_output=True,
+        text=True,
+    )
+
+    if commit_result.returncode == 0:
+        short_hash, _, message = commit_result.stdout.strip().partition(" ")
+
+    branch_result = subprocess.run(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+
+    if branch_result.returncode == 0:
+        branch = branch_result.stdout.strip()
+
+except OSError:
+    pass
+
+print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 
 # run python 3 py_server.py --offline to send fake data instead for ssh
 offline = "--offline" in sys.argv
 if (offline):
-    print("Offline mode enabled, using mock data instead")
+    print("\033[92mOffline mode enabled, using mock data instead")
 else:
-    print("Online mode, SSH ready... ")
+    print("\033[92mOnline mode, SSH ready... ")
+
+print("\033[0m----------------")
 
 
+serial_ports = {
+    "gps": None,
+    "gpsId" : "disconnect",
+}
+
+GPS_AUTO_ID = "1546:01A9"
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -31,7 +72,16 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
-
+    #gps
+    try:
+        if serial_ports["gps"]:
+            serial_ports["gps"].close()
+            print("GPS serial closed.")
+        else:
+            print("GPS was never connected.")
+    except Exception:
+        print("GPS WAS NOT DISCONNECTED!!!")
+        pass
     sys.exit(0)
 # =================== Server Setup ===================
 
@@ -55,6 +105,7 @@ app = socketio.ASGIApp(sio)
 
 # asyncio.run(main())
 
+# =================== GPS connections ===================
 
 
 
@@ -63,6 +114,7 @@ app = socketio.ASGIApp(sio)
 can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
+gps_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -75,6 +127,7 @@ register_shutdown_commands(sio)
 async def connect(sid,environ):
     global async_ssh_started
     global cpu_started
+    global gps_task_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -92,6 +145,12 @@ async def connect(sid,environ):
         else:
             sio.start_background_task(asyncsshloop, sio, "900MHZ")
             sio.start_background_task(asyncsshloop, sio, "5GHZ")
+    if not gps_task_started:
+        gps_task_started = True
+        if offline:
+            sio.start_background_task(send_fake_gps_data, sio)
+        else:
+            sio.start_background_task(read_gps_data, serial_ports, sio)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
