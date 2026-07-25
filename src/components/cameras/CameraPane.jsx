@@ -181,28 +181,31 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
               }}
             />
           ) : (
-            <iframe
-              key={selectedCamera.url}
-              src={selectedCamera.url}
-              onLoad={() => {
-                if (iframeTimeoutRef.current) {
-                  clearTimeout(iframeTimeoutRef.current);
-                  iframeTimeoutRef.current = null;
-                }
-                setLoading(false);
-                setError(false);
-              }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                border: 0,
-                display: "block",
-              }}
-              title={selectedCamera.name}
-              allow="fullscreen;"
-            />
+            // if error, iframe does not show to prevent browser error messages
+            !error && (
+              <iframe
+                key={selectedCamera.url}
+                src={selectedCamera.url}
+                onLoad={() => {
+                  if (iframeTimeoutRef.current) {
+                    clearTimeout(iframeTimeoutRef.current);
+                    iframeTimeoutRef.current = null;
+                  }
+                  setLoading(false);
+                  setError(false);
+                }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: 0,
+                  display: "block",
+                }}
+                title={selectedCamera.name}
+                allow="fullscreen;"
+              />
+            )
           ))}
 
         {/* loading / error overlays */}
