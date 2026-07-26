@@ -114,7 +114,9 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
 
   return (
     // Root Box is flexible so CameraPane can grow inside a column
-    <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box
+      sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+    >
       <FormControl
         fullWidth
         variant="outlined"
@@ -228,11 +230,14 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
           <Box
             sx={{
               position: "absolute",
+              flex: 1,
+              minHeight: 0,
               inset: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 1,
               p: 2,
             }}
           >
@@ -243,9 +248,16 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
               loop
               muted
               playsInline
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                minHeight: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
             />
-            <Typography color="error">Failed to load camera</Typography>
+            <Typography color="error">Couldn't connect to video endpoint.</Typography>
             <Button
               sx={{ mt: 1 }}
               variant="contained"
