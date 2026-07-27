@@ -7,6 +7,7 @@ import asyncio
 import signal
 import sys
 import subprocess
+import os
 from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request
 from uart_drive_serial import UartDriveSerial
@@ -175,6 +176,13 @@ async def getCanInfo(sid):
         if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) ):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
+
+    virtual_ports = ["/dev/ttys004", "/dev/ttys005"]
+
+    for virtual_port in virtual_ports:
+        if os.path.exists(virtual_port):
+            print(f"Discovered virtual serial port: {virtual_port}")
+            canIds_arr.append(virtual_port)
     data = {
     'status': "OK",
     'canIds' : canIds_arr,

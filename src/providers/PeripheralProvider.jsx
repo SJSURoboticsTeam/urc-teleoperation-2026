@@ -1,10 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { useSnackbar } from "notistack";
 import { robotsocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 
 
 export const PeripheralProvider = ({ children }) => {
+
+    const { enqueueSnackbar } = useSnackbar();
 
   const [canState, setcanState] = useState({
     driveState: "idle", // idle, connecting, active

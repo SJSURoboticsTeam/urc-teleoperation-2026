@@ -1,5 +1,4 @@
-import { robotsocket } from "./socket";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
@@ -9,7 +8,6 @@ import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
 import EjectIcon from "@mui/icons-material/Eject";
-import { useSnackbar } from "notistack";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 
 export default function PeripheralManager({ openPane }) {
@@ -28,8 +26,7 @@ export default function PeripheralManager({ openPane }) {
     disconnectAll
   } = usePeripherals();
 
-  const { enqueueSnackbar } = useSnackbar();
-  // can state
+
 
   useEffect(() => {
     if (openPane == "Backend") {

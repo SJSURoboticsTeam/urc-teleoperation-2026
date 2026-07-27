@@ -4,8 +4,11 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
+import { usePeripherals } from "../contexts/PeripheralContext";
 
 export default function ScienceView() {
+  const { canState } = usePeripherals();
+
   const [tabContent, setTabContent] = useState(0);
 
   // Read global autonomy state
@@ -40,6 +43,17 @@ const exampleSteps = [
       className="flex flex-1 flex-col overflow-auto h-full min-h-0"
       style={{ userSelect: "none" }}
     >
+    {(canState.scienceState == "idle"&& !controlsLocked) && (
+          <Typography
+            sx={{
+              textAlign: "center",
+              fontWeight: 700,
+            }}
+            color="error"
+          >
+            You don't have CAN connected!
+          </Typography>
+        )}
       {controlsLocked && (
         <Typography
           color="error"
