@@ -1,0 +1,1710 @@
+<?xml version="1.0" ?>
+<!-- Generated using onshape-to-robot -->
+<!-- Onshape https://sjsuurc.onshape.com/documents/7d1c4a2ab545c6e85a2235c1/w/6a2ce084eb349ae1330e36e8/e/1e42c49dee2377d124cf12d7 -->
+<robot name="C:\Users\ntpha\roverURDF">
+  <!-- Link frame -->
+  <link name="frame">
+    <inertial>
+      <origin xyz="0.0157046 0.19537 -0.808139" rpy="0 0 0"/>
+      <mass value="18.1632"/>
+      <inertia ixx="1.20965" ixy="-2.92105e-06" ixz="-6.74134e-06" iyy="1.03676" iyz="-0.2369" izz="1.2838"/>
+    </inertial>
+    <!-- Part mockcameraservo -->
+    <visual>
+      <origin xyz="0.0149509 0.15467 -0.917879" rpy="3.14159 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\mockcameraservo.stl"/>
+      </geometry>
+      <material name="mockcameraservo_material">
+        <color rgba="1 0.756863 0.054902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0149509 0.15467 -0.917879" rpy="3.14159 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\mockcameraservo.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mastangler -->
+    <visual>
+      <origin xyz="0.0157085 0.437161 -0.26342" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastangler.stl"/>
+      </geometry>
+      <material name="mastangler_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.437161 -0.26342" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastangler.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mastbranch -->
+    <visual>
+      <origin xyz="0.0157085 0.454838 -0.221606" rpy="-0.785398 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastbranch.stl"/>
+      </geometry>
+      <material name="mastbranch_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.454838 -0.221606" rpy="-0.785398 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastbranch.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mainmast -->
+    <visual>
+      <origin xyz="0.0157085 0.437161 -0.888284" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mainmast.stl"/>
+      </geometry>
+      <material name="mainmast_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.437161 -0.888284" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mainmast.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mastcameraangler -->
+    <visual>
+      <origin xyz="0.0157085 0.777986 0.125678" rpy="3.14159 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcameraangler.stl"/>
+      </geometry>
+      <material name="mastcameraangler_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.777986 0.125678" rpy="3.14159 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcameraangler.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part maststabilizerleft -->
+    <visual>
+      <origin xyz="0.0157085 0.430161 -0.900284" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\maststabilizerleft.stl"/>
+      </geometry>
+      <material name="maststabilizerleft_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.430161 -0.900284" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\maststabilizerleft.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mastcamerabase -->
+    <visual>
+      <origin xyz="0.0157085 0.777986 0.126542" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcamerabase.stl"/>
+      </geometry>
+      <material name="mastcamerabase_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.777986 0.126542" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcamerabase.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part frame -->
+    <visual>
+      <origin xyz="0.0157085 0.0531605 -0.912284" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\frame.stl"/>
+      </geometry>
+      <material name="frame_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.0531605 -0.912284" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\frame.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part chasisbox -->
+    <visual>
+      <origin xyz="0.0157085 0.242345 -0.921879" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\chasisbox.stl"/>
+      </geometry>
+      <material name="chasisbox_material">
+        <color rgba="0.764706 0.545098 0.803922 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.242345 -0.921879" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\chasisbox.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part maststabilizerright -->
+    <visual>
+      <origin xyz="0.0157085 0.430161 -0.900284" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\maststabilizerright.stl"/>
+      </geometry>
+      <material name="maststabilizerright_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0157085 0.430161 -0.900284" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\maststabilizerright.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part fortyfivedegpatternbracket -->
+    <visual>
+      <origin xyz="-0.235021 0.113161 -0.916284" rpy="0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+      <material name="fortyfivedegpatternbracket_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.235021 0.113161 -0.916284" rpy="0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part tensionbarlshape -->
+    <visual>
+      <origin xyz="-0.260291 0.235161 -0.912284" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\tensionbarlshape.stl"/>
+      </geometry>
+      <material name="tensionbarlshape_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.260291 0.235161 -0.912284" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\tensionbarlshape.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part fortyfivedegpatternbracket_2 -->
+    <visual>
+      <origin xyz="-0.235021 0.421161 -0.608284" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+      <material name="fortyfivedegpatternbracket_2_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.235021 0.421161 -0.608284" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part hypbar -->
+    <visual>
+      <origin xyz="-0.248291 0.229959 -0.719543" rpy="1.5708 0.785398 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\hypbar.stl"/>
+      </geometry>
+      <material name="hypbar_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.248291 0.229959 -0.719543" rpy="1.5708 0.785398 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\hypbar.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part fortyfivedegpatternbracket_3 -->
+    <visual>
+      <origin xyz="-0.261561 0.113161 -0.916284" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+      <material name="fortyfivedegpatternbracket_3_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.261561 0.113161 -0.916284" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part fortyfivedegpatternbracket_4 -->
+    <visual>
+      <origin xyz="0.292979 0.113161 -0.916284" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+      <material name="fortyfivedegpatternbracket_4_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.292979 0.113161 -0.916284" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part tensionbarlshape_2 -->
+    <visual>
+      <origin xyz="0.267709 0.235161 -0.912284" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\tensionbarlshape.stl"/>
+      </geometry>
+      <material name="tensionbarlshape_2_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.267709 0.235161 -0.912284" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\tensionbarlshape.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part fortyfivedegpatternbracket_5 -->
+    <visual>
+      <origin xyz="0.266439 0.421161 -0.608284" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+      <material name="fortyfivedegpatternbracket_5_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.266439 0.421161 -0.608284" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part hypbar_2 -->
+    <visual>
+      <origin xyz="0.279709 0.229959 -0.719543" rpy="1.5708 0.785398 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\hypbar.stl"/>
+      </geometry>
+      <material name="hypbar_2_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.279709 0.229959 -0.719543" rpy="1.5708 0.785398 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\hypbar.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part fortyfivedegpatternbracket_6 -->
+    <visual>
+      <origin xyz="0.266439 0.113161 -0.916284" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+      <material name="fortyfivedegpatternbracket_6_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.266439 0.113161 -0.916284" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\fortyfivedegpatternbracket.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link leg -->
+  <link name="leg">
+    <inertial>
+      <origin xyz="-0.000261589 -0.0449352 -0.0194734" rpy="0 0 0"/>
+      <mass value="2.72194"/>
+      <inertia ixx="0.00554219" ixy="-4.4305e-05" ixz="3.65212e-05" iyy="0.472917" iyz="9.05142e-05" izz="0.476663"/>
+    </inertial>
+    <!-- Part steeringmotormount -->
+    <visual>
+      <origin xyz="-0.4805 -0.066 -0.02" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+      <material name="steeringmotormount_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.4805 -0.066 -0.02" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6 -->
+    <visual>
+      <origin xyz="-0.0505888 -0.095 -0.375818" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0505888 -0.095 -0.375818" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6 -->
+    <visual>
+      <origin xyz="-0.0505888 -0.0955 -0.375818" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0505888 -0.0955 -0.375818" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_2 -->
+    <visual>
+      <origin xyz="0.0505888 -0.0955 0.335818" rpy="-1.5708 -0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_2_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0505888 -0.0955 0.335818" rpy="-1.5708 -0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6_2 -->
+    <visual>
+      <origin xyz="0.0505888 -0.095 0.335818" rpy="-1.5708 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_2_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0505888 -0.095 0.335818" rpy="-1.5708 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part leg -->
+    <visual>
+      <origin xyz="0 0 -0.02" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\leg.stl"/>
+      </geometry>
+      <material name="leg_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.02" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\leg.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steeringmotormount_2 -->
+    <visual>
+      <origin xyz="0.4805 -0.066 -0.02" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+      <material name="steeringmotormount_2_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.4805 -0.066 -0.02" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part canmount -->
+    <visual>
+      <origin xyz="0.4805 -0.0955 -0.02" rpy="-1.5708 0.785398 -0"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+      <material name="canmount_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.4805 -0.0955 -0.02" rpy="-1.5708 0.785398 -0"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mergedlimitswitchleft -->
+    <visual>
+      <origin xyz="0.452491 -0.105 0.0387517" rpy="-1.5708 -0.56961 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchleft.stl"/>
+      </geometry>
+      <material name="mergedlimitswitchleft_material">
+        <color rgba="0.964706 0.964706 0.952941 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.452491 -0.105 0.0387517" rpy="-1.5708 -0.56961 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchleft.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part canmount_2 -->
+    <visual>
+      <origin xyz="-0.4805 -0.0955 -0.02" rpy="-1.5708 0.785398 -0"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+      <material name="canmount_2_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.4805 -0.0955 -0.02" rpy="-1.5708 0.785398 -0"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mergedlimitswitchleft_2 -->
+    <visual>
+      <origin xyz="-0.508509 -0.105 0.0387517" rpy="-1.5708 -0.56961 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchleft.stl"/>
+      </geometry>
+      <material name="mergedlimitswitchleft_2_material">
+        <color rgba="0.964706 0.964706 0.952941 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.508509 -0.105 0.0387517" rpy="-1.5708 -0.56961 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchleft.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link rmdshaftx6 -->
+  <link name="rmdshaftx6">
+    <inertial>
+      <origin xyz="-3.82547e-05 0.026029 -0.164423" rpy="0 0 0"/>
+      <mass value="1.67167"/>
+      <inertia ixx="0.0238287" ixy="2.52974e-06" ixz="9.61138e-06" iyy="0.0220318" iyz="0.00114903" izz="0.00274555"/>
+    </inertial>
+    <!-- Part rmdshaftx6 -->
+    <visual>
+      <origin xyz="-0.531089 0.355818 0.016" rpy="-3.14159 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.531089 0.355818 0.016" rpy="-3.14159 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part drivemotormounts -->
+    <visual>
+      <origin xyz="0 0.022774 -0.24275" rpy="-1.5708 0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+      <material name="drivemotormounts_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0.022774 -0.24275" rpy="-1.5708 0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_2 -->
+    <visual>
+      <origin xyz="-0.488732 0.003774 0.169322" rpy="1.5708 1.29079 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_2_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.488732 0.003774 0.169322" rpy="1.5708 1.29079 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6_3 -->
+    <visual>
+      <origin xyz="-0.355818 0.003774 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_3_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.355818 0.003774 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_3 -->
+    <visual>
+      <origin xyz="-0.355818 0.003274 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_3_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.355818 0.003274 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part bigleever -->
+    <visual>
+      <origin xyz="0 -0.03405 -0.01475" rpy="-0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+      <material name="bigleever_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 -0.03405 -0.01475" rpy="-0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steelgussetplate -->
+    <visual>
+      <origin xyz="-0.012 0.04795 -0.03075" rpy="-0 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+      <material name="steelgussetplate_material">
+        <color rgba="0.231373 0.380392 0.705882 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.012 0.04795 -0.03075" rpy="-0 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part shaftmount -->
+    <visual>
+      <origin xyz="0 -0 -0.0065" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+      <material name="shaftmount_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 -0 -0.0065" rpy="0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link wheel -->
+  <link name="wheel">
+    <inertial>
+      <origin xyz="0 0 0.00539413" rpy="0 0 0"/>
+      <mass value="1.48"/>
+      <inertia ixx="0.0156639" ixy="0" ixz="0" iyy="0.0156639" iyz="-0" izz="0.0281888"/>
+    </inertial>
+    <!-- Part wheel -->
+    <visual>
+      <origin xyz="0 0 -0.0335" rpy="1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+      <material name="wheel_material">
+        <color rgba="0.647059 0.647059 0.647059 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.0335" rpy="1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from rmdshaftx6 to wheel -->
+  <joint name="drive_back_right_wheel" type="continuous">
+    <origin xyz="0 -0.012226 -0.24275" rpy="-1.5708 1.29079 -0"/>
+    <parent link="rmdshaftx6"/>
+    <child link="wheel"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+  <!-- Joint from leg to rmdshaftx6 -->
+  <joint name="back_right_drive" type="revolute">
+    <origin xyz="0.4805 -0.111 -0.02" rpy="-1.5708 -0 0"/>
+    <parent link="leg"/>
+    <child link="rmdshaftx6"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Link rmdshaftx6_2 -->
+  <link name="rmdshaftx6_2">
+    <inertial>
+      <origin xyz="3.82547e-05 -0.026029 -0.164423" rpy="0 0 0"/>
+      <mass value="1.67167"/>
+      <inertia ixx="0.0238287" ixy="2.52974e-06" ixz="-9.61138e-06" iyy="0.0220318" iyz="-0.00114903" izz="0.00274555"/>
+    </inertial>
+    <!-- Part drivemotormounts_2 -->
+    <visual>
+      <origin xyz="-0 -0.022774 -0.24275" rpy="-1.5708 -0 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+      <material name="drivemotormounts_2_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 -0.022774 -0.24275" rpy="-1.5708 -0 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_3 -->
+    <visual>
+      <origin xyz="-0.531089 0.355818 0.016" rpy="-3.14159 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_3_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.531089 0.355818 0.016" rpy="-3.14159 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_4 -->
+    <visual>
+      <origin xyz="-0.512067 -0.003774 0.139937" rpy="-1.5708 0.0515034 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_4_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.512067 -0.003774 0.139937" rpy="-1.5708 0.0515034 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6_4 -->
+    <visual>
+      <origin xyz="0.355818 -0.003774 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_4_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.355818 -0.003774 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_4 -->
+    <visual>
+      <origin xyz="0.355818 -0.003274 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_4_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.355818 -0.003274 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part bigleever_2 -->
+    <visual>
+      <origin xyz="-0 0.03405 -0.01475" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+      <material name="bigleever_2_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 0.03405 -0.01475" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steelgussetplate_2 -->
+    <visual>
+      <origin xyz="0.012 -0.04795 -0.03075" rpy="-3.14159 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+      <material name="steelgussetplate_2_material">
+        <color rgba="0.231373 0.380392 0.705882 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.012 -0.04795 -0.03075" rpy="-3.14159 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part shaftmount_2 -->
+    <visual>
+      <origin xyz="-0 0 -0.0065" rpy="-0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+      <material name="shaftmount_2_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 0 -0.0065" rpy="-0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link wheel_2 -->
+  <link name="wheel_2">
+    <inertial>
+      <origin xyz="0 0 0.00539413" rpy="0 0 0"/>
+      <mass value="1.48"/>
+      <inertia ixx="0.0156639" ixy="0" ixz="-0" iyy="0.0156639" iyz="-0" izz="0.0281888"/>
+    </inertial>
+    <!-- Part wheel_2 -->
+    <visual>
+      <origin xyz="0 0 -0.0335" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+      <material name="wheel_2_material">
+        <color rgba="0.647059 0.647059 0.647059 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.0335" rpy="1.5708 0 0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from rmdshaftx6_2 to wheel_2 -->
+  <joint name="drive_front_right_wheel" type="continuous">
+    <origin xyz="-0 0.012226 -0.24275" rpy="1.5708 0.0515034 0"/>
+    <parent link="rmdshaftx6_2"/>
+    <child link="wheel_2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+  <!-- Joint from leg to rmdshaftx6_2 -->
+  <joint name="front_right_drive" type="revolute">
+    <origin xyz="-0.4805 -0.111 -0.02" rpy="1.5708 -0 -3.14159"/>
+    <parent link="leg"/>
+    <child link="rmdshaftx6_2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Joint from frame to leg -->
+  <joint name="left_frame_sus" type="revolute">
+    <origin xyz="0.375709 0.0531605 -0.912284" rpy="1.5708 -0 1.5708"/>
+    <parent link="frame"/>
+    <child link="leg"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-0.349066" upper="0.349066"/>
+  </joint>
+  <!-- Link leg_2 -->
+  <link name="leg_2">
+    <inertial>
+      <origin xyz="-0.000261589 0.0449352 -0.0194734" rpy="0 0 0"/>
+      <mass value="2.72194"/>
+      <inertia ixx="0.00554219" ixy="4.4305e-05" ixz="3.58907e-05" iyy="0.472917" iyz="-9.05142e-05" izz="0.476663"/>
+    </inertial>
+    <!-- Part rmdtopx6_5 -->
+    <visual>
+      <origin xyz="0.0505888 0.095 -0.375818" rpy="1.5708 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_5_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0505888 0.095 -0.375818" rpy="1.5708 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_5 -->
+    <visual>
+      <origin xyz="0.0505888 0.0955 -0.375818" rpy="1.5708 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_5_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0505888 0.0955 -0.375818" rpy="1.5708 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steeringmotormount_3 -->
+    <visual>
+      <origin xyz="0.4805 0.066 -0.02" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+      <material name="steeringmotormount_3_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.4805 0.066 -0.02" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steeringmotormount_4 -->
+    <visual>
+      <origin xyz="-0.4805 0.066 -0.02" rpy="1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+      <material name="steeringmotormount_4_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.4805 0.066 -0.02" rpy="1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steeringmotormount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6_6 -->
+    <visual>
+      <origin xyz="-0.0505888 0.095 0.335818" rpy="-1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_6_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0505888 0.095 0.335818" rpy="-1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_6 -->
+    <visual>
+      <origin xyz="-0.0505888 0.0955 0.335818" rpy="-1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_6_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.0505888 0.0955 0.335818" rpy="-1.5708 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part leg_2 -->
+    <visual>
+      <origin xyz="0 0 -0.02" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\leg.stl"/>
+      </geometry>
+      <material name="leg_2_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.02" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\leg.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mergedlimitswitchright -->
+    <visual>
+      <origin xyz="0.452491 0.105 0.0387517" rpy="-1.5708 0.56961 0"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchright.stl"/>
+      </geometry>
+      <material name="mergedlimitswitchright_material">
+        <color rgba="0.964706 0.964706 0.952941 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.452491 0.105 0.0387517" rpy="-1.5708 0.56961 0"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchright.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part canmount_3 -->
+    <visual>
+      <origin xyz="0.4805 0.0955 -0.02" rpy="-1.5708 0.785398 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+      <material name="canmount_3_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.4805 0.0955 -0.02" rpy="-1.5708 0.785398 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mergedlimitswitchright_2 -->
+    <visual>
+      <origin xyz="-0.508509 0.105 0.0387517" rpy="-1.5708 0.56961 0"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchright.stl"/>
+      </geometry>
+      <material name="mergedlimitswitchright_2_material">
+        <color rgba="0.964706 0.964706 0.952941 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.508509 0.105 0.0387517" rpy="-1.5708 0.56961 0"/>
+      <geometry>
+        <mesh filename="package://assets\mergedlimitswitchright.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part canmount_4 -->
+    <visual>
+      <origin xyz="-0.4805 0.0955 -0.02" rpy="-1.5708 0.785398 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+      <material name="canmount_4_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.4805 0.0955 -0.02" rpy="-1.5708 0.785398 3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\canmount.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link rmdshaftx6_3 -->
+  <link name="rmdshaftx6_3">
+    <inertial>
+      <origin xyz="-3.79638e-05 -0.026029 -0.164423" rpy="0 0 0"/>
+      <mass value="1.67167"/>
+      <inertia ixx="0.0238287" ixy="-2.52525e-06" ixz="9.68214e-06" iyy="0.0220318" iyz="-0.00114903" izz="0.00274555"/>
+    </inertial>
+    <!-- Part drivemotormounts_3 -->
+    <visual>
+      <origin xyz="0 -0.022774 -0.24275" rpy="-1.5708 -0 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+      <material name="drivemotormounts_3_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 -0.022774 -0.24275" rpy="-1.5708 -0 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_5 -->
+    <visual>
+      <origin xyz="0.355818 0.531089 0.016" rpy="3.14159 0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_5_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.355818 0.531089 0.016" rpy="3.14159 0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part bigleever_3 -->
+    <visual>
+      <origin xyz="-0 0.03405 -0.01475" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+      <material name="bigleever_3_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 0.03405 -0.01475" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steelgussetplate_3 -->
+    <visual>
+      <origin xyz="-0.01454 -0.04795 -0.03075" rpy="-3.14159 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+      <material name="steelgussetplate_3_material">
+        <color rgba="0.231373 0.380392 0.705882 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.01454 -0.04795 -0.03075" rpy="-3.14159 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part shaftmount_3 -->
+    <visual>
+      <origin xyz="-0 -0 -0.0065" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+      <material name="shaftmount_3_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 -0 -0.0065" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_6 -->
+    <visual>
+      <origin xyz="0.0652956 -0.003774 0.393173" rpy="-1.5708 1.08282 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_6_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0652956 -0.003774 0.393173" rpy="-1.5708 1.08282 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6_7 -->
+    <visual>
+      <origin xyz="0.355818 -0.003774 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_7_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.355818 -0.003774 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_7 -->
+    <visual>
+      <origin xyz="0.355818 -0.003274 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_7_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.355818 -0.003274 0.288339" rpy="-1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link wheel_3 -->
+  <link name="wheel_3">
+    <inertial>
+      <origin xyz="-0 0 0.00539413" rpy="0 0 0"/>
+      <mass value="1.48"/>
+      <inertia ixx="0.0156639" ixy="-0" ixz="0" iyy="0.0156639" iyz="-0" izz="0.0281888"/>
+    </inertial>
+    <!-- Part wheel_3 -->
+    <visual>
+      <origin xyz="0 -0 -0.0335" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+      <material name="wheel_3_material">
+        <color rgba="0.647059 0.647059 0.647059 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 -0 -0.0335" rpy="1.5708 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from rmdshaftx6_3 to wheel_3 -->
+  <joint name="drive_back_left_wheel" type="continuous">
+    <origin xyz="-0 0.012226 -0.24275" rpy="1.5708 1.08282 0"/>
+    <parent link="rmdshaftx6_3"/>
+    <child link="wheel_3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+  <!-- Joint from leg_2 to rmdshaftx6_3 -->
+  <joint name="back_left_drive" type="revolute">
+    <origin xyz="0.4805 0.111 -0.02" rpy="1.5708 -0 -0"/>
+    <parent link="leg_2"/>
+    <child link="rmdshaftx6_3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Link rmdshaftx6_4 -->
+  <link name="rmdshaftx6_4">
+    <inertial>
+      <origin xyz="3.79638e-05 0.026029 -0.164423" rpy="0 0 0"/>
+      <mass value="1.67167"/>
+      <inertia ixx="0.0238287" ixy="-2.52525e-06" ixz="-9.68214e-06" iyy="0.0220318" iyz="0.00114903" izz="0.00274555"/>
+    </inertial>
+    <!-- Part drivemotormounts_4 -->
+    <visual>
+      <origin xyz="0 0.022774 -0.24275" rpy="-1.5708 -0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+      <material name="drivemotormounts_4_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0.022774 -0.24275" rpy="-1.5708 -0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\drivemotormounts.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_7 -->
+    <visual>
+      <origin xyz="0.355818 0.531089 0.016" rpy="3.14159 -0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_7_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.355818 0.531089 0.016" rpy="3.14159 -0 -1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdshaftx6_8 -->
+    <visual>
+      <origin xyz="-0.633561 0.003774 -0.157528" rpy="1.5708 0.724001 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+      <material name="rmdshaftx6_8_material">
+        <color rgba="0.701961 0.682353 0.623529 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.633561 0.003774 -0.157528" rpy="1.5708 0.724001 -0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdshaftx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdtopx6_8 -->
+    <visual>
+      <origin xyz="-0.355818 0.003774 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+      <material name="rmdtopx6_8_material">
+        <color rgba="0.6 0.580392 0.529412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.355818 0.003774 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdtopx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part rmdbodyx6_8 -->
+    <visual>
+      <origin xyz="-0.355818 0.003274 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+      <material name="rmdbodyx6_8_material">
+        <color rgba="0.4 0.388235 0.34902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.355818 0.003274 0.288339" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\rmdbodyx6.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part bigleever_4 -->
+    <visual>
+      <origin xyz="-0 -0.03405 -0.01475" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+      <material name="bigleever_4_material">
+        <color rgba="0.8 0.776471 0.713725 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 -0.03405 -0.01475" rpy="0 0 -3.14159"/>
+      <geometry>
+        <mesh filename="package://assets\bigleever.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part steelgussetplate_4 -->
+    <visual>
+      <origin xyz="0.01454 0.04795 -0.03075" rpy="0 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+      <material name="steelgussetplate_4_material">
+        <color rgba="0.231373 0.380392 0.705882 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.01454 0.04795 -0.03075" rpy="0 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\steelgussetplate.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part shaftmount_4 -->
+    <visual>
+      <origin xyz="-0 0 -0.0065" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+      <material name="shaftmount_4_material">
+        <color rgba="0.8 0.8 0.8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 0 -0.0065" rpy="-0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\shaftmount.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link wheel_4 -->
+  <link name="wheel_4">
+    <inertial>
+      <origin xyz="-0 0 0.00539413" rpy="0 0 0"/>
+      <mass value="1.48"/>
+      <inertia ixx="0.0156639" ixy="-0" ixz="-0" iyy="0.0156639" iyz="-0" izz="0.0281888"/>
+    </inertial>
+    <!-- Part wheel_4 -->
+    <visual>
+      <origin xyz="0 0 -0.0335" rpy="1.5708 0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+      <material name="wheel_4_material">
+        <color rgba="0.647059 0.647059 0.647059 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.0335" rpy="1.5708 0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\wheel.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from rmdshaftx6_4 to wheel_4 -->
+  <joint name="drive_front_left_wheel" type="continuous">
+    <origin xyz="-0 -0.012226 -0.24275" rpy="-1.5708 0.724001 -0"/>
+    <parent link="rmdshaftx6_4"/>
+    <child link="wheel_4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10"/>
+  </joint>
+  <!-- Joint from leg_2 to rmdshaftx6_4 -->
+  <joint name="front_left_drive" type="revolute">
+    <origin xyz="-0.4805 0.111 -0.02" rpy="-1.5708 0 3.14159"/>
+    <parent link="leg_2"/>
+    <child link="rmdshaftx6_4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Joint from frame to leg_2 -->
+  <joint name="leg_frame_sus" type="revolute">
+    <origin xyz="-0.344291 0.0531605 -0.912284" rpy="-1.5708 0 1.5708"/>
+    <parent link="frame"/>
+    <child link="leg_2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-0.349066" upper="0.349066"/>
+    <mimic joint="left_frame_sus" multiplier="1.0"/>
+  </joint>
+  <!-- Link armbase -->
+  <link name="armbase">
+    <inertial>
+      <origin xyz="0.0330468 0.0511779 -0.0150615" rpy="0 0 0"/>
+      <mass value="0.929523"/>
+      <inertia ixx="0.0011527" ixy="-2.45441e-05" ixz="0.000545344" iyy="0.00371676" iyz="8.15247e-06" izz="0.00333995"/>
+    </inertial>
+    <!-- Part armbase -->
+    <visual>
+      <origin xyz="0.072 0 -0.028" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\armbase.stl"/>
+      </geometry>
+      <material name="armbase_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.072 0 -0.028" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\armbase.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part yellowjacketmotor -->
+    <visual>
+      <origin xyz="-0.019 0.0505 0" rpy="-0 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\yellowjacketmotor.stl"/>
+      </geometry>
+      <material name="yellowjacketmotor_material">
+        <color rgba="1 0.756863 0.054902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0.019 0.0505 0" rpy="-0 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\yellowjacketmotor.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link bicepright -->
+  <link name="bicepright">
+    <inertial>
+      <origin xyz="0.0126328 0.259453 0.081" rpy="0 0 0"/>
+      <mass value="6.85905"/>
+      <inertia ixx="0.249179" ixy="0.00196678" ixz="0.000229018" iyy="0.0378661" iyz="0.00137411" izz="0.217194"/>
+    </inertial>
+    <!-- Part bicepright -->
+    <visual>
+      <origin xyz="-0 0 0.085" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\bicepright.stl"/>
+      </geometry>
+      <material name="bicepright_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 0 0.085" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\bicepright.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part yellowjacketmotor_2 -->
+    <visual>
+      <origin xyz="0.044 0.068 0.221" rpy="3.14159 -0 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\yellowjacketmotor.stl"/>
+      </geometry>
+      <material name="yellowjacketmotor_2_material">
+        <color rgba="1 0.756863 0.054902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.044 0.068 0.221" rpy="3.14159 -0 1.5708"/>
+      <geometry>
+        <mesh filename="package://assets\yellowjacketmotor.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part bicepleft -->
+    <visual>
+      <origin xyz="0 0 0.077" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\bicepleft.stl"/>
+      </geometry>
+      <material name="bicepleft_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.077" rpy="-1.5708 -1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\bicepleft.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part yellowjacketmotor_3 -->
+    <visual>
+      <origin xyz="0.048 0.092 -0.059" rpy="-0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\yellowjacketmotor.stl"/>
+      </geometry>
+      <material name="yellowjacketmotor_3_material">
+        <color rgba="1 0.756863 0.054902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.048 0.092 -0.059" rpy="-0 -0 -0"/>
+      <geometry>
+        <mesh filename="package://assets\yellowjacketmotor.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link armforearm -->
+  <link name="armforearm">
+    <inertial>
+      <origin xyz="0.236183 -0 -0.07" rpy="0 0 0"/>
+      <mass value="0.723365"/>
+      <inertia ixx="0.000329871" ixy="0" ixz="-0" iyy="0.024138" iyz="0" izz="0.0243582"/>
+    </inertial>
+    <!-- Part armforearm -->
+    <visual>
+      <origin xyz="0 0 -0.07" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\armforearm.stl"/>
+      </geometry>
+      <material name="armforearm_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.07" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\armforearm.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from bicepright to armforearm -->
+  <joint name="arm_elbow_left" type="revolute">
+    <origin xyz="0.048 0.524 0.011" rpy="-3.14159 0 0"/>
+    <parent link="bicepright"/>
+    <child link="armforearm"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Joint from armbase to bicepright -->
+  <joint name="arm_bicep_right" type="revolute">
+    <origin xyz="0.072 0.073 -0.109" rpy="0 -0 0"/>
+    <parent link="armbase"/>
+    <child link="bicepright"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Joint from frame to armbase -->
+  <joint name="arm_track_slider" type="prismatic">
+    <origin xyz="-0.268291 -0.105839 -0.876284" rpy="1.5708 -0 -1.5708"/>
+    <parent link="frame"/>
+    <child link="armbase"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-0.5" upper="0"/>
+  </joint>
+  <!-- Link mastcamerapanmount -->
+  <link name="mastcamerapanmount">
+    <inertial>
+      <origin xyz="0 -0.000207252 -0.022211" rpy="0 0 0"/>
+      <mass value="0.0270504"/>
+      <inertia ixx="1.59179e-05" ixy="0" ixz="0" iyy="3.26109e-05" iyz="4.17793e-06" izz="2.77621e-05"/>
+    </inertial>
+    <!-- Part mastcamerapanmount -->
+    <visual>
+      <origin xyz="0 0 0" rpy="3.14159 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcamerapanmount.stl"/>
+      </geometry>
+      <material name="mastcamerapanmount_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="3.14159 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcamerapanmount.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Link mastcamerahousing -->
+  <link name="mastcamerahousing">
+    <inertial>
+      <origin xyz="0.00432108 -0.0104567 -0.0331344" rpy="0 0 0"/>
+      <mass value="0.329041"/>
+      <inertia ixx="0.000137915" ixy="-7.1259e-06" ixz="-3.69183e-06" iyy="0.000373081" iyz="-6.41889e-06" izz="0.000378416"/>
+    </inertial>
+    <!-- Part mockcameraservo_2 -->
+    <visual>
+      <origin xyz="0.0108999 0 -0.00788" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mockcameraservo.stl"/>
+      </geometry>
+      <material name="mockcameraservo_2_material">
+        <color rgba="1 0.756863 0.054902 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.0108999 0 -0.00788" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\mockcameraservo.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part mastcamerahousing -->
+    <visual>
+      <origin xyz="0.00225 0.0125 -0.035" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcamerahousing.stl"/>
+      </geometry>
+      <material name="mastcamerahousing_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.00225 0.0125 -0.035" rpy="1.5708 1.5708 0"/>
+      <geometry>
+        <mesh filename="package://assets\mastcamerahousing.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from mastcamerapanmount to mastcamerahousing -->
+  <joint name="CameraTilt" type="revolute">
+    <origin xyz="-0.035 0.009 -0.045" rpy="1.5708 -0 -1.5708"/>
+    <parent link="mastcamerapanmount"/>
+    <child link="mastcamerahousing"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Joint from frame to mastcamerapanmount -->
+  <joint name="CameraPan" type="revolute">
+    <origin xyz="0.0157085 0.757986 0.197042" rpy="3.14159 -0 0"/>
+    <parent link="frame"/>
+    <child link="mastcamerapanmount"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+  <!-- Link underchassiscamera -->
+  <link name="underchassiscamera">
+    <inertial>
+      <origin xyz="-0 -0.021568 -0.0286462" rpy="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="2.39153e-05" ixy="0" ixz="0" iyy="2.99308e-05" iyz="-7.28524e-06" izz="3.44987e-05"/>
+    </inertial>
+    <!-- Part underchassiscamera -->
+    <visual>
+      <origin xyz="-0 -0.0199685 -0.0312679" rpy="0.349066 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\underchassiscamera.stl"/>
+      </geometry>
+      <material name="underchassiscamera_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="-0 -0.0199685 -0.0312679" rpy="0.349066 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\underchassiscamera.stl"/>
+      </geometry>
+    </collision>
+    <!-- Part underchassisgimbal -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\underchassisgimbal.stl"/>
+      </geometry>
+      <material name="underchassisgimbal_material">
+        <color rgba="0.615686 0.811765 0.929412 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 -0 0"/>
+      <geometry>
+        <mesh filename="package://assets\underchassisgimbal.stl"/>
+      </geometry>
+    </collision>
+  </link>
+  <!-- Joint from frame to underchassiscamera -->
+  <joint name="under_Chassis_Camera_Pan" type="revolute">
+    <origin xyz="0.00405097 0.15467 -0.925759" rpy="-0 -0 -0"/>
+    <parent link="frame"/>
+    <child link="underchassiscamera"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+  </joint>
+</robot>
