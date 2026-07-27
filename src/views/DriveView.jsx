@@ -28,7 +28,7 @@ export default function DriveComponents() {
             }}
             color="error"
           >
-            You don't have CAN/UART connected!
+            You don't have {canState.uartMode} connected!
           </Typography>
         )}
         {controlsLocked && (

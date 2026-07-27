@@ -13,7 +13,7 @@ export const PeripheralProvider = ({ children }) => {
     armState: "idle", // idle, connecting, active
     scienceState: "idle", // idle, connecting, active
     gpsState: "idle", // idle, connecting, active
-    uartMode: "???", // ???, CAN, UART
+    uartMode: "CAN/UART", // CAN/UART (??? state), CAN, UART
     loading: true, // lock buttons, dropdowns when refreshing can data
     canIds: [], // array with every possible serial device
     driveId: "disconnect", // selected can id in dropdown or disconnect
