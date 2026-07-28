@@ -18,6 +18,7 @@ from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
+from serial_console import SerialConsole, register_serial_console_events
 
 print("\033[0m----------------")
 
@@ -80,6 +81,7 @@ serial_ports = {
     "science": None,
     "scienceId" : "disconnect"
 }
+serial_console = SerialConsole()
 
 
 
@@ -96,6 +98,7 @@ def shutdown():
     if shutting_down:
         return
     shutting_down = True
+    serial_console.close()
     print("----------------")
     print("\nShutting down... ")
     #drive
@@ -383,6 +386,7 @@ register_drive_events(sio,serial_ports)
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
+register_serial_console_events(sio, serial_console)
 
 # =================== Start Server ===================
 
