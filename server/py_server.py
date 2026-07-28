@@ -137,8 +137,13 @@ def shutdown():
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
         pass
-    dump_session_log()  # saves arm_session.log on exit
-    sys.exit(0)
+
+    try:
+        dump_session_log() # saves arm_session.log on exit
+    except OSError as exc:
+        print(f"[ARM] Failed to save session log: {exc}")
+    finally:
+        sys.exit(0)
 # =================== Setup, CAN connections ===================
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)

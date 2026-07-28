@@ -8,8 +8,10 @@
 import asyncio
 import time
 import datetime
+from collections import deque
 
-_session_log = []
+_session_log = deque(maxlen=5000)
+_last_wrist_motor = {"pitch": None, "roll": None}  
 
 def log_frame(direction, raw):
     """direction: 'TX' or 'RX'"""
@@ -170,8 +172,9 @@ def encode_arm_value(value, joint_name="unknown"):
         )
         return exp_hex + mantissa_hex
 
-    except Exception:
-        return f"{POSITION_EXPONENT:02X}0000"
+    except (TypeError, ValueError, OverflowError) as exc:
+        print(f"[ARM] Invalid {joint_name} position {value!r}: {exc}")
+        return None
 
 def decode_canusb_frame(data):
     """
@@ -256,6 +259,9 @@ async def send_arm_joint(serial_ports, joint_name, value):
         invalidate_arm_connection(serial_ports, f"send failure on {joint_name}")
         return False
 
+
+_wrist_lock = asyncio.Lock()
+
 async def send_wrist_joints(serial_ports, pitch, roll):
     """
     Send both wrist motors atomically using differential decomposition
@@ -275,8 +281,9 @@ async def send_wrist_joints(serial_ports, pitch, roll):
         f"[ARM TX] wrist pitch={pitch} roll={roll} → EF1={ef1} EF2={ef2}",
     )
 
-    ok1 = await send_arm_joint(serial_ports, "pitch", ef1)
-    ok2 = await send_arm_joint(serial_ports, "roll", ef2)
+    async with _wrist_lock:
+        ok1 = await send_arm_joint(serial_ports, "pitch", ef1)
+        ok2 = await send_arm_joint(serial_ports, "roll", ef2)
     print(f"[WRIST] pitch={pitch} roll={roll} → EF1={ef1} EF2={ef2}")
     return ok1 and ok2
     
@@ -373,13 +380,30 @@ def parse_arm_position_response(frame_info):
     mantissa     = int.from_bytes(payload[2:4], byteorder="big", signed=True)
     fraction     = mantissa / (2 ** exponent)
     full_range   = JOINT_FULL_RANGE.get(joint_name, 360.0)
-    position_approx = round(fraction * full_range, 2)
+    motor_approx = round(fraction * full_range, 2)
 
     arm_debug_log(
         f"pos:{joint_name}",
         f"[ARM RX] {joint_name} exp={exponent} mant={mantissa} "
         f"approx={position_approx}, frame={frame_info['frame']}",
     )
+
+    if joint_name in ("pitch", "roll"):
+        _last_wrist_motor[joint_name] = motor_approx
+
+        ef1 = _last_wrist_motor["pitch"]  # WRIST_EF1 raw value
+        ef2 = _last_wrist_motor["roll"]   # WRIST_EF2 raw value
+
+        if ef1 is None or ef2 is None:
+            # Haven't heard from both motors yet — nothing valid to report
+            return None
+
+        position_approx = round(
+            (ef1 - ef2) / 2 if joint_name == "pitch" else (ef1 + ef2) / 2,
+            2,
+        )
+    else:
+        position_approx = motor_approx
 
     return {
         "type": "position",
@@ -446,10 +470,12 @@ def register_arm_events(sio, serial_ports):
 
         # wrist always sent together as a differential pair
         if should_send_joint("pitch") or should_send_joint("roll"):
+            _last_wrist["pitch"] = data.get("pitch", 0)
+            _last_wrist["roll"] = data.get("roll", 0)
             ok = await send_wrist_joints(
                 serial_ports,
-                data.get("pitch", 0),
-                data.get("roll", 0),
+                _last_wrist["pitch"],
+                _last_wrist["roll"],
             )
             if not ok:
                 return "ERROR"
