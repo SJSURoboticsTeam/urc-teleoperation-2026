@@ -385,7 +385,7 @@ def parse_arm_position_response(frame_info):
     arm_debug_log(
         f"pos:{joint_name}",
         f"[ARM RX] {joint_name} exp={exponent} mant={mantissa} "
-        f"approx={position_approx}, frame={frame_info['frame']}",
+        f"approx={motor_approx}, frame={frame_info['frame']}",
     )
 
     if joint_name in ("pitch", "roll"):
