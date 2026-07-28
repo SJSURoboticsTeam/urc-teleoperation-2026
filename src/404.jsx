@@ -14,6 +14,7 @@ import DialogActions from "@mui/material/DialogActions";
 export default function ErrorPage() {
   const error = useRouteError();
   const [showDetails, setShowDetails] = useState(false);
+  const [useVideo, setUseVideo] = useState(true);
 
   let title = "Something went wrong";
   let message = "An unexpected error occurred.";
@@ -45,7 +46,22 @@ export default function ErrorPage() {
         p: 3,
       }}
     >
-      <img width="300" src="/sjsu_robotics_logo.png" alt="Logo" />
+      {useVideo ? (
+        <video
+          width="320"
+          autoPlay
+          loop
+          muted
+          playsInline
+          onError={() => setUseVideo(false)}
+          style={{ maxWidth: "100%", borderRadius: 12 }}
+        >
+          <source src="/logo-spin.mp4" type="video/mp4" />
+          <img width="300" src="/sjsu_robotics_logo.png" alt="Logo" />
+        </video>
+      ) : (
+        <img width="300" src="/sjsu_robotics_logo.png" alt="Logo" />
+      )}
       <Typography variant="h3">{title}</Typography>
 
       <Typography variant="body1">{message}</Typography>
