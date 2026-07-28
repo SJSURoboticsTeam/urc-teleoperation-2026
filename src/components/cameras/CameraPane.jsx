@@ -82,24 +82,28 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
   const selectedUrl = selectedCamera?.url ?? null;
   const selectedMediaType = selectedCamera?.mediatype ?? null;
 
-  // whenever camera changes, reset loading/error
-  useEffect(() => {
+  // loading camera state
+  const resetCameraState = () => {
     setLoading(true);
     setError(false);
-    // clear any previous iframe timeout
+
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
       iframeTimeoutRef.current = null;
     }
     // if selectedCamera is iframe/video, start a timeout to mark error if not loaded
     if (selectedMediaType === "iframe") {
-      // for video/iframe style streams, give them up to 10s to load
       iframeTimeoutRef.current = setTimeout(() => {
         setLoading(false);
         setError(true);
       }, 5000);
     }
-    // for images, onLoad handler will clear loading
+  };
+
+  // whenever camera changes, reset loading/error
+  useEffect(() => {
+    resetCameraState();
+
     return () => {
       if (iframeTimeoutRef.current) {
         clearTimeout(iframeTimeoutRef.current);
@@ -107,9 +111,12 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       }
     };
   }, [selectedUrl, selectedMediaType]);
+
   return (
     // Root Box is flexible so CameraPane can grow inside a column
-    <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+    <Box
+      sx={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+    >
       <FormControl
         fullWidth
         variant="outlined"
@@ -144,10 +151,16 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
 
       {/* image container grows to fill remaining space */}
       <Box
-        sx={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+          position: "relative",
+          backgroundColor: error ? "black" : "transparent",
+        }}
       >
         {selectedCamera &&
-          (selectedCamera.mediatype == "image" ? (
+          (selectedCamera.mediatype === "image" ? (
             <img
               key={selectedCamera.url}
               src={selectedCamera.url}
@@ -170,28 +183,31 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
               }}
             />
           ) : (
-            <iframe
-              key={selectedCamera.url}
-              src={selectedCamera.url}
-              onLoad={() => {
-                if (iframeTimeoutRef.current) {
-                  clearTimeout(iframeTimeoutRef.current);
-                  iframeTimeoutRef.current = null;
-                }
-                setLoading(false);
-                setError(false);
-              }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                border: 0,
-                display: "block",
-              }}
-              title={selectedCamera.name}
-              allow="fullscreen;"
-            />
+            // if error, iframe does not show to prevent browser error messages
+            !error && (
+              <iframe
+                key={selectedCamera.url}
+                src={selectedCamera.url}
+                onLoad={() => {
+                  if (iframeTimeoutRef.current) {
+                    clearTimeout(iframeTimeoutRef.current);
+                    iframeTimeoutRef.current = null;
+                  }
+                  setLoading(false);
+                  setError(false);
+                }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  border: 0,
+                  display: "block",
+                }}
+                title={selectedCamera.name}
+                allow="fullscreen;"
+              />
+            )
           ))}
 
         {/* loading / error overlays */}
@@ -214,23 +230,39 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
           <Box
             sx={{
               position: "absolute",
+              flex: 1,
+              minHeight: 0,
               inset: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 1,
               p: 2,
             }}
           >
-            <Typography color="error">Failed to load camera</Typography>
+            <video
+              key={`${selectedCamera.url}-fallback`}
+              src="/logo-spin.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                minHeight: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
+            />
+            <Typography color="error">Couldn't connect to video endpoint.</Typography>
             <Button
               sx={{ mt: 1 }}
               variant="contained"
               onClick={() => {
-                setLoading(true);
-                setError(
-                  false,
-                ); /* force reload by changing key: handled by key prop */
+                resetCameraState();
               }}
             >
               Retry
