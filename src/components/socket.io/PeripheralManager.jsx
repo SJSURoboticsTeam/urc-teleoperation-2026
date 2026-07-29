@@ -24,14 +24,14 @@ export default function PeripheralManager({ openPane }) {
     connectGPS, 
     disconnectGPS, 
     disconnectAll, 
-    info
+    serialState
   } = usePeripherals();
 
 
 
   useEffect(() => {
     if (openPane == "Backend") {
-      requestCanInfo(); // autoload can info
+      requestCanInfo(); // autoload can serialState
     } else {
       setcanState((prev) => ({
         ...prev,
@@ -98,7 +98,7 @@ export default function PeripheralManager({ openPane }) {
                   canId === canState.armId ||
                   canId === canState.scienceId ||
                   canId === canState.gpsId ||
-                  canId === info.portId
+                  canId === serialState.portId
                 }
                 key={canId}
                 value={canId}
@@ -150,7 +150,7 @@ export default function PeripheralManager({ openPane }) {
                   canId === canState.driveId ||
                   canId === canState.scienceId ||
                   canId === canState.gpsId ||
-                  canId === info.portId
+                  canId === serialState.portId
                 }
                 key={canId}
                 value={canId}
@@ -199,7 +199,7 @@ export default function PeripheralManager({ openPane }) {
                   canId === canState.driveId ||
                   canId === canState.armId ||
                   canId === canState.gpsId ||
-                  canId === info.portId
+                  canId === serialState.portId
                 }
                 key={canId}
                 value={canId}
@@ -250,7 +250,7 @@ export default function PeripheralManager({ openPane }) {
                   canId === canState.driveId ||
                   canId === canState.armId ||
                   canId === canState.scienceId ||
-                  canId === info.portId
+                  canId === serialState.portId
                 }
                 key={canId}
                 value={canId}

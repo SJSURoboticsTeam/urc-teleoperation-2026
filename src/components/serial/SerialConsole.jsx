@@ -31,7 +31,7 @@ function decodeBytes(encoded) {
 }
 
 export default function SerialConsole() {
-  const { info, setInfo, canState } = usePeripherals();
+  const { serialState, setserialState, canState } = usePeripherals();
   const serverConnected = useRobotSocketStatus();
   const decoderRef = useRef(new TextDecoder());
   const outputRef = useRef(null);
@@ -49,7 +49,7 @@ export default function SerialConsole() {
   const [localEcho, setLocalEcho] = useState(false);
 
   function applyInfo(nextInfo) {
-    setInfo(nextInfo);
+    setserialState(nextInfo);
     setSelectedPort(nextInfo.portId);
     setBaudrate(nextInfo.baudrate);
     setDtr(nextInfo.dtr ?? false);
@@ -202,19 +202,21 @@ export default function SerialConsole() {
             <Select
               value={selectedPort}
               label="Server serial port"
-              disabled={
-                info.connected ||
-                busy ||
-                selectedPort === canState.driveId ||
-                selectedPort === canState.armId ||
-                selectedPort === canState.scienceId ||
-                selectedPort === canState.gpsId
-              }
+              disabled={serialState.connected || busy}
               onChange={(event) => setSelectedPort(event.target.value)}
             >
               <MenuItem value="disconnect">Select a port</MenuItem>
-              {info.ports.map((portId) => (
-                <MenuItem key={portId} value={portId}>
+              {serialState.ports.map((portId) => (
+                <MenuItem
+                  key={portId}
+                  disabled={
+                    portId === canState.driveId ||
+                    portId === canState.armId ||
+                    portId === canState.scienceId ||
+                    portId === canState.gpsId
+                  }
+                  value={portId}
+                >
                   {portId}
                 </MenuItem>
               ))}
@@ -225,7 +227,7 @@ export default function SerialConsole() {
             label="Baud rate"
             type="number"
             value={baudrate}
-            disabled={info.connected || busy}
+            disabled={serialState.connected || busy}
             onChange={(event) => setBaudrate(event.target.value)}
           />
           <Button variant="contained" onClick={refresh} disabled={busy}>
@@ -233,11 +235,11 @@ export default function SerialConsole() {
           </Button>
           <Button
             variant="contained"
-            color={info.connected ? "error" : "success"}
+            color={serialState.connected ? "error" : "success"}
             disabled={busy || !serverConnected || selectedPort === "disconnect"}
-            onClick={info.connected ? closeConsole : openConsole}
+            onClick={serialState.connected ? closeConsole : openConsole}
           >
-            {info.connected ? "Disconnect" : "Connect"}
+            {serialState.connected ? "Disconnect" : "Connect"}
           </Button>
         </Stack>
 
@@ -269,7 +271,7 @@ export default function SerialConsole() {
             size="small"
             label="Console input"
             value={input}
-            disabled={!info.connected}
+            disabled={!serialState.connected}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -280,7 +282,7 @@ export default function SerialConsole() {
           />
           <Button
             variant="contained"
-            disabled={!info.connected}
+            disabled={!serialState.connected}
             onClick={sendInput}
           >
             Send
@@ -328,20 +330,32 @@ export default function SerialConsole() {
           alignItems="center"
         >
           <Typography>DTR: {dtr ? "asserted" : "cleared"}</Typography>
-          <Button disabled={!info.connected} onClick={() => updateDtr(true)}>
+          <Button
+            disabled={!serialState.connected}
+            onClick={() => updateDtr(true)}
+          >
             Assert (ON)
           </Button>
-          <Button disabled={!info.connected} onClick={() => updateDtr(false)}>
+          <Button
+            disabled={!serialState.connected}
+            onClick={() => updateDtr(false)}
+          >
             Clear (OFF)
           </Button>
-          <Button disabled={!info.connected} onClick={pulseDtr}>
+          <Button disabled={!serialState.connected} onClick={pulseDtr}>
             Pulse 200 ms (ON-OFF)
           </Button>
           <Typography>RTS: {rts ? "asserted" : "cleared"}</Typography>
-          <Button disabled={!info.connected} onClick={() => updateRts(true)}>
+          <Button
+            disabled={!serialState.connected}
+            onClick={() => updateRts(true)}
+          >
             Assert RTS
           </Button>
-          <Button disabled={!info.connected} onClick={() => updateRts(false)}>
+          <Button
+            disabled={!serialState.connected}
+            onClick={() => updateRts(false)}
+          >
             Clear RTS
           </Button>
         </Stack>

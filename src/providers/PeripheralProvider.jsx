@@ -20,7 +20,7 @@ export const PeripheralProvider = ({ children }) => {
     gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
 
-    const [info, setInfo] = useState({
+    const [serialState, setserialState] = useState({
     ports: [],
     portId: "disconnect",
     baudrate: 115200,
@@ -256,8 +256,8 @@ export const PeripheralProvider = ({ children }) => {
     connectGPS,
     disconnectGPS,
     disconnectAll,
-    info,
-    setInfo
+    serialState,
+    setserialState
   };
 
   return (
