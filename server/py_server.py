@@ -15,6 +15,7 @@ from arm import read_arm_can_loop, request_arm_position_loop, register_arm_event
 from camera_pt import register_camera_pt_events
 from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
+from arm import dump_session_log
 from shutdown import register_shutdown_commands
 
 print("\033[0m----------------")
@@ -136,7 +137,13 @@ def shutdown():
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
         pass
-    sys.exit(0)
+
+    try:
+        dump_session_log() # saves arm_session.log on exit
+    except OSError as exc:
+        print(f"[ARM] Failed to save session log: {exc}")
+    finally:
+        sys.exit(0)
 # =================== Setup, CAN connections ===================
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
