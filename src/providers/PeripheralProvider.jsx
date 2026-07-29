@@ -3,10 +3,8 @@ import { useSnackbar } from "notistack";
 import { robotsocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 
-
 export const PeripheralProvider = ({ children }) => {
-
-    const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [canState, setcanState] = useState({
     driveState: "idle", // idle, connecting, active
@@ -20,6 +18,15 @@ export const PeripheralProvider = ({ children }) => {
     armId: "disconnect", // selected can id in dropdown or disconnect
     scienceId: "disconnect", // selected can id in dropdown or disconnect
     gpsId: "disconnect", // selected can id in dropdown or disconnect
+  });
+
+    const [info, setInfo] = useState({
+    ports: [],
+    portId: "disconnect",
+    baudrate: 115200,
+    connected: false,
+    dtr: false,
+    rts: false,
   });
 
   function requestCanInfo() {
@@ -236,25 +243,27 @@ export const PeripheralProvider = ({ children }) => {
     console.log("ALL have been disconnected.");
   }
 
-    const value = {
-      canState,
-      requestCanInfo,
-      setcanState,
-      connectDrive,
-      disconnectDrive,
-      connectArm, 
-      disconnectArm, 
-      connectScience, 
-      disconnectScience,
-      connectGPS, 
-      disconnectGPS, 
-      disconnectAll
-    };
+  const value = {
+    canState,
+    requestCanInfo,
+    setcanState,
+    connectDrive,
+    disconnectDrive,
+    connectArm,
+    disconnectArm,
+    connectScience,
+    disconnectScience,
+    connectGPS,
+    disconnectGPS,
+    disconnectAll,
+    info,
+    setInfo
+  };
 
   return (
     <PeripheralContext.Provider value={value}>
       {children}
     </PeripheralContext.Provider>
   );
-}
+};
 export default PeripheralProvider;

@@ -15,6 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
+import { usePeripherals } from "../../contexts/PeripheralContext";
 
 const textEncoder = new TextEncoder();
 
@@ -30,17 +31,11 @@ function decodeBytes(encoded) {
 }
 
 export default function SerialConsole() {
+  const { info, setInfo, canState } = usePeripherals();
   const serverConnected = useRobotSocketStatus();
   const decoderRef = useRef(new TextDecoder());
   const outputRef = useRef(null);
-  const [info, setInfo] = useState({
-    ports: [],
-    portId: "disconnect",
-    baudrate: 115200,
-    connected: false,
-    dtr: false,
-    rts: false,
-  });
+
   const [selectedPort, setSelectedPort] = useState("disconnect");
   const [baudrate, setBaudrate] = useState(115200);
   const [input, setInput] = useState("");
@@ -69,7 +64,9 @@ export default function SerialConsole() {
 
   useEffect(() => {
     const handleData = ({ data }) => {
-      const text = decoderRef.current.decode(decodeBytes(data), { stream: true });
+      const text = decoderRef.current.decode(decodeBytes(data), {
+        stream: true,
+      });
       setOutput((previous) => (previous + text).slice(-100_000));
     };
     const handleStatus = (status) => applyInfo(status);
@@ -122,8 +119,7 @@ export default function SerialConsole() {
 
   function sendInput() {
     if (!input) return;
-    const ending =
-      `${appendCarriageReturn ? "\r" : ""}${appendNewline ? "\n" : ""}`;
+    const ending = `${appendCarriageReturn ? "\r" : ""}${appendNewline ? "\n" : ""}`;
     const payload = textEncoder.encode(`${input}${ending}`);
     robotsocket.emit(
       "writeSerialConsole",
@@ -191,7 +187,9 @@ export default function SerialConsole() {
           <Typography variant="h5">Serial Console</Typography>
         </Box>
 
-        {!serverConnected && <Alert severity="warning">Robot server offline</Alert>}
+        {!serverConnected && (
+          <Alert severity="warning">Robot server offline</Alert>
+        )}
         {error && (
           <Alert severity="error" onClose={() => setError("")}>
             {error}
@@ -204,7 +202,14 @@ export default function SerialConsole() {
             <Select
               value={selectedPort}
               label="Server serial port"
-              disabled={info.connected || busy}
+              disabled={
+                info.connected ||
+                busy ||
+                selectedPort === canState.driveId ||
+                selectedPort === canState.armId ||
+                selectedPort === canState.scienceId ||
+                selectedPort === canState.gpsId
+              }
               onChange={(event) => setSelectedPort(event.target.value)}
             >
               <MenuItem value="disconnect">Select a port</MenuItem>
@@ -223,15 +228,13 @@ export default function SerialConsole() {
             disabled={info.connected || busy}
             onChange={(event) => setBaudrate(event.target.value)}
           />
-          <Button variant="outlined" onClick={refresh} disabled={busy}>
+          <Button variant="contained" onClick={refresh} disabled={busy}>
             Refresh
           </Button>
           <Button
             variant="contained"
             color={info.connected ? "error" : "success"}
-            disabled={
-              busy || !serverConnected || selectedPort === "disconnect"
-            }
+            disabled={busy || !serverConnected || selectedPort === "disconnect"}
             onClick={info.connected ? closeConsole : openConsole}
           >
             {info.connected ? "Disconnect" : "Connect"}
@@ -275,7 +278,11 @@ export default function SerialConsole() {
               }
             }}
           />
-          <Button variant="contained" disabled={!info.connected} onClick={sendInput}>
+          <Button
+            variant="contained"
+            disabled={!info.connected}
+            onClick={sendInput}
+          >
             Send
           </Button>
           <Button variant="outlined" onClick={() => setOutput("")}>
@@ -288,7 +295,9 @@ export default function SerialConsole() {
             control={
               <Checkbox
                 checked={appendCarriageReturn}
-                onChange={(event) => setAppendCarriageReturn(event.target.checked)}
+                onChange={(event) =>
+                  setAppendCarriageReturn(event.target.checked)
+                }
               />
             }
             label="Append CR"
@@ -313,7 +322,11 @@ export default function SerialConsole() {
           />
         </Stack>
 
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="center">
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          alignItems="center"
+        >
           <Typography>DTR: {dtr ? "asserted" : "cleared"}</Typography>
           <Button disabled={!info.connected} onClick={() => updateDtr(true)}>
             Assert (ON)

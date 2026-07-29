@@ -37,10 +37,10 @@ class SerialConsole:
         )
         self.port_id = port_id
         self.baudrate = baudrate
-        self.port.dtr = False
-        self.port.rts = False
-        self.dtr = False
-        self.rts = False
+        #self.port.dtr = False
+        #self.port.rts = False
+        #self.dtr = False
+        #self.rts = False
 
     def close(self):
         if self.port is not None:

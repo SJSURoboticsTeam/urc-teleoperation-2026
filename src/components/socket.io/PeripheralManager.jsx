@@ -23,7 +23,8 @@ export default function PeripheralManager({ openPane }) {
     disconnectScience,
     connectGPS, 
     disconnectGPS, 
-    disconnectAll
+    disconnectAll, 
+    info
   } = usePeripherals();
 
 
@@ -96,7 +97,8 @@ export default function PeripheralManager({ openPane }) {
                 disabled={
                   canId === canState.armId ||
                   canId === canState.scienceId ||
-                  canId === canState.gpsId
+                  canId === canState.gpsId ||
+                  canId === info.portId
                 }
                 key={canId}
                 value={canId}
@@ -147,7 +149,8 @@ export default function PeripheralManager({ openPane }) {
                 disabled={
                   canId === canState.driveId ||
                   canId === canState.scienceId ||
-                  canId === canState.gpsId
+                  canId === canState.gpsId ||
+                  canId === info.portId
                 }
                 key={canId}
                 value={canId}
@@ -195,7 +198,8 @@ export default function PeripheralManager({ openPane }) {
                 disabled={
                   canId === canState.driveId ||
                   canId === canState.armId ||
-                  canId === canState.gpsId
+                  canId === canState.gpsId ||
+                  canId === info.portId
                 }
                 key={canId}
                 value={canId}
@@ -245,7 +249,8 @@ export default function PeripheralManager({ openPane }) {
                 disabled={
                   canId === canState.driveId ||
                   canId === canState.armId ||
-                  canId === canState.scienceId
+                  canId === canState.scienceId ||
+                  canId === info.portId
                 }
                 key={canId}
                 value={canId}
