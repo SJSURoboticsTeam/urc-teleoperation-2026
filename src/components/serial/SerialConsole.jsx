@@ -47,6 +47,7 @@ export default function SerialConsole() {
   const [appendCarriageReturn, setAppendCarriageReturn] = useState(false);
   const [appendNewline, setAppendNewline] = useState(true);
   const [localEcho, setLocalEcho] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
 
   function applyInfo(nextInfo) {
     setserialState(nextInfo);
@@ -85,10 +86,10 @@ export default function SerialConsole() {
   }, [refresh]);
 
   useEffect(() => {
-    if (outputRef.current) {
+    if (autoScroll && outputRef.current) {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
-  }, [output]);
+  }, [output, autoScroll]);
 
   function openConsole() {
     setBusy(true);
@@ -197,7 +198,7 @@ export default function SerialConsole() {
         )}
 
         <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
-          <FormControl size="small" sx={{ minWidth: 280 }}>
+          <FormControl size="small" sx={{ minWidth: 150, flex: 1 }}>
             <InputLabel>Server serial port</InputLabel>
             <Select
               value={selectedPort}
@@ -226,6 +227,7 @@ export default function SerialConsole() {
             size="small"
             label="Baud rate"
             type="number"
+            sx={{ width: 130 }}
             value={baudrate}
             disabled={serialState.connected || busy}
             onChange={(event) => setBaudrate(event.target.value)}
@@ -240,6 +242,15 @@ export default function SerialConsole() {
             onClick={serialState.connected ? closeConsole : openConsole}
           >
             {serialState.connected ? "Disconnect" : "Connect"}
+          </Button>
+          <Button
+            variant={autoScroll ? "contained" : "outlined"}
+            color="secondary"
+            sx={{ width: 180 }}
+            aria-pressed={autoScroll}
+            onClick={() => setAutoScroll((enabled) => !enabled)}
+          >
+            Autoscroll: {autoScroll ? "On" : "Off"}
           </Button>
         </Stack>
 
@@ -260,6 +271,9 @@ export default function SerialConsole() {
             fontFamily: "monospace",
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
+            userSelect: "text",
+            WebkitUserSelect: "text",
+            cursor: "text",
           }}
         >
           {output || "Waiting for serial output…"}
