@@ -211,14 +211,17 @@ async def connectDrive(sid,data):
         if USE_UART_DRIVE:
             serial_ports["drive"] = UartDriveSerial(data)
             print("Drive UART connected.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
         else:
             serial_ports["drive"] = CanSerial(data)
             print("Drive CAN connected.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
 
         serial_ports["driveId"] = data
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -231,12 +234,14 @@ async def disconnectDrive(sid):
             serial_ports["drive"] = None
             serial_ports["driveId"] = "disconnect"
             print("Drive serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("Drive was never connected.")
             return("ERROR")
     except Exception:
         print("DRIVE WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -259,11 +264,13 @@ async def connectArm(sid,data):
         serial_ports["arm"] = CanSerial(data)
         serial_ports["armId"] = data
         print("Arm connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "OK"
     except Exception as e:
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("FAILURE TO CONNECT ARM: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "ERROR"
 
 @sio.event
@@ -277,11 +284,13 @@ async def disconnectArm(sid):
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("Arm serial closed.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "OK"
     except Exception:
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "ERROR"
 
 @sio.event
@@ -297,9 +306,11 @@ async def connectScience(sid,data):
         serial_ports["science"] = CanSerial(data)
         serial_ports["scienceId"] = data
         print("Science connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -312,12 +323,14 @@ async def disconnectScience(sid):
             serial_ports["science"] = None
             serial_ports["scienceId"] = "disconnect"
             print("Science serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("Science was never connected.")
             return("ERROR")
     except Exception:
         print("SCIENCE WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -334,9 +347,11 @@ async def connectGPS(sid, data):
         serial_ports["gps"] = ZEDF9P(data, 57600) 
         serial_ports["gpsId"] = data
         print("GPS connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT GPS: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -348,12 +363,14 @@ async def disconnectGPS(sid):
             serial_ports["gps"] = None
             serial_ports["gpsId"] = "disconnect"
             print("GPS serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("GPS was never connected.")
             return("ERROR")
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 

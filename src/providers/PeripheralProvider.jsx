@@ -1,10 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSnackbar } from "notistack";
 import { robotsocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 
 export const PeripheralProvider = ({ children }) => {
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    // when one client updates data, other clients get asked to refresh data
+    const processupdate = () => {
+       console.log("Server CAN changed, force updating");
+       requestCanInfo()
+    };
+    robotsocket.on("forcecanrefresh", processupdate);
+
+    return () => {
+    robotsocket.off("forcecanrefresh", processupdate);
+    };
+  }, []);
 
   const [canState, setcanState] = useState({
     driveState: "idle", // idle, connecting, active
