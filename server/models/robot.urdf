@@ -1561,7 +1561,7 @@
     <parent link="bicepright"/>
     <child link="armforearm"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+    <limit effort="10" velocity="10" lower="-1.7453" upper="-0.7854"/>
   </joint>
   <!-- Joint from armbase to bicepright -->
   <joint name="arm_bicep_right" type="revolute">
@@ -1569,7 +1569,7 @@
     <parent link="armbase"/>
     <child link="bicepright"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+    <limit effort="10" velocity="10" lower="-0.7854" upper="1.0472"/>
   </joint>
   <!-- Joint from frame to armbase -->
   <joint name="arm_track_slider" type="prismatic">
