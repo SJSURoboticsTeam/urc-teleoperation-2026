@@ -7,9 +7,19 @@ import asyncio
 import signal
 import sys
 from metrics import cpuloop, register_metric_events
-from drive import read_drive_can_loop, send_drive_status_request
+from drive import (
+    read_drive_can_loop,
+    register_drive_events as register_can_drive_events,
+    send_drive_command as send_can_drive_command,
+    send_drive_status_request,
+)
 from uart_drive_serial import UartDriveSerial
-from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
+from drive_uart import (
+    read_drive_uart_loop,
+    register_drive_events as register_uart_drive_events,
+    send_drive_command as send_uart_drive_command,
+    send_drive_heartbeat,
+)
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
@@ -322,7 +332,10 @@ cpu_started = False
 
 
 register_metric_events(sio)
-register_drive_events(sio,serial_ports)
+if USE_UART_DRIVE:
+    register_uart_drive_events(sio, serial_ports)
+else:
+    register_can_drive_events(sio, serial_ports)
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
@@ -389,10 +402,10 @@ async def stop_drive_motors():
     if serial_ports["drive"]:
         try:
             if USE_UART_DRIVE:
-                serial_ports["drive"].ser.write(bytes([0x00, 0x00, 0x00, 0x00]))
+                await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
                 print("UART: 0 clients connected. Sent stop command to drive motors.")
             else:
-                serial_ports["drive"].send_can(0x0, [0x00, 0x00, 0x00, 0x00])
+                await send_can_drive_command(serial_ports, 0, 0, 0, 0)
                 print("CAN: 0 clients connected. Sent stop command to drive motors.")
         except Exception as e:
             print(f"Failed to send stop command: {e}")
