@@ -180,12 +180,6 @@ async def getCanInfo(sid):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
 
-    virtual_ports = ["/dev/ttys004", "/dev/ttys005"]
-
-    for virtual_port in virtual_ports:
-        if os.path.exists(virtual_port):
-            print(f"Discovered virtual serial port: {virtual_port}")
-            canIds_arr.append(virtual_port)
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
