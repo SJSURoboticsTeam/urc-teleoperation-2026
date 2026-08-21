@@ -57,17 +57,18 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio,serial_ports):
+def register_drive_events(sio, serial_ports, drive_command_lock):
     @sio.event
     async def driveCommands(sid, data):
         try:
-            can_msg = await send_drive_command(
-                serial_ports,
-                data['xVel'],
-                data['yVel'],
-                data['rotVel'],
-                data['moduleConflicts'],
-            )
+            async with drive_command_lock:
+                can_msg = await send_drive_command(
+                    serial_ports,
+                    data['xVel'],
+                    data['yVel'],
+                    data['rotVel'],
+                    data['moduleConflicts'],
+                )
             print(f'[{sid}] Drive command sent: {can_msg}')
         except Exception as e:
             # if you are testing on a computer without serial, set the bool true to help your console

@@ -108,7 +108,13 @@ def shutdown():
     sys.exit(0)
 # =================== Setup, CAN connections ===================
 
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*',
+    allow_upgrades=True,
+    ping_interval=1,
+    ping_timeout=3,
+)
 #uncomment to use the debug admin ui
 # sio.instrument(auth={
 #     'username': 'admin',
@@ -329,13 +335,15 @@ gps_task_started = False
 arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
+# this lock ensures that only one function can be sending on the drive can/uart line at once
+drive_command_lock = asyncio.Lock()
 
 
 register_metric_events(sio)
 if USE_UART_DRIVE:
-    register_uart_drive_events(sio, serial_ports)
+    register_uart_drive_events(sio, serial_ports, drive_command_lock)
 else:
-    register_can_drive_events(sio, serial_ports)
+    register_can_drive_events(sio, serial_ports, drive_command_lock)
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
@@ -399,7 +407,15 @@ async def connect(sid,environ):
 
 async def stop_drive_motors():
     # Send stop command to drive motors for safety when no clients are connected
-    if serial_ports["drive"]:
+    async with drive_command_lock:
+        # A client may have reconnected while this task was waiting for the lock.
+        if metrics.numClients != 0:
+            return
+
+        if not serial_ports["drive"]:
+            print("No drive serial connected. Cannot send stop command.")
+            return
+
         try:
             if USE_UART_DRIVE:
                 await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
@@ -409,8 +425,6 @@ async def stop_drive_motors():
                 print("CAN: 0 clients connected. Sent stop command to drive motors.")
         except Exception as e:
             print(f"Failed to send stop command: {e}")
-    else:
-        print("No drive serial connected. Cannot send stop command.")
 
 
 @sio.event
@@ -420,6 +434,7 @@ async def disconnect(sid):
     metrics.numClients = max(0, metrics.numClients - 1)
 
     if metrics.numClients == 0:
+        print("No clients, stopping motors now.")
         await stop_drive_motors()
 
 config = uvicorn.Config(
