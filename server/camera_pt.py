@@ -5,7 +5,6 @@ import math
 
 
 def register_camera_pt_events(sio,serial_ports):
-    print("registering...")
 
     @sio.event
     async def mastCommands(sid,data):

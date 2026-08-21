@@ -1,31 +1,12 @@
-import "react-resizable/css/styles.css";
 import { useState } from "react";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from "@mui/material";
-import { LineChart } from "@mui/x-charts/LineChart";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
-
-function createData(vials, initialNM, finalNM, delta) {
-  return { vials, initialNM, finalNM, delta };
-}
+import ScienceGraphTable from "../components/science/ScienceGraphTable";
 
 export default function ScienceView() {
-  const rows = [
-    createData("V1", 0, 0, 0),
-    createData("V2", 0, 0, 0),
-    createData("V3", 0, 0, 0),
-  ];
-
-  const [TabContent, setTabContent] = useState(0);
+  const [tabContent, setTabContent] = useState(0);
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
@@ -40,15 +21,7 @@ export default function ScienceView() {
     setTabContent(newTabContent);
   };
 
-  const exampleFrequency1 = [
-    515, 500, 515, 520, 515, 500, 525, 510, 500, 515, 500,
-  ];
-
-  const exampleFrequency2 = [
-    545, 540, 545, 550, 540, 555, 545, 540, 545, 535, 545,
-  ];
-
-  const exampleSteps = [
+const exampleSteps = [
     "Start",
     "Step 1",
     "Step 2",
@@ -61,8 +34,6 @@ export default function ScienceView() {
     "Step 9",
     "Step 10",
   ];
-
-  const xTime = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110];
 
   return (
     <div
@@ -143,7 +114,7 @@ export default function ScienceView() {
       <Box sx={{ flex: 1, height: 400 }}>
         <Box sx={{ border: 1, borderRadius: 2, borderColor: "divider" }}>
           <Tabs
-            value={TabContent}
+            value={tabContent}
             onChange={handleChange}
             sx={{ minHeight: 32, width: "auto" }}
           >
@@ -167,11 +138,11 @@ export default function ScienceView() {
 
         <Box sx={{ p: 1 }}>
           {tabNum.map((num) =>
-            TabContent === num ? (
+            tabContent === num ? (
               <div key={num}>
                 <div className="flex flex-row">
-                  <Box sx={{ width: "60%", overflowX: "auto" }}>
-                    <div className="steps">
+                  <Box sx={{ width: "60%", overflowX: "auto", minWidth: 0 }}>
+                    <div className="steps inline-flex" style={{ minWidth: "max-content" }}>
                       {exampleSteps.map((step, index) => (
                         <div key={index} className="step step-accent">
                           {step}
@@ -179,7 +150,6 @@ export default function ScienceView() {
                       ))}
                     </div>
                   </Box>
-
                   <Box className="flex flex-row" sx={{ ml: 4 }}>
                     Coordinates: (_,_) <br /> Accuracy: ___ <br /> Range: ___{" "}
                     <br />
@@ -202,58 +172,7 @@ export default function ScienceView() {
                   </Box>
                 </div>
 
-                <div
-                  className="flex flex-row gap-4 mb-4"
-                  style={{ flex: 1, minWidth: 0 }}
-                >
-                  <Box sx={{ width: "65%" }}>
-                    <LineChart
-                      series={[
-                        { data: exampleFrequency1, label: "Frequency 1" },
-                        { data: exampleFrequency2, label: "Frequency 2" },
-                      ]}
-                      xAxis={[{ scaleType: "point", data: xTime, height: 25 }]}
-                      yAxis={[{ width: 45 }]}
-                    />
-                  </Box>
-
-                  <Box sx={{ width: "35%", minHeight: 300 }}>
-                    <TableContainer component={Paper}>
-                      <Table aria-label="simple table">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>vials</TableCell>
-                            <TableCell align="right">initial</TableCell>
-                            <TableCell align="right">final</TableCell>
-                            <TableCell align="right">delta</TableCell>
-                          </TableRow>
-                        </TableHead>
-
-                        <TableBody>
-                          {rows.map((row) => (
-                            <TableRow
-                              key={row.vials}
-                              sx={{
-                                "&:last-child td, &:last-child th": {
-                                  border: 0,
-                                },
-                              }}
-                            >
-                              <TableCell component="th" scope="row">
-                                {row.vials}
-                              </TableCell>
-                              <TableCell align="right">
-                                {row.initialNM}
-                              </TableCell>
-                              <TableCell align="right">{row.finalNM}</TableCell>
-                              <TableCell align="right">{row.delta}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                </div>
+                <ScienceGraphTable controlsLocked={controlsLocked} />
               </div>
             ) : null,
           )}

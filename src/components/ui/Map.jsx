@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { robotsocket } from "../socket.io/socket";
-import { Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { robotsocket, basesocket } from "../socket.io/socket";
+import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
 
-function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
+function CoordUI({ lat, long, lastRead, color }) {
   return (
     <Box
       sx={{
@@ -14,37 +14,24 @@ function LockOnControlUI({ lat, long, lastRead, isLockedOn, onToggle }) {
         bgcolor: "rgba(255,255,255,0.9)",
         p: 1,
         borderRadius: 1,
-        border: "1px solid black",
+        border: "2px solid",
+        borderColor: color,
         minWidth: 180,
       }}
     >
       <Typography variant="body2">Latitude: {lat}</Typography>
       <Typography variant="body2">Longitude: {long}</Typography>
       <Typography variant="body2">Last Read: {lastRead}</Typography>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={isLockedOn}
-            onChange={onToggle}
-            sx={{
-              "& .MuiSwitch-thumb": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
-              "& .MuiSwitch-track": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
-            }}
-          />
-        }
-        label={<Typography variant="body2">Lock-On</Typography>}
-      />
     </Box>
   );
 }
 
-class LockOnControl {
-  constructor(onToggle) {
+class CoordControl {
+  constructor(color) {
     this._latitude = null;
     this._longitude = null;
     this._lastRead = null;
-    this._isLockedOn = null;
-    this._onToggle = onToggle;
+    this.color = color;
     this._root = null;
   }
   onAdd(map) {
@@ -52,24 +39,22 @@ class LockOnControl {
     this._container = document.createElement("div");
     this._container.className = "maplibregl-ctrl my-custom-control";
     this._root = ReactDOM.createRoot(this._container);
-    this.update("---", "---", "---", true);
+    this.update("---", "---", "---");
     return this._container;
   }
-  update(lat, long, lastRead, isLockedOn) {
+  update(lat, long, lastRead) {
     if(!this._root) {
       return;
     }
     this._latitude = lat;
     this._longitude = long;
     this._lastRead = lastRead;
-    this._isLockedOn = isLockedOn;
     this._root.render(
-      <LockOnControlUI
+      <CoordUI
         lat = {lat}  
         long = {long}  
         lastRead = {lastRead}  
-        isLockedOn = {isLockedOn}  
-        onToggle = {this._onToggle}
+        color = {this.color}
       />
     );
   }
@@ -85,25 +70,249 @@ class LockOnControl {
   }
 }
 
+function isWebglSupported() {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true }) ||
+      canvas.getContext("webgl", { failIfMajorPerformanceCaveat: true });
+
+    return !!(gl && typeof gl.getParameter === "function");
+  } catch {
+    return false;
+  }
+}
+
+function LockOnControlUI({ isLockedOn, isCentered, onToggleLock, onToggleCenter }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 180,
+      }}
+    >
+      <FormControlLabel
+        control={
+          <Switch
+            checked={isLockedOn}
+            onChange={onToggleLock}
+            sx={{
+              "& .MuiSwitch-thumb": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
+              "& .MuiSwitch-track": { bgcolor: isLockedOn ? "#0a890e" : "#890707" },
+            }}
+          />
+        }
+        label={<Typography variant="body2">Lock-On</Typography>}
+      />
+      <FormControlLabel
+        control={
+          <Switch
+            checked={isCentered}
+            onChange={onToggleCenter}
+            sx={{
+              "& .MuiSwitch-thumb": { bgcolor: isCentered ? "#0a890e" : "#890707" },
+              "& .MuiSwitch-track": { bgcolor: isCentered ? "#0a890e" : "#890707" },
+            }}
+          />
+        }
+        label={<Typography variant="body2">Include Base</Typography>}
+      />
+    </Box>
+  );
+}
+
+class LockOnControl {
+  constructor(onToggleLock, onToggleCenter) {
+    this._isLockedOn = null;
+    this._isCentered = null;
+    this._onToggleLock = onToggleLock;
+    this._onToggleCenter = onToggleCenter;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update(true, false);
+    return this._container;
+  }
+  update(isLockedOn, isCentered) {
+    if(!this._root) {
+      return;
+    }
+    this._isLockedOn = isLockedOn;
+    this._isCentered = isCentered;
+    this._root.render(
+      <LockOnControlUI
+        isLockedOn = {isLockedOn}  
+        isCentered = {isCentered}
+        onToggleLock = {this._onToggleLock}
+        onToggleCenter = {this._onToggleCenter}
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
+
+function ResetZoomControlUI({ onClickZoom, onClickPan }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 100,
+      }}
+    >
+      <Button size="small" variant="outlined" onClick = {onClickZoom}>Reset Zoom</Button>
+      <Button size="small" variant="outlined" onClick = {onClickPan}>Reset Pan</Button>
+    </Box>
+  );
+}
+
+class ResetZoomControl {
+  constructor(onClickZoom, onClickPan) {
+    this._onClickZoom = onClickZoom;
+    this._onClickPan = onClickPan;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update();
+    return this._container;
+  }
+  update() {
+    if(!this._root) {
+      return;
+    }
+    this._root.render(
+      <ResetZoomControlUI
+        onClickZoom = {this._onClickZoom}
+        onClickPan = {this._onClickPan}
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
+
+function createFallbackImage() {
+  const size = 32;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return null;
+  }
+
+  context.clearRect(0, 0, size, size);
+  context.fillStyle = "rgba(70, 70, 70, 0.92)";
+  context.fillRect(4, 4, size - 8, size - 8);
+  context.scale(0.5, 0.5);
+
+  context.strokeStyle = "#ffffff";
+  context.fillStyle = "#ffffff";
+  context.lineCap = "round";
+  context.lineJoin = "round";
+
+  context.beginPath();
+  context.arc(32, 18, 5, 0, Math.PI * 2);
+  context.fill();
+
+  context.lineWidth = 6;
+  context.beginPath();
+  context.moveTo(32, 28);
+  context.lineTo(32, 48);
+  context.stroke();
+
+  return context.getImageData(0, 0, size, size);
+}
+
+const fallbackImage = createFallbackImage();
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
-  const marker = useRef(null);
+  const robotMarker = useRef(null);
+  const baseMarker = useRef(null);
   const controlRef = useRef(null);
-  const lastSignalTime = useRef(Date.now()); 
-  const signalDiff = useRef();
-  const signalTimeout = useRef(null);
+  const coordRef = useRef(null);
+  const coordRef2 = useRef(null);
+  const resetZoomRef = useRef(null);
+  const suppressTrackRef = useRef(false);
+  const robotLastSignalTime = useRef(Date.now()); 
+  const baseLastSignalTime = useRef(Date.now()); 
+  const robotSignalDiff = useRef();
+  const baseSignalDiff = useRef();
+  const robotSignalTimeout = useRef(null);
+  const baseSignalTimeout = useRef(null);
 
-  const [coordinates, setCoordinates] = useState({
+  const [robotCoordinates, setRobotCoordinates] = useState({
+    long: -121.881194,
+    lat: 37.336847,
+    receive: false,
+  });
+
+  const [baseCoordinates, setBaseCoordinates] = useState({
     long: -121.881194,
     lat: 37.336847,
     receive: false,
   });
 
   const [isLockedOn, setIsLockedOn] = useState(true);
+  const [isCentered, setIsCentered] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(null);
+
+function resetMapCam(easeOptions) {
+  if (!mapRef.current) { return; }
+  const duration = 500;
+  suppressTrackRef.current = true;
+
+  mapRef.current.easeTo({ ...easeOptions, duration });
+
+  setTimeout(() => {
+    suppressTrackRef.current = false;
+  }, duration + 100);
+}
 
   useEffect(() => {
-    const target = [coordinates.long, coordinates.lat];
+    const supported = isWebglSupported();
+    setWebglSupported(supported);
+    if (supported === false) return;
+    if (webglSupported === false) return;
+
+    const target = [robotCoordinates.long, robotCoordinates.lat];
     //const target = [-121.881194, 37.336847]; // San Jose area 
     //const target = [-110.768401, 38.372207]; // Utah
     // https://www.gps-coordinates.net/ for coordinates
@@ -119,7 +328,9 @@ export default function Map() {
     const container = mapContainer.current;
     if (!container) return;
 
-    const map = new maplibregl.Map({
+    let map;
+    try {
+    map = new maplibregl.Map({
       container,
       style: urls,
       center: target,
@@ -128,22 +339,61 @@ export default function Map() {
       bearing: -20,
       maxPitch: 80
     });
+    } catch(e) {
+      console.error("MapLibre init failed:", e);
+      setWebglSupported(false);
+      return;
+    }
+
     mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    marker.current = new maplibregl.Marker({ color: "#ff0000" })
+    robotMarker.current = new maplibregl.Marker({ color: "#ff0000" })
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Robot Target"))
       .addTo(map);
 
+    baseMarker.current = new maplibregl.Marker({ color: "#0077ff" })
+      .setLngLat(target)
+      .setPopup(new maplibregl.Popup().setText("Base Target"))
+      .addTo(map);
+    const onStyleImageMissing = (event) => {
+      if (map.hasImage(event.id)) {
+        return;
+      }
+
+      if (fallbackImage) {
+        map.addImage(event.id, fallbackImage, { pixelRatio: 2 });
+      }
+    };
+
+    map.on("styleimagemissing", onStyleImageMissing);
+
     const lockOnControl = new LockOnControl(() =>
-      setIsLockedOn((prev) => !prev)
+      setIsLockedOn((prev) => !prev), 
+      ()  => setIsCentered((prev) => !prev)
+    );
+    const coordControl = new CoordControl("#ff0000");
+    const coordControl2 = new CoordControl("#0077ff");
+
+    const resetZoomControl = new ResetZoomControl(
+      () => resetMapCam({ zoom: 17 }),
+      () => resetMapCam({ pitch: 60, bearing: -20 })
     );
 
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
       controlRef.current = lockOnControl;
+
+      map.addControl(coordControl, "bottom-left");
+      coordRef.current = coordControl;
+
+      map.addControl(coordControl2, "bottom-left");
+      coordRef2.current = coordControl2;
+
+      map.addControl(resetZoomControl, "top-left");
+      resetZoomRef.current = resetZoomControl;
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -181,6 +431,7 @@ export default function Map() {
     return () => {
       cancelAnimationFrame(initialResizeRaf);
       window.removeEventListener("resize", onWindowResize);
+      map.off("styleimagemissing", onStyleImageMissing);
       map.off("load", onLoad);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
@@ -191,64 +442,124 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    const handler = (data) => {
-      if (signalTimeout.current) {
-        clearTimeout(signalTimeout.current);
+    const robotHandler = (data) => {
+      if (robotSignalTimeout.current) {
+        clearTimeout(robotSignalTimeout.current);
       }
 
       const newTime = Date.now();
-      signalDiff.current = (newTime - lastSignalTime.current) / 1000;
-      lastSignalTime.current = newTime;
+      robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
+      robotLastSignalTime.current = newTime;
 
       // console.log("Received GPS data:", data);
-      setCoordinates({
+      setRobotCoordinates({
         long: data.longitude,
         lat: data.latitude,
         receive: true,
       });
 
-      signalTimeout.current = setTimeout(() => {
-        setCoordinates((prev) => ({ ...prev, receive: false }));
+      robotSignalTimeout.current = setTimeout(() => {
+        setRobotCoordinates((prev) => ({ ...prev, receive: false }));
       }, 3000);
     };
 
-    robotsocket.on("gpsData", handler);
-    signalTimeout.current = setTimeout(() => {
-      setCoordinates((prev) => ({ ...prev, receive: false }));
+    const baseHandler = (data) => {
+      if (baseSignalTimeout.current) {
+        clearTimeout(baseSignalTimeout.current);
+      }
+
+      const newTime = Date.now();
+      baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
+      baseLastSignalTime.current = newTime;
+
+      // console.log("Received GPS data:", data);
+      setBaseCoordinates({
+        long: data.longitude,
+        lat: data.latitude,
+        receive: true,
+      });
+
+      baseSignalTimeout.current = setTimeout(() => {
+        setBaseCoordinates((prev) => ({ ...prev, receive: false }));
+      }, 3000);
+    };
+
+    robotsocket.on("gpsData", robotHandler);
+    basesocket.on("gpsData2", baseHandler);
+    basesocket
+    robotSignalTimeout.current = setTimeout(() => {
+      setRobotCoordinates((prev) => ({ ...prev, receive: false }));
+    }, 3000);
+    baseSignalTimeout.current = setTimeout(() => {
+      setBaseCoordinates((prev) => ({ ...prev, receive: false }));
     }, 3000);
     return () => {
-      robotsocket.off("gpsData", handler);
-      if (signalTimeout.current) {
-        clearTimeout(signalTimeout.current);
+      robotsocket.off("gpsData", robotHandler);
+      basesocket.off("gpsData2", baseHandler);
+      if (robotSignalTimeout.current) {
+        clearTimeout(robotSignalTimeout.current);
+      }
+      if (baseSignalTimeout.current) {
+        clearTimeout(baseSignalTimeout.current);
       }
     }
   }, []);
 
   useEffect(() => {
-    marker.current.setLngLat([coordinates.long, coordinates.lat]);
-
-    if(controlRef.current) {
-      controlRef.current.update(
-        coordinates.lat.toFixed(6),
-        coordinates.long.toFixed(6),
-        coordinates.receive ? signalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
-        isLockedOn,
+if (webglSupported === false) return;
+    if(robotMarker.current && baseMarker.current){
+    robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
+    baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
+  }
+    if(coordRef.current) {
+      coordRef.current.update(
+        robotCoordinates.lat.toFixed(6),
+        robotCoordinates.long.toFixed(6),
+        robotCoordinates.receive ? robotSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
       );
     }
 
-    if(isLockedOn && mapRef.current) {
-      mapRef.current.easeTo({
-        center: [coordinates.long, coordinates.lat],
-        speed: 3,
-        curve: 1,
-        essential: true,
-      });
+    if(coordRef2.current) {
+      coordRef2.current.update(
+        baseCoordinates.lat.toFixed(6),
+        baseCoordinates.long.toFixed(6),
+        baseCoordinates.receive ? baseSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
+      );
+    }
+
+    if(isLockedOn && !suppressTrackRef.current && mapRef.current) {
+      if (!isCentered || !baseCoordinates.receive) {
+        mapRef.current.easeTo({
+          center: [robotCoordinates.long, robotCoordinates.lat],
+          speed: 3,
+          curve: 1,
+          essential: true,
+        });
+      } else {
+          mapRef.current.easeTo({
+            center: [(robotCoordinates.long + baseCoordinates.long) / 2, (robotCoordinates.lat + baseCoordinates.lat) / 2],
+            speed: 3,
+            curve: 1,
+            essential: true,
+          });
+      }
+    }
+
+    if(controlRef.current) {
+      controlRef.current.update(isLockedOn, isCentered);
     }
     return () => {
 
     }
-  }, [coordinates, isLockedOn]);
+  }, [robotCoordinates, baseCoordinates, isLockedOn, isCentered]);
 
   // Use full height so the map fills any explicit-height parent container
+  if (webglSupported === false) {
+  return (
+    <div className="w-full flex-1 min-h-0 flex items-center justify-center border-2">
+      <div>This map requires WebGL to work, which wasn't detected.</div>
+    </div>
+  )} else {
   return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  }
 }
