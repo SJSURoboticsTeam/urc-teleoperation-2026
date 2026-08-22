@@ -7,7 +7,6 @@ import asyncio
 import signal
 import sys
 import subprocess
-import os
 from metrics import cpuloop, register_metric_events
 from drive import read_drive_can_loop, send_drive_status_request
 from uart_drive_serial import UartDriveSerial
@@ -205,13 +204,13 @@ async def connectDrive(sid,data):
         if USE_UART_DRIVE:
             serial_ports["drive"] = UartDriveSerial(data)
             print("Drive UART connected.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
         else:
             serial_ports["drive"] = CanSerial(data)
             print("Drive CAN connected.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
+            
 
         serial_ports["driveId"] = data
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
@@ -303,7 +302,7 @@ async def connectScience(sid,data):
         await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        print("FAILURE TO CONNECT SCIENCE: " + str(e))
         await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 

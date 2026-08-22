@@ -8,14 +8,16 @@ export const PeripheralProvider = ({ children }) => {
 
   useEffect(() => {
     // when one client updates data, other clients get asked to refresh data
-    const processupdate = () => {
-       console.log("Server CAN changed, force updating");
+    const updateCan = () => {
+       console.log("Refreshing CAN state");
        requestCanInfo()
     };
-    robotsocket.on("forcecanrefresh", processupdate);
+    robotsocket.on("forcecanrefresh", updateCan);
+    robotsocket.on("connect", updateCan);
 
     return () => {
-    robotsocket.off("forcecanrefresh", processupdate);
+    robotsocket.off("forcecanrefresh", updateCan);
+    robotsocket.off("connect", updateCan);
     };
   }, []);
 

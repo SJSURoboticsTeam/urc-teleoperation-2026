@@ -170,6 +170,7 @@ def register_serial_console_events(sio, console):
             await asyncio.to_thread(console.set_dtr, True)
             await asyncio.sleep(duration_ms / 1000)
             await asyncio.to_thread(console.set_dtr, False)
+            await sio.emit("serialConsoleStatus", console.info())
             return {"status": "OK"}
         except Exception as error:
             return {"status": "ERROR", "message": str(error)}
