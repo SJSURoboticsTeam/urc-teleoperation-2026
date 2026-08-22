@@ -39,30 +39,40 @@ def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts
     return payload
 
 
+async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflicts):
+    """Encode and send a chassis velocity command over UART."""
+    if serial_ports["drive"] is None:
+        raise RuntimeError("Drive UART not connected")
+
+    payload = build_set_chassis_velocities_payload(
+        x_vel,
+        y_vel,
+        rot_vel,
+        module_conflicts,
+    )
+
+    # send_packet is blocking, run it in a thread
+    await asyncio.to_thread(
+        serial_ports["drive"].send_packet,
+        DRIVE_MSG_ID["SET_CHASSIS_VELOCITIES"],
+        payload,
+    )
+
+
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio, serial_ports):
+def register_drive_events(sio, serial_ports, drive_command_lock):
     @sio.event
     async def driveCommands(sid, data):
         try:
-            # make sure drive UART is connected first
-            if serial_ports["drive"] is None:
-                print("Drive UART not connected")
-                return
-
-            payload = build_set_chassis_velocities_payload(
-                data["xVel"],
-                data["yVel"],
-                data["rotVel"],
-                data["moduleConflicts"],
-            )
-
-            # send_packet is blocking, run it in a thread
-            await asyncio.to_thread(
-                serial_ports["drive"].send_packet,
-                DRIVE_MSG_ID["SET_CHASSIS_VELOCITIES"],
-                payload,
-            )
+            async with drive_command_lock:
+                await send_drive_command(
+                    serial_ports,
+                    data["xVel"],
+                    data["yVel"],
+                    data["rotVel"],
+                    data["moduleConflicts"],
+                )
             print(f'[{sid}] Drive UART command sent')
         except Exception as e:
             print(f'Error in driveCommands: {e}')
@@ -166,4 +176,3 @@ async def send_drive_heartbeat(serial_ports):
             await asyncio.sleep(5)
     except Exception as e:
         print(f'Drive heartbeat error: {e}')
-        
