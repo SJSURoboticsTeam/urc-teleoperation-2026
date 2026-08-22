@@ -25,35 +25,51 @@ drive_receive_ID = {
 can_msg_count = 0
 
 
+async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflicts):
+    """Encode and send a chassis velocity command over CAN."""
+    # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
+    x_vel_scaled = int(x_vel * (2 ** 12))
+    y_vel_scaled = int(y_vel * (2 ** 12))
+
+    # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
+    rot_vel_scaled = int(rot_vel * (2 ** 6))
+    mod_conf_scaled = int(module_conflicts)
+
+    # Convert to 16-bit signed hex
+    x_vel_encoded = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
+    y_vel_encoded = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
+    rot_vel_encoded = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
+    mod_conf_encoded = mod_conf_scaled.to_bytes(1, 'big', signed=True).hex()
+
+    can_msg = (
+        f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7'
+        f'{x_vel_encoded}{y_vel_encoded}{rot_vel_encoded}{mod_conf_encoded}\r'
+    )
+
+    # serial_ports["drive"].write is blocking, run in thread
+    await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+
+    global can_msg_count
+    can_msg_count += 1
+    print("CAN MESSAGE NUMBER " + str(can_msg_count))
+
+    return can_msg
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio,serial_ports):
+def register_drive_events(sio, serial_ports, drive_command_lock):
     @sio.event
     async def driveCommands(sid, data):
         try:
-            # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
-            x_vel_scaled = int(data['xVel'] * (2 ** 12))
-            y_vel_scaled = int(data['yVel'] * (2 ** 12))
-            
-            # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
-            rot_vel_scaled = int(data['rotVel'] * (2 ** 6))
-            mod_conf_scaled = int(data['moduleConflicts'])
-
-            # Convert to 16-bit signed hex
-            x_vel = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
-            y_vel = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
-            rot_vel = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
-            mod_conf = mod_conf_scaled.to_bytes(1, 'big', signed=True).hex()
-
-            can_msg = f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7{x_vel}{y_vel}{rot_vel}{mod_conf}\r'
-
-            # serial_ports["drive"].write is blocking, run in thread
-            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+            async with drive_command_lock:
+                can_msg = await send_drive_command(
+                    serial_ports,
+                    data['xVel'],
+                    data['yVel'],
+                    data['rotVel'],
+                    data['moduleConflicts'],
+                )
             print(f'[{sid}] Drive command sent: {can_msg}')
-            global can_msg_count
-            can_msg_count = can_msg_count + 1
-            print("CAN MESSAGE NUMBER " + str(can_msg_count))
         except Exception as e:
             # if you are testing on a computer without serial, set the bool true to help your console
             if config.silenceSerialErrors == False:
@@ -165,4 +181,4 @@ async def send_drive_status_request(serial_ports):
             await asyncio.sleep(5)
             # await asyncio.sleep(1) # waiting 1000 ms
     except Exception as e:
-        print(f'Read drive status flag error: {e}')        
+        print(f'Read drive status flag error: {e}')
