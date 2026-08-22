@@ -9,15 +9,15 @@ export const PeripheralProvider = ({ children }) => {
   useEffect(() => {
     // when one client updates data, other clients get asked to refresh data
     const updateCan = () => {
-       console.log("Refreshing CAN state");
-       requestCanInfo()
+      console.log("Refreshing CAN state");
+      requestCanInfo();
     };
     robotsocket.on("forcecanrefresh", updateCan);
     robotsocket.on("connect", updateCan);
 
     return () => {
-    robotsocket.off("forcecanrefresh", updateCan);
-    robotsocket.off("connect", updateCan);
+      robotsocket.off("forcecanrefresh", updateCan);
+      robotsocket.off("connect", updateCan);
     };
   }, []);
 
@@ -34,15 +34,18 @@ export const PeripheralProvider = ({ children }) => {
     scienceId: "disconnect", // selected can id in dropdown or disconnect
     gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
+  const textEncoder = new TextEncoder();
 
-    const [serialState, setserialState] = useState({
-    ports: [],
-    portId: "disconnect",
-    baudrate: 115200,
-    connected: false,
-    dtr: false,
-    rts: false,
-  });
+  function encodeBytes(bytes) {
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+  }
+
+  function decodeBytes(encoded) {
+    const binary = atob(encoded);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  }
 
   function requestCanInfo() {
     // lock the ui so user can't do anything while loading
@@ -271,8 +274,6 @@ export const PeripheralProvider = ({ children }) => {
     connectGPS,
     disconnectGPS,
     disconnectAll,
-    serialState,
-    setserialState
   };
 
   return (

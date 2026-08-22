@@ -9,6 +9,7 @@ import Select from "@mui/material/Select";
 import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
 import EjectIcon from "@mui/icons-material/Eject";
 import { usePeripherals } from "../../contexts/PeripheralContext";
+import { useSerial } from "../../contexts/SerialContext";
 
 export default function PeripheralManager({ openPane }) {
   const {
@@ -17,17 +18,15 @@ export default function PeripheralManager({ openPane }) {
     setcanState,
     connectDrive,
     disconnectDrive,
-    connectArm, 
-    disconnectArm, 
-    connectScience, 
+    connectArm,
+    disconnectArm,
+    connectScience,
     disconnectScience,
-    connectGPS, 
-    disconnectGPS, 
-    disconnectAll, 
-    serialState
+    connectGPS,
+    disconnectGPS,
+    disconnectAll,
   } = usePeripherals();
-
-
+  const { serialState } = useSerial();
 
   useEffect(() => {
     if (openPane == "Backend") {
