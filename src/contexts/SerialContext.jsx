@@ -6,7 +6,7 @@ export function useSerial() {
   const context = useContext(SerialContext);
 
   if (!context) {
-    throw new Error("usePeripherals must be used inside SerialProvider");
+    throw new Error("SerialContext must be used inside SerialProvider");
   }
 
   return context;

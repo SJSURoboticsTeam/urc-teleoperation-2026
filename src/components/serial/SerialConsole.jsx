@@ -13,12 +13,12 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { robotsocket, useRobotSocketStatus } from "../socket.io/socket";
+import { useRobotSocketStatus } from "../socket.io/socket";
 import { useSerial } from "../../contexts/SerialContext";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 
 export default function SerialConsole() {
-  const serverConnected = useRobotSocketStatus;
+  const serverConnected = useRobotSocketStatus();
   const {
     pulseDtr,
     updateDtr,
@@ -44,6 +44,8 @@ export default function SerialConsole() {
     setAutoScroll,
     setAppendCarriageReturn,
     setError,
+    setInput,
+    setOutput,
     busy,
     error,
     dtr,

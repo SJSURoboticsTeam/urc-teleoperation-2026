@@ -99,11 +99,16 @@ export const SerialProvider = ({ children }) => {
   }, [output, autoScroll]);
 
   function openConsole() {
+    const parsedBaudrate = Number(baudrate);
+    if (!Number.isInteger(parsedBaudrate) || parsedBaudrate <= 0) {
+      setError("Enter a positive baud rate");
+      return;
+    }
     setBusy(true);
     setError("");
     robotsocket.emit(
       "openSerialConsole",
-      { portId: selectedPort, baudrate: Number(baudrate) },
+      { portId: selectedPort, baudrate: parsedBaudrate },
       (response) => {
         setBusy(false);
         if (response?.status !== "OK") {
@@ -170,7 +175,7 @@ export const SerialProvider = ({ children }) => {
       { durationMs: 200 },
       (response) => {
         if (response?.status === "OK") {
-          setDtr(true);
+          setDtr(false);
         } else {
           setError(response?.message || "Unable to pulse DTR");
         }
@@ -192,6 +197,8 @@ export const SerialProvider = ({ children }) => {
     setAppendCarriageReturn,
     setSelectedPort,
     setError,
+    setInput,
+    setOutput,
     setBaudrate,
     serialState,
     selectedPort,
