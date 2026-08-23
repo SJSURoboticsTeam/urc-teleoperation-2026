@@ -40,6 +40,15 @@ export default function ExtrasView() {
         >
           SpeedTest
         </Button>
+
+        <Button
+          style={{ marginRight: 5, marginLeft: 5 }}
+          component={Link}
+          to="serial"
+          variant="contained"
+        >
+          Serial Console
+        </Button>
       </div>
 
       <div className="flex-1 flex flex-col min-h-0">
