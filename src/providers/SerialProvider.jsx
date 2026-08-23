@@ -36,6 +36,34 @@ export const SerialProvider = ({ children }) => {
     setRts(nextInfo.rts ?? false);
   }
 
+  const textEncoder = new TextEncoder();
+
+  function encodeBytes(bytes) {
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+  }
+
+  function decodeBytes(encoded) {
+    const binary = atob(encoded);
+    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  }
+
+  useEffect(() => {
+    // when one client updates data, other clients get asked to refresh data
+    const updateSerial = () => {
+      console.log("Refreshing CAN state");
+      refresh();
+    };
+    robotsocket.on("forcecanrefresh", updateSerial);
+    robotsocket.on("connect", updateSerial);
+
+    return () => {
+      robotsocket.off("forcecanrefresh", updateSerial);
+      robotsocket.off("connect", updateSerial);
+    };
+  }, []);
+
   const refresh = useCallback(() => {
     robotsocket.emit("getSerialConsoleInfo", (response) => {
       if (response) applyInfo(response);
@@ -157,21 +185,24 @@ export const SerialProvider = ({ children }) => {
     sendInput,
     closeConsole,
     openConsole,
+    refresh,
+    setAppendNewline,
+    setLocalEcho,
+    setAutoScroll,
+    setAppendCarriageReturn,
+    setSelectedPort,
+    setError,
+    setBaudrate,
     serialState,
     selectedPort,
-    refresh,
     autoScroll,
     outputRef,
-    setAppendNewline,
     baudrate,
     output,
     input,
     appendCarriageReturn,
     appendNewline,
     localEcho,
-    setLocalEcho,
-    setAutoScroll,
-    setAppendCarriageReturn,
     busy,
     error,
     dtr,

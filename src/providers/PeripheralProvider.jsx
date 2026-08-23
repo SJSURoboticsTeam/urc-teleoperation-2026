@@ -34,18 +34,6 @@ export const PeripheralProvider = ({ children }) => {
     scienceId: "disconnect", // selected can id in dropdown or disconnect
     gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
-  const textEncoder = new TextEncoder();
-
-  function encodeBytes(bytes) {
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-  }
-
-  function decodeBytes(encoded) {
-    const binary = atob(encoded);
-    return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-  }
 
   function requestCanInfo() {
     // lock the ui so user can't do anything while loading

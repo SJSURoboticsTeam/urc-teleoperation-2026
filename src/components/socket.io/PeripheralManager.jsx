@@ -26,11 +26,12 @@ export default function PeripheralManager({ openPane }) {
     disconnectGPS,
     disconnectAll,
   } = usePeripherals();
-  const { serialState } = useSerial();
+  const { serialState, refresh } = useSerial();
 
   useEffect(() => {
     if (openPane == "Backend") {
       requestCanInfo(); // autoload can serialState
+      refresh() // update serial
     } else {
       setcanState((prev) => ({
         ...prev,

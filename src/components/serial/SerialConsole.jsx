@@ -29,6 +29,7 @@ export default function SerialConsole() {
     serialState,
     baudrate,
     refresh,
+    setBaudrate,
     autoScroll,
     outputRef,
     output,
@@ -36,17 +37,20 @@ export default function SerialConsole() {
     appendCarriageReturn,
     appendNewline,
     localEcho,
+    setSelectedPort,
     selectedPort,
     setAppendNewline,
     setLocalEcho,
     setAutoScroll,
     setAppendCarriageReturn,
+    setError,
     busy,
     error,
     dtr,
     rts,
   } = useSerial();
   const { canState } = usePeripherals();
+  
   return (
     <Paper
       sx={{
