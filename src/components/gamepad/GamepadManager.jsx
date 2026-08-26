@@ -7,7 +7,6 @@ import {
   Switch,
 } from "@mui/material";
 import { useConnectedGamepads } from "../../contexts/GamepadContext";
-import { useDriveCommands } from "../../contexts/DriveCommandContext";
 
 // Handles UI for connecting and disconnecting gamepads
 export default function GamepadDiv({ name }) {
@@ -19,30 +18,9 @@ export default function GamepadDiv({ name }) {
   const connectedOne =
     name === "/drive" ? connectedGamepads?.drive : connectedGamepads?.arm;
 
-  const [driveCommands, setDriveCommands] = useDriveCommands();
-  const moduleConflicts = driveCommands.moduleConflicts;
 
   return (
     <div style={{ padding: 2, marginTop: 2 }}>
-      {name == "/drive" && (
-        <div style={{ marginBottom: 5 }}>
-          <FormControlLabel
-            sx={{ color: "black" }}
-            control={
-              <Switch
-                checked={moduleConflicts}
-                onChange={(e) =>
-                  setDriveCommands((prev) => ({
-                    ...prev,
-                    moduleConflicts: e.target.checked,
-                  }))
-                }
-              />
-            }
-            label="Autofix Overrotation"
-          />
-        </div>
-      )}
       {gpList.length === 0 ? (
         <Typography sx={{ color: "black" }}>
           No {name === "/drive" ? "Xbox/Playstation" : "Logitech Extreme"}{" "}

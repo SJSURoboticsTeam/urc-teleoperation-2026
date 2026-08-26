@@ -55,7 +55,6 @@ function App() {
     sidewaysVelocity: 0,
     forwardsVelocity: 0,
     rotationalVelocity: 0,
-    moduleConflicts: 1,
   });
 
   const [mastCommands, setMastCommands] = useState({

@@ -25,7 +25,7 @@ drive_receive_ID = {
 can_msg_count = 0
 
 
-async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflicts):
+async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel):
     """Encode and send a chassis velocity command over CAN."""
     # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
     x_vel_scaled = int(x_vel * (2 ** 12))
@@ -33,17 +33,16 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
     # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
     rot_vel_scaled = int(rot_vel * (2 ** 6))
-    mod_conf_scaled = int(module_conflicts)
 
     # Convert to 16-bit signed hex
     x_vel_encoded = x_vel_scaled.to_bytes(2, 'big', signed=True).hex()
     y_vel_encoded = y_vel_scaled.to_bytes(2, 'big', signed=True).hex()
     rot_vel_encoded = rot_vel_scaled.to_bytes(2, 'big', signed=True).hex()
-    mod_conf_encoded = mod_conf_scaled.to_bytes(1, 'big', signed=True).hex()
+    CAN_MSG_TOTAL_BITS = 6
 
     can_msg = (
-        f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}7'
-        f'{x_vel_encoded}{y_vel_encoded}{rot_vel_encoded}{mod_conf_encoded}\r'
+        f't{drive_send_ID["SET_CHASSIS_VELOCITIES"]}{CAN_MSG_TOTAL_BITS}'
+        f'{x_vel_encoded}{y_vel_encoded}{rot_vel_encoded}\r'
     )
 
     # serial_ports["drive"].write is blocking, run in thread
@@ -67,7 +66,6 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
                     data['xVel'],
                     data['yVel'],
                     data['rotVel'],
-                    data['moduleConflicts'],
                 )
             print(f'[{sid}] Drive command sent: {can_msg}')
         except Exception as e:

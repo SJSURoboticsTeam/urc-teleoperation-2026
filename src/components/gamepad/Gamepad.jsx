@@ -126,7 +126,7 @@ export default function GamepadPanel() {
 
         if (!changed) return prev;
 
-        // preserve moduleConflicts (and anything else you may add later)
+        // preserve anything else you may add later
         return { ...prev, ...next };
       });
     };
@@ -138,7 +138,7 @@ export default function GamepadPanel() {
       };
       driveAnimationIdRef.current = requestAnimationFrame(loop);
     } else {
-      // no drive pad selected -> zero the velocities, preserve moduleConflicts
+      // no drive pad selected -> zero the velocities, preserve other variables
       setDriveCommands((prev) => ({
         ...prev,
         sidewaysVelocity: 0,

@@ -19,27 +19,25 @@ DRIVE_REPLY_ID = {
 }
 
 
-def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts):
+def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel):
     # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
     x_vel_scaled = int(x_vel * (2 ** 12))
     y_vel_scaled = int(y_vel * (2 ** 12))
 
     # 16 bit signed integer correlating to the clockwise rotational velocity in 2^6x degrees/sec
     rot_vel_scaled = int(rot_vel * (2 ** 6))
-    mod_conf_scaled = int(module_conflicts)
 
     # convert each field into bytes and combine into one payload
     payload = (
         x_vel_scaled.to_bytes(2, "big", signed=True) +
         y_vel_scaled.to_bytes(2, "big", signed=True) +
-        rot_vel_scaled.to_bytes(2, "big", signed=True) +
-        mod_conf_scaled.to_bytes(1, "big", signed=False)
+        rot_vel_scaled.to_bytes(2, "big", signed=True)
     )
 
     return payload
 
 
-async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflicts):
+async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel):
     """Encode and send a chassis velocity command over UART."""
     if serial_ports["drive"] is None:
         raise RuntimeError("Drive UART not connected")
@@ -47,8 +45,7 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
     payload = build_set_chassis_velocities_payload(
         x_vel,
         y_vel,
-        rot_vel,
-        module_conflicts,
+        rot_vel
     )
 
     # send_packet is blocking, run it in a thread
@@ -70,8 +67,7 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
                     serial_ports,
                     data["xVel"],
                     data["yVel"],
-                    data["rotVel"],
-                    data["moduleConflicts"],
+                    data["rotVel"]
                 )
             print(f'[{sid}] Drive UART command sent')
         except Exception as e:
@@ -138,7 +134,7 @@ async def parse_drive_packet(packet):
                 print("Bad return offset payload length")
                 return
 
-            # current UART version assumes 2-byte angle offset + 1-byte module position
+            # current UART version assumes 2-byte angle offset
             angle_offset = int.from_bytes(payload[0:2], "big", signed=True)
             module_position = payload[2]
             print(f"angle offset: {angle_offset} \nmodule position: {module_position}")

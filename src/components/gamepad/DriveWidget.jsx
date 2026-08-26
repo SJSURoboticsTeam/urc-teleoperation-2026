@@ -30,8 +30,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
   const {
     sidewaysVelocity,
     forwardsVelocity,
-    rotationalVelocity,
-    moduleConflicts,
+    rotationalVelocity
   } = driveCommands;
 
   // Mast
@@ -78,7 +77,6 @@ export default function DriveManualInput({ controlsLocked = false }) {
         xVel: driveCommandsRef.current.forwardsVelocity,
         yVel: driveCommandsRef.current.sidewaysVelocity,
         rotVel: driveCommandsRef.current.rotationalVelocity,
-        moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
       });
     }, FrameRateConstant);
 
@@ -120,7 +118,6 @@ export default function DriveManualInput({ controlsLocked = false }) {
       xVel: forwardsVelocity,
       yVel: sidewaysVelocity,
       rotVel: rotationalVelocity,
-      moduleConflicts: Number(moduleConflicts),
     });
 
     robotsocket.emit("mastCommands", {
