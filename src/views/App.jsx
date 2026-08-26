@@ -17,7 +17,9 @@ import DriveCommandProvider from "../providers/DriveCommandProvider";
 import MastCommandProvider from "../providers/MastCommandProvider";
 import GamepadProvider from "../providers/GamepadProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
+import PeripheralProvider from "../providers/PeripheralProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
+import SerialProvider from "../providers/SerialProvider";
 
 function App() {
   // Global autonomy state so every view can react to it
@@ -106,56 +108,60 @@ function App() {
     >
       {/* snackbar */}
       <SnackbarProvider maxSnack={5}>
-        <AutonomyModeProvider
-          autonomyEnabled={autonomyEnabled}
-          setAutonomyEnabled={setAutonomyEnabled}
-        >
-          <ArmCommandProvider
-            armCommands={armCommands}
-            setArmCommands={setArmCommands}
-          >
-            <GamepadProvider
-              connectedGamepads={connectedGamepads}
-              setConnectedGamepads={setConnectedGamepads}
+        <SerialProvider>
+          <PeripheralProvider>
+            <AutonomyModeProvider
+              autonomyEnabled={autonomyEnabled}
+              setAutonomyEnabled={setAutonomyEnabled}
             >
-              <DriveCommandProvider
-                driveCommands={driveCommands}
-                setDriveCommands={setDriveCommands}
+              <ArmCommandProvider
+                armCommands={armCommands}
+                setArmCommands={setArmCommands}
               >
-                <MastCommandProvider
-                  mastCommands={mastCommands}
-                  setMastCommands={setMastCommands}
+                <GamepadProvider
+                  connectedGamepads={connectedGamepads}
+                  setConnectedGamepads={setConnectedGamepads}
                 >
-                  <CssBaseline />
-                  {/* Normalizes styles */}
-                  <TopAppBar
-                    selectedElements={selectedElements}
-                    setSelectedElements={setSelectedElements}
-                    addSnackbarMessage={addSnackbarMessage}
-                  />
-
-                  <Box
-                    component="main"
-                    sx={{
-                      flexGrow: 1,
-                      p: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                      minHeight: 0,
-                      marginTop: "60px",
-                    }}
+                  <DriveCommandProvider
+                    driveCommands={driveCommands}
+                    setDriveCommands={setDriveCommands}
                   >
-                    <SplitView selectedElements={selectedElements}>
-                      {/* we pass all these elements as "children" into SplitView */}
-                      <Outlet />
-                    </SplitView>
-                  </Box>
-                </MastCommandProvider>
-              </DriveCommandProvider>
-            </GamepadProvider>
-          </ArmCommandProvider>
-        </AutonomyModeProvider>
+                    <MastCommandProvider
+                      mastCommands={mastCommands}
+                      setMastCommands={setMastCommands}
+                    >
+                      <CssBaseline />
+                      {/* Normalizes styles */}
+                      <TopAppBar
+                        selectedElements={selectedElements}
+                        setSelectedElements={setSelectedElements}
+                        addSnackbarMessage={addSnackbarMessage}
+                      />
+
+                      <Box
+                        component="main"
+                        sx={{
+                          flexGrow: 1,
+                          p: 2,
+                          display: "flex",
+                          flexDirection: "column",
+                          overflow: "hidden",
+                          minHeight: 0,
+                          marginTop: "60px",
+                        }}
+                      >
+                        <SplitView selectedElements={selectedElements}>
+                          {/* we pass all these elements as "children" into SplitView */}
+                          <Outlet />
+                        </SplitView>
+                      </Box>
+                    </MastCommandProvider>
+                  </DriveCommandProvider>
+                </GamepadProvider>
+              </ArmCommandProvider>
+            </AutonomyModeProvider>
+          </PeripheralProvider>
+        </SerialProvider>
       </SnackbarProvider>
     </Box>
   );

@@ -8,15 +8,26 @@ import signal
 import sys
 import subprocess
 from metrics import cpuloop, register_metric_events
-from drive import read_drive_can_loop, send_drive_status_request
+from drive import (
+    read_drive_can_loop,
+    register_drive_events as register_can_drive_events,
+    send_drive_command as send_can_drive_command,
+    send_drive_status_request,
+)
 from uart_drive_serial import UartDriveSerial
-from drive_uart import read_drive_uart_loop, send_drive_heartbeat, register_drive_events
+from drive_uart import (
+    read_drive_uart_loop,
+    register_drive_events as register_uart_drive_events,
+    send_drive_command as send_uart_drive_command,
+    send_drive_heartbeat,
+)
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
 from camera_pt import register_camera_pt_events
 from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
+from serial_console import SerialConsole, register_serial_console_events
 
 print("\033[0m----------------")
 
@@ -79,6 +90,7 @@ serial_ports = {
     "science": None,
     "scienceId" : "disconnect"
 }
+serial_console = SerialConsole()
 
 
 
@@ -95,6 +107,7 @@ def shutdown():
     if shutting_down:
         return
     shutting_down = True
+    serial_console.close()
     print("----------------")
     print("\nShutting down... ")
     #drive
@@ -146,7 +159,13 @@ def shutdown():
         sys.exit(0)
 # =================== Setup, CAN connections ===================
 
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*',
+    allow_upgrades=True,
+    ping_interval=1,
+    ping_timeout=3,
+)
 #uncomment to use the debug admin ui
 # sio.instrument(auth={
 #     'username': 'admin',
@@ -175,6 +194,7 @@ async def getCanInfo(sid):
         if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) ):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
+
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
@@ -203,11 +223,14 @@ async def connectDrive(sid,data):
         else:
             serial_ports["drive"] = CanSerial(data)
             print("Drive CAN connected.")
+            
 
         serial_ports["driveId"] = data
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -220,12 +243,14 @@ async def disconnectDrive(sid):
             serial_ports["drive"] = None
             serial_ports["driveId"] = "disconnect"
             print("Drive serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("Drive was never connected.")
             return("ERROR")
     except Exception:
         print("DRIVE WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -248,11 +273,13 @@ async def connectArm(sid,data):
         serial_ports["arm"] = CanSerial(data)
         serial_ports["armId"] = data
         print("Arm connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "OK"
     except Exception as e:
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("FAILURE TO CONNECT ARM: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "ERROR"
 
 @sio.event
@@ -266,11 +293,13 @@ async def disconnectArm(sid):
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("Arm serial closed.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "OK"
     except Exception:
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "ERROR"
 
 @sio.event
@@ -286,9 +315,11 @@ async def connectScience(sid,data):
         serial_ports["science"] = CanSerial(data)
         serial_ports["scienceId"] = data
         print("Science connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        print("FAILURE TO CONNECT SCIENCE: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -301,12 +332,14 @@ async def disconnectScience(sid):
             serial_ports["science"] = None
             serial_ports["scienceId"] = "disconnect"
             print("Science serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("Science was never connected.")
             return("ERROR")
     except Exception:
         print("SCIENCE WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -323,9 +356,11 @@ async def connectGPS(sid, data):
         serial_ports["gps"] = ZEDF9P(data, 57600) 
         serial_ports["gpsId"] = data
         print("GPS connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT GPS: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -337,12 +372,14 @@ async def disconnectGPS(sid):
             serial_ports["gps"] = None
             serial_ports["gpsId"] = "disconnect"
             print("GPS serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("GPS was never connected.")
             return("ERROR")
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -367,14 +404,20 @@ gps_task_started = False
 arm_position_task_started = False
 async_ssh_started = False
 cpu_started = False
+# this lock ensures that only one function can be sending on the drive can/uart line at once
+drive_command_lock = asyncio.Lock()
 autonomy_started= False
 
 
 register_metric_events(sio)
-register_drive_events(sio,serial_ports)
+if USE_UART_DRIVE:
+    register_uart_drive_events(sio, serial_ports, drive_command_lock)
+else:
+    register_can_drive_events(sio, serial_ports, drive_command_lock)
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
+register_serial_console_events(sio, serial_console)
 
 # =================== Start Server ===================
 
@@ -437,12 +480,37 @@ async def connect(sid,environ):
         autonomy_started = True
         sio.start_background_task(get_autonomy_states,sio)
 
+async def stop_drive_motors():
+    # Send stop command to drive motors for safety when no clients are connected
+    async with drive_command_lock:
+        # A client may have reconnected while this task was waiting for the lock.
+        if metrics.numClients != 0:
+            return
+
+        if not serial_ports["drive"]:
+            print("No drive serial connected. Cannot send stop command.")
+            return
+
+        try:
+            if USE_UART_DRIVE:
+                await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+                print("UART: 0 clients connected. Sent stop command to drive motors.")
+            else:
+                await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+                print("CAN: 0 clients connected. Sent stop command to drive motors.")
+        except Exception as e:
+            print(f"Failed to send stop command: {e}")
+
 
 @sio.event
 async def disconnect(sid):
     print(f'Client disconnected: {sid}')
-    metrics.numClients -= 1
 
+    metrics.numClients = max(0, metrics.numClients - 1)
+
+    if metrics.numClients == 0:
+        print("No clients, stopping motors now.")
+        await stop_drive_motors()
 
 config = uvicorn.Config(
     app,
