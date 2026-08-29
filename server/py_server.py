@@ -27,6 +27,7 @@ from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
+from serial_console import SerialConsole, register_serial_console_events
 
 print("\033[0m----------------")
 
@@ -89,6 +90,7 @@ serial_ports = {
     "science": None,
     "scienceId" : "disconnect"
 }
+serial_console = SerialConsole()
 
 
 
@@ -105,6 +107,7 @@ def shutdown():
     if shutting_down:
         return
     shutting_down = True
+    serial_console.close()
     print("----------------")
     print("\nShutting down... ")
     #drive
@@ -191,6 +194,7 @@ async def getCanInfo(sid):
         if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) ):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
+
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
@@ -219,11 +223,14 @@ async def connectDrive(sid,data):
         else:
             serial_ports["drive"] = CanSerial(data)
             print("Drive CAN connected.")
+            
 
         serial_ports["driveId"] = data
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT DRIVE: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -236,12 +243,14 @@ async def disconnectDrive(sid):
             serial_ports["drive"] = None
             serial_ports["driveId"] = "disconnect"
             print("Drive serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("Drive was never connected.")
             return("ERROR")
     except Exception:
         print("DRIVE WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -264,11 +273,13 @@ async def connectArm(sid,data):
         serial_ports["arm"] = CanSerial(data)
         serial_ports["armId"] = data
         print("Arm connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "OK"
     except Exception as e:
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("FAILURE TO CONNECT ARM: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "ERROR"
 
 @sio.event
@@ -282,11 +293,13 @@ async def disconnectArm(sid):
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("Arm serial closed.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "OK"
     except Exception:
         serial_ports["arm"] = None
         serial_ports["armId"] = "disconnect"
         print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return "ERROR"
 
 @sio.event
@@ -302,9 +315,11 @@ async def connectScience(sid,data):
         serial_ports["science"] = CanSerial(data)
         serial_ports["scienceId"] = data
         print("Science connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        print("FAILURE TO CONNECT SCIENCE: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -317,12 +332,14 @@ async def disconnectScience(sid):
             serial_ports["science"] = None
             serial_ports["scienceId"] = "disconnect"
             print("Science serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("Science was never connected.")
             return("ERROR")
     except Exception:
         print("SCIENCE WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -339,9 +356,11 @@ async def connectGPS(sid, data):
         serial_ports["gps"] = ZEDF9P(data, 57600) 
         serial_ports["gpsId"] = data
         print("GPS connected.")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
         print("FAILURE TO CONNECT GPS: " + str(e))
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
@@ -353,12 +372,14 @@ async def disconnectGPS(sid):
             serial_ports["gps"] = None
             serial_ports["gpsId"] = "disconnect"
             print("GPS serial closed.")
+            await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
         else:
             print("GPS was never connected.")
             return("ERROR")
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
+        await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
         pass
 
@@ -396,6 +417,7 @@ else:
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
+register_serial_console_events(sio, serial_console)
 
 # =================== Start Server ===================
 

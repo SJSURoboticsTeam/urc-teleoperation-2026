@@ -12,6 +12,7 @@ import {
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { usePeripherals } from "../contexts/PeripheralContext";
 
 import {
   ARM_JOINT_KEYS,
@@ -33,6 +34,8 @@ function valuesDiffer(a, b, epsilon = 0.01) {
 // Handles manual sliders, gamepad-driven display, feedback, TX status,
 // and autonomy lockout.
 export default function ArmView() {
+
+  const { canState } = usePeripherals();
   const [armCommands, setArmCommands] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
   const serverConnected = useRobotSocketStatus();
@@ -305,6 +308,18 @@ export default function ArmView() {
         >
           Arm · {controlModeLabel} · {sendModeLabel}
         </Typography>
+
+        {(canState.armState == "idle"&& !controlsLocked) && (
+          <Typography
+            sx={{
+              textAlign: "center",
+              fontWeight: 700,
+            }}
+            color="error"
+          >
+            You don't have CAN connected!
+          </Typography>
+        )}
 
         {controlsLocked && (
           <Typography

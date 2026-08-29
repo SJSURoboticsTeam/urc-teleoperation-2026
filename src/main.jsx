@@ -13,6 +13,7 @@ import ArmView from "./views/ArmView";
 import ScienceView from "./views/ScienceView";
 import AutonomyView from "./views/AutonomyView";
 import ExtrasView from "./views/ExtrasView";
+import SerialConsole from "./components/serial/SerialConsole";
 // extras panes
 import { Graphs, Files, SpeedTestView } from "./views/ExtrasView";
 
@@ -65,6 +66,10 @@ const approuter = createBrowserRouter([
           {
             path: "speedtest",
             element: <SpeedTestView />,
+          },
+          {
+            path: "serial",
+            element: <SerialConsole />,
           },
         ],
       },

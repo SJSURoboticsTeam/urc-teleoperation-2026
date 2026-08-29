@@ -10,6 +10,7 @@ const routes = [
   "/extras/graphs",
   "/extras/files",
   "/extras/speedtest",
+  "/extras/serial"
 ];
 
 for (const route of routes) {
