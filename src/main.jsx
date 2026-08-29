@@ -6,6 +6,7 @@ import { Navigate } from "react-router-dom";
 // key files
 import App from "./views/App";
 import ErrorPage from "./404";
+import EmergencyView from "./views/EmergencyView";
 
 // actual panes to route between
 import DriveComponents from "./views/DriveView";
@@ -18,6 +19,11 @@ import SerialConsole from "./components/serial/SerialConsole";
 import { Graphs, Files, SpeedTestView } from "./views/ExtrasView";
 
 const approuter = createBrowserRouter([
+  {
+    path: "/estop",
+    element: <EmergencyView />,
+    errorElement: <ErrorPage />,
+  },
   {
     path: "/",
     // the router stays at the top, but only embeds at {children}
