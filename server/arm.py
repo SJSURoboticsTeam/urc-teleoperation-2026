@@ -572,7 +572,6 @@ async def read_arm_can_loop(serial_ports, sio):
     while True:
         try:
             arm_serial = serial_ports.get("arm")
-
             # Keep the read loop alive even when the arm is disconnected
             if arm_serial is None:
                 await asyncio.sleep(0.1)
