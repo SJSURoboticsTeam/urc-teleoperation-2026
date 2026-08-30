@@ -9,7 +9,9 @@ import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
+import { Stack } from "@mui/system";
 import Wheel from "../ui/Wheel";
+import { RiSlowDownFill, RiSpeedUpFill } from "react-icons/ri";
 
 import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
 import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
@@ -36,7 +38,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
   // Mast
   const [mastCommands, setMastCommands] = useMastCommands();
-  const { px: panX, py: panY, panSpeed } = mastCommands;
+  const { px: panX, py: panY, wheels_x, panSpeed } = mastCommands;
 
   // refs update whenever mast panning changes
   const panXRef = useRef(panX);
@@ -110,6 +112,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
     robotsocket.emit("driveHoming");
   };
+  
 
   const handleManualTx = () => {
     if (controlsLocked || !serverConnected) return;
@@ -195,6 +198,39 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 1,
             }}
           >
+              <Button
+              variant="contained"
+              sx={{ whiteSpace: "nowrap" }}
+              disabled={true}
+            >
+              TAKE CONTROL OF DRIVE
+            </Button>
+          </Box>
+
+          <Box
+            sx={{
+              height: 100,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
+            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+            <VelocityItem
+              value={rotationalVelocity.toFixed(1)}
+              label="Rotational"
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+            }}
+          >
             <Button
               variant="contained"
               onClick={handleHoming}
@@ -212,41 +248,6 @@ export default function DriveManualInput({ controlsLocked = false }) {
             >
               MANUAL TX
             </Button>
-          </Box>
-
-          <Box
-            sx={{
-              height: 120,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
-            <VelocityItem
-              value={rotationalVelocity.toFixed(1)}
-              label="Rotational"
-            />
-          </Box>
-          <Box sx = {{display: "flex", alignItems: "center", justifyContent: "center",}}>
-          <FormControlLabel
-          
-            control={
-              <Switch
-                checked={txon}
-                onChange={(e) => settxon(e.target.checked)}
-                disabled={controlsLocked}
-              />
-            }
-            label="AUTO TX"
-            componentsProps={{
-              typography: {
-                sx: { whiteSpace: "nowrap" },
-              },
-            }}
-          />
           </Box>
         </Box>
 
@@ -268,30 +269,70 @@ export default function DriveManualInput({ controlsLocked = false }) {
               justifyContent: "center",
             }}
           >
-            <Slider
-              step={10}
-              marks
-              value={panSpeed}
-              onChange={handlePanSpeedChange}
-              min={10}
-              max={100}
-              valueLabelDisplay="auto"
-              sx={{ width: 150 }}
-              disabled={controlsLocked}
-            />
+            <Stack
+              spacing={2}
+              direction="row"
+              sx={{ alignItems: "center", mb: 1 }}
+            >
+              <RiSlowDownFill size="30px" />
+              <Slider
+                step={10}
+                marks
+                value={panSpeed}
+                onChange={handlePanSpeedChange}
+                min={10}
+                max={100}
+                valueLabelDisplay="auto"
+                sx={{ width: 150 }}
+                disabled={controlsLocked}
+              />
+              <RiSpeedUpFill size="30px" />
+            </Stack>
           </Box>
 
           <Box
             sx={{
-              height: 120,
+              height: 100,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               gap: 2,
             }}
           >
-            <VelocityItem value={panX} label="Pan W" />
-            <VelocityItem value={panY} label="Pan H" />
+            <VelocityItem value={panX} label="Mast W" />
+            <VelocityItem value={panY} label="Mast H" />
+            <VelocityItem value={wheels_x} label="Wheels" />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={txon}
+                  onChange={(e) => settxon(e.target.checked)}
+                  disabled={controlsLocked}
+                />
+              }
+              label="AUTO TX"
+              componentsProps={{
+                typography: {
+                  sx: { whiteSpace: "nowrap" },
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              //onClick={recenter}
+              sx={{ whiteSpace: "nowrap" }}
+              disabled={controlsLocked || !serverConnected}
+            >
+              RECENTER
+            </Button>
           </Box>
         </Box>
 
@@ -301,7 +342,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
             borderRadius: "8px",
             display: "flex",
             flexDirection: "column",
-            p: 1,
+            p: "clamp(4px, 0.5vw, 8px)",
             borderColor: "gray",
             opacity: controlsLocked ? 0.55 : 1,
             pointerEvents: controlsLocked ? "none" : "auto",
