@@ -61,7 +61,8 @@ function App() {
   const [mastCommands, setMastCommands] = useState({
     px: 0,
     py: 0,
-    panSpeed: 30,
+    wheels_x : 0,
+    panSpeed: 50,
   });
 
   // controls whether to render cams, content, or both
