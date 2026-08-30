@@ -195,22 +195,6 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 1,
             }}
           >
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={txon}
-                  onChange={(e) => settxon(e.target.checked)}
-                  disabled={controlsLocked}
-                />
-              }
-              label="AUTO TX"
-              componentsProps={{
-                typography: {
-                  sx: { whiteSpace: "nowrap" },
-                },
-              }}
-            />
-
             <Button
               variant="contained"
               onClick={handleHoming}
@@ -245,6 +229,24 @@ export default function DriveManualInput({ controlsLocked = false }) {
               value={rotationalVelocity.toFixed(1)}
               label="Rotational"
             />
+          </Box>
+          <Box sx = {{display: "flex", alignItems: "center", justifyContent: "center",}}>
+          <FormControlLabel
+          
+            control={
+              <Switch
+                checked={txon}
+                onChange={(e) => settxon(e.target.checked)}
+                disabled={controlsLocked}
+              />
+            }
+            label="AUTO TX"
+            componentsProps={{
+              typography: {
+                sx: { whiteSpace: "nowrap" },
+              },
+            }}
+          />
           </Box>
         </Box>
 
