@@ -37,7 +37,7 @@ export default function GamepadPanel() {
   // pan-tilt
   const [mastCommands, setMastCommands] = useMastCommands(); // includes pan angles and speed
   const panAnimationIdRef = useRef(null);
-  const panAnglesRef = useRef({ px: 0, py: 0 });
+  const panAnglesRef = useRef({ px: 0, py: 0, wheelsx: 0 });
 
   // arm
   const [armCommands, setArmCommands] = useArmCommands();
@@ -181,23 +181,29 @@ export default function GamepadPanel() {
         const newVel = {
           px: gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0,
           py: gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0,
+          wheelsx: gp.buttons[5]?.pressed ? 1 : gp.buttons[4]?.pressed ? -1 : 0,
+          
         };
 
         // integrate in ref (real-time domain)
         const speed = mastCommands.panSpeed ?? 0;
         panAnglesRef.current.px += newVel.px * deltaTime * speed;
         panAnglesRef.current.py += newVel.py * deltaTime * speed;
+        panAnglesRef.current.wheelsx += newVel.wheelsx * deltaTime * speed;
+        
 
         panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
         panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
+        panAnglesRef.current.wheelsx = clamp(panAnglesRef.current.wheelsx, -90, 90);
 
         // publish to context (UI domain)
         const px = Math.round(panAnglesRef.current.px);
         const py = Math.round(panAnglesRef.current.py);
+        const wheels_x = Math.round(panAnglesRef.current.wheelsx);
         setMastCommands((prev) => {
-          if (!prev) return { px, py, panSpeed: speed };
-          if (prev.px === px && prev.py === py) return prev;
-          return { ...prev, px, py };
+          if (!prev) return { px, py, panSpeed: speed, wheels_x };
+          if (prev.px === px && prev.py === py && prev.wheels_x === wheels_x) return prev;
+          return { ...prev, px, py, wheels_x };
         });
       }
 

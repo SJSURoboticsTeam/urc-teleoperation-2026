@@ -283,6 +283,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
                 min={10}
                 max={100}
                 valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `Pan Speed: ${value}`}
                 sx={{ width: 150 }}
                 disabled={controlsLocked}
               />
