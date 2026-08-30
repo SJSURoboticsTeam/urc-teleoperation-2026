@@ -53,16 +53,21 @@ export default function GamepadPanel() {
   useEffect(() => {
     const handleConnect = (e) => {
       const gp = e.gamepad;
-      if (/STANDARD/i.test(gp.id)) {
+      const id = gp.id || "";
+      if (gp.mapping === "standard" || /STANDARD/i.test(gp.id)) {
+        console.log("Added standard gamepad:", id, gp.mapping);
         setConnectedGamepads((prev) => ({
           ...prev,
           driveGPList: { ...prev.driveGPList, [gp.index]: gp },
         }));
       } else if (/EXTREME/i.test(gp.id)) {
+        console.log("Added arm gamepad:", id, gp.mapping);
         setConnectedGamepads((prev) => ({
           ...prev,
           armGPList: { ...prev.armGPList, [gp.index]: gp },
         }));
+      } else {
+        console.warn("Unrecognized gamepad, not categorized:", id, gp.mapping);
       }
     };
 
