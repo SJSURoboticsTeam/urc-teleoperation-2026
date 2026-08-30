@@ -81,7 +81,7 @@ const approuter = createBrowserRouter([
       },
     ],
   },
-]);
+], { basename: import.meta.env.BASE_URL });
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { SnackbarProvider } from "notistack";

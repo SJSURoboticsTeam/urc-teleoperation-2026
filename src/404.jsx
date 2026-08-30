@@ -56,11 +56,11 @@ export default function ErrorPage() {
           onError={() => setUseVideo(false)}
           style={{ maxWidth: "100%", borderRadius: 12 }}
         >
-          <source src="/logo-spin.mp4" type="video/mp4" />
-          <img width="300" src="/sjsu_robotics_logo.png" alt="Logo" />
+          <source src={`${import.meta.env.BASE_URL}logo-spin.mp4`} type="video/mp4" />
+          <img width="300" src={`${import.meta.env.BASE_URL}sjsu_robotics_logo.png`} alt="Logo" />
         </video>
       ) : (
-        <img width="300" src="/sjsu_robotics_logo.png" alt="Logo" />
+        <img width="300" src={`${import.meta.env.BASE_URL}sjsu_robotics_logo.png`} alt="Logo" />
       )}
       <Typography variant="h3">{title}</Typography>
 

@@ -33,7 +33,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       value: "Standby",
       mediatype: "image",
       name: "Standby",
-      url: "/mars.jpg",
+      url: `${import.meta.env.BASE_URL}mars.jpg`,
       allowed: true,
     },
     {
@@ -243,7 +243,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
           >
             <video
               key={`${selectedCamera.url}-fallback`}
-              src="/logo-spin.mp4"
+              src={`${import.meta.env.BASE_URL}logo-spin.mp4`}
               autoPlay
               loop
               muted
