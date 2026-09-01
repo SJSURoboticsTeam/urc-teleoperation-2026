@@ -9,17 +9,19 @@ def register_camera_pt_events(sio,serial_ports):
     @sio.event
     async def mastCommands(sid,data):
         try:
-            print("Camera Pan Commands X: " + str(data['xVel']) + " Y: " + str(data['yVel']))
+            print("Camera Pan Commands X: " + str(data['xVel']) + " Y: " + str(data['yVel']) + " Wheels X: " + str(data['wheels_x']))
             # frontend is from -90 to 90, but controls expects 0 to 180 so add 90
             panx_scaled = data['xVel'] + 90
             pany_scaled = data['yVel'] + 90
+            wheels_x_scaled = data['wheels_x'] + 90
             # uses 1 byte (8-bit) UNSIGNED = range of 0-255
             panx = panx_scaled.to_bytes(1, 'big', signed=False).hex()
             pany = pany_scaled.to_bytes(1, 'big', signed=False).hex()
+            wheels_x = wheels_x_scaled.to_bytes(1, 'big', signed=False).hex()
             # Mast CAN ID
             MAST_CAN_ID= "300" # 0x300
 
-            can_msg = f't{MAST_CAN_ID}2{panx}{pany}\r'
+            can_msg = f't{MAST_CAN_ID}3{panx}{pany}{wheels_x}\r'
             await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
             print(f'[{sid}] Mast command sent: {can_msg}')
 

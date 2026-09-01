@@ -11,7 +11,7 @@ import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
 import { Stack } from "@mui/system";
 import Wheel from "../ui/Wheel";
-import { RiSlowDownFill, RiSpeedUpFill } from "react-icons/ri";
+import { TbRocket,TbHourglassLow } from "react-icons/tb";
 
 import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
 import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
@@ -43,6 +43,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
   // refs update whenever mast panning changes
   const panXRef = useRef(panX);
   const panYRef = useRef(panY);
+  const wheelsXRef = useRef(wheels_x);
 
   useEffect(() => {
     panXRef.current = panX;
@@ -51,6 +52,10 @@ export default function DriveManualInput({ controlsLocked = false }) {
   useEffect(() => {
     panYRef.current = panY;
   }, [panY]);
+
+    useEffect(() => {
+    wheelsXRef.current = wheels_x;
+  }, [wheels_x]);
 
   const driveCommandsRef = useRef(driveCommands);
 
@@ -101,6 +106,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
       robotsocket.emit("mastCommands", {
         xVel: panXRef.current,
         yVel: panYRef.current,
+        wheels_x : wheelsXRef.current
       });
     }, FrameRateConstant);
 
@@ -129,6 +135,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
     robotsocket.emit("mastCommands", {
       xVel: panX,
       yVel: panY,
+      wheels_x : wheels_x
     });
   };
 
@@ -274,7 +281,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
               direction="row"
               sx={{ alignItems: "center", mb: 1 }}
             >
-              <RiSlowDownFill size="30px" />
+              <TbHourglassLow size="30px" />
               <Slider
                 step={10}
                 marks
@@ -287,7 +294,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
                 sx={{ width: 150 }}
                 disabled={controlsLocked}
               />
-              <RiSpeedUpFill size="30px" />
+              <TbRocket size="30px" />
             </Stack>
           </Box>
 
