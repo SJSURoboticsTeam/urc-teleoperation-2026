@@ -11,7 +11,7 @@ import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
 import { Stack } from "@mui/system";
 import Wheel from "../ui/Wheel";
-import { TbRocket,TbHourglassLow } from "react-icons/tb";
+import { TbRocket, TbHourglassLow } from "react-icons/tb";
 
 import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
 import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
@@ -53,7 +53,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
     panYRef.current = panY;
   }, [panY]);
 
-    useEffect(() => {
+  useEffect(() => {
     wheelsXRef.current = wheels_x;
   }, [wheels_x]);
 
@@ -106,7 +106,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
       robotsocket.emit("mastCommands", {
         xVel: panXRef.current,
         yVel: panYRef.current,
-        wheels_x : wheelsXRef.current
+        wheels_x: wheelsXRef.current,
       });
     }, FrameRateConstant);
 
@@ -118,7 +118,6 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
     robotsocket.emit("driveHoming");
   };
-  
 
   const handleManualTx = () => {
     if (controlsLocked || !serverConnected) return;
@@ -135,7 +134,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
     robotsocket.emit("mastCommands", {
       xVel: panX,
       yVel: panY,
-      wheels_x : wheels_x
+      wheels_x: wheels_x,
     });
   };
 
@@ -205,7 +204,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 1,
             }}
           >
-              <Button
+            <Button
               variant="contained"
               sx={{ whiteSpace: "nowrap" }}
               disabled={true}
@@ -235,17 +234,23 @@ export default function DriveManualInput({ controlsLocked = false }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 1,
             }}
           >
-            <Button
-              variant="contained"
-              onClick={handleHoming}
-              sx={{ whiteSpace: "nowrap" }}
-              disabled={controlsLocked || !serverConnected}
-            >
-              Homing
-            </Button>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={txon}
+                  onChange={(e) => settxon(e.target.checked)}
+                  disabled={controlsLocked}
+                />
+              }
+              label="AUTO TX"
+              componentsProps={{
+                typography: {
+                  sx: { whiteSpace: "nowrap" },
+                },
+              }}
+            />
 
             <Button
               variant="contained"
@@ -316,23 +321,17 @@ export default function DriveManualInput({ controlsLocked = false }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              gap: 1,
             }}
           >
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={txon}
-                  onChange={(e) => settxon(e.target.checked)}
-                  disabled={controlsLocked}
-                />
-              }
-              label="AUTO TX"
-              componentsProps={{
-                typography: {
-                  sx: { whiteSpace: "nowrap" },
-                },
-              }}
-            />
+            <Button
+              variant="contained"
+              onClick={handleHoming}
+              sx={{ whiteSpace: "nowrap" }}
+              disabled={controlsLocked || !serverConnected}
+            >
+              Homing
+            </Button>
             <Button
               variant="contained"
               //onClick={recenter}
