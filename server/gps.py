@@ -107,7 +107,7 @@ async def read_gps_data(serial_ports, sio):
                         'longitude': position.longitude,
                 }
                 await sio.emit("gpsData", data)
-                # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
+                print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
             else:
                 print("No GPS lock")
             # time.sleep(0.01)

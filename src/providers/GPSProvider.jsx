@@ -86,4 +86,5 @@ export const GPSProvider = ({ children }) => {
         }
         }
     }, []);
-}
+};
+export default GPSProvider;

@@ -4,6 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { robotsocket, basesocket } from "../socket.io/socket";
 import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { useGPS } from "../../contexts/GPSContext";
 
 function CoordUI({ lat, long, lastRead, color }) {
   return (
@@ -272,21 +273,11 @@ export default function Map() {
   const resetZoomRef = useRef(null);
   const suppressTrackRef = useRef(false);
 
-  const [robotCoordinates, setRobotCoordinates] = useState({
-    long: -121.881194,
-    lat: 37.336847,
-    receive: false,
-  });
-
-  const [baseCoordinates, setBaseCoordinates] = useState({
-    long: -121.881194,
-    lat: 37.336847,
-    receive: false,
-  });
-
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
+
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff } = useGPS();
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
