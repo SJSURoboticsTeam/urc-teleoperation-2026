@@ -6,6 +6,7 @@ import metrics
 import asyncio
 import signal
 import sys
+import RPi.GPIO as GPIO
 import subprocess
 from metrics import cpuloop, register_metric_events
 from drive import (
@@ -30,6 +31,11 @@ from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 
 print("\033[0m----------------")
+
+
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(26, GPIO.OUT, initial=GPIO.LOW)
 
 short_hash = "unknown"
 message = ""
@@ -389,6 +395,7 @@ async def E_STOP(sid):
     print("----------------")
     print("E-STOP TRIGGERED")
     print("----------------")
+    GPIO.output(26, GPIO.HIGH)
     # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(0.2, shutdown)
     return("OK")
