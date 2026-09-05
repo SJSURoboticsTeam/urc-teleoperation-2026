@@ -28,7 +28,7 @@ export default function MetricsGraph() {
 
   return (
     <div className="flex flex-col">
-      <div style={{ display: "flex", gap: "8px", marginLeft: "8px", marginBottom: "16px" }}>
+      <div style={{ display: "flex", gap: "8px", marginLeft: "8px", marginBottom: "16px", marginTop: "8px" }}>
         <Button
           variant="contained"
           onClick={() => setRunning((prev) => !prev)}
