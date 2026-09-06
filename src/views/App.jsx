@@ -21,6 +21,7 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import DemoPopup from "../components/ui/DemoPane"
 
 function App() {
   // Global autonomy state so every view can react to it
@@ -109,6 +110,7 @@ function App() {
     >
       {/* snackbar */}
       <SnackbarProvider maxSnack={5}>
+        <DemoPopup />
         <SerialProvider>
           <PeripheralProvider>
             <MetricsProvider>

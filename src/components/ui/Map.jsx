@@ -318,7 +318,7 @@ function resetMapCam(easeOptions) {
     // https://www.gps-coordinates.net/ for coordinates
 
     const urls =
-      import.meta.env.MODE === "production" || import.meta.env.MODE === "prod"
+      (import.meta.env.MODE === "prod")
         ? "http://192.168.1.2:8080/styles/basic-preview/style.json"
         : "https://tiles.openfreemap.org/styles/bright";
     // Use local tileserver in production, demo for off-network development
