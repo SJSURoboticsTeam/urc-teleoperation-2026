@@ -30,22 +30,6 @@ from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 
 
-
-# initialize e-stop
-estop_pin = None
-try:
-    # silence 5-lines of spammed GPIO warnings for non-PI devices
-    import warnings
-    from gpiozero.exc import BadPinFactory, PinFactoryFallback
-    warnings.filterwarnings("ignore", category=PinFactoryFallback)
-    # initialize the GPIO pin
-    from gpiozero import DigitalOutputDevice
-    estop_pin = DigitalOutputDevice(26, initial_value=False)
-    print("\033[0mGPIO e-stop is functional.")
-except BadPinFactory:
-    print("\033[91mGPIO e-stop integration failed")
-
-
 print("\033[0m----------------")
 
 
@@ -92,9 +76,23 @@ else:
 
 autonomy = "--autonomy" in sys.argv
 if (autonomy):
-    print("Autonomy integration enabled\033[0m")
+    print("Autonomy integration enabled")
 else:
-    print("Autonomy integration disabled\033[0m")
+    print("Autonomy integration disabled")
+
+# initialize e-stop
+estop_pin = None
+try:
+    # silence 5-lines of spammed GPIO warnings for non-PI devices
+    import warnings
+    from gpiozero.exc import BadPinFactory, PinFactoryFallback
+    warnings.filterwarnings("ignore", category=PinFactoryFallback)
+    # initialize the GPIO pin
+    from gpiozero import DigitalOutputDevice
+    estop_pin = DigitalOutputDevice(26, initial_value=False)
+    print("GPIO e-stop is online.")
+except BadPinFactory:
+    print("GPIO e-stop disabled\033[0m")
 
 
 print("----------------")
