@@ -6,7 +6,6 @@ import metrics
 import asyncio
 import signal
 import sys
-from gpiozero import DigitalOutputDevice
 import subprocess
 from metrics import cpuloop, register_metric_events
 from drive import (
@@ -30,11 +29,25 @@ from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 
+
+
+# initialize e-stop
+estop_pin = None
+try:
+    # silence 5-lines of spammed GPIO warnings for non-PI devices
+    import warnings
+    from gpiozero.exc import BadPinFactory, PinFactoryFallback
+    warnings.filterwarnings("ignore", category=PinFactoryFallback)
+    # initialize the GPIO pin
+    from gpiozero import DigitalOutputDevice
+    estop_pin = DigitalOutputDevice(26, initial_value=False)
+    print("\033[0mGPIO e-stop is functional.")
+except BadPinFactory:
+    print("\033[91mGPIO e-stop integration failed")
+
+
 print("\033[0m----------------")
 
-
-
-estop_pin = DigitalOutputDevice(26, initial_value=False)
 
 short_hash = "unknown"
 message = ""
@@ -397,7 +410,10 @@ async def E_STOP(sid):
     print("----------------")
     print("E-STOP TRIGGERED")
     print("----------------")
-    estop_pin.on()
+    if estop_pin is not None:
+        estop_pin.on()
+    else :
+        print("\033[91mNo physical e-stop present!\033[0m")
     # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(1, shutdown)
     return("OK")
