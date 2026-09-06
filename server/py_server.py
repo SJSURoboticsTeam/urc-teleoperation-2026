@@ -6,7 +6,7 @@ import metrics
 import asyncio
 import signal
 import sys
-import RPi.GPIO as GPIO
+from gpiozero import DigitalOutputDevice
 import subprocess
 from metrics import cpuloop, register_metric_events
 from drive import (
@@ -34,8 +34,7 @@ print("\033[0m----------------")
 
 
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(26, GPIO.OUT, initial=GPIO.LOW)
+estop_pin = DigitalOutputDevice(26, initial_value=False)
 
 short_hash = "unknown"
 message = ""
@@ -114,8 +113,7 @@ def shutdown():
         return
     shutting_down = True
     serial_console.close()
-    print("----------------")
-    print("\nShutting down... ")
+    print("Shutting down... ")
     #drive
     try:
         if serial_ports["drive"]:
@@ -156,7 +154,11 @@ def shutdown():
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
         pass
-
+    # e-stop
+    try:
+        estop_pin.close()
+    except:
+        print("estop_pin wasn't closed")
     try:
         dump_session_log() # saves arm_session.log on exit
     except OSError as exc:
@@ -395,9 +397,9 @@ async def E_STOP(sid):
     print("----------------")
     print("E-STOP TRIGGERED")
     print("----------------")
-    GPIO.output(26, GPIO.HIGH)
+    estop_pin.on()
     # wait 200ms for message to come back, then stop
-    asyncio.get_event_loop().call_later(0.2, shutdown)
+    asyncio.get_event_loop().call_later(1, shutdown)
     return("OK")
     
 
