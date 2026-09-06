@@ -90,7 +90,7 @@ try:
     # initialize the GPIO pin
     from gpiozero import DigitalOutputDevice
     estop_pin = DigitalOutputDevice(26, initial_value=False)
-    print("GPIO e-stop is online.")
+    print("GPIO e-stop is online.\033[0m")
 except BadPinFactory:
     print("GPIO e-stop disabled\033[0m")
 
