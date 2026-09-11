@@ -89,6 +89,8 @@ try:
     warnings.filterwarnings("ignore", category=PinFactoryFallback)
     # initialize the GPIO pin
     from gpiozero import DigitalOutputDevice
+    # We are using GPIO pin 26 on a RPI 5, conviently at the bottom right of the pi next to a ground pin
+    # see https://pinout.xyz/pinout/pin37_gpio26/ for more details
     estop_pin = DigitalOutputDevice(26, initial_value=False)
     print("GPIO e-stop is online.\033[0m")
 except BadPinFactory:
@@ -408,11 +410,14 @@ async def E_STOP(sid):
     print("----------------")
     print("E-STOP TRIGGERED")
     print("----------------")
-    if estop_pin is not None:
-        estop_pin.on()
-    else :
-        print("\033[91mNo physical e-stop present!\033[0m")
-    # wait 200ms for message to come back, then stop
+    try:
+        if estop_pin is not None:
+            estop_pin.on()
+        else:
+            print("\033[91mNo physical e-stop present!\033[0m")
+    except Exception as exc:
+        print(f"\033[91mPhysical e-stop activation failed: {exc}\033[0m")
+        # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(1, shutdown)
     return("OK")
     

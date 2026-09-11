@@ -1,4 +1,6 @@
-# URC Teleoperation 🤖
+# URC Teleoperation
+
+## [----> Online Demo! <----](https://sjsuroboticsteam.github.io/urc-teleoperation-2026/)
 
 ## This tool acts as the user interface for operating SJSU Robotic's University Rover Challenge Mars rover remotely.
 
@@ -21,7 +23,7 @@ Instructions are in `base-pi/README.md`
 Make sure you have the following installed on your machine:
 
 - [Node.js](https://nodejs.org/) (v24 LTS)
-- [npm](https://www.npmjs.com/) (comes with Node.js) or [yarn](https://yarnpkg.com/)
+- [npm](https://www.npmjs.com/) (comes with Node.js)
 - Python3 and pip
 
 
@@ -31,8 +33,6 @@ Make sure you have the following installed on your machine:
 git clone https://github.com/SJSURoboticsTeam/urc-teleoperation-2026.git
 cd urc-teleoperation-2026
 ```
-
-## Known Issues
 
 ## Contributing  
   
