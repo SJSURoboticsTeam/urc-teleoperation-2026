@@ -8,6 +8,7 @@ export default function DriveCommandProvider({ children }) {
     forwardsVelocity: 0,
     rotationalVelocity: 0,
     moduleConflicts: 1,
+    driveSpeed: 2
   });
   return (
     <DriveCommandContext.Provider value={{ driveCommands, setDriveCommands }}>

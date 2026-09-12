@@ -1,5 +1,5 @@
 import { MastCommandContext } from "../contexts/MastCommandContext";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // Import in App.jsx and wrap around components that need access to it
 export default function MastCommandProvider({ children }) {
@@ -9,8 +9,9 @@ export default function MastCommandProvider({ children }) {
     wheels_x: 0,
     panSpeed: 50,
   });
+  const panAnglesRef = useRef({ px: 0, py: 0, wheelsx: 0 });
   return (
-    <MastCommandContext.Provider value={{ mastCommands, setMastCommands }}>
+    <MastCommandContext.Provider value={{ panAnglesRef, mastCommands, setMastCommands }}>
       {children}
     </MastCommandContext.Provider>
   );

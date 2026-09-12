@@ -28,16 +28,17 @@ export default function DriveManualInput({ controlsLocked = false }) {
   const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
-  const [driveCommands] = useDriveCommands();
+  const [driveCommands, setDriveCommands] = useDriveCommands();
   const {
     sidewaysVelocity,
     forwardsVelocity,
     rotationalVelocity,
     moduleConflicts,
+    driveSpeed,
   } = driveCommands;
 
   // Mast
-  const [mastCommands, setMastCommands] = useMastCommands();
+  const {mastCommands, setMastCommands, panAnglesRef} = useMastCommands();
   const { px: panX, py: panY, wheels_x, panSpeed } = mastCommands;
 
   // refs update whenever mast panning changes
@@ -119,6 +120,14 @@ export default function DriveManualInput({ controlsLocked = false }) {
     robotsocket.emit("driveHoming");
   };
 
+    const recenter = () => {
+    if (controlsLocked || driveConnectedOne == null) return;
+
+    panAnglesRef.current.px = 0;
+    panAnglesRef.current.py = 0;
+    panAnglesRef.current.wheelsx = 0;
+  };
+
   const handleManualTx = () => {
     if (controlsLocked || !serverConnected) return;
 
@@ -136,6 +145,15 @@ export default function DriveManualInput({ controlsLocked = false }) {
       yVel: panY,
       wheels_x: wheels_x,
     });
+  };
+
+  const handleDriveSpeedChange = (_, value) => {
+    if (controlsLocked) return;
+
+    setDriveCommands((prev) => ({
+      ...prev,
+      driveSpeed: value,
+    }));
   };
 
   const handlePanSpeedChange = (_, value) => {
@@ -204,13 +222,26 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 1,
             }}
           >
-            <Button
-              variant="contained"
-              sx={{ whiteSpace: "nowrap" }}
-              disabled={true}
+            <Stack
+              spacing={2}
+              direction="row"
+              sx={{ alignItems: "center", mb: 1 }}
             >
-              TAKE CONTROL OF DRIVE
-            </Button>
+              <TbHourglassLow size="30px" />
+              <Slider
+                step={0.25}
+                marks
+                value={driveSpeed}
+                onChange={handleDriveSpeedChange}
+                min={0.25}
+                max={4}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `Drive Speed: ${value}`}
+                sx={{ width: 150 }}
+                disabled={controlsLocked}
+              />
+              <TbRocket size="30px" />
+            </Stack>
           </Box>
 
           <Box
@@ -334,9 +365,9 @@ export default function DriveManualInput({ controlsLocked = false }) {
             </Button>
             <Button
               variant="contained"
-              //onClick={recenter}
+              onClick={recenter}
               sx={{ whiteSpace: "nowrap" }}
-              disabled={controlsLocked || !serverConnected}
+              disabled={controlsLocked || driveConnectedOne == null }
             >
               RECENTER
             </Button>
