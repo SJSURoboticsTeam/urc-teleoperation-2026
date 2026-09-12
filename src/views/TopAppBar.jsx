@@ -81,11 +81,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
     <>
       <AppBar
         sx={{
-          bgcolor:
-            import.meta.env.MODE === "production" ||
-            import.meta.env.MODE === "prod"
-              ? orange[700]
-              : undefined,
+          bgcolor: import.meta.env.MODE === "prod" ? orange[700] : undefined,
         }}
       >
         <Toolbar>
@@ -111,13 +107,18 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
           <Box sx={{ display: { xs: "none", lg: "inline-flex" } }}>
             {/* Buttons to change between views */}
             <Tabs
+              // first truncate out base URL
               // To prevent MUI console warning pretend it's on drive before / redirect
               // then truncate path for matchability, (/extras/graphs to /extras)
+              // THERE'S ANOTHER VALUE IN FILE FOR THE SIDE PANE!!!
               value={
-                location.pathname === "/"
-                  ? "/drive"
-                  : "/" + location.pathname.split("/")[1]
+                "/" +
+                (location.pathname
+                  .replace(import.meta.env.BASE_URL, "")
+                  .split("/")
+                  .filter(Boolean)[0] || "drive")
               }
+              
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
@@ -232,7 +233,13 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
               orientation="vertical"
               // we only track the first path,
               // so truncate /extras/graphs to /extras so it stays highlighted
-              value={"/" + location.pathname.split("/")[1]}
+              value={
+                "/" +
+                (location.pathname
+                  .replace(import.meta.env.BASE_URL, "")
+                  .split("/")
+                  .filter(Boolean)[0] || "drive")
+              }
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{

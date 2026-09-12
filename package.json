@@ -11,10 +11,13 @@
     "dev": "vite --open",
     "dev-host": "vite --open --host",
     "lan": "vite --mode prod --open",
-    "build": "vite build",
+    "demo": "vite --open --mode demo",
+    "demo-build": "vite build --mode demo",
+    "demo-preview": "vite preview --mode demo --open /urc-teleoperation-2026/",
+    "build": "vite build --mode prod",
     "lint": "eslint .",
     "lint-quiet": "eslint . --quiet",
-    "preview": "vite preview",
+    "preview": "vite preview --mode host --open /",
     "playwright": "playwright test"
   },
   "dependencies": {

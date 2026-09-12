@@ -29,7 +29,9 @@ from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 
+
 print("\033[0m----------------")
+
 
 short_hash = "unknown"
 message = ""
@@ -74,9 +76,25 @@ else:
 
 autonomy = "--autonomy" in sys.argv
 if (autonomy):
-    print("Autonomy integration enabled\033[0m")
+    print("Autonomy integration enabled")
 else:
-    print("Autonomy integration disabled\033[0m")
+    print("Autonomy integration disabled")
+
+# initialize e-stop
+estop_pin = None
+try:
+    # silence 5-lines of spammed GPIO warnings for non-PI devices
+    import warnings
+    from gpiozero.exc import BadPinFactory, PinFactoryFallback
+    warnings.filterwarnings("ignore", category=PinFactoryFallback)
+    # initialize the GPIO pin
+    from gpiozero import DigitalOutputDevice
+    # We are using GPIO pin 26 on a RPI 5, conviently at the bottom right of the pi next to a ground pin
+    # see https://pinout.xyz/pinout/pin37_gpio26/ for more details
+    estop_pin = DigitalOutputDevice(26, initial_value=False)
+    print("GPIO e-stop is online.\033[0m")
+except BadPinFactory:
+    print("GPIO e-stop disabled\033[0m")
 
 
 print("----------------")
@@ -101,6 +119,7 @@ signal.signal(signal.SIGTERM, lambda s, f: shutdown())
 shutting_down = False
 
 def shutdown():
+    """Global server shutdown code"""
     # both the SIGINT and SIGTERM may both call the shutdown at the same time and run twice.
     # checking makes it run only once
     global shutting_down
@@ -108,8 +127,7 @@ def shutdown():
         return
     shutting_down = True
     serial_console.close()
-    print("----------------")
-    print("\nShutting down... ")
+    print("Shutting down... ")
     #drive
     try:
         if serial_ports["drive"]:
@@ -150,7 +168,11 @@ def shutdown():
     except Exception:
         print("GPS WAS NOT DISCONNECTED!!!")
         pass
-
+    # e-stop
+    try:
+        estop_pin.close()
+    except:
+        print("estop_pin wasn't closed")
     try:
         dump_session_log() # saves arm_session.log on exit
     except OSError as exc:
@@ -182,6 +204,7 @@ print("Preparing for CAN...")
 # =================== CAN connections ===================
 @sio.event
 async def getCanInfo(sid):
+    """Returns all the CAN ids to the frontend after filtering"""
     uart_str = "CAN"
     if USE_UART_DRIVE:
         uart_str = "UART"
@@ -208,6 +231,7 @@ async def getCanInfo(sid):
 
 @sio.event
 async def connectDrive(sid,data):
+    """PeripheralManager backend code to connect Drive"""
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
@@ -235,6 +259,7 @@ async def connectDrive(sid,data):
 
 @sio.event
 async def disconnectDrive(sid):
+    """PeripheralManager backend code to disconnect Drive"""
     # disconnects can and returns OK or ERROR
     global serial_ports
     try:
@@ -256,6 +281,7 @@ async def disconnectDrive(sid):
 
 @sio.event
 async def connectArm(sid,data):
+    """PeripheralManager backend code to connect Arm"""
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
@@ -284,6 +310,7 @@ async def connectArm(sid,data):
 
 @sio.event
 async def disconnectArm(sid):
+    """PeripheralManager backend code to disconnect Arm"""
     # disconnects can and returns OK or ERROR
     global serial_ports
     try:
@@ -304,6 +331,7 @@ async def disconnectArm(sid):
 
 @sio.event
 async def connectScience(sid,data):
+    """PeripheralManager backend code to connect Science"""
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
@@ -324,6 +352,7 @@ async def connectScience(sid,data):
 
 @sio.event
 async def disconnectScience(sid):
+    """PeripheralManager backend code to disconnect Science"""
     # disconnects can and returns OK or ERROR
     global serial_ports
     try:
@@ -346,6 +375,7 @@ async def disconnectScience(sid):
 # =================== GPS connections ===================
 @sio.event
 async def connectGPS(sid, data):
+    """PeripheralManager backend code to connect GPS"""
     # connect to gps serial port
     global serial_ports
     if serial_ports["gpsId"] != "disconnect":
@@ -365,6 +395,7 @@ async def connectGPS(sid, data):
 
 @sio.event
 async def disconnectGPS(sid):
+    """PeripheralManager backend code to disconnect GPS"""
     global serial_ports
     try:
         if serial_ports["gps"]:
@@ -385,12 +416,19 @@ async def disconnectGPS(sid):
 
 @sio.event
 async def E_STOP(sid):
-    # shut everything down
+    """When recieved from frontend, pulse pin 26 high, this killing all power"""
     print("----------------")
     print("E-STOP TRIGGERED")
     print("----------------")
-    # wait 200ms for message to come back, then stop
-    asyncio.get_event_loop().call_later(0.2, shutdown)
+    try:
+        if estop_pin is not None:
+            estop_pin.on()
+        else:
+            print("\033[91mNo physical e-stop present!\033[0m")
+    except Exception as exc:
+        print(f"\033[91mPhysical e-stop activation failed: {exc}\033[0m")
+        # wait 200ms for message to come back, then stop
+    asyncio.get_event_loop().call_later(1, shutdown)
     return("OK")
     
 
@@ -423,7 +461,7 @@ register_serial_console_events(sio, serial_console)
 
 @sio.event
 async def connect(sid,environ):
-    """On first client connect, start background CAN read loop."""
+    """Event code when a client connects, many startup functions trigger here"""
     global can_error_message_started
     global drive_task_started
     global drive_heartbeat_started
@@ -481,7 +519,7 @@ async def connect(sid,environ):
         sio.start_background_task(get_autonomy_states,sio)
 
 async def stop_drive_motors():
-    # Send stop command to drive motors for safety when no clients are connected
+    """Send stop command to drive motors for safety when no clients are connected"""
     async with drive_command_lock:
         # A client may have reconnected while this task was waiting for the lock.
         if metrics.numClients != 0:
@@ -504,6 +542,7 @@ async def stop_drive_motors():
 
 @sio.event
 async def disconnect(sid):
+    """Event code when a client disconnects"""
     print(f'Client disconnected: {sid}')
 
     metrics.numClients = max(0, metrics.numClients - 1)
