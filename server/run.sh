@@ -4,7 +4,7 @@ if [ -f "/opt/ros/humble/setup.bash" ]; then
     source /opt/ros/humble/setup.bash
     python3 ./py_server.py "$@" --autonomy
 else
-    printf "\033[91mNo autonomy source file found at /opt/ros/humble/setup.bash"
+    printf "\033[91mNo autonomy source file found at /opt/ros/humble/setup.bash\n"
     python3 ./py_server.py "$@"
 fi
 
