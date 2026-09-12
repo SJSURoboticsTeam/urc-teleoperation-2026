@@ -87,7 +87,7 @@ class ZEDF9P:
         Processes all available sentences, updating self.gnrmc
         """
         for line in self.lines:
-            if "$GNRMC" in line:
+            if "RMC" in line:
                 self.__gnrmc = self.process_gnrmc(line)
     
     def close(self) -> None:

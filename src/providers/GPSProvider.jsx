@@ -76,15 +76,24 @@ export const GPSProvider = ({ children }) => {
         setBaseCoordinates((prev) => ({ ...prev, receive: false }));
         }, 3000);
         return () => {
-        robotsocket.off("gpsData", robotHandler);
-        basesocket.off("gpsData2", baseHandler);
-        if (robotSignalTimeout.current) {
-            clearTimeout(robotSignalTimeout.current);
-        }
-        if (baseSignalTimeout.current) {
-            clearTimeout(baseSignalTimeout.current);
-        }
+            robotsocket.off("gpsData", robotHandler);
+            basesocket.off("gpsData2", baseHandler);
+            if (robotSignalTimeout.current) {
+                clearTimeout(robotSignalTimeout.current);
+            }
+            if (baseSignalTimeout.current) {
+                clearTimeout(baseSignalTimeout.current);
+            }
         }
     }, []);
+
+    const value = {
+    robotCoordinates,
+    baseCoordinates,
+    robotSignalDiff,
+    baseSignalDiff,
+    };
+
+    return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;
 };
 export default GPSProvider;
