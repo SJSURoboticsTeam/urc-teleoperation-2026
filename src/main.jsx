@@ -88,8 +88,6 @@ import { SnackbarProvider } from "notistack";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <SnackbarProvider maxSnack={5}>
       <RouterProvider router={approuter} />
-    </SnackbarProvider>
   </StrictMode>,
 );

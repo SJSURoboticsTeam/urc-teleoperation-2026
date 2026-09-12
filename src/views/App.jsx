@@ -22,12 +22,11 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import { SnackbarProvider, useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
-import DemoPopup from "../components/ui/DemoPane"
+import DemoPopup from "../components/ui/DemoPane";
 
 function App() {
   // Global autonomy state so every view can react to it
   // Start in TELEOP mode on initial load
-  const [autonomyEnabled, setAutonomyEnabled] = useState(false);
 
   //snackbar
   const { enqueueSnackbar } = useSnackbar();
@@ -36,37 +35,6 @@ function App() {
     // variant could be success, error, warning, info, or default
     enqueueSnackbar({ message }, { variant });
   };
-
-  // list of gamepads and the connected one for drive and arm
-  const [connectedGamepads, setConnectedGamepads] = useState({
-    driveGPList: [], // list of drive gamepads (to display)
-    armGPList: [], // list of arm gamepads (to display)
-    drive: null, // index of selected drive gamepad
-    arm: null, // index of selected arm gamepad
-  });
-
-  const [armCommands, setArmCommands] = useState({
-    track: 0,
-    shoulder: 0,
-    elbow: 0,
-    pitch: 0,
-    roll: 0,
-    clamp: 0,
-  });
-
-  const [driveCommands, setDriveCommands] = useState({
-    sidewaysVelocity: 0,
-    forwardsVelocity: 0,
-    rotationalVelocity: 0,
-    moduleConflicts: 1,
-  });
-
-  const [mastCommands, setMastCommands] = useState({
-    px: 0,
-    py: 0,
-    wheels_x : 0,
-    panSpeed: 50,
-  });
 
   // controls whether to render cams, content, or both
   const STORAGE_KEY = "missionControl.splitmode";
@@ -115,35 +83,20 @@ function App() {
         <DemoPopup />
         <SerialProvider>
           <PeripheralProvider>
-            <MetricsProvider>
-              <AutonomyModeProvider
-                autonomyEnabled={autonomyEnabled}
-                setAutonomyEnabled={setAutonomyEnabled}
-              >
-                <ArmCommandProvider
-                  armCommands={armCommands}
-                  setArmCommands={setArmCommands}
-                >
-                  <GamepadProvider
-                    connectedGamepads={connectedGamepads}
-                    setConnectedGamepads={setConnectedGamepads}
-                  >
-                    <DriveCommandProvider
-                      driveCommands={driveCommands}
-                      setDriveCommands={setDriveCommands}
-                    >
-                      <MastCommandProvider
-                        mastCommands={mastCommands}
-                        setMastCommands={setMastCommands}
-                      >
-                        <GPSProvider>
+            <GPSProvider>
+              <MetricsProvider>
+                <AutonomyModeProvider>
+                  <ArmCommandProvider>
+                    <GamepadProvider>
+                      <DriveCommandProvider>
+                        <MastCommandProvider>
                           <CssBaseline />
-                            {/* Normalizes styles */}
-                            <TopAppBar
-                              selectedElements={selectedElements}
-                              setSelectedElements={setSelectedElements}
-                              addSnackbarMessage={addSnackbarMessage}
-                            />
+                          {/* Normalizes styles */}
+                          <TopAppBar
+                            selectedElements={selectedElements}
+                            setSelectedElements={setSelectedElements}
+                            addSnackbarMessage={addSnackbarMessage}
+                          />
 
                           <Box
                             component="main"
@@ -162,13 +115,13 @@ function App() {
                               <Outlet />
                             </SplitView>
                           </Box>
-                        </GPSProvider>
-                      </MastCommandProvider>
-                    </DriveCommandProvider>
-                  </GamepadProvider>
-                </ArmCommandProvider>
-              </AutonomyModeProvider>
-            </MetricsProvider>
+                        </MastCommandProvider>
+                      </DriveCommandProvider>
+                    </GamepadProvider>
+                  </ArmCommandProvider>
+                </AutonomyModeProvider>
+              </MetricsProvider>
+            </GPSProvider>
           </PeripheralProvider>
         </SerialProvider>
       </SnackbarProvider>
