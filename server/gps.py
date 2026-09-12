@@ -75,10 +75,14 @@ class ZEDF9P:
         """
         lines = []
         while 1:
-            b = self.gps_port.readline().decode("utf-8")
-            if b.strip() == "":
+            b = self.gps_port.readline()
+            if b.strip() == b"":
                 break
-            lines.append(b)
+            try:
+                decoded = b.decode("utf-8")
+                lines.append(decoded)
+            except UnicodeDecodeError:
+                continue
         self.lines = lines
         self._process_available_sentences()
 
