@@ -75,10 +75,14 @@ class ZEDF9P:
         """
         lines = []
         while 1:
-            b = self.gps_port.readline().decode("utf-8")
-            if b.strip() == "":
+            b = self.gps_port.readline()
+            if b.strip() == b"":
                 break
-            lines.append(b)
+            try:
+                decoded = b.decode("utf-8")
+                lines.append(decoded)
+            except UnicodeDecodeError:
+                continue
         self.lines = lines
         self._process_available_sentences()
 
@@ -87,7 +91,7 @@ class ZEDF9P:
         Processes all available sentences, updating self.gnrmc
         """
         for line in self.lines:
-            if "$GNRMC" in line:
+            if "RMC" in line:
                 self.__gnrmc = self.process_gnrmc(line)
     
     def close(self) -> None:
@@ -107,7 +111,7 @@ async def read_gps_data(serial_ports, sio):
                         'longitude': position.longitude,
                 }
                 await sio.emit("gpsData", data)
-                # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
+                print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
             else:
                 print("No GPS lock")
             # time.sleep(0.01)

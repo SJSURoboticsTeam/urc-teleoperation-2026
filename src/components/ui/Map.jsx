@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { robotsocket, basesocket } from "../socket.io/socket";
 import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { useGPS } from "../../contexts/GPSContext";
 
 function CoordUI({ lat, long, lastRead, color }) {
   return (
@@ -271,40 +271,24 @@ export default function Map() {
   const coordRef2 = useRef(null);
   const resetZoomRef = useRef(null);
   const suppressTrackRef = useRef(false);
-  const robotLastSignalTime = useRef(Date.now()); 
-  const baseLastSignalTime = useRef(Date.now()); 
-  const robotSignalDiff = useRef();
-  const baseSignalDiff = useRef();
-  const robotSignalTimeout = useRef(null);
-  const baseSignalTimeout = useRef(null);
-
-  const [robotCoordinates, setRobotCoordinates] = useState({
-    long: -121.881194,
-    lat: 37.336847,
-    receive: false,
-  });
-
-  const [baseCoordinates, setBaseCoordinates] = useState({
-    long: -121.881194,
-    lat: 37.336847,
-    receive: false,
-  });
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
 
-function resetMapCam(easeOptions) {
-  if (!mapRef.current) { return; }
-  const duration = 500;
-  suppressTrackRef.current = true;
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff } = useGPS();
 
-  mapRef.current.easeTo({ ...easeOptions, duration });
+  function resetMapCam(easeOptions) {
+    if (!mapRef.current) { return; }
+    const duration = 500;
+    suppressTrackRef.current = true;
 
-  setTimeout(() => {
-    suppressTrackRef.current = false;
-  }, duration + 100);
-}
+    mapRef.current.easeTo({ ...easeOptions, duration });
+
+    setTimeout(() => {
+      suppressTrackRef.current = false;
+    }, duration + 100);
+  }
 
   useEffect(() => {
     const supported = isWebglSupported();
@@ -442,75 +426,12 @@ function resetMapCam(easeOptions) {
   }, []);
 
   useEffect(() => {
-    const robotHandler = (data) => {
-      if (robotSignalTimeout.current) {
-        clearTimeout(robotSignalTimeout.current);
-      }
-
-      const newTime = Date.now();
-      robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
-      robotLastSignalTime.current = newTime;
-
-      // console.log("Received GPS data:", data);
-      setRobotCoordinates({
-        long: data.longitude,
-        lat: data.latitude,
-        receive: true,
-      });
-
-      robotSignalTimeout.current = setTimeout(() => {
-        setRobotCoordinates((prev) => ({ ...prev, receive: false }));
-      }, 3000);
-    };
-
-    const baseHandler = (data) => {
-      if (baseSignalTimeout.current) {
-        clearTimeout(baseSignalTimeout.current);
-      }
-
-      const newTime = Date.now();
-      baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
-      baseLastSignalTime.current = newTime;
-
-      // console.log("Received GPS data:", data);
-      setBaseCoordinates({
-        long: data.longitude,
-        lat: data.latitude,
-        receive: true,
-      });
-
-      baseSignalTimeout.current = setTimeout(() => {
-        setBaseCoordinates((prev) => ({ ...prev, receive: false }));
-      }, 3000);
-    };
-
-    robotsocket.on("gpsData", robotHandler);
-    basesocket.on("gpsData2", baseHandler);
-    basesocket
-    robotSignalTimeout.current = setTimeout(() => {
-      setRobotCoordinates((prev) => ({ ...prev, receive: false }));
-    }, 3000);
-    baseSignalTimeout.current = setTimeout(() => {
-      setBaseCoordinates((prev) => ({ ...prev, receive: false }));
-    }, 3000);
-    return () => {
-      robotsocket.off("gpsData", robotHandler);
-      basesocket.off("gpsData2", baseHandler);
-      if (robotSignalTimeout.current) {
-        clearTimeout(robotSignalTimeout.current);
-      }
-      if (baseSignalTimeout.current) {
-        clearTimeout(baseSignalTimeout.current);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-if (webglSupported === false) return;
+    if (webglSupported === false) return;
     if(robotMarker.current && baseMarker.current){
-    robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
-    baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
-  }
+      robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
+      baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
+    }
+    
     if(coordRef.current) {
       coordRef.current.update(
         robotCoordinates.lat.toFixed(6),
