@@ -9,7 +9,9 @@ import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
+import { Stack } from "@mui/system";
 import Wheel from "../ui/Wheel";
+import { TbRocket, TbHourglassLow } from "react-icons/tb";
 
 import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
 import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
@@ -26,21 +28,23 @@ export default function DriveManualInput({ controlsLocked = false }) {
   const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
-  const [driveCommands] = useDriveCommands();
+  const [driveCommands, setDriveCommands] = useDriveCommands();
   const {
     sidewaysVelocity,
     forwardsVelocity,
     rotationalVelocity,
     moduleConflicts,
+    driveSpeed,
   } = driveCommands;
 
   // Mast
-  const [mastCommands, setMastCommands] = useMastCommands();
-  const { px: panX, py: panY, panSpeed } = mastCommands;
+  const {mastCommands, setMastCommands, panAnglesRef} = useMastCommands();
+  const { px: panX, py: panY, wheels_x, panSpeed } = mastCommands;
 
   // refs update whenever mast panning changes
   const panXRef = useRef(panX);
   const panYRef = useRef(panY);
+  const wheelsXRef = useRef(wheels_x);
 
   useEffect(() => {
     panXRef.current = panX;
@@ -49,6 +53,10 @@ export default function DriveManualInput({ controlsLocked = false }) {
   useEffect(() => {
     panYRef.current = panY;
   }, [panY]);
+
+  useEffect(() => {
+    wheelsXRef.current = wheels_x;
+  }, [wheels_x]);
 
   const driveCommandsRef = useRef(driveCommands);
 
@@ -99,6 +107,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
       robotsocket.emit("mastCommands", {
         xVel: panXRef.current,
         yVel: panYRef.current,
+        wheels_x: wheelsXRef.current,
       });
     }, FrameRateConstant);
 
@@ -109,6 +118,14 @@ export default function DriveManualInput({ controlsLocked = false }) {
     if (controlsLocked || !serverConnected) return;
 
     robotsocket.emit("driveHoming");
+  };
+
+    const recenter = () => {
+    if (controlsLocked || driveConnectedOne == null) return;
+
+    panAnglesRef.current.px = 0;
+    panAnglesRef.current.py = 0;
+    panAnglesRef.current.wheelsx = 0;
   };
 
   const handleManualTx = () => {
@@ -126,7 +143,17 @@ export default function DriveManualInput({ controlsLocked = false }) {
     robotsocket.emit("mastCommands", {
       xVel: panX,
       yVel: panY,
+      wheels_x: wheels_x,
     });
+  };
+
+  const handleDriveSpeedChange = (_, value) => {
+    if (controlsLocked) return;
+
+    setDriveCommands((prev) => ({
+      ...prev,
+      driveSpeed: value,
+    }));
   };
 
   const handlePanSpeedChange = (_, value) => {
@@ -195,6 +222,51 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 1,
             }}
           >
+            <Stack
+              spacing={2}
+              direction="row"
+              sx={{ alignItems: "center", mb: 1 }}
+            >
+              <TbHourglassLow size="30px" />
+              <Slider
+                step={0.25}
+                marks
+                value={driveSpeed}
+                onChange={handleDriveSpeedChange}
+                min={0.25}
+                max={4}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `Drive Speed: ${value}`}
+                sx={{ width: 150 }}
+                disabled={controlsLocked}
+              />
+              <TbRocket size="30px" />
+            </Stack>
+          </Box>
+
+          <Box
+            sx={{
+              height: 100,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
+            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+            <VelocityItem
+              value={rotationalVelocity.toFixed(1)}
+              label="Rotational"
+            />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <FormControlLabel
               control={
                 <Switch
@@ -213,38 +285,12 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
             <Button
               variant="contained"
-              onClick={handleHoming}
-              sx={{ whiteSpace: "nowrap" }}
-              disabled={controlsLocked || !serverConnected}
-            >
-              Homing
-            </Button>
-
-            <Button
-              variant="contained"
               onClick={handleManualTx}
               sx={{ whiteSpace: "nowrap" }}
               disabled={controlsLocked || !serverConnected}
             >
               MANUAL TX
             </Button>
-          </Box>
-
-          <Box
-            sx={{
-              height: 120,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
-            <VelocityItem
-              value={rotationalVelocity.toFixed(1)}
-              label="Rotational"
-            />
           </Box>
         </Box>
 
@@ -266,30 +312,65 @@ export default function DriveManualInput({ controlsLocked = false }) {
               justifyContent: "center",
             }}
           >
-            <Slider
-              step={10}
-              marks
-              value={panSpeed}
-              onChange={handlePanSpeedChange}
-              min={10}
-              max={100}
-              valueLabelDisplay="auto"
-              sx={{ width: 150 }}
-              disabled={controlsLocked}
-            />
+            <Stack
+              spacing={2}
+              direction="row"
+              sx={{ alignItems: "center", mb: 1 }}
+            >
+              <TbHourglassLow size="30px" />
+              <Slider
+                step={10}
+                marks
+                value={panSpeed}
+                onChange={handlePanSpeedChange}
+                min={10}
+                max={100}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `Pan Speed: ${value}`}
+                sx={{ width: 150 }}
+                disabled={controlsLocked}
+              />
+              <TbRocket size="30px" />
+            </Stack>
           </Box>
 
           <Box
             sx={{
-              height: 120,
+              height: 100,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               gap: 2,
             }}
           >
-            <VelocityItem value={panX} label="Pan W" />
-            <VelocityItem value={panY} label="Pan H" />
+            <VelocityItem value={panX} label="Mast W" />
+            <VelocityItem value={panY} label="Mast H" />
+            <VelocityItem value={wheels_x} label="Wheels" />
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+            }}
+          >
+            <Button
+              variant="contained"
+              onClick={handleHoming}
+              sx={{ whiteSpace: "nowrap" }}
+              disabled={controlsLocked || !serverConnected}
+            >
+              Homing
+            </Button>
+            <Button
+              variant="contained"
+              onClick={recenter}
+              sx={{ whiteSpace: "nowrap" }}
+              disabled={controlsLocked || driveConnectedOne == null }
+            >
+              RECENTER
+            </Button>
           </Box>
         </Box>
 
@@ -299,7 +380,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
             borderRadius: "8px",
             display: "flex",
             flexDirection: "column",
-            p: 1,
+            p: "clamp(4px, 0.5vw, 8px)",
             borderColor: "gray",
             opacity: controlsLocked ? 0.55 : 1,
             pointerEvents: controlsLocked ? "none" : "auto",

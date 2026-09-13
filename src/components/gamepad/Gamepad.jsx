@@ -31,13 +31,13 @@ export default function GamepadPanel() {
 
   // drive
   const [_driveCommands, setDriveCommands] = useDriveCommands();
+  const { driveSpeed } = _driveCommands;
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
   // pan-tilt
-  const [mastCommands, setMastCommands] = useMastCommands(); // includes pan angles and speed
+  const {mastCommands, setMastCommands, panAnglesRef} = useMastCommands(); // includes pan angles and speed
   const panAnimationIdRef = useRef(null);
-  const panAnglesRef = useRef({ px: 0, py: 0 });
 
   // arm
   const [armCommands, setArmCommands] = useArmCommands();
@@ -118,13 +118,13 @@ export default function GamepadPanel() {
     const pollAxes = () => {
       const gp = navigator.getGamepads()[driveConnectedOne];
       if (!gp) return;
-
       const next = {
-        sidewaysVelocity: deadZone(Math.round(4 * gp.axes[0] * 100) / 100) || 0,
+        sidewaysVelocity:
+          deadZone(Math.round(driveSpeed * gp.axes[0] * 100) / 100) || 0,
         forwardsVelocity:
-          deadZone(-Math.round(4 * gp.axes[1] * 100) / 100) || 0,
+          deadZone(-Math.round(driveSpeed * gp.axes[1] * 100) / 100) || 0,
         rotationalVelocity:
-          deadZone(Math.round(4 * gp.axes[2] * 100) / 100) || 0,
+          deadZone(Math.round(driveSpeed * gp.axes[2] * 100) / 100) || 0,
       };
 
       setDriveCommands((prev) => {
@@ -162,7 +162,7 @@ export default function GamepadPanel() {
         driveAnimationIdRef.current = null;
       }
     };
-  }, [driveConnectedOne, setDriveCommands]);
+  }, [driveSpeed, driveConnectedOne, setDriveCommands]);
 
   const lastTimeRef = useRef(null);
   useEffect(() => {
@@ -181,23 +181,33 @@ export default function GamepadPanel() {
         const newVel = {
           px: gp.buttons[15]?.pressed ? 1 : gp.buttons[14]?.pressed ? -1 : 0,
           py: gp.buttons[12]?.pressed ? 1 : gp.buttons[13]?.pressed ? -1 : 0,
+          wheelsx: gp.buttons[5]?.pressed ? 1 : gp.buttons[4]?.pressed ? -1 : 0,
         };
 
         // integrate in ref (real-time domain)
         const speed = mastCommands.panSpeed ?? 0;
+        console.log(panAnglesRef);
         panAnglesRef.current.px += newVel.px * deltaTime * speed;
         panAnglesRef.current.py += newVel.py * deltaTime * speed;
+        panAnglesRef.current.wheelsx += newVel.wheelsx * deltaTime * speed;
 
         panAnglesRef.current.px = clamp(panAnglesRef.current.px, -90, 90);
         panAnglesRef.current.py = clamp(panAnglesRef.current.py, -90, 90);
+        panAnglesRef.current.wheelsx = clamp(
+          panAnglesRef.current.wheelsx,
+          -90,
+          90,
+        );
 
         // publish to context (UI domain)
         const px = Math.round(panAnglesRef.current.px);
         const py = Math.round(panAnglesRef.current.py);
+        const wheels_x = Math.round(panAnglesRef.current.wheelsx);
         setMastCommands((prev) => {
-          if (!prev) return { px, py, panSpeed: speed };
-          if (prev.px === px && prev.py === py) return prev;
-          return { ...prev, px, py };
+          if (!prev) return { px, py, panSpeed: speed, wheels_x };
+          if (prev.px === px && prev.py === py && prev.wheels_x === wheels_x)
+            return prev;
+          return { ...prev, px, py, wheels_x };
         });
       }
 
@@ -297,30 +307,34 @@ export default function GamepadPanel() {
         elbow: gp.buttons[2]?.pressed ? clean(gp.axes[1]) : 0,
         shoulder: gp.buttons[3]?.pressed ? -clean(gp.axes[1]) : 0,
         track:
-          (!gp.buttons[0]?.pressed && !gp.buttons[2]?.pressed && !gp.buttons[3]?.pressed)
+          !gp.buttons[0]?.pressed &&
+          !gp.buttons[2]?.pressed &&
+          !gp.buttons[3]?.pressed
             ? clean(gp.axes[0])
             : 0,
-        ...(os === "linux" ? {
-          pitch: -clean(gp.axes[5]),
-          roll: clean(gp.axes[4]),
-          clamp: gp.buttons[0]?.pressed ? -clean(gp.axes[1]) : 0,
-          uniSens: -0.5 * gp.axes[3] + 0.5,
-        } : {
-          pitch:
-            gp.axes[9] === -1
-              ? -1
-              : gp.axes[9] < 0.15 && gp.axes[9] > 0.14
-                ? 1
-                : 0,
-          roll:
-            gp.axes[9] < 0.72 && gp.axes[9] > 0.71
-              ? -1
-              : gp.axes[9] < -0.42 && gp.axes[9] > -0.43
-                ? 1
-                : 0,
-          clamp: gp.buttons[0]?.pressed ? -clean(gp.axes[1]) : 0,
-          uniSens: -0.5 * gp.axes[6] + 0.5,
-        })
+        ...(os === "linux"
+          ? {
+              pitch: -clean(gp.axes[5]),
+              roll: clean(gp.axes[4]),
+              clamp: gp.buttons[0]?.pressed ? -clean(gp.axes[1]) : 0,
+              uniSens: -0.5 * gp.axes[3] + 0.5,
+            }
+          : {
+              pitch:
+                gp.axes[9] === -1
+                  ? -1
+                  : gp.axes[9] < 0.15 && gp.axes[9] > 0.14
+                    ? 1
+                    : 0,
+              roll:
+                gp.axes[9] < 0.72 && gp.axes[9] > 0.71
+                  ? -1
+                  : gp.axes[9] < -0.42 && gp.axes[9] > -0.43
+                    ? 1
+                    : 0,
+              clamp: gp.buttons[0]?.pressed ? -clean(gp.axes[1]) : 0,
+              uniSens: -0.5 * gp.axes[6] + 0.5,
+            }),
       };
 
       const inputSens = {
