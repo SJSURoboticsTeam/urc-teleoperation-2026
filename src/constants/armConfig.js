@@ -13,7 +13,7 @@ export const ARM_JOINT_CONFIG = [
   { label: "Track (mm)", key: "track", min: 0, max: 300, initial: 0 },
   { label: "Pitch (deg)", key: "pitch", min: 0, max: 180, initial: 0 },
   { label: "Roll (deg)", key: "roll", min: -180, max: 180, initial: 0 },
-  { label: "Clamp", key: "clamp", min: 0, max: 90, initial: 0 },
+  { label: "Clamp", key: "clamp", min: -90, max: 10, initial: 0 },
 ];
 
 export const ARM_JOINT_META = Object.fromEntries(
