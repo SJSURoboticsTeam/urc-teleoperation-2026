@@ -101,6 +101,7 @@ print("----------------")
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
+    "drive_status_event": asyncio.Event(),
     "arm": None,
     "armId" : "disconnect",
     "gps": None,
