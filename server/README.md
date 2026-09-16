@@ -1,20 +1,21 @@
 # SERVER INSTALL INSTRUCTIONS
 
 ## Dependencies Install(To Run)
+For MacOS and Linux, pip packages work best with a VENV enviroment where each project has 
+its own dependencies. Follow your platform below:
 
-Since pip packages work best when virtually installed, you have to keep referencing a virtual enviroment. Scripts are provided below to do exactly this.
-
+#### Mac/Linux
 TO INSTALL RUN THE SCRIPTS BELOW (MAC/PI), in server/ directory:
 
 INSTALL: `./install.sh`  
 UPDATE: `./update.sh`  
 RUN: `./run.sh`
+  
+#### Windows/Non-VENV setups  
+INSTALL/UPDATE: `pip install -r requirements.txt`  
+RUN: `python3 py_server.py`  
 
-OR DIRECT INSTALL(RISKY!):
-
-```bash
-pip install -r requirements.txt
-```
+The --offline flag dictates whether features use simulation values or actual hardware.
 
 
 ## CAN Things to Keep track of

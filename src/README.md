@@ -15,7 +15,7 @@ npm install
 In the `urc-teleoperation-2026` directory
 
 ```bash
-npm run *
+npm run <arg>
 ```
 
 | launch command   | Result                                     |
@@ -24,6 +24,7 @@ npm run *
 | npm run dev      | Standard dev testing                       |
 | npm run dev-host | Standard w/lan reachability                |
 | npm run lan      | Connects to actual server, lan reachable   |
+| npm run          | See the rest of the commands               |
 
 This will start the React Vite development server. Open [http://localhost:5173](http://localhost:5173) in your browser to view the client.
 
