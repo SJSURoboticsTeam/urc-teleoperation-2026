@@ -15,7 +15,7 @@ npm install
 In the `urc-teleoperation-2026` directory
 
 ```bash
-npm run <arg>
+npm run SCRIPT_NAME
 ```
 
 | launch command   | Result                                     |

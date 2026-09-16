@@ -13,10 +13,10 @@ RUN: `./run.sh`
   
 #### Windows/Non-VENV setups  
 INSTALL/UPDATE: `pip install -r requirements.txt`  
-RUN: `python3 py_server.py`  
+RUN: `python py_server.py`  
   
-## Fake Input
-
+## Fake Input  
+  
 To fake data you can run the following:  
 Mac/Linux: `./run.sh --offline`  
 Windows: `python py_server.py --offline`
