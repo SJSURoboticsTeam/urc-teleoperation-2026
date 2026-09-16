@@ -4,16 +4,21 @@ import can_serial
 import math
 
 
+def clamp(x, minimum, maximum):
+    """Enforce a value between a range"""
+    return max(minimum, min(x, maximum))
+
 def register_camera_pt_events(sio,serial_ports):
 
     @sio.event
     async def mastCommands(sid,data):
+        """Transmit a mast command over CAN"""
         try:
             print("Camera Pan Commands X: " + str(data['xVel']) + " Y: " + str(data['yVel']) + " Wheels X: " + str(data['wheels_x']))
             # frontend is from -90 to 90, but controls expects 0 to 180 so add 90
-            panx_scaled = data['xVel'] + 90
-            pany_scaled = data['yVel'] + 90
-            wheels_x_scaled = data['wheels_x'] + 90
+            panx_scaled = clamp(data['xVel'] + 90, 0 , 180)
+            pany_scaled = clamp(data['yVel'] + 90, 0 , 180)
+            wheels_x_scaled = clamp(data['wheels_x'] + 90, 0 , 180)
             # uses 1 byte (8-bit) UNSIGNED = range of 0-255
             panx = panx_scaled.to_bytes(1, 'big', signed=False).hex()
             pany = pany_scaled.to_bytes(1, 'big', signed=False).hex()

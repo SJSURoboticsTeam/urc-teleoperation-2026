@@ -19,7 +19,7 @@ import GamepadProvider from "../providers/GamepadProvider";
 import GPSProvider from "../providers/GPSProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import PeripheralProvider from "../providers/PeripheralProvider";
-import { SnackbarProvider, useSnackbar } from "notistack";
+import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
 import DemoPopup from "../components/ui/DemoPane";
@@ -79,7 +79,6 @@ function App() {
       }}
     >
       {/* snackbar */}
-      <SnackbarProvider maxSnack={5}>
         <DemoPopup />
         <SerialProvider>
           <PeripheralProvider>
@@ -124,7 +123,6 @@ function App() {
             </GPSProvider>
           </PeripheralProvider>
         </SerialProvider>
-      </SnackbarProvider>
     </Box>
   );
 }

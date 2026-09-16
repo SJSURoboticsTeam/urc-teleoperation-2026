@@ -186,7 +186,7 @@ export default function GamepadPanel() {
 
         // integrate in ref (real-time domain)
         const speed = mastCommands.panSpeed ?? 0;
-        console.log(panAnglesRef);
+        //console.log(panAnglesRef);
         panAnglesRef.current.px += newVel.px * deltaTime * speed;
         panAnglesRef.current.py += newVel.py * deltaTime * speed;
         panAnglesRef.current.wheelsx += newVel.wheelsx * deltaTime * speed;

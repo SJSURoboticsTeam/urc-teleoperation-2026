@@ -7,6 +7,7 @@ import { Navigate } from "react-router-dom";
 import App from "./views/App";
 import ErrorPage from "./404";
 import EmergencyView from "./views/EmergencyView";
+import { SnackbarProvider } from "notistack";
 
 // actual panes to route between
 import DriveComponents from "./views/DriveView";
@@ -87,7 +88,10 @@ const approuter = createBrowserRouter([
 
 
 createRoot(document.getElementById("root")).render(
+        
   <StrictMode>
+    <SnackbarProvider maxSnack={5}>
       <RouterProvider router={approuter} />
+      </SnackbarProvider>
   </StrictMode>,
 );

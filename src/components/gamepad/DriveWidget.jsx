@@ -39,7 +39,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
   // Mast
   const {mastCommands, setMastCommands, panAnglesRef} = useMastCommands();
-  const { px: panX, py: panY, wheels_x, panSpeed } = mastCommands;
+  const { px: panX, py: panY, wheels_x, panSpeed, setPanAngles } = mastCommands;
 
   // refs update whenever mast panning changes
   const panXRef = useRef(panX);
@@ -126,6 +126,12 @@ export default function DriveManualInput({ controlsLocked = false }) {
     panAnglesRef.current.px = 0;
     panAnglesRef.current.py = 0;
     panAnglesRef.current.wheelsx = 0;
+    setPanAngles((prev) => ({
+      ...prev,
+      px : 0,
+      py: 0,
+      wheelsx: 0
+    }))
   };
 
   const handleManualTx = () => {
