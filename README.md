@@ -22,9 +22,34 @@ Instructions are in `base-pi/README.md`
 
 Make sure you have the following installed on your machine:
 
-- [Node.js](https://nodejs.org/) (v24 LTS)
-- [npm](https://www.npmjs.com/) (comes with Node.js)
+- [Node.js and npm](https://nodejs.org/) (v24 LTS)
 - Python3 and pip
+
+#### Macos:
+No need for separate python.
+- Homebrew is the easiest install path through the terminal.
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" // Homebrew installer
+brew install node@24
+brew install python
+```
+- Or installer: 
+https://nodejs.org/en/download#:~:text=Or,architecture   
+    Pick the architecture(x86 or ARM), then go with the PKG.
+https://www.python.org/downloads/
+    Then install python
+
+#### Windows:
+A bit more complicated.
+- NodeJS, NPM installer to run: https://nodejs.org/en/download#:~:text=Or,architecture
+    Pick the architecture(x86 or ARM), then go with the MSI.
+- Python: Open powershell, run command "python3", proceed to Microsoft store, 
+    After install follow instructions in popup to continue install
+- Get a Scripts disabled error from npm in Powershell?
+```bash
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+Note this is lowering security by allowing unsigned scripts to run.
 
 
 ### 1. Navigate to your desired folder and Clone the Repository

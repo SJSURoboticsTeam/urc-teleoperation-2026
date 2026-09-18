@@ -4,7 +4,11 @@ export const MastCommandContext = createContext(null);
 
 // Import this to use and set mast commands
 export function useMastCommands() {
-  // pan, tilt, speed
-  const { mastCommands, setMastCommands } = useContext(MastCommandContext);
-  return [mastCommands, setMastCommands];
+  const context = useContext(MastCommandContext);
+
+  if (!context) {
+    throw new Error("MastCommandContext must be used inside MastCommandProvider");
+  }
+
+  return context;
 }

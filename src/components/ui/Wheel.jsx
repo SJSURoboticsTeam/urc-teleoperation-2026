@@ -22,14 +22,19 @@ export default function Wheel() {
 
   return (
     <Box
-      width={150}
       height={175}
       display="flex"
-      sx={{ m: 1.5 }}
+      sx={{
+        width: "clamp(120px, 10vw, 150px)",
+        m: "clamp(4px, 0.8vw, 12px)",
+      }}
       justifyContent="center"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
+        width="100%"
+        height="100%"
+        preserveAspectRatio="xMidYMid meet"
         viewBox="-50 0 350 350"
       >
         <defs>

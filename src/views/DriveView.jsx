@@ -1,9 +1,10 @@
-import Map from "../components/ui/Map";
 import DriveManualInput from "../components/gamepad/DriveWidget";
-import { useRef } from "react";
+import { lazy, Suspense, useRef } from "react";
 import { Typography } from "@mui/material";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import { usePeripherals } from "../contexts/PeripheralContext";
+
+const Map = lazy(() => import("../components/ui/Map"));
 
 export default function DriveComponents() {
   const { canState } = usePeripherals();
@@ -47,7 +48,15 @@ export default function DriveComponents() {
           <DriveManualInput controlsLocked={controlsLocked} />
         </div>
 
-        <Map />
+        <Suspense
+          fallback={
+            <div className="w-full flex-1 min-h-0 bg-gray-200 flex items-center justify-center">
+              Loading map…
+            </div>
+          }
+        >
+          <Map />
+        </Suspense>
       </div>
     </div>
   );

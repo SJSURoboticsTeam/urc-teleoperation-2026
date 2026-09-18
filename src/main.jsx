@@ -7,6 +7,7 @@ import { Navigate } from "react-router-dom";
 import App from "./views/App";
 import ErrorPage from "./404";
 import EmergencyView from "./views/EmergencyView";
+import { SnackbarProvider } from "notistack";
 
 // actual panes to route between
 import DriveComponents from "./views/DriveView";
@@ -17,6 +18,7 @@ import ExtrasView from "./views/ExtrasView";
 import SerialConsole from "./components/serial/SerialConsole";
 // extras panes
 import { Graphs, Files, SpeedTestView } from "./views/ExtrasView";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 const approuter = createBrowserRouter([
   {
@@ -83,13 +85,13 @@ const approuter = createBrowserRouter([
   },
 ], { basename: import.meta.env.BASE_URL });
 
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { SnackbarProvider } from "notistack";
+
 
 createRoot(document.getElementById("root")).render(
+        
   <StrictMode>
     <SnackbarProvider maxSnack={5}>
       <RouterProvider router={approuter} />
-    </SnackbarProvider>
+      </SnackbarProvider>
   </StrictMode>,
 );
