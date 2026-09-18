@@ -69,13 +69,16 @@ jobs:
         # we don't care about errors, hence eslint-quiet
         run: npm run lint-quiet
 
-  base-pi:
-    name: Base-Pi python smoke
-    runs-on: ubuntu-latest
+  python-backends:
+    name: ${{ matrix.backend }} Python smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [base-pi, server]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     env:
-      # `act` runs jobs in parallel with a shared toolcache volume; isolate to avoid races.
-      RUNNER_TOOL_CACHE: ${{ github.workspace }}/.toolcache/${{ github.job }}
-      AGENT_TOOLSDIRECTORY: ${{ github.workspace }}/.toolcache/${{ github.job }}
+      BACKEND: ${{ matrix.backend }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -84,69 +87,81 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ${{ matrix.backend }}/requirements.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -r base-pi/requirements.txt
+          python -m pip install -r "${{ matrix.backend }}/requirements.txt"
 
       - name: Compile
-        run: python -m compileall base-pi
+        run: python -m compileall "${{ matrix.backend }}"
 
       - name: Smoke run (offline)
+        shell: python
         run: |
-          set +e
-          out_file="$(mktemp)"
-          timeout 10s python base-pi/py_server.py --offline >"$out_file" 2>&1
-          code=$?
-          set -e
+          import os
+          import socket
+          import subprocess
+          import sys
+          import time
 
-          # timeout returns 124 when it kills the process; allow that.
-          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            cat "$out_file"
-            exit "$code"
-          fi
+          backend = os.environ["BACKEND"]
+          port = 4000 if backend == "server" else 4001
+          command = [
+              sys.executable,
+              "-u",
+              f"{backend}/py_server.py",
+              "--offline",
+          ]
 
-          # Assert it actually got far enough to start.
-          grep -q "Server Starting" "$out_file"
+          process = subprocess.Popen(
+              command,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.STDOUT,
+              text=True,
+          )
 
-  server:
-    name: Rover server python smoke
-    runs-on: ubuntu-latest
-    env:
-      # `act` runs jobs in parallel with a shared toolcache volume; isolate to avoid races.
-      RUNNER_TOOL_CACHE: ${{ github.workspace }}/.toolcache/${{ github.job }}
-      AGENT_TOOLSDIRECTORY: ${{ github.workspace }}/.toolcache/${{ github.job }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+          ready = False
+          deadline = time.monotonic() + 15
+          while time.monotonic() < deadline:
+              if process.poll() is not None:
+                  break
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+              try:
+                  with socket.create_connection(
+                      ("127.0.0.1", port), timeout=0.5
+                  ):
+                      ready = True
+                      break
+              except OSError:
+                  time.sleep(0.2)
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel
-          pip install -r server/requirements.txt
+          # Make sure the backend remains alive after it starts listening.
+          if ready:
+              time.sleep(1)
 
-      - name: Compile
-        run: python -m compileall server
+          returncode = process.poll()
+          if returncode is None:
+              process.terminate()
+              try:
+                  output, _ = process.communicate(timeout=5)
+              except subprocess.TimeoutExpired:
+                  process.kill()
+                  output, _ = process.communicate()
+          else:
+              output, _ = process.communicate()
 
-      - name: Smoke run
-        run: |
-          set +e
-          out_file="$(mktemp)"
-          timeout 10s python server/py_server.py >"$out_file" 2>&1
-          code=$?
-          set -e
+          print(output)
 
-          # timeout returns 124 when it kills the process; allow that.
-          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            cat "$out_file"
-            exit "$code"
-          fi
+          if not ready:
+              raise SystemExit(
+                  f"{backend} did not listen on port {port}; "
+                  f"exit code: {returncode}"
+              )
 
-          # Assert it actually got far enough to start.
-          grep -q "Server Starting" "$out_file"
+          if returncode is not None:
+              raise SystemExit(
+                  f"{backend} crashed after startup with code {returncode}"
+              )
