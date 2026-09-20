@@ -98,10 +98,15 @@ app = socketio.ASGIApp(sio)
 ROBOT_SERVER_URL = 'http://localhost:4000'
 
 
+async def send_robot_gps(data):
+    await sio.emit("robotGpsData", data)
+
+
 async def robot_server_loop():
     while not shutting_down:
         try:
             async with socketio.AsyncSimpleClient() as robot:
+                robot.on("gpsData", handler=send_robot_gps)
                 await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
                 print(f"Connected to robot server at {ROBOT_SERVER_URL}")
                 await robot.wait()
