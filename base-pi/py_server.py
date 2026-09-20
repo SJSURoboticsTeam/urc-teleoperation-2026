@@ -95,15 +95,23 @@ app = socketio.ASGIApp(sio)
 
 # =================== Robot Client Setup ===================
 
-# async def main():
-#     async with socketio.AsyncSimpleClient() as rsio:
-#         try:
-#             await rsio.connect('http://localhost:4000')
-#             print('Connected, my sid is', rsio.sid)
-#         except:
-#             print("Failed to connect.")
+ROBOT_SERVER_URL = 'http://localhost:4000'
 
-# asyncio.run(main())
+
+async def robot_server_loop():
+    while not shutting_down:
+        try:
+            async with socketio.AsyncSimpleClient() as robot:
+                await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
+                print(f"Connected to robot server at {ROBOT_SERVER_URL}")
+                await robot.wait()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            print(f"Robot server connection failed: {exc}")
+
+        if not shutting_down:
+            await asyncio.sleep(5)
 
 # =================== GPS connections ===================
 
