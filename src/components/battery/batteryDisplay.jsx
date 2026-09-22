@@ -13,9 +13,16 @@ export default function BatteryDisplay() {
             let percentage = ((voltage - MIN_BATTERY_VOLTAGE) / (MAX_BATTERY_VOLTAGE - MIN_BATTERY_VOLTAGE)) * 100;
             setBatteryPercentage(Math.max(0, Math.min(100, percentage)));
         }
+        const handleDisconnection = () => {
+            setBatteryPercentage(null);
+        };
 
         robotsocket.on("batteryVoltage", handler);
-        return () => robotsocket.off("batteryVoltage", handler);
+        robotsocket.on("disconnect", handleDisconnection);
+        return () => {
+            robotsocket.off("batteryVoltage", handler);
+            robotsocket.off("disconnect", handleDisconnection);
+        }
     }, []);
 
     const hasData = batteryPercentage !== null;
