@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSnackbar } from "notistack";
 import { robotsocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
+import Button from "@mui/material/Button";
 
 export const PeripheralProvider = ({ children }) => {
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   useEffect(() => {
     // when one client updates data, other clients get asked to refresh data
@@ -35,8 +36,9 @@ export const PeripheralProvider = ({ children }) => {
     gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
 
-  function requestCanInfo() {
+  const requestCanInfo = useCallback(() => {
     // lock the ui so user can't do anything while loading
+    console.log("Refresh requested...");
     setcanState((prev) => ({
       ...prev,
       loading: true,
@@ -59,50 +61,59 @@ export const PeripheralProvider = ({ children }) => {
         loading: false,
       }));
     });
-  }
+  });
 
-  function connectDrive() {
+  const connectDrive = useCallback(() => {
     setcanState((prev) => ({
       ...prev,
       driveState: "connecting",
     }));
-    console.log("Connecting Drive, Sending id " + canState.driveId);
-    robotsocket.emit("connectDrive", canState.driveId, (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setcanState((prev) => ({
-          ...prev,
-          driveState: "active",
-        }));
-      } else {
-        enqueueSnackbar("Drive didn't connect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
+    return new Promise((resolve, reject) => {
+      console.log("Connecting Drive, Sending id " + canState.driveId);
+      robotsocket.emit("connectDrive", canState.driveId, (response) => {
+        console.log("RESPONSE:" + response);
+        if (response === "OK") {
+          setcanState((prev) => ({
+            ...prev,
+            driveState: "active",
+          }));
+          resolve();
+        } else {
+          enqueueSnackbar("Drive didn't connect. Refreshing...", {
+            variant: "error",
+          });
+          requestCanInfo();
+          reject();
+        }
+      });
     });
-  }
-  function disconnectDrive() {
+}, [canState.driveId, enqueueSnackbar, requestCanInfo]);
+
+  const disconnectDrive = useCallback(() => {
     setcanState((prev) => ({
       ...prev,
       driveState: "connecting",
     }));
-    console.log("Disconnecting drive");
-    robotsocket.emit("disconnectDrive", (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setcanState((prev) => ({
-          ...prev,
-          driveState: "idle",
-        }));
-      } else {
-        enqueueSnackbar("Drive didn't disconnect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
+    return new Promise((resolve, reject) => {
+      console.log("Disconnecting drive");
+      robotsocket.emit("disconnectDrive", (response) => {
+        console.log("RESPONSE:" + response);
+        if (response === "OK") {
+          setcanState((prev) => ({
+            ...prev,
+            driveState: "idle",
+          }));
+          resolve();
+        } else {
+          enqueueSnackbar("Drive didn't disconnect. Refreshing...", {
+            variant: "error",
+          });
+          requestCanInfo();
+          reject();
+        }
+      });
     });
-  }
+  }, [requestCanInfo]);
 
   function connectArm() {
     setcanState((prev) => ({
@@ -248,6 +259,46 @@ export const PeripheralProvider = ({ children }) => {
     }
     console.log("ALL have been disconnected.");
   }
+
+const reconnectDrive = useCallback(
+  async (snackbarId) => {
+    try {
+      await disconnectDrive();
+      await connectDrive();
+      // Close only after reconnect succeeds
+      closeSnackbar(snackbarId);
+    } catch (error) {
+      console.error(error);
+      // Leave the error snackbar visible if reconnect failed
+    }
+  },
+  [disconnectDrive, connectDrive, closeSnackbar],
+);
+
+  useEffect(() => {
+    // when one client updates data, other clients get asked to refresh data
+const sendCanWarningToast = (canId) => {
+  enqueueSnackbar(`Can Overload on ${canId}!`, {
+    variant: "error",
+    persist: true,
+
+    action: (snackbarId) => (
+      <Button
+        variant="outlined"
+        onClick={() => reconnectDrive(snackbarId)}
+      >
+        Reconnect
+      </Button>
+    ),
+  });
+};
+
+    robotsocket.on("canoverload", sendCanWarningToast);
+
+    return () => {
+      robotsocket.off("canoverload", sendCanWarningToast);
+    };
+  }, [enqueueSnackbar,reconnectDrive]);
 
   const value = {
     canState,

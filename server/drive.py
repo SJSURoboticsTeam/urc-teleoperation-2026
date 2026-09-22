@@ -199,7 +199,7 @@ async def read_drive_can_loop(serial_ports):
 
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
-async def send_drive_status_request(serial_ports):
+async def send_drive_status_request(serial_ports,sio):
     """Query the can bus for errors and/or being inresponsive (buffer full)"""
     active_drive = None
     timeout_logged = False
@@ -231,6 +231,7 @@ async def send_drive_status_request(serial_ports):
                     print(
                         "\033[91mCAN not responding; bus full/error\033[0m"
                     )
+                    await sio.emit("canoverload", "drive")
 
             # The CANUSB manual recommends polling status every 500-1000 ms.
             await asyncio.sleep(0.75)

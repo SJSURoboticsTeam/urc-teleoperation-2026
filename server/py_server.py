@@ -508,7 +508,7 @@ async def connect(sid,environ):
     else:
         if not can_error_message_started:
             can_error_message_started = True
-            sio.start_background_task(send_drive_status_request, serial_ports)
+            sio.start_background_task(send_drive_status_request, serial_ports,sio)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)
