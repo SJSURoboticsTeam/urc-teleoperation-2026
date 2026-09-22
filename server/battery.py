@@ -5,7 +5,7 @@ async def get_battery_voltage(sio):
     # TODO: create skeleton for receiving batteryVoltage
     pass
 
-async def get_fake_battery_voltage(sio):
+async def send_fake_battery_voltage(sio):
     voltage = 40
     while True:
         voltage -= .02
