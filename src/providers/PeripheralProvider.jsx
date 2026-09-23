@@ -4,6 +4,46 @@ import { robotsocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 import Button from "@mui/material/Button";
 
+function ReconnectAction({
+  snackbarId,
+  disconnectDrive,
+  connectDrive,
+  closeSnackbar,
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleReconnect = async () => {
+    setLoading(true);
+
+    try {
+      await disconnectDrive();
+      await connectDrive();
+      closeSnackbar(snackbarId);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outlined"
+      loading={loading}
+      onClick={handleReconnect}
+      sx={{
+        color: "white",
+        borderColor: "white",
+        "&:hover": {
+          borderColor: "white",
+          backgroundColor: "rgba(255, 255, 255, 0.08)",
+        },
+      }}
+    >
+      Reconnect
+    </Button>
+  );
+}
+
 export const PeripheralProvider = ({ children }) => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
@@ -87,7 +127,7 @@ export const PeripheralProvider = ({ children }) => {
         }
       });
     });
-}, [canState.driveId, enqueueSnackbar, requestCanInfo]);
+  }, [canState.driveId, enqueueSnackbar, requestCanInfo]);
 
   const disconnectDrive = useCallback(() => {
     setcanState((prev) => ({
@@ -260,45 +300,28 @@ export const PeripheralProvider = ({ children }) => {
     console.log("ALL have been disconnected.");
   }
 
-const reconnectDrive = useCallback(
-  async (snackbarId) => {
-    try {
-      await disconnectDrive();
-      await connectDrive();
-      // Close only after reconnect succeeds
-      closeSnackbar(snackbarId);
-    } catch (error) {
-      console.error(error);
-      // Leave the error snackbar visible if reconnect failed
-    }
-  },
-  [disconnectDrive, connectDrive, closeSnackbar],
-);
-
   useEffect(() => {
-    // when one client updates data, other clients get asked to refresh data
-const sendCanWarningToast = (canId) => {
-  enqueueSnackbar(`Can Overload on ${canId}!`, {
-    variant: "error",
-    persist: true,
-
-    action: (snackbarId) => (
-      <Button
-        variant="outlined"
-        onClick={() => reconnectDrive(snackbarId)}
-      >
-        Reconnect
-      </Button>
-    ),
-  });
-};
+    const sendCanWarningToast = (canId) => {
+      enqueueSnackbar(`Can Overload on ${canId}!`, {
+        variant: "error",
+        persist: true,
+        action: (snackbarId) => (
+          <ReconnectAction
+            snackbarId={snackbarId}
+            disconnectDrive={disconnectDrive}
+            connectDrive={connectDrive}
+            closeSnackbar={closeSnackbar}
+          />
+        ),
+      });
+    };
 
     robotsocket.on("canoverload", sendCanWarningToast);
 
     return () => {
       robotsocket.off("canoverload", sendCanWarningToast);
     };
-  }, [enqueueSnackbar,reconnectDrive]);
+  }, [enqueueSnackbar, closeSnackbar, disconnectDrive, connectDrive]);
 
   const value = {
     canState,
