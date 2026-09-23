@@ -240,14 +240,6 @@ export default function AutonomyControls() {
     sendCommandToBackend({ type: "autonomy_stop" });
   };
 
-  // Opens the Arm tab and logs a USB task start
-  const startUsb = () => {
-    if (teleopLocked) return;
-    setActiveTab("arm");
-    addArmHistory("USB task started.");
-    sendCommandToBackend({ type: "usb_start" });
-  };
-
   // Resets mission state back to defaults
   const restartMission = () => {
     if (teleopLocked) return;
@@ -516,13 +508,6 @@ export default function AutonomyControls() {
 
           {/* Header action buttons */}
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Button
-              variant="outlined"
-              onClick={startUsb}
-              disabled={teleopLocked}
-            >
-              Start USB
-            </Button>
 
             <Button
               variant="outlined"
