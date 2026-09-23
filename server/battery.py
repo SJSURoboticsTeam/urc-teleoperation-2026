@@ -2,7 +2,7 @@ import random
 import asyncio
 
 async def get_battery_voltage(sio):
-    # TODO: create skeleton for receiving batteryVoltage
+    # TODO: implement once firmware is ready
     pass
 
 async def send_fake_battery_voltage(sio):
