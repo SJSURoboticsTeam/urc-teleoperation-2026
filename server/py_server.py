@@ -21,7 +21,7 @@ from drive_uart import (
     send_drive_command as send_uart_drive_command,
     send_drive_heartbeat,
 )
-from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
+from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events, send_arm_status_request
 from camera_pt import register_camera_pt_events
 from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
@@ -104,6 +104,7 @@ serial_ports = {
     "drive_status_event": asyncio.Event(),
     "arm": None,
     "armId" : "disconnect",
+    "arm_status_event": asyncio.Event(),
     "gps": None,
     "gpsId" : "disconnect",
     "science": None,
@@ -435,7 +436,8 @@ async def E_STOP(sid):
 
 # =================== Initialization ===================
 # Background task guard
-can_error_message_started = False
+can_error_message_started_drive = False
+can_error_message_started_arm = False
 drive_task_started = False
 drive_heartbeat_started = False
 arm_task_started = False
@@ -463,7 +465,8 @@ register_serial_console_events(sio, serial_console)
 @sio.event
 async def connect(sid,environ):
     """Event code when a client connects, many startup functions trigger here"""
-    global can_error_message_started
+    global can_error_message_started_drive
+    global can_error_message_started_arm
     global drive_task_started
     global drive_heartbeat_started
     global arm_task_started
@@ -506,9 +509,13 @@ async def connect(sid,environ):
             drive_heartbeat_started = True
             sio.start_background_task(send_drive_heartbeat, serial_ports)
     else:
-        if not can_error_message_started:
-            can_error_message_started = True
+        if not can_error_message_started_drive:
+            can_error_message_started_drive = True
             sio.start_background_task(send_drive_status_request, serial_ports,sio)
+    if not can_error_message_started_arm:
+        can_error_message_started_arm = True
+        print("Starting logging...")
+        sio.start_background_task(send_arm_status_request, serial_ports,sio)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)

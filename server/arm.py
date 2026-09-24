@@ -413,7 +413,7 @@ def parse_arm_position_response(frame_info):
     }
 
 
-def parse_arm_data(data):
+def parse_arm_data(data,serial_ports):
     """
     Route incoming CAN frame to the appropriate parser.
     """
@@ -434,6 +434,12 @@ def parse_arm_data(data):
                 return parse_arm_ack(frame_info)
             if payload and payload[0] == 0x23:
                 return parse_arm_position_response(frame_info)
+        if data.startswith(b"\x07"):
+            print("CAN error: command rejected; possible transmit FIFO full")
+            status_event = serial_ports.get("drive_status_event")
+            if status_event:
+                status_event.set()
+            return
 
         print(f"[ARM RX] Unhandled servo frame -> {frame_info['frame']}")
         return None
@@ -580,8 +586,7 @@ async def read_arm_can_loop(serial_ports, sio):
 
             data = await asyncio.to_thread(arm_serial.read_can, None)
             if data:
-                parsed = parse_arm_data(data)
-
+                parsed = parse_arm_data(data,serial_ports)
                 if isinstance(parsed, dict) and parsed.get("type") == "position":
                     await sio.emit("armFeedback", parsed)
 
@@ -592,3 +597,43 @@ async def read_arm_can_loop(serial_ports, sio):
             print(f"Arm CAN thread error: {e}")
             invalidate_arm_connection(serial_ports, "read loop failure")
             await asyncio.sleep(0.25)
+async def send_arm_status_request(serial_ports,sio):
+    """Query the can bus for errors and/or being inresponsive (buffer full)"""
+    active_arm = None
+    timeout_logged = False
+    print("Started logging")
+
+    try:
+        while True:
+            arm = serial_ports.get("arm")
+            if arm is None or serial_ports.get("armId") == "disconnect":
+                # if no drive disconnected, try again in 5s
+                await asyncio.sleep(5)
+                continue
+
+            if arm is not active_arm:
+                active_arm = arm
+                timeout_logged = False
+
+            status_event = serial_ports["arm_status_event"]
+            status_event.clear()
+            await asyncio.to_thread(arm.write, b'F\r')
+
+            try:
+                print("Querying")
+                await asyncio.wait_for(status_event.wait(), timeout=0.25)
+                # if it responds in time, mark error as false
+                timeout_logged = False
+            except asyncio.TimeoutError:
+                # log the error
+                if not timeout_logged:
+                    timeout_logged = True
+                    print(
+                        "\033[91mCAN not responding; bus full/error\033[0m"
+                    )
+                    await sio.emit("canoverload", "arm")
+
+            # The CANUSB manual recommends polling status every 500-1000 ms.
+            await asyncio.sleep(0.75)
+    except Exception as e:
+        print(f'Read arm status flag error: {e}')
