@@ -2,7 +2,7 @@ import { robotsocket } from "../socket.io/socket";
 import { useEffect, useState, useRef } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 
-const TIMEOUT_SEC = 30;
+const TIMEOUT_SEC = 5;
 
 export default function BatteryDisplay() {
 	const [batteryPercentage, setBatteryPercentage] = useState(null);
@@ -25,6 +25,8 @@ export default function BatteryDisplay() {
 		return () => {
 			robotsocket.off("batteryPercentage", handleBatteryData);
 			robotsocket.off("disconnect", handleDisconnection);
+			clearTimeout(timeoutReference.current);
+			timeoutReference.current = null;
 		}
 	}, []);
 

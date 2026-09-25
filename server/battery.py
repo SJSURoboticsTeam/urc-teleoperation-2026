@@ -16,4 +16,7 @@ async def send_fake_battery_data(sio):
             voltage = MAX_VOLTAGE
         percentage = ((voltage - MIN_VOLTAGE) / (MAX_VOLTAGE - MIN_VOLTAGE)) * 100
         await sio.emit('batteryPercentage', min(100, max(0, percentage)))
-        await asyncio.sleep(.25)
+        if (random.randint(0,15) == 0):
+            await asyncio.sleep(7.5)
+        else:
+            await asyncio.sleep(.25)
