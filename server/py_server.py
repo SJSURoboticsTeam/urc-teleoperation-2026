@@ -28,6 +28,7 @@ from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
+from battery import send_fake_battery_data, get_battery_data
 
 
 print("\033[0m----------------")
@@ -445,6 +446,7 @@ cpu_started = False
 # this lock ensures that only one function can be sending on the drive can/uart line at once
 drive_command_lock = asyncio.Lock()
 autonomy_started= False
+battery_started = False
 
 
 register_metric_events(sio)
@@ -472,6 +474,7 @@ async def connect(sid,environ):
     global cpu_started
     global numClients
     global autonomy_started
+    global battery_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -517,6 +520,12 @@ async def connect(sid,environ):
     if (not autonomy_started) and autonomy:
         autonomy_started = True
         sio.start_background_task(get_autonomy_states,sio)
+    if not battery_started:
+        battery_started = True
+        if offline:
+            sio.start_background_task(send_fake_battery_data, sio) 
+        else:
+            sio.start_background_task(get_battery_data, sio)
 
 async def stop_drive_motors():
     """Send stop command to drive motors for safety when no clients are connected"""
