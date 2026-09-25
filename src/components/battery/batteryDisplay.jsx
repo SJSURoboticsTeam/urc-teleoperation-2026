@@ -9,7 +9,7 @@ export default function BatteryDisplay() {
 	const timeoutReference = useRef(null);
 
 	useEffect(() => {
-		const handler = (percentage) => {
+		const handleBatteryData = (percentage) => {
 			setBatteryPercentage(percentage);
 
 			clearTimeout(timeoutReference.current);
@@ -19,11 +19,11 @@ export default function BatteryDisplay() {
 		}
 		const handleDisconnection = () => setBatteryPercentage(null);
 
-		robotsocket.on("batteryPercentage", handler);
+		robotsocket.on("batteryPercentage", handleBatteryData);
 		robotsocket.on("disconnect", handleDisconnection);
 
 		return () => {
-			robotsocket.off("batteryPercentage", handler);
+			robotsocket.off("batteryPercentage", handleBatteryData);
 			robotsocket.off("disconnect", handleDisconnection);
 		}
 	}, []);
