@@ -54,7 +54,7 @@ export default function BatteryDisplay() {
 							top: 0,
 							bottom: 0,
 							left: 0,
-							width: `${batteryPercentage}%`,
+							width: `${hasData ? batteryPercentage : 0}%`,
 							bgcolor: isLow ? "red" : "white",
 							transition: "width 0.4s ease",
 						}}
