@@ -28,7 +28,7 @@ from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
-from battery import send_fake_battery_voltage, get_battery_voltage
+from battery import send_fake_battery_data, get_battery_data
 
 
 print("\033[0m----------------")
@@ -523,9 +523,9 @@ async def connect(sid,environ):
     if not battery_started:
         battery_started = True
         if offline:
-            sio.start_background_task(send_fake_battery_voltage, sio) 
+            sio.start_background_task(send_fake_battery_data, sio) 
         else:
-            sio.start_background_task(get_battery_voltage, sio)
+            sio.start_background_task(get_battery_data, sio)
 
 async def stop_drive_motors():
     """Send stop command to drive motors for safety when no clients are connected"""
