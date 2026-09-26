@@ -5,11 +5,14 @@ import Tab from "@mui/material/Tab";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 import { usePeripherals } from "../contexts/PeripheralContext";
+import { useGPS } from "../contexts/GPSContext";
 
 export default function ScienceView() {
   const { canState } = usePeripherals();
 
   const [tabContent, setTabContent] = useState(0);
+
+  const { robotCoordinates } = useGPS();
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
@@ -165,7 +168,9 @@ const exampleSteps = [
                     </div>
                   </Box>
                   <Box className="flex flex-row" sx={{ ml: 4 }}>
-                    Coordinates: (_,_) <br /> Accuracy: ___ <br /> Range: ___{" "}
+                    Coordinates: ({robotCoordinates.receive ? `${robotCoordinates.lat.toFixed(6)}, ${robotCoordinates.long.toFixed(6)}` : "No Signal"}) <br />
+                    Accuracy: {robotCoordinates.receive && robotCoordinates.accuracy_m ? `${robotCoordinates.accuracy_m}m` : "---"} <br />
+                    Range: ___{" "}
                     <br />
 
                     <Button

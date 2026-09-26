@@ -14,6 +14,7 @@ export const GPSProvider = ({ children }) => {
         long: -121.881194,
         lat: 37.336847,
         receive: false,
+        accuracy_m: null,
     });
 
     const [baseCoordinates, setBaseCoordinates] = useState({
@@ -25,45 +26,46 @@ export const GPSProvider = ({ children }) => {
 
     useEffect(() => {
         const robotHandler = (data) => {
-        if (robotSignalTimeout.current) {
-            clearTimeout(robotSignalTimeout.current);
-        }
+            if (robotSignalTimeout.current) {
+                clearTimeout(robotSignalTimeout.current);
+            }
 
-        const newTime = Date.now();
-        robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
-        robotLastSignalTime.current = newTime;
+            const newTime = Date.now();
+            robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
+            robotLastSignalTime.current = newTime;
 
-        // console.log("Received GPS data:", data);
-        setRobotCoordinates({
-            long: data.longitude,
-            lat: data.latitude,
-            receive: true,
-        });
+            // console.log("Received GPS data:", data);
+            setRobotCoordinates({
+                long: data.longitude,
+                lat: data.latitude,
+                receive: true,
+                accuracy_m: data.accuracy_m ?? null
+            });
 
-        robotSignalTimeout.current = setTimeout(() => {
-            setRobotCoordinates((prev) => ({ ...prev, receive: false }));
-        }, 3000);
+            robotSignalTimeout.current = setTimeout(() => {
+                setRobotCoordinates((prev) => ({ ...prev, receive: false }));
+            }, 3000);
         };
 
         const baseHandler = (data) => {
-        if (baseSignalTimeout.current) {
-            clearTimeout(baseSignalTimeout.current);
-        }
+            if (baseSignalTimeout.current) {
+                clearTimeout(baseSignalTimeout.current);
+            }
 
-        const newTime = Date.now();
-        baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
-        baseLastSignalTime.current = newTime;
+            const newTime = Date.now();
+            baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
+            baseLastSignalTime.current = newTime;
 
-        // console.log("Received GPS data:", data);
-        setBaseCoordinates({
-            long: data.longitude,
-            lat: data.latitude,
-            receive: true,
-        });
+            // console.log("Received GPS data:", data);
+            setBaseCoordinates({
+                long: data.longitude,
+                lat: data.latitude,
+                receive: true,
+            });
 
-        baseSignalTimeout.current = setTimeout(() => {
-            setBaseCoordinates((prev) => ({ ...prev, receive: false }));
-        }, 3000);
+            baseSignalTimeout.current = setTimeout(() => {
+                setBaseCoordinates((prev) => ({ ...prev, receive: false }));
+            }, 3000);
         };
 
         robotsocket.on("gpsData", robotHandler);

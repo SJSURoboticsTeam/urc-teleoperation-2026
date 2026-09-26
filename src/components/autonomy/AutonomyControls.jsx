@@ -21,6 +21,8 @@ import {
 // Global autonomy mode context
 import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 
+import { useGPS } from "../../contexts/GPSContext";
+
 // Key used to store whether autonomy mode is enabled in localStorage
 const AUTONOMY_STORAGE_KEY = "rover_autonomy_enabled";
 
@@ -68,6 +70,7 @@ export default function AutonomyControls() {
   // Drive-related state
   const [driveData, setDriveData] = useState(initialDriveState);
   const [lastCoords, setLastCoords] = useState({ lat: "___", lon: "___" });
+  const { robotCoordinates } = useGPS();
   const [driveStatus, setDriveStatus] = useState("Waiting for route.");
 
   // confetti UI state
@@ -326,9 +329,13 @@ export default function AutonomyControls() {
     if (nextReached) {
       // When reached, store coords, update status, show celebration, notify backend
       setLastCoords({
-        lat: currentLocation.lat || "___",
-        lon: currentLocation.lon || "___",
+        lat: robotCoordinates.receive ? robotCoordinates.lat.toFixed(6) : currentLocation.lat || "___",
+        lon: robotCoordinates.receive ? robotCoordinates.long.toFixed(6) : currentLocation.lon || "___",
       });
+      // setLastCoords({
+      //   lat: currentLocation.lat || "___",
+      //   lon: currentLocation.lon || "___",
+      // });
       setDriveStatus(`${displayLabel} reached.`);
       triggerArrival(displayLabel);
       sendCommandToBackend({

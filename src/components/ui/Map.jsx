@@ -402,6 +402,42 @@ export default function Map() {
           console.warn("Could not add 3D-buildings layer:", e);
         }
       }
+
+      map.addSource('accuracy-circle', {
+          type: 'geojson',
+          data: {
+              type: 'Feature',
+              geometry: {
+                  type: 'Point',
+                  coordinates: [robotCoordinates.long, robotCoordinates.lat],
+              }
+          }
+      });
+
+      map.addLayer({
+          id: 'accuracy-circle-layer',
+          type: 'circle',
+          source: 'accuracy-circle',
+          paint: {
+              'circle-radius': 0,  // updated dynamically
+              'circle-color': 'rgba(0, 120, 255, 0.15)',
+              'circle-stroke-color': 'rgba(0, 120, 255, 0.8)',
+              'circle-stroke-width': 2,
+              'circle-pitch-alignment': 'map',
+          }
+      });
+
+      map.on('zoom', () => {
+        if(!mapRef.current || !mapRef.current.getSource('accuracy-circle')) return;
+        if(!robotCoordinates.receive || !robotCoordinates.accuracy_m) return;
+
+        const metersPerPixel = 40075016.686 *
+          Math.cos(robotCoordinates.lat * Math.PI / 180) /
+          (512 * Math.pow(2, map.getZoom()));
+        const radiusPx = robotCoordinates.accuracy_m / metersPerPixel;
+
+        mapRef.current.setPaintProperty('accuracy-circle-layer', 'circle-radius', radiusPx);
+      })
     };
 
     map.on("load", onLoad);
@@ -427,9 +463,34 @@ export default function Map() {
 
   useEffect(() => {
     if (webglSupported === false) return;
-    if(robotMarker.current && baseMarker.current){
+    if(robotMarker.current && baseMarker.current) {
       robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
       baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
+    }
+
+    if(mapRef.current && mapRef.current.getSource('accuracy-circle')) {
+        const map = mapRef.current;
+
+        // update circle position
+        map.getSource('accuracy-circle').setData({
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: [robotCoordinates.long, robotCoordinates.lat],
+            }
+        });
+
+        // convert accuracy_m to pixels at current zoom
+        if (robotCoordinates.receive && robotCoordinates.accuracy_m) {
+            const metersPerPixel = 40075016.686 *
+                Math.cos(robotCoordinates.lat * Math.PI / 180) /
+                Math.pow(2, map.getZoom() + 8);
+            const radiusPx = robotCoordinates.accuracy_m / metersPerPixel;
+            map.setPaintProperty('accuracy-circle-layer', 'circle-radius', radiusPx);
+        } else {
+            // hide circle when no signal or no accuracy
+            map.setPaintProperty('accuracy-circle-layer', 'circle-radius', 0);
+        }
     }
     
     if(coordRef.current) {
