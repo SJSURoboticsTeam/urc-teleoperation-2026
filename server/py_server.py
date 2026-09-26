@@ -514,8 +514,7 @@ async def connect(sid,environ):
             sio.start_background_task(send_drive_status_request, serial_ports,sio)
     if not can_error_message_started_arm:
         can_error_message_started_arm = True
-        print("Starting logging...")
-        sio.start_background_task(send_arm_status_request, serial_ports,sio)
+        sio.start_background_task(send_arm_status_request, serial_ports, sio)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)

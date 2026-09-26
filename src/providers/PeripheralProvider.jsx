@@ -19,18 +19,19 @@ function ReconnectAction({
     setLoading(true);
 
     try {
-      if (canId == "drive") {
+      if (canId === "drive") {
         await disconnectDrive();
         await connectDrive();
-      } else {
+      } else if (canId === "arm") {
         await disconnectArm();
         await connectArm();
+      } else {
+        throw new Error(`Unknown CAN target: ${canId}`);
       }
       closeSnackbar(snackbarId);
     } catch (error) {
       console.error(error);
       setLoading(false);
-      closeSnackbar(snackbarId);
     }
   };
 
@@ -55,21 +56,6 @@ function ReconnectAction({
 
 export const PeripheralProvider = ({ children }) => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-
-  useEffect(() => {
-    // when one client updates data, other clients get asked to refresh data
-    const updateCan = () => {
-      console.log("Refreshing CAN state");
-      requestCanInfo();
-    };
-    robotsocket.on("forcecanrefresh", updateCan);
-    robotsocket.on("connect", updateCan);
-
-    return () => {
-      robotsocket.off("forcecanrefresh", updateCan);
-      robotsocket.off("connect", updateCan);
-    };
-  }, []);
 
   const [canState, setcanState] = useState({
     driveState: "idle", // idle, connecting, active
@@ -110,7 +96,22 @@ export const PeripheralProvider = ({ children }) => {
         loading: false,
       }));
     });
-  });
+  }, []);
+
+  useEffect(() => {
+    // when one client updates data, other clients get asked to refresh data
+    const updateCan = () => {
+      console.log("Refreshing CAN state");
+      requestCanInfo();
+    };
+    robotsocket.on("forcecanrefresh", updateCan);
+    robotsocket.on("connect", updateCan);
+
+    return () => {
+      robotsocket.off("forcecanrefresh", updateCan);
+      robotsocket.off("connect", updateCan);
+    };
+  }, [requestCanInfo]);
 
   const connectDrive = useCallback(() => {
     setcanState((prev) => ({
@@ -132,7 +133,7 @@ export const PeripheralProvider = ({ children }) => {
             variant: "error",
           });
           requestCanInfo();
-          reject();
+          reject(new Error("Drive connection failed"));
         }
       });
     });
@@ -158,11 +159,11 @@ export const PeripheralProvider = ({ children }) => {
             variant: "error",
           });
           requestCanInfo();
-          reject();
+          reject(new Error("Drive disconnection failed"));
         }
       });
     });
-  }, [requestCanInfo]);
+  }, [enqueueSnackbar, requestCanInfo]);
 
   const connectArm = useCallback(() => {
     return new Promise((resolve, reject) => {
@@ -184,7 +185,7 @@ export const PeripheralProvider = ({ children }) => {
             variant: "error",
           });
           requestCanInfo();
-          reject();
+          reject(new Error("Arm connection failed"));
         }
       });
     });
@@ -210,11 +211,11 @@ export const PeripheralProvider = ({ children }) => {
             variant: "error",
           });
           requestCanInfo();
-          reject();
+          reject(new Error("Arm disconnection failed"));
         }
       });
     });
-  }, [requestCanInfo]);
+  }, [enqueueSnackbar, requestCanInfo]);
 
   function connectScience() {
     setcanState((prev) => ({
@@ -342,7 +343,14 @@ export const PeripheralProvider = ({ children }) => {
     return () => {
       robotsocket.off("canoverload", sendCanWarningToast);
     };
-  }, [enqueueSnackbar, closeSnackbar, disconnectDrive, connectDrive]);
+  }, [
+    enqueueSnackbar,
+    closeSnackbar,
+    disconnectDrive,
+    connectDrive,
+    disconnectArm,
+    connectArm,
+  ]);
 
   const value = {
     canState,

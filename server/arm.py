@@ -628,17 +628,18 @@ async def read_arm_can_loop(serial_ports, sio):
             print(f"Arm CAN thread error: {e}")
             invalidate_arm_connection(serial_ports, "read loop failure")
             await asyncio.sleep(0.25)
-async def send_arm_status_request(serial_ports,sio):
-    """Query the can bus for errors and/or being inresponsive (buffer full)"""
+
+
+async def send_arm_status_request(serial_ports, sio):
+    """Query the CAN adapter for errors or an unresponsive/full buffer."""
     active_arm = None
     timeout_logged = False
-    print("Started logging")
 
     try:
         while True:
             arm = serial_ports.get("arm")
             if arm is None or serial_ports.get("armId") == "disconnect":
-                # if no drive disconnected, try again in 5s
+                # If the arm is disconnected, try again in 5 seconds.
                 await asyncio.sleep(5)
                 continue
 
@@ -648,10 +649,9 @@ async def send_arm_status_request(serial_ports,sio):
 
             status_event = serial_ports["arm_status_event"]
             status_event.clear()
-            await asyncio.to_thread(arm.write, b'F\r')
+            await asyncio.to_thread(arm.write, b"F\r")
 
             try:
-                #print("Querying")
                 await asyncio.wait_for(status_event.wait(), timeout=0.25)
                 # if it responds in time, mark error as false
                 timeout_logged = False
