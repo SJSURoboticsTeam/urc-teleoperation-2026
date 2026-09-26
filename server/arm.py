@@ -651,7 +651,7 @@ async def send_arm_status_request(serial_ports,sio):
             await asyncio.to_thread(arm.write, b'F\r')
 
             try:
-                print("Querying")
+                #print("Querying")
                 await asyncio.wait_for(status_event.wait(), timeout=0.25)
                 # if it responds in time, mark error as false
                 timeout_logged = False

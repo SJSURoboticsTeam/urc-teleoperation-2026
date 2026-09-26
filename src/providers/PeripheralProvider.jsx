@@ -8,7 +8,10 @@ function ReconnectAction({
   snackbarId,
   disconnectDrive,
   connectDrive,
+  disconnectArm,
+  connectArm,
   closeSnackbar,
+  canId,
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -16,12 +19,18 @@ function ReconnectAction({
     setLoading(true);
 
     try {
-      await disconnectDrive();
-      await connectDrive();
+      if (canId == "drive") {
+        await disconnectDrive();
+        await connectDrive();
+      } else {
+        await disconnectArm();
+        await connectArm();
+      }
       closeSnackbar(snackbarId);
     } catch (error) {
       console.error(error);
       setLoading(false);
+      closeSnackbar(snackbarId);
     }
   };
 
@@ -155,48 +164,57 @@ export const PeripheralProvider = ({ children }) => {
     });
   }, [requestCanInfo]);
 
-  function connectArm() {
-    setcanState((prev) => ({
-      ...prev,
-      armState: "connecting",
-    }));
-    console.log("Connecting Arm, Sending id " + canState.armId);
-    robotsocket.emit("connectArm", canState.armId, (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setcanState((prev) => ({
-          ...prev,
-          armState: "active",
-        }));
-      } else {
-        enqueueSnackbar("Arm didn't connect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
+  const connectArm = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      setcanState((prev) => ({
+        ...prev,
+        armState: "connecting",
+      }));
+      console.log("Connecting Arm, Sending id " + canState.armId);
+      robotsocket.emit("connectArm", canState.armId, (response) => {
+        console.log("RESPONSE:" + response);
+        if (response === "OK") {
+          setcanState((prev) => ({
+            ...prev,
+            armState: "active",
+          }));
+          resolve();
+        } else {
+          enqueueSnackbar("Arm didn't connect. Refreshing...", {
+            variant: "error",
+          });
+          requestCanInfo();
+          reject();
+        }
+      });
     });
-  }
-  function disconnectArm() {
-    setcanState((prev) => ({
-      ...prev,
-      armState: "connecting",
-    }));
-    console.log("Disconnecting Arm");
-    robotsocket.emit("disconnectArm", (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setcanState((prev) => ({
-          ...prev,
-          armState: "idle",
-        }));
-      } else {
-        enqueueSnackbar("Arm didn't disconnect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
+  }, [canState.armId, enqueueSnackbar, requestCanInfo]);
+
+  const disconnectArm = useCallback(() => {
+    return new Promise((resolve, reject) => {
+      setcanState((prev) => ({
+        ...prev,
+        armState: "connecting",
+      }));
+      console.log("Disconnecting Arm");
+      robotsocket.emit("disconnectArm", (response) => {
+        console.log("RESPONSE:" + response);
+        if (response === "OK") {
+          setcanState((prev) => ({
+            ...prev,
+            armState: "idle",
+          }));
+          resolve();
+        } else {
+          enqueueSnackbar("Arm didn't disconnect. Refreshing...", {
+            variant: "error",
+          });
+          requestCanInfo();
+          reject();
+        }
+      });
     });
-  }
+  }, [requestCanInfo]);
 
   function connectScience() {
     setcanState((prev) => ({
@@ -311,6 +329,9 @@ export const PeripheralProvider = ({ children }) => {
             disconnectDrive={disconnectDrive}
             connectDrive={connectDrive}
             closeSnackbar={closeSnackbar}
+            connectArm={connectArm}
+            disconnectArm={disconnectArm}
+            canId={canId}
           />
         ),
       });
