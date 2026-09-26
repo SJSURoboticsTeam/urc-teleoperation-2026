@@ -10,6 +10,8 @@ import time
 import datetime
 from collections import deque
 
+import can_serial
+
 _session_log = deque(maxlen=5000)
 _last_wrist_motor = {"pitch": None, "roll": None}  
 
@@ -413,10 +415,43 @@ def parse_arm_position_response(frame_info):
     }
 
 
-def parse_arm_data(data,serial_ports):
+def parse_arm_data(data, serial_ports):
     """
     Route incoming CAN frame to the appropriate parser.
     """
+    if not data:
+        return None
+
+    # Adapter-level responses are not CAN frames, so handle them before
+    # decode_canusb_frame(), which intentionally accepts only `t...` frames.
+    if data.startswith(b"\x07"):
+        print("Arm CAN error: command rejected; possible transmit FIFO full")
+        status_event = serial_ports.get("arm_status_event")
+        if status_event:
+            status_event.set()
+        return None
+
+    if data.startswith(b"F"):
+        try:
+            string_data = data.decode("ascii").strip()
+            if len(string_data) < 3:
+                raise ValueError("response is too short")
+            flags = int(string_data[1:3], 16)
+        except (UnicodeDecodeError, ValueError):
+            print(f"Invalid arm status response: {data!r}")
+            return None
+
+        if flags:
+            print(f"Arm CAN status flags: 0x{flags:02X}")
+            for bit_number, description in can_serial.status_flags.items():
+                if flags & (1 << bit_number):
+                    print(f"Arm CAN error bit {bit_number}: {description}")
+
+        status_event = serial_ports.get("arm_status_event")
+        if status_event:
+            status_event.set()
+        return None
+
     frame_info = decode_canusb_frame(data)
     if frame_info is None:
         return None
@@ -434,12 +469,6 @@ def parse_arm_data(data,serial_ports):
                 return parse_arm_ack(frame_info)
             if payload and payload[0] == 0x23:
                 return parse_arm_position_response(frame_info)
-        if data.startswith(b"\x07"):
-            print("CAN error: command rejected; possible transmit FIFO full")
-            status_event = serial_ports.get("drive_status_event")
-            if status_event:
-                status_event.set()
-            return
 
         print(f"[ARM RX] Unhandled servo frame -> {frame_info['frame']}")
         return None
@@ -584,9 +613,11 @@ async def read_arm_can_loop(serial_ports, sio):
                 await asyncio.sleep(0.1)
                 continue
 
-            data = await asyncio.to_thread(arm_serial.read_can, None)
+            # A finite timeout prevents an incomplete/stale response from
+            # blocking all later CAN and status responses forever.
+            data = await asyncio.to_thread(arm_serial.read_can, 0.5)
             if data:
-                parsed = parse_arm_data(data,serial_ports)
+                parsed = parse_arm_data(data, serial_ports)
                 if isinstance(parsed, dict) and parsed.get("type") == "position":
                     await sio.emit("armFeedback", parsed)
 
