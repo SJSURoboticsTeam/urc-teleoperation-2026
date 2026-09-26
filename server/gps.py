@@ -66,7 +66,7 @@ class ZEDF9P:
         try:
             parts = line.strip().split(",")
             hdop = float(parts[8])
-            accuracy_m = round(hdop * 2.5, 3)  # ← CHANGED: added round()
+            accuracy_m = round(hdop * 4, 3) 
             self.__accuracy = AccuracyEstimate(
                 horizontal_m=accuracy_m,
                 source="HDOP"

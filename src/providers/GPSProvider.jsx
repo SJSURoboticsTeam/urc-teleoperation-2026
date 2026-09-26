@@ -21,6 +21,7 @@ export const GPSProvider = ({ children }) => {
         long: -121.881194,
         lat: 37.336847,
         receive: false,
+        accuracy_m: null,
     });
 
 
@@ -39,7 +40,7 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
-                accuracy_m: data.accuracy_m ?? null
+                accuracy_m: data.accuracy_m ?? null,
             });
 
             robotSignalTimeout.current = setTimeout(() => {
@@ -61,6 +62,7 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
+                accuracy_m: data.accuracy_m ?? null,
             });
 
             baseSignalTimeout.current = setTimeout(() => {
