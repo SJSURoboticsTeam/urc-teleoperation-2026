@@ -14,6 +14,8 @@ export default function ScienceView() {
 
   const { robotCoordinates } = useGPS();
 
+  const [siteReadings, setSiteReadings] = useState([null, null, null])
+
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
 
@@ -25,6 +27,22 @@ export default function ScienceView() {
   const handleChange = (event, newTabContent) => {
     if (controlsLocked) return;
     setTabContent(newTabContent);
+  };
+
+  const handleGetGNSS = () => {
+    if (controlsLocked) return;
+    if (!robotCoordinates.receive) return;
+
+    setSiteReadings((prev) => {
+      const next = [...prev];
+      next[tabContent] = {
+        lat: robotCoordinates.lat,
+        long: robotCoordinates.long,
+        accuracy_m: robotCoordinates.accuracy_m,
+        capturedAt: Date.now(),
+      };
+      return next;
+    });
   };
 
 const exampleSteps = [
@@ -154,8 +172,9 @@ const exampleSteps = [
         </Box>
 
         <Box sx={{ p: 1 }}>
-          {tabNum.map((num) =>
-            tabContent === num ? (
+          {tabNum.map((num) => {
+            const reading = siteReadings[num];
+            return tabContent === num ? (
               <div key={num}>
                 <div className="flex flex-row">
                   <Box sx={{ width: "60%", overflowX: "auto", minWidth: 0 }}>
@@ -168,14 +187,15 @@ const exampleSteps = [
                     </div>
                   </Box>
                   <Box className="flex flex-row" sx={{ ml: 4 }}>
-                    Coordinates: ({robotCoordinates.receive ? `${robotCoordinates.lat.toFixed(6)}, ${robotCoordinates.long.toFixed(6)}` : "No Signal"}) <br />
-                    Accuracy: {robotCoordinates.receive && robotCoordinates.accuracy_m ? `${robotCoordinates.accuracy_m}m` : "---"} <br />
+                    Coordinates: ({reading ? `${reading.lat.toFixed(6)}, ${reading.long.toFixed(6)}` : "Not yet captured"}) <br />
+                    Accuracy: {reading && reading.accuracy_m ? `${reading.accuracy_m}m` : "---"} <br />
                     Range: ___{" "}
                     <br />
 
                     <Button
                       variant="contained"
-                      disabled={controlsLocked}
+                      disabled={controlsLocked || !robotCoordinates.receive}
+                      onClick={handleGetGNSS}
                       sx={{
                         border: 1,
                         borderColor: "black",
@@ -193,8 +213,8 @@ const exampleSteps = [
 
                 <ScienceGraphTable controlsLocked={controlsLocked} />
               </div>
-            ) : null,
-          )}
+            ) : null;  
+          })}
         </Box>
       </Box>
     </div>

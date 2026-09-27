@@ -452,16 +452,30 @@ export default function Map() {
       });
 
       map.on('zoom', () => {
-        if(!mapRef.current || !mapRef.current.getSource('robot-accuracy-circle')) return;
-        if(!robotCoordinates.receive || !robotCoordinates.accuracy_m) return;
+        if (!mapRef.current) return;
+        const map = mapRef.current;
+        if (map.getSource('robot-accuracy-circle')) {
+            if (robotCoordinates.receive && robotCoordinates.accuracy_m) {
+                const metersPerPixel = 40075016.686 *
+                    Math.cos(robotCoordinates.lat * Math.PI / 180) /
+                    (512 * Math.pow(2, map.getZoom()));
+                map.setPaintProperty('robot-accuracy-circle-layer', 'circle-radius', robotCoordinates.accuracy_m / metersPerPixel);
+            } else {
+                map.setPaintProperty('robot-accuracy-circle-layer', 'circle-radius', 0);  
+            }
+        }
 
-        const metersPerPixel = 40075016.686 *
-          Math.cos(robotCoordinates.lat * Math.PI / 180) /
-          (512 * Math.pow(2, map.getZoom()));
-        const radiusPx = robotCoordinates.accuracy_m / metersPerPixel;
-
-        mapRef.current.setPaintProperty('robot-accuracy-circle-layer', 'circle-radius', radiusPx);
-      })
+        if (map.getSource('base-accuracy-circle')) {
+            if (baseCoordinates.receive && baseCoordinates.accuracy_m) {
+                const metersPerPixel = 40075016.686 *
+                    Math.cos(baseCoordinates.lat * Math.PI / 180) /
+                    (512 * Math.pow(2, map.getZoom()));
+                map.setPaintProperty('base-accuracy-circle-layer', 'circle-radius', baseCoordinates.accuracy_m / metersPerPixel);
+            } else {
+                map.setPaintProperty('base-accuracy-circle-layer', 'circle-radius', 0);  
+            }
+        }
+      });
     };
 
     map.on("load", onLoad);
