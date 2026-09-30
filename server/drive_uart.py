@@ -1,4 +1,5 @@
 import asyncio
+from drive_control import is_drive_controller
 
 DRIVE_MSG_ID = {
     "SET_CHASSIS_VELOCITIES": 0x40,
@@ -66,6 +67,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
     async def driveCommands(sid, data):
         try:
             async with drive_command_lock:
+                if not is_drive_controller(sid):
+                    print(f'[{sid}] Ignored drive command: not in control')
+                    return
                 await send_drive_command(
                     serial_ports,
                     data["xVel"],
@@ -79,6 +83,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
 
     @sio.event
     async def driveHoming(sid):
+        if not is_drive_controller(sid):
+            print(f'[{sid}] Ignored homing request: not in control')
+            return
         try:
             # make sure drive UART is connected first
             if serial_ports["drive"] is None:
