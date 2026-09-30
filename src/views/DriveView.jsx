@@ -3,6 +3,7 @@ import { lazy, Suspense, useRef } from "react";
 import { Typography } from "@mui/material";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import { usePeripherals } from "../contexts/PeripheralContext";
+import { useDriveControl } from "../contexts/DriveControlContext";
 
 const Map = lazy(() => import("../components/ui/Map"));
 
@@ -12,7 +13,9 @@ export default function DriveComponents() {
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
+  const { hasControl } = useDriveControl();
   const controlsLocked = autonomyEnabled;
+  const driveLocked = autonomyEnabled || !hasControl;
 
   return (
     <div
@@ -43,9 +46,20 @@ export default function DriveComponents() {
             Drive controls are disabled while autonomy is active.
           </Typography>
         )}
+        {!autonomyEnabled && !hasControl && (
+          <Typography
+            sx={{
+              textAlign: "center",
+              fontWeight: 700,
+            }}
+            color="warning.main"
+          >
+            You don't have drive control. Take control from STATUS in the top bar. Mast controls still work.
+          </Typography>
+        )}
 
         <div className="flex flex-row items-center justify-center gap-6">
-          <DriveManualInput controlsLocked={controlsLocked} />
+          <DriveManualInput controlsLocked={controlsLocked} driveLocked={driveLocked} />
         </div>
 
         <Suspense
