@@ -207,6 +207,7 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
         sx={{
           display: "flex",
           gap: 2.5,
+          opacity: controlsLocked ? 0.65 : 1,
         }}
       >
         <Box
@@ -217,7 +218,6 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
             flexDirection: "column",
             p: 1,
             borderColor: "gray",
-            opacity: driveLocked ? 0.65 : 1,
           }}
         >
           <Box
@@ -232,7 +232,7 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
             <Stack
               spacing={2}
               direction="row"
-              sx={{ alignItems: "center", mb: 1 }}
+              sx={{ alignItems: "center", mb: 1, opacity: driveLocked ? 0.65 : 1 }}
             >
               <TbHourglassLow size="30px" />
               <Slider
@@ -310,7 +310,6 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
             flexDirection: "column",
             p: 1,
             borderColor: "gray",
-            opacity: controlsLocked ? 0.65 : 1,
           }}
         >
           <Box
