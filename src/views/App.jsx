@@ -18,6 +18,7 @@ import MastCommandProvider from "../providers/MastCommandProvider";
 import GamepadProvider from "../providers/GamepadProvider";
 import GPSProvider from "../providers/GPSProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
+import SoftStopProvider from "../providers/SoftStopProvider";
 import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
@@ -85,39 +86,41 @@ function App() {
             <GPSProvider>
               <MetricsProvider>
                 <AutonomyModeProvider>
-                  <ArmCommandProvider>
-                    <GamepadProvider>
-                      <DriveCommandProvider>
-                        <MastCommandProvider>
-                          <CssBaseline />
-                          {/* Normalizes styles */}
-                          <TopAppBar
-                            selectedElements={selectedElements}
-                            setSelectedElements={setSelectedElements}
-                            addSnackbarMessage={addSnackbarMessage}
-                          />
+                  <SoftStopProvider>
+                    <ArmCommandProvider>
+                      <GamepadProvider>
+                        <DriveCommandProvider>
+                          <MastCommandProvider>
+                            <CssBaseline />
+                            {/* Normalizes styles */}
+                            <TopAppBar
+                              selectedElements={selectedElements}
+                              setSelectedElements={setSelectedElements}
+                              addSnackbarMessage={addSnackbarMessage}
+                            />
 
-                          <Box
-                            component="main"
-                            sx={{
-                              flexGrow: 1,
-                              p: 2,
-                              display: "flex",
-                              flexDirection: "column",
-                              overflow: "hidden",
-                              minHeight: 0,
-                              marginTop: "60px",
-                            }}
-                          >
-                            <SplitView selectedElements={selectedElements}>
-                              {/* we pass all these elements as "children" into SplitView */}
-                              <Outlet />
-                            </SplitView>
-                          </Box>
-                        </MastCommandProvider>
-                      </DriveCommandProvider>
-                    </GamepadProvider>
-                  </ArmCommandProvider>
+                            <Box
+                              component="main"
+                              sx={{
+                                flexGrow: 1,
+                                p: 2,
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                                minHeight: 0,
+                                marginTop: "60px",
+                              }}
+                            >
+                              <SplitView selectedElements={selectedElements}>
+                                {/* we pass all these elements as "children" into SplitView */}
+                                <Outlet />
+                              </SplitView>
+                            </Box>
+                          </MastCommandProvider>
+                        </DriveCommandProvider>
+                      </GamepadProvider>
+                    </ArmCommandProvider>
+                  </SoftStopProvider>
                 </AutonomyModeProvider>
               </MetricsProvider>
             </GPSProvider>
