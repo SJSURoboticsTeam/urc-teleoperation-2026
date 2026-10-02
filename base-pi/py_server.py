@@ -6,7 +6,7 @@ import signal
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
-from video import send_fake_video_stats
+from video import send_fake_video_stats, videoloop
 import sys, subprocess
 
 
@@ -161,6 +161,8 @@ async def connect(sid,environ):
         video_task_started = True
         if offline:
             sio.start_background_task(send_fake_video_stats, sio)
+        else:
+            sio.start_background_task(videoloop, sio)
 
 
 @sio.event

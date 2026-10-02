@@ -1,11 +1,15 @@
 import asyncio
 import random
+import aiohttp
 
 VideoPollingRate = 2
 camera_names = ["mast", "wheels", "arm1", "arm2", "science"]
 
 GOOD_MAX = 1.0      
-DEGRADED_MAX = 5.0  
+DEGRADED_MAX = 5.0
+
+MediaMTXHost = "127.0.0.1"
+MediaMTXApiPort = 9997
 
 def classify(dropped_per_sec):
     if dropped_per_sec is None:
@@ -31,3 +35,35 @@ async def send_fake_video_stats(sio):
                 }
         await sio.emit("videostats", stats)
         await asyncio.sleep(VideoPollingRate)
+
+last_error_count = {name: 0 for name in camera_names}
+
+async def get_dropped_frames(session, camera_name):
+    url = f"http://{MediaMTXHost}:{MediaMTXApiPort}/v3/paths/get/{camera_name}"
+    try:
+        async with session.get(url) as resp:
+            data = await resp.json()
+            return data.get("inboundFramesInError")
+    except Exception:
+        return None
+
+async def videoloop(sio):
+    async with aiohttp.ClientSession() as session:
+        while True:
+            stats = {}
+
+            for name in camera_names:
+                total = await get_dropped_frames(session, name)
+                dropped = None
+
+                if total is not None:
+                    dropped = max(total - last_error_count[name], 0)
+                    last_error_count[name] = total
+
+                stats[name] = {
+                    "status": classify(dropped),
+                    "droppedPerSec": dropped,
+                }
+
+            await sio.emit("videostats", stats)
+            await asyncio.sleep(VideoPollingRate)
