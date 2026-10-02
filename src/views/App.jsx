@@ -24,6 +24,7 @@ import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
 import DemoPopup from "../components/ui/DemoPane";
+import SoftStopBanner from "../components/ui/SoftStopBanner";
 
 function App() {
   // Global autonomy state so every view can react to it
@@ -111,6 +112,7 @@ function App() {
                                 marginTop: "60px",
                               }}
                             >
+                              <SoftStopBanner />
                               <SplitView selectedElements={selectedElements}>
                                 {/* we pass all these elements as "children" into SplitView */}
                                 <Outlet />
