@@ -1,35 +1,57 @@
 import "react-resizable/css/styles.css";
-import { useState } from "react";
 import Box from "@mui/material/Box";
-import { robotsocket } from "../socket.io/socket";
+import Typography from "@mui/material/Typography";
+import { useDriveFeedback } from "../../contexts/DriveFeedbackContext";
+
+// An invalid value makes SVG drop the whole transform silently, which looks
+// identical to a wheel pointing straight ahead. Fall back to 0 for drawing
+// only, and use hasAngle() to say whether we actually know the angle.
+function drawAngle(value) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+function hasAngle(value) {
+  return Number.isFinite(value);
+}
 
 export default function Wheel() {
-  const [wheelAngles, setWheelAngles] = useState({
-    frontLeft: 0,
-    frontRight: 0,
-    backLeft: 0,
-    backRight: 0,
-  });
+  // Subscription lives in the provider, so this component mounts and unmounts
+  // without touching the socket. It previously called robotsocket.on() in the
+  // render body with no cleanup, adding a listener on every single render.
+  const { wheelAngles, receive } = useDriveFeedback();
 
-  robotsocket.on("wheelAngles", (data) => {
-    setWheelAngles({
-      frontLeft: data.fLAngle,
-      frontRight: data.fRAngle,
-      backLeft: data.bLAngle,
-      backRight: data.bRAngle,
-    });
-  });
+  // 0 degrees is a real, plausible angle, so a corner we have never heard from
+  // must not be drawn as if it were pointing forward.
+  const known = {
+    frontLeft: hasAngle(wheelAngles.frontLeft),
+    frontRight: hasAngle(wheelAngles.frontRight),
+    backLeft: hasAngle(wheelAngles.backLeft),
+    backRight: hasAngle(wheelAngles.backRight),
+  };
+  const anyKnown = Object.values(known).some(Boolean);
 
   return (
     <Box
       height={175}
       display="flex"
+      flexDirection="column"
+      alignItems="center"
       sx={{
         width: "clamp(120px, 10vw, 150px)",
         m: "clamp(4px, 0.8vw, 12px)",
+        position: "relative",
       }}
       justifyContent="center"
     >
+      {(!receive || !anyKnown) && (
+        <Typography
+          variant="caption"
+          color="error"
+          sx={{ fontWeight: 700, letterSpacing: "0.04em" }}
+        >
+          NO DATA
+        </Typography>
+      )}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="100%"
@@ -68,7 +90,8 @@ export default function Wheel() {
         >
           <g
             id="Front_Left"
-            transform={`rotate(${wheelAngles.frontLeft} 27.505 98.385)`}
+            opacity={known.frontLeft ? 1 : 0.25}
+            transform={`rotate(${drawAngle(wheelAngles.frontLeft)} 27.505 98.385)`}
           >
             {/* wheel rectangle */}
             <path d="M1.24 49.9h52.53v96.97H1.24z" className="wheel" />
@@ -90,7 +113,8 @@ export default function Wheel() {
         >
           <g
             id="Back_Left"
-            transform={`rotate(${wheelAngles.backLeft} 26.76 316.11)`}
+            opacity={known.backLeft ? 1 : 0.25}
+            transform={`rotate(${drawAngle(wheelAngles.backLeft)} 26.76 316.11)`}
           >
             <path d="M.5 267.62h52.53v96.97H.5z" className="wheel" />
             <path
@@ -110,7 +134,8 @@ export default function Wheel() {
         >
           <g
             id="Back_Right"
-            transform={`rotate(${wheelAngles.backRight} 203.51 316.11)`}
+            opacity={known.backRight ? 1 : 0.25}
+            transform={`rotate(${drawAngle(wheelAngles.backRight)} 203.51 316.11)`}
           >
             <path d="M177.25 265.6h52.53v96.97h-52.53z" className="wheel" />
             <path
@@ -130,7 +155,8 @@ export default function Wheel() {
         >
           <g
             id="Front_Right"
-            transform={`rotate(${wheelAngles.frontRight} 203.51 98.385)`}
+            opacity={known.frontRight ? 1 : 0.25}
+            transform={`rotate(${drawAngle(wheelAngles.frontRight)} 203.51 98.385)`}
           >
             <path d="M175.55 47.98h52.53v96.97h-52.53z" className="wheel" />
             <path

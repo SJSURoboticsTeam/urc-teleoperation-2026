@@ -2,6 +2,7 @@ import asyncio
 import config
 import can_serial
 import math
+from drive_feedback import apply_parsed
 
 
 drive_send_ID = {
@@ -57,9 +58,15 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio, serial_ports, drive_command_lock):
+def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
     @sio.event
     async def driveCommands(sid, data):
+        # Record the command before attempting the write. With no serial
+        # attached the send raises and is swallowed below, and in --offline
+        # that is the normal case - recording after the try would mean the
+        # simulator never sees what the operator asked for.
+        if drive_state is not None:
+            drive_state.note_command(data['xVel'], data['yVel'], data['rotVel'])
         try:
             async with drive_command_lock:
                 can_msg = await send_drive_command(
@@ -123,7 +130,17 @@ async def parse_drive_data(data):
                 rot_vel = rot_vel - math.pow(2, 16)
 
             print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
-        
+
+            # Firmware acks every SET_CHASSIS_VELOCITIES we send, so this
+            # arrives at command rate with no polling and costs no extra bus
+            # traffic. Still fixed-point here; scaled back in apply_parsed().
+            return {
+                "type": "velocities",
+                "xVel": x_vel,
+                "yVel": y_vel,
+                "rotVel": rot_vel,
+            }
+
         elif address == drive_receive_ID['HEARTBEAT_REPLY']:
             print("Heartbeat Reply")
 
@@ -133,6 +150,12 @@ async def parse_drive_data(data):
         elif address == drive_receive_ID['RETURN_OFFSET']:
             angle_offset = int(string_data[5:13],16)
             print(f"angle offset: {angle_offset} \nmodule position: {string_data[13:15]}")
+
+            return {
+                "type": "offset",
+                "modulePosition": int(string_data[13:15], 16),
+                "rawAngle": angle_offset,
+            }
 
         elif address == drive_receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
             x_vel = int(string_data[5:9],16)
@@ -151,6 +174,13 @@ async def parse_drive_data(data):
                 rot_vel = rot_vel - math.pow(2, 16)
 
             print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
+
+            return {
+                "type": "velocities",
+                "xVel": x_vel,
+                "yVel": y_vel,
+                "rotVel": rot_vel,
+            }
         
         # elif address == drive_receive_ID['CONFIG']:
         #     setting_data = int(string_data[5:13],16)
@@ -159,16 +189,28 @@ async def parse_drive_data(data):
     except Exception as e:
         print(f'Error parsing drive data: {e}')
 
-async def read_drive_can_loop(serial_ports):
-    try:
-        while True:
+async def read_drive_can_loop(serial_ports, drive_state=None):
+    while True:
+        try:
+            # Keep the loop alive while drive is disconnected. Previously the
+            # None dereference below raised out of the whole while loop and the
+            # task exited permanently, so connecting drive later did nothing.
+            # arm.py:576 guards the same way.
+            drive = serial_ports["drive"]
+            if drive is None:
+                await asyncio.sleep(0.1)
+                continue
+
             # read_can is blocking so run it in a thread
-            data = await asyncio.to_thread(serial_ports["drive"].read_can, None)
+            data = await asyncio.to_thread(drive.read_can, None)
             if data:
-                await parse_drive_data(data)
+                parsed = await parse_drive_data(data)
+                if drive_state is not None:
+                    apply_parsed(drive_state, parsed)
             await asyncio.sleep(0.01)
-    except Exception as e:
-        print(f'Drive CAN task error: {e}')        
+        except Exception as e:
+            print(f'Drive CAN task error: {e}')
+            await asyncio.sleep(0.25)
 
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
