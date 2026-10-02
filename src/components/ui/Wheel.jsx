@@ -3,9 +3,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { useDriveFeedback } from "../../contexts/DriveFeedbackContext";
 
-// An invalid value makes SVG drop the whole transform silently, which looks
-// identical to a wheel pointing straight ahead. Fall back to 0 for drawing
-// only, and use hasAngle() to say whether we actually know the angle.
+// SVG silently drops an invalid transform, which looks identical to 0 degrees.
 function drawAngle(value) {
   return Number.isFinite(value) ? value : 0;
 }
@@ -15,13 +13,9 @@ function hasAngle(value) {
 }
 
 export default function Wheel() {
-  // Subscription lives in the provider, so this component mounts and unmounts
-  // without touching the socket. It previously called robotsocket.on() in the
-  // render body with no cleanup, adding a listener on every single render.
-  const { wheelAngles, receive } = useDriveFeedback();
+    const { wheelAngles, receive } = useDriveFeedback();
 
-  // 0 degrees is a real, plausible angle, so a corner we have never heard from
-  // must not be drawn as if it were pointing forward.
+  // 0 degrees is a real angle, so an unheard-from corner must not render as one.
   const known = {
     frontLeft: hasAngle(wheelAngles.frontLeft),
     frontRight: hasAngle(wheelAngles.frontRight),

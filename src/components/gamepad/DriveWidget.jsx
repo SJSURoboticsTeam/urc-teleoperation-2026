@@ -24,8 +24,7 @@ const DIVERGENCE_MIN_COMMAND = 0.2;   // ignore noise around a standstill
 const DIVERGENCE_RATIO = 0.5;         // actual below half of commanded is suspect
 
 function formatValue(value) {
-  // Actual values are null until the rover reports. Calling .toFixed() on null
-  // throws, React logs a console error, and the Playwright smoke test fails.
+  // Actual is null until the rover reports; null.toFixed() would throw.
   return Number.isFinite(value) ? value.toFixed(1) : "--";
 }
 
@@ -35,9 +34,7 @@ function isDiverged(commanded, actual) {
   return Math.abs(actual) < Math.abs(commanded) * DIVERGENCE_RATIO;
 }
 
-// Hoisted to module scope on purpose. Defined inside the parent it was a new
-// component type on every render, so React remounted all three boxes - which
-// at a 5Hz feedback feed means remounting five times a second.
+// Module scope on purpose: defined inside the parent it remounts every render.
 function VelocityItem({ commanded, actual, label, dimmed }) {
   const diverged = isDiverged(commanded, actual);
 
@@ -91,9 +88,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
   const { measured, reportedCommand } = useDriveFeedback();
   const [driveCommands, setDriveCommands] = useDriveCommands();
-  // With a controller attached the local axes are the live command. Without
-  // one nothing drives them, so fall back to what the backend reports it
-  // last sent - otherwise commanded reads 0 while actual clearly is not.
+  // No controller means nothing drives the local axes, so use the backend's.
   const useLocalCommand = driveConnectedOne != null;
   const {
     sidewaysVelocity,

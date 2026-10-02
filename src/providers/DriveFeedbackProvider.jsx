@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { robotsocket } from "../components/socket.io/socket";
 import { DriveFeedbackContext } from "../contexts/DriveFeedbackContext";
 
-// How long to wait after the last packet before calling the feed dead.
-// Matches the GPS provider's behaviour.
+// Matches the GPS provider's staleness window.
 const STALE_AFTER_MS = 3000;
 
 const NO_ANGLES = {
@@ -19,8 +18,7 @@ const NO_VELOCITIES = {
   rotVel: null,
 };
 
-// What the backend last sent to the rover. Normally this mirrors the local
-// gamepad state, but it is the only source when nothing is plugged in.
+// The backend's view of the last command, used when no gamepad is attached.
 const NO_COMMANDED = {
   xVel: null,
   yVel: null,
@@ -37,9 +35,7 @@ export const DriveFeedbackProvider = ({ children }) => {
   const staleTimeout = useRef(null);
 
   useEffect(() => {
-    // Any feedback packet proves the rover is still talking, so one shared
-    // timer covers both events. Restarting it on every packet means it only
-    // fires once the rover genuinely goes quiet.
+    // One shared timer: any packet proves the rover is still talking.
     const markAlive = () => {
       setReceive(true);
       if (staleTimeout.current) {
@@ -77,8 +73,7 @@ export const DriveFeedbackProvider = ({ children }) => {
     robotsocket.on("wheelAngles", handleWheelAngles);
     robotsocket.on("driveFeedback", handleDriveFeedback);
 
-    // Same function references on the way out, so StrictMode's double-invoke
-    // removes the listeners it added instead of leaving one behind.
+    // Same function references, or .off() removes nothing.
     return () => {
       robotsocket.off("wheelAngles", handleWheelAngles);
       robotsocket.off("driveFeedback", handleDriveFeedback);

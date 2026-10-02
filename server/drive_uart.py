@@ -66,7 +66,7 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
     @sio.event
     async def driveCommands(sid, data):
-        # Record before sending - see the matching comment in drive.py
+        # Recorded before the send - see drive.py
         if drive_state is not None:
             drive_state.note_command(data["xVel"], data["yVel"], data["rotVel"])
         try:

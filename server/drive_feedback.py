@@ -1,20 +1,12 @@
 """Drive feedback state, emitter, and offline simulator.
 
-The rover already reports its swerve module angles and its measured chassis
-velocities. Until now both were decoded in drive.py / drive_uart.py and thrown
-away with a print(). This module collects them in one place and pushes them to
-the frontend.
-
-Two socket events are produced:
+Emits two socket events:
     wheelAngles   {fLAngle, fRAngle, bLAngle, bRAngle}
     driveFeedback {xVel, yVel, rotVel, commanded: {...}}
 
-Design notes:
-  - Parsing stays in drive.py / drive_uart.py and remains pure. Those modules
-    hand decoded values to DriveFeedbackState; this module owns the emitting.
-    Same split arm.py uses (parse_arm_data -> read_arm_can_loop emits).
-  - Firmware reports ONE module per RETURN_OFFSET frame, so angles are
-    accumulated here and published together on a timer instead of per frame.
+Parsing stays in drive.py / drive_uart.py; this module owns state and emitting.
+Firmware reports one module per RETURN_OFFSET frame, so angles accumulate here
+and publish together on a timer.
 """
 
 import asyncio
@@ -50,26 +42,20 @@ FRESH_WINDOW_SECONDS = 2.0
 class DriveFeedbackState:
     """Collects drive telemetry from whichever transport is active.
 
-    One instance is created in py_server.py and handed to the read loop (or the
-    simulator) and to the emitter. Keeping it an object rather than module
-    globals means both transports write to a single visible owner, and it can
-    be exercised in a test without a socket.
+    One instance lives in py_server.py, shared by the read loop (or the
+    simulator) and the emitter.
     """
 
     def __init__(self):
-        # Last angle seen per corner, in degrees. None means never reported.
+        # Per corner, degrees. None means never reported.
         self._angles = {corner: None for corner in CORNERS}
-        # Measured chassis velocities, real units.
         self._measured = {"xVel": None, "yVel": None, "rotVel": None}
-        # Most recent command we sent, so the UI can show commanded vs actual.
         self._commanded = {"xVel": 0.0, "yVel": 0.0, "rotVel": 0.0}
-        # True once a real operator command arrives. Lets the simulator drive
-        # itself for a demo until someone actually takes the controls.
+        # True once a real operator command arrives; lets the simulator
+        # self-drive until someone takes the controls.
         self._command_seen = False
-        # monotonic() timestamp of the last frame received from firmware.
-        self._last_frame_at = None
-        # Rate-limit unknown-module warnings; the console is noisy enough.
-        self._last_warn_at = 0.0
+        self._last_frame_at = None   # last frame FROM FIRMWARE, not from us
+        self._last_warn_at = 0.0     # rate-limits the unknown-module warning
 
     # ---------- writers ----------
 
@@ -83,11 +69,8 @@ class DriveFeedbackState:
         self._command_seen = True
 
     def note_demo_command(self, x_vel, y_vel, rot_vel):
-        """Same, but for the simulator's self-driven pattern.
-
-        Deliberately does not set _command_seen, so a real command from the
-        operator still takes over the moment one arrives.
-        """
+        """Simulator's self-driven pattern. Does not set _command_seen,
+        so a real operator command takes over the moment one arrives."""
         self._commanded = {
             "xVel": float(x_vel),
             "yVel": float(y_vel),
@@ -124,22 +107,16 @@ class DriveFeedbackState:
     def has_fresh_data(self):
         """True while firmware is still talking to us.
 
-        Deliberately keyed on when a frame last ARRIVED, not on whether the
-        numbers changed. A parked rover still reports; it is not offline. If we
-        went quiet whenever values held steady, a stationary rover would look
-        dead and a dead one would look stationary.
+        Keyed on when a frame last ARRIVED, not on whether values changed - a
+        parked rover still reports, and is not offline.
         """
         if self._last_frame_at is None:
             return False
         return (time.monotonic() - self._last_frame_at) < FRESH_WINDOW_SECONDS
 
     def wheel_payload(self):
-        """wheelAngles event body. Corners never reported stay None.
-
-        None travels to the browser as null, and the UI renders that as
-        "unknown" rather than drawing the wheel at 0 degrees. 0 is a real,
-        plausible angle, so defaulting to it would be a convincing lie.
-        """
+        """wheelAngles event body. Unreported corners stay None, which
+        the UI renders as unknown rather than as 0 degrees."""
         return {
             "fLAngle": self._angles["fL"],
             "fRAngle": self._angles["fR"],
@@ -163,10 +140,8 @@ class DriveFeedbackState:
 def apply_parsed(state, parsed):
     """Feed one decoded frame into the state.
 
-    Both transports decode different wire formats into the same small dicts,
-    so this is the single place that knows how a parsed frame maps onto state.
-    Velocities arrive still scaled as fixed-point integers; the inverse of the
-    send-side scaling is applied here.
+    Both transports produce the same dicts, so this is the one place that maps
+    a frame onto state and undoes the send-side fixed-point scaling.
     """
     if not isinstance(parsed, dict):
         return
@@ -189,14 +164,9 @@ def apply_parsed(state, parsed):
 async def emit_drive_feedback_loop(sio, state, hz=5):
     """Publish both feedback events on a fixed timer.
 
-    Why a timer instead of emitting inside the read loop: firmware sends one
-    module per offset frame, so per-frame emitting would produce four partial
-    updates per cycle. Coalescing also keeps us off the control link, which
-    runs ~1-7 Mbit/s over 900MHz and already carries a drive command every
-    500ms (FrameRateConstant).
-
-    While firmware is quiet we publish nothing, which lets the frontend's own
-    staleness timer fire and show NO DATA.
+    A timer rather than per-frame: one module arrives per offset frame, and the
+    900MHz control link is only ~1-7 Mbit/s. While firmware is quiet we publish
+    nothing, letting the frontend's staleness timer show NO DATA.
     """
     interval = 1.0 / hz
     while True:
@@ -210,9 +180,7 @@ async def emit_drive_feedback_loop(sio, state, hz=5):
 
 
 # =================== Offline simulator ===================
-# Mirrors send_fake_gps_data() in gps.py: when the server is started with
-# --offline we generate plausible telemetry instead of reading hardware, so the
-# feature can be developed and demonstrated with no rover attached.
+# Mirrors send_fake_gps_data() in gps.py - plausible telemetry with no rover.
 
 # Module positions in the rover frame, metres. x forward, y left.
 _HALF_LENGTH = 0.35
@@ -240,12 +208,9 @@ DEMO_ROT_RATE = 0.25        # rad/s
 
 
 def _target_angles(x_vel, y_vel, rot_vel):
-    """Swerve steering angles for a commanded chassis motion.
-
-    Each module's ground velocity is the chassis translation plus the tangential
-    component from rotation about the centre; the steering angle is that
-    vector's direction.
-    """
+    """Swerve steering angles for a commanded chassis motion: each
+    module's ground velocity is translation plus rotation about the centre, and
+    the steering angle is that vector's direction."""
     omega = math.radians(rot_vel)
     angles = {}
     for corner, (mx, my) in _MODULE_OFFSETS.items():
@@ -272,9 +237,7 @@ async def simulate_drive_feedback(sio, state):
                 # A controller is driving; follow it.
                 command = state.commanded()
             else:
-                # Nobody has sent a command yet - a gamepad is the only thing
-                # that produces one, so without this the whole panel would sit
-                # at zero and the feature would look broken during a demo.
+                # No gamepad attached, so nothing would move without this.
                 elapsed = time.monotonic() - started_at
                 state.note_demo_command(
                     DEMO_X_AMPLITUDE * math.cos(elapsed * DEMO_X_RATE),
@@ -319,8 +282,8 @@ async def simulate_drive_feedback(sio, state):
 
 
 def _corner_to_position(corner):
-    """Inverse of MODULE_POSITION_TO_CORNER, so the simulator exercises the
-    same lookup path the real transports use."""
+    """Inverse of MODULE_POSITION_TO_CORNER, so the simulator uses the
+    same lookup as the real transports."""
     for position, name in MODULE_POSITION_TO_CORNER.items():
         if name == corner:
             return position

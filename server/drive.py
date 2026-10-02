@@ -61,10 +61,7 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
     @sio.event
     async def driveCommands(sid, data):
-        # Record the command before attempting the write. With no serial
-        # attached the send raises and is swallowed below, and in --offline
-        # that is the normal case - recording after the try would mean the
-        # simulator never sees what the operator asked for.
+        # Recorded before the send: offline the write throws and is swallowed.
         if drive_state is not None:
             drive_state.note_command(data['xVel'], data['yVel'], data['rotVel'])
         try:
@@ -131,9 +128,7 @@ async def parse_drive_data(data):
 
             print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
 
-            # Firmware acks every SET_CHASSIS_VELOCITIES we send, so this
-            # arrives at command rate with no polling and costs no extra bus
-            # traffic. Still fixed-point here; scaled back in apply_parsed().
+            # Acked on every command, so no polling needed. Scaled in apply_parsed().
             return {
                 "type": "velocities",
                 "xVel": x_vel,
@@ -192,10 +187,7 @@ async def parse_drive_data(data):
 async def read_drive_can_loop(serial_ports, drive_state=None):
     while True:
         try:
-            # Keep the loop alive while drive is disconnected. Previously the
-            # None dereference below raised out of the whole while loop and the
-            # task exited permanently, so connecting drive later did nothing.
-            # arm.py:576 guards the same way.
+            # Guard so the task survives a disconnected port (see arm.py:576).
             drive = serial_ports["drive"]
             if drive is None:
                 await asyncio.sleep(0.1)
@@ -217,9 +209,7 @@ async def read_drive_can_loop(serial_ports, drive_state=None):
 async def send_drive_status_request(serial_ports):
     while True:
         try:
-            # Same guard as read_drive_can_loop: without it the None deref
-            # below killed this task on its first pass whenever drive was
-            # not connected, so it never recovered if drive came up later.
+            # Same guard as read_drive_can_loop.
             drive = serial_ports["drive"]
             if drive is None:
                 await asyncio.sleep(1)
