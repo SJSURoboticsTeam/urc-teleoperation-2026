@@ -6,8 +6,8 @@ away with a print(). This module collects them in one place and pushes them to
 the frontend.
 
 Two socket events are produced:
-    wheelAngles   {fLAngle, fRAngle, bLAngle, bRAngle, ts}
-    driveFeedback {xVel, yVel, rotVel, commanded: {...}, ts}
+    wheelAngles   {fLAngle, fRAngle, bLAngle, bRAngle}
+    driveFeedback {xVel, yVel, rotVel, commanded: {...}}
 
 Design notes:
   - Parsing stays in drive.py / drive_uart.py and remains pure. Those modules
@@ -145,7 +145,6 @@ class DriveFeedbackState:
             "fRAngle": self._angles["fR"],
             "bLAngle": self._angles["bL"],
             "bRAngle": self._angles["bR"],
-            "ts": time.time(),
         }
 
     def velocity_payload(self):
@@ -155,7 +154,6 @@ class DriveFeedbackState:
             "yVel": self._measured["yVel"],
             "rotVel": self._measured["rotVel"],
             "commanded": dict(self._commanded),
-            "ts": time.time(),
         }
 
     def commanded(self):
