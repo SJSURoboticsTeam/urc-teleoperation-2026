@@ -22,6 +22,7 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import VideoProvider from "../providers/VideoProvider";
 import DemoPopup from "../components/ui/DemoPane";
 
 function App() {
@@ -84,6 +85,7 @@ function App() {
           <PeripheralProvider>
             <GPSProvider>
               <MetricsProvider>
+                <VideoProvider>
                 <AutonomyModeProvider>
                   <ArmCommandProvider>
                     <GamepadProvider>
@@ -119,6 +121,7 @@ function App() {
                     </GamepadProvider>
                   </ArmCommandProvider>
                 </AutonomyModeProvider>
+                </VideoProvider>
               </MetricsProvider>
             </GPSProvider>
           </PeripheralProvider>
