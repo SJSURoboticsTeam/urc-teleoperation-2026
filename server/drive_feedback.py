@@ -32,7 +32,8 @@ OFFSET_UNITS_PER_DEGREE = 1.0
 CHASSIS_VEL_SCALE = 2 ** 12   # x/y velocity, m/s
 ROT_VEL_SCALE = 2 ** 6        # rotational velocity, deg/s
 
-CORNERS = ("fL", "fR", "bL", "bR")
+CORNERS = tuple(MODULE_POSITION_TO_CORNER.values())
+CORNER_TO_MODULE_POSITION = {v: k for k, v in MODULE_POSITION_TO_CORNER.items()}
 
 # How long without a frame from firmware before we treat the feed as dead and
 # stop publishing. The frontend has its own 3s timeout on top of this.
@@ -59,23 +60,19 @@ class DriveFeedbackState:
 
     # ---------- writers ----------
 
-    def note_command(self, x_vel, y_vel, rot_vel):
-        """Record what we just asked the rover to do (not a firmware frame)."""
-        self._commanded = {
-            "xVel": float(x_vel),
-            "yVel": float(y_vel),
-            "rotVel": float(rot_vel),
-        }
-        self._command_seen = True
+    def note_command(self, x_vel, y_vel, rot_vel, from_operator=True):
+        """Record what we last asked the rover to do (not a firmware frame).
 
-    def note_demo_command(self, x_vel, y_vel, rot_vel):
-        """Simulator's self-driven pattern. Does not set _command_seen,
-        so a real operator command takes over the moment one arrives."""
+        from_operator=False is the simulator's self-driven pattern, which must
+        not latch _command_seen or a real command could never take over.
+        """
         self._commanded = {
             "xVel": float(x_vel),
             "yVel": float(y_vel),
             "rotVel": float(rot_vel),
         }
+        if from_operator:
+            self._command_seen = True
 
     def has_operator_command(self):
         return self._command_seen
@@ -183,13 +180,11 @@ async def emit_drive_feedback_loop(sio, state, hz=5):
 # Mirrors send_fake_gps_data() in gps.py - plausible telemetry with no rover.
 
 # Module positions in the rover frame, metres. x forward, y left.
-_HALF_LENGTH = 0.35
-_HALF_WIDTH = 0.30
 _MODULE_OFFSETS = {
-    "fL": (_HALF_LENGTH, _HALF_WIDTH),
-    "fR": (_HALF_LENGTH, -_HALF_WIDTH),
-    "bL": (-_HALF_LENGTH, _HALF_WIDTH),
-    "bR": (-_HALF_LENGTH, -_HALF_WIDTH),
+    "fL": (0.35, 0.30),
+    "fR": (0.35, -0.30),
+    "bL": (-0.35, 0.30),
+    "bR": (-0.35, -0.30),
 }
 
 # Corner that refuses to move, to demonstrate the divergence warning.
@@ -233,18 +228,16 @@ async def simulate_drive_feedback(sio, state):
 
     while True:
         try:
-            if state.has_operator_command():
-                # A controller is driving; follow it.
-                command = state.commanded()
-            else:
+            if not state.has_operator_command():
                 # No gamepad attached, so nothing would move without this.
                 elapsed = time.monotonic() - started_at
-                state.note_demo_command(
+                state.note_command(
                     DEMO_X_AMPLITUDE * math.cos(elapsed * DEMO_X_RATE),
                     0.0,
                     DEMO_ROT_AMPLITUDE * math.sin(elapsed * DEMO_ROT_RATE),
+                    from_operator=False,
                 )
-                command = state.commanded()
+            command = state.commanded()
             targets = _target_angles(command["xVel"], command["yVel"], command["rotVel"])
 
             for corner in CORNERS:
@@ -261,7 +254,7 @@ async def simulate_drive_feedback(sio, state):
                     current[corner] += random.uniform(-0.2, 0.2)
 
                 state.note_offset(
-                    _corner_to_position(corner),
+                    CORNER_TO_MODULE_POSITION[corner],
                     current[corner] * OFFSET_UNITS_PER_DEGREE,
                 )
 
@@ -280,11 +273,3 @@ async def simulate_drive_feedback(sio, state):
 
         await asyncio.sleep(0.1)
 
-
-def _corner_to_position(corner):
-    """Inverse of MODULE_POSITION_TO_CORNER, so the simulator uses the
-    same lookup as the real transports."""
-    for position, name in MODULE_POSITION_TO_CORNER.items():
-        if name == corner:
-            return position
-    return -1

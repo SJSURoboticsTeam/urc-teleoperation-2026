@@ -60,13 +60,7 @@ export const DriveFeedbackProvider = ({ children }) => {
         yVel: data.yVel,
         rotVel: data.rotVel,
       });
-      if (data.commanded) {
-        setReportedCommand({
-          xVel: data.commanded.xVel,
-          yVel: data.commanded.yVel,
-          rotVel: data.commanded.rotVel,
-        });
-      }
+      if (data.commanded) setReportedCommand(data.commanded);
       markAlive();
     };
 
