@@ -215,12 +215,20 @@ async def read_drive_can_loop(serial_ports, drive_state=None):
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
 async def send_drive_status_request(serial_ports):
-    try:
-        while True:
+    while True:
+        try:
+            # Same guard as read_drive_can_loop: without it the None deref
+            # below killed this task on its first pass whenever drive was
+            # not connected, so it never recovered if drive came up later.
+            drive = serial_ports["drive"]
+            if drive is None:
+                await asyncio.sleep(1)
+                continue
+
             can_msg = 'F\r'
-            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+            await asyncio.to_thread(drive.write, can_msg.encode())
             print('Reading drive status flags')
             await asyncio.sleep(5)
-            # await asyncio.sleep(1) # waiting 1000 ms
-    except Exception as e:
-        print(f'Read drive status flag error: {e}')
+        except Exception as e:
+            print(f'Read drive status flag error: {e}')
+            await asyncio.sleep(5)
