@@ -199,22 +199,24 @@ async def read_drive_can_loop(serial_ports):
 
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
-async def send_drive_status_request(serial_ports,sio):
-    """Query the can bus for errors and/or being inresponsive (buffer full)"""
+async def send_drive_status_request(serial_ports, sio):
+    """Continuously query the CAN adapter and report outage state changes."""
     active_drive = None
-    timeout_logged = False
+    overload_reported = False
 
-    try:
-        while True:
-            drive = serial_ports.get("drive")
-            if drive is None or serial_ports.get("driveId") == "disconnect":
-                # if no drive disconnected, try again in 5s
-                await asyncio.sleep(5)
-                continue
+    while True:
+        drive = serial_ports.get("drive")
+        if drive is None or serial_ports.get("driveId") == "disconnect":
+            active_drive = None
+            overload_reported = False
+            # The drive may be connected later, so keep the monitor alive.
+            await asyncio.sleep(5)
+            continue
 
+        try:
             if drive is not active_drive:
                 active_drive = drive
-                timeout_logged = False
+                overload_reported = False
 
             status_event = serial_ports["drive_status_event"]
             status_event.clear()
@@ -222,18 +224,23 @@ async def send_drive_status_request(serial_ports,sio):
 
             try:
                 await asyncio.wait_for(status_event.wait(), timeout=0.25)
-                # if it responds in time, mark error as false
-                timeout_logged = False
             except asyncio.TimeoutError:
-                # log the error
-                if not timeout_logged:
-                    timeout_logged = True
+                if not overload_reported:
+                    overload_reported = True
                     print(
                         "\033[91mCAN not responding; bus full/error\033[0m"
                     )
                     await sio.emit("canoverload", "drive")
+            else:
+                # Emit recovery once, but continue polling because the fault can
+                # return after the adapter automatically clears its buffer.
+                if overload_reported:
+                    overload_reported = False
+                    print("\033[92mDrive CAN responding again\033[0m")
+                    await sio.emit("canoverloadclear", "drive")
+        except Exception as e:
+            # A transient serial/socket failure must not kill status monitoring.
+            print(f'Read drive status flag error: {e}')
 
-            # The CANUSB manual recommends polling status every 500-1000 ms.
-            await asyncio.sleep(0.75)
-    except Exception as e:
-        print(f'Read drive status flag error: {e}')
+        # The CANUSB manual recommends polling status every 500-1000 ms.
+        await asyncio.sleep(0.75)

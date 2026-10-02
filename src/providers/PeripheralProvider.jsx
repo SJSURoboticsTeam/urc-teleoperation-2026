@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSnackbar } from "notistack";
 import { robotsocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
@@ -10,7 +10,7 @@ function ReconnectAction({
   connectDrive,
   disconnectArm,
   connectArm,
-  closeSnackbar,
+  clearCanWarning,
   canId,
 }) {
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ function ReconnectAction({
       } else {
         throw new Error(`Unknown CAN target: ${canId}`);
       }
-      closeSnackbar(snackbarId);
+      clearCanWarning(canId, snackbarId);
     } catch (error) {
       console.error(error);
       setLoading(false);
@@ -71,6 +71,40 @@ export const PeripheralProvider = ({ children }) => {
     gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
 
+  const canWarningSnackbarIds = useRef(new Map());
+  const previousCanIds = useRef({
+    drive: canState.driveId,
+    arm: canState.armId,
+  });
+  const clearCanWarning = useCallback(
+    (canId, fallbackSnackbarId) => {
+      console.log("Logged CAN ID" + canId);
+      const snackbarId =
+        canWarningSnackbarIds.current.get(canId) ?? fallbackSnackbarId;
+
+      if (snackbarId !== undefined) {
+        closeSnackbar(snackbarId);
+      }
+      canWarningSnackbarIds.current.delete(canId);
+    },
+    [closeSnackbar],
+  );
+
+  useEffect(() => {
+    const currentCanIds = {
+      drive: canState.driveId,
+      arm: canState.armId,
+    };
+
+    // Centralize warning cleanup so every source of a CAN ID change is covered.
+    for (const canId of ["drive", "arm"]) {
+      if (previousCanIds.current[canId] !== currentCanIds[canId]) {
+        clearCanWarning(canId);
+      }
+    }
+    previousCanIds.current = currentCanIds;
+  }, [canState.armId, canState.driveId, clearCanWarning]);
+
   const requestCanInfo = useCallback(() => {
     // lock the ui so user can't do anything while loading
     console.log("Refresh requested...");
@@ -102,6 +136,8 @@ export const PeripheralProvider = ({ children }) => {
     // when one client updates data, other clients get asked to refresh data
     const updateCan = () => {
       console.log("Refreshing CAN state");
+      clearCanWarning("drive");
+      clearCanWarning("arm");
       requestCanInfo();
     };
     robotsocket.on("forcecanrefresh", updateCan);
@@ -111,13 +147,14 @@ export const PeripheralProvider = ({ children }) => {
       robotsocket.off("forcecanrefresh", updateCan);
       robotsocket.off("connect", updateCan);
     };
-  }, [requestCanInfo]);
+  }, [requestCanInfo, clearCanWarning]);
 
   const connectDrive = useCallback(() => {
     setcanState((prev) => ({
       ...prev,
       driveState: "connecting",
     }));
+    clearCanWarning("drive");
     return new Promise((resolve, reject) => {
       console.log("Connecting Drive, Sending id " + canState.driveId);
       robotsocket.emit("connectDrive", canState.driveId, (response) => {
@@ -137,13 +174,14 @@ export const PeripheralProvider = ({ children }) => {
         }
       });
     });
-  }, [canState.driveId, enqueueSnackbar, requestCanInfo]);
+  }, [canState.driveId, clearCanWarning, enqueueSnackbar, requestCanInfo]);
 
   const disconnectDrive = useCallback(() => {
     setcanState((prev) => ({
       ...prev,
       driveState: "connecting",
     }));
+    clearCanWarning("drive");
     return new Promise((resolve, reject) => {
       console.log("Disconnecting drive");
       robotsocket.emit("disconnectDrive", (response) => {
@@ -163,7 +201,7 @@ export const PeripheralProvider = ({ children }) => {
         }
       });
     });
-  }, [enqueueSnackbar, requestCanInfo]);
+  }, [enqueueSnackbar, clearCanWarning, requestCanInfo]);
 
   const connectArm = useCallback(() => {
     return new Promise((resolve, reject) => {
@@ -171,6 +209,7 @@ export const PeripheralProvider = ({ children }) => {
         ...prev,
         armState: "connecting",
       }));
+      clearCanWarning("arm");
       console.log("Connecting Arm, Sending id " + canState.armId);
       robotsocket.emit("connectArm", canState.armId, (response) => {
         console.log("RESPONSE:" + response);
@@ -189,7 +228,7 @@ export const PeripheralProvider = ({ children }) => {
         }
       });
     });
-  }, [canState.armId, enqueueSnackbar, requestCanInfo]);
+  }, [canState.armId, clearCanWarning, enqueueSnackbar, requestCanInfo]);
 
   const disconnectArm = useCallback(() => {
     return new Promise((resolve, reject) => {
@@ -197,6 +236,7 @@ export const PeripheralProvider = ({ children }) => {
         ...prev,
         armState: "connecting",
       }));
+      clearCanWarning("arm");
       console.log("Disconnecting Arm");
       robotsocket.emit("disconnectArm", (response) => {
         console.log("RESPONSE:" + response);
@@ -215,7 +255,7 @@ export const PeripheralProvider = ({ children }) => {
         }
       });
     });
-  }, [enqueueSnackbar, requestCanInfo]);
+  }, [clearCanWarning, enqueueSnackbar, requestCanInfo]);
 
   function connectScience() {
     setcanState((prev) => ({
@@ -321,7 +361,12 @@ export const PeripheralProvider = ({ children }) => {
 
   useEffect(() => {
     const sendCanWarningToast = (canId) => {
-      enqueueSnackbar(`Can Overload on ${canId}!`, {
+      // One persistent warning per CAN target lets recovery close the right one.
+      if (canWarningSnackbarIds.current.has(canId)) {
+        return;
+      }
+
+      const snackbarId = enqueueSnackbar(`Can Overload on ${canId}!`, {
         variant: "error",
         persist: true,
         action: (snackbarId) => (
@@ -329,27 +374,30 @@ export const PeripheralProvider = ({ children }) => {
             snackbarId={snackbarId}
             disconnectDrive={disconnectDrive}
             connectDrive={connectDrive}
-            closeSnackbar={closeSnackbar}
+            clearCanWarning={clearCanWarning}
             connectArm={connectArm}
             disconnectArm={disconnectArm}
             canId={canId}
           />
         ),
       });
+      canWarningSnackbarIds.current.set(canId, snackbarId);
     };
 
     robotsocket.on("canoverload", sendCanWarningToast);
+    robotsocket.on("canoverloadclear", clearCanWarning);
 
     return () => {
       robotsocket.off("canoverload", sendCanWarningToast);
+      robotsocket.off("canoverloadclear", clearCanWarning);
     };
   }, [
     enqueueSnackbar,
-    closeSnackbar,
     disconnectDrive,
     connectDrive,
     disconnectArm,
     connectArm,
+    clearCanWarning,
   ]);
 
   const value = {

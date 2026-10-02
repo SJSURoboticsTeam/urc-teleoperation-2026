@@ -631,21 +631,23 @@ async def read_arm_can_loop(serial_ports, sio):
 
 
 async def send_arm_status_request(serial_ports, sio):
-    """Query the CAN adapter for errors or an unresponsive/full buffer."""
+    """Continuously query the CAN adapter and report outage state changes."""
     active_arm = None
-    timeout_logged = False
+    overload_reported = False
 
-    try:
-        while True:
-            arm = serial_ports.get("arm")
-            if arm is None or serial_ports.get("armId") == "disconnect":
-                # If the arm is disconnected, try again in 5 seconds.
-                await asyncio.sleep(5)
-                continue
+    while True:
+        arm = serial_ports.get("arm")
+        if arm is None or serial_ports.get("armId") == "disconnect":
+            active_arm = None
+            overload_reported = False
+            # The arm may be connected later, so keep the monitor alive.
+            await asyncio.sleep(5)
+            continue
 
+        try:
             if arm is not active_arm:
                 active_arm = arm
-                timeout_logged = False
+                overload_reported = False
 
             status_event = serial_ports["arm_status_event"]
             status_event.clear()
@@ -653,18 +655,23 @@ async def send_arm_status_request(serial_ports, sio):
 
             try:
                 await asyncio.wait_for(status_event.wait(), timeout=0.25)
-                # if it responds in time, mark error as false
-                timeout_logged = False
             except asyncio.TimeoutError:
-                # log the error
-                if not timeout_logged:
-                    timeout_logged = True
+                if not overload_reported:
+                    overload_reported = True
                     print(
                         "\033[91mCAN not responding; bus full/error\033[0m"
                     )
                     await sio.emit("canoverload", "arm")
+            else:
+                # Emit recovery once, but continue polling because the fault can
+                # return after the adapter automatically clears its buffer.
+                if overload_reported:
+                    overload_reported = False
+                    print("\033[92mArm CAN responding again\033[0m")
+                    await sio.emit("canoverloadclear", "arm")
+        except Exception as e:
+            # A transient serial/socket failure must not kill status monitoring.
+            print(f'Read arm status flag error: {e}')
 
-            # The CANUSB manual recommends polling status every 500-1000 ms.
-            await asyncio.sleep(0.75)
-    except Exception as e:
-        print(f'Read arm status flag error: {e}')
+        # The CANUSB manual recommends polling status every 500-1000 ms.
+        await asyncio.sleep(0.75)
