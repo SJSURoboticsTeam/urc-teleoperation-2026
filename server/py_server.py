@@ -542,21 +542,23 @@ async def stop_drive_motors():
 
 @sio.event
 async def softStop(sid):
-    """Operator-triggered pause: zero drive velocity without shutting down the backend"""
-    async with drive_command_lock:
-        if not serial_ports["drive"]:
-            print(f'[{sid}] Soft Stop requested but drive is not connected.')
-            return "ERROR"
-        try:
-            if USE_UART_DRIVE:
-                await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
-            else:
-                await send_can_drive_command(serial_ports, 0, 0, 0, 0)
-            print(f'[{sid}] Soft Stop triggered - drive velocity zeroed.')
-            return "OK"
-        except Exception as e:
-            print(f'Failed to send Soft Stop command: {e}')
-            return "ERROR"
+    """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
+    if serial_ports["drive"]:
+        async with drive_command_lock:
+            try:
+                if USE_UART_DRIVE:
+                    await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+                else:
+                    await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+                print(f'[{sid}] Soft Stop triggered - drive velocity zeroed.')
+            except Exception as e:
+                print(f'Failed to send Soft Stop drive command: {e}')
+    else:
+        print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
+
+    # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
+    # drive specifically being connected.
+    return "OK"
 
 
 @sio.event
