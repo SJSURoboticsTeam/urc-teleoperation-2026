@@ -3,6 +3,7 @@ import { Box, Button, Typography } from "@mui/material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 import { usePeripherals } from "../contexts/PeripheralContext";
 
@@ -13,9 +14,10 @@ export default function ScienceView() {
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
 
-  // Lock science controls whenever autonomy is enabled
-  const controlsLocked = autonomyEnabled;
+  // Lock science controls whenever autonomy is enabled or Soft Stop is active
+  const controlsLocked = autonomyEnabled || softStopActive;
 
   const tabNum = [0, 1, 2];
 
@@ -60,7 +62,7 @@ const exampleSteps = [
           fontWeight={700}
           sx={{ textAlign: "center", mb: 1 }}
         >
-          Science controls are disabled while autonomy is active.
+          Science controls are disabled while autonomy or Soft Stop is active.
         </Typography>
       )}
 

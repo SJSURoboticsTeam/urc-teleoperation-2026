@@ -2,6 +2,7 @@ import DriveManualInput from "../components/gamepad/DriveWidget";
 import { lazy, Suspense, useRef } from "react";
 import { Typography } from "@mui/material";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import { usePeripherals } from "../contexts/PeripheralContext";
 
 const Map = lazy(() => import("../components/ui/Map"));
@@ -12,7 +13,8 @@ export default function DriveComponents() {
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
-  const controlsLocked = autonomyEnabled;
+  const { softStopActive } = useSoftStop();
+  const controlsLocked = autonomyEnabled || softStopActive;
 
   return (
     <div
@@ -40,7 +42,7 @@ export default function DriveComponents() {
             }}
             color="error"
           >
-            Drive controls are disabled while autonomy is active.
+            Drive controls are disabled while autonomy or Soft Stop is active.
           </Typography>
         )}
 
