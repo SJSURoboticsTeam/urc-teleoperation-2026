@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Union
 import time
 import asyncio
+from datetime import datetime, timezone
 
 @dataclass
 class GNRMC:
@@ -109,6 +110,7 @@ async def read_gps_data(serial_ports, sio):
                 data = {
                         'latitude': position.latitude,
                         'longitude': position.longitude,
+                        'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 }
                 await sio.emit("gpsData", data)
                 print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
@@ -126,6 +128,7 @@ async def send_fake_gps_data(sio):
 
             'latitude': round(random.uniform(37.334, 37.335), 5),
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
+            'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
 
         await sio.emit('gpsData', data)
