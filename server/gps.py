@@ -125,7 +125,6 @@ async def read_gps_data(serial_ports, sio):
 async def send_fake_gps_data(sio):
     while True:
         data = {
-
             'latitude': round(random.uniform(37.334, 37.335), 5),
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
             'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),

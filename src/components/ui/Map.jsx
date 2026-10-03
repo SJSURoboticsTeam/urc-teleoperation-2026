@@ -2,8 +2,71 @@ import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
+import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { useGPS } from "../../contexts/GPSContext";
+import { trailGeoJSON, serializeTrailLog } from "../../lib/gpsTrail";
+
+const TRAIL_SOURCE = "rover-gps-trail";
+
+function TrailControlUI({ points, ready, recording, onStart, onStop, onClear }) {
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const exportLog = () => {
+    const blob = new Blob([serializeTrailLog(points)], { type: "application/x-ndjson;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `rover-gps-trail-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  return (
+    <Box sx={{ bgcolor: "rgba(255,255,255,0.94)", p: 1, border: "1px solid black", borderRadius: 1, minWidth: 180, maxWidth: 260 }}>
+      <Typography variant="body2" fontWeight="bold">GPS Trail · {points.length} {points.length === 1 ? "point" : "points"}</Typography>
+      <Typography variant="caption" color={recording ? "success.main" : "text.secondary"}>
+        {recording ? "Recording" : "Not recording"}
+      </Typography>
+      <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
+        <Button size="small" variant="contained" disabled={!ready || recording} onClick={onStart}>Start Recording</Button>
+        <Button size="small" variant="outlined" disabled={!recording} onClick={onStop}>Stop Recording</Button>
+      </Box>
+      <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
+        <Button size="small" variant="outlined" disabled={!ready || points.length === 0} onClick={exportLog}>Export Log</Button>
+        <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
+      </Box>
+      <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
+        <DialogTitle>Clear GPS trail?</DialogTitle>
+        <DialogContent>This removes all saved trail points from this browser. Export a log first if you want to keep them.</DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmClear(false)}>Cancel</Button>
+          <Button color="error" onClick={() => { onClear(); setConfirmClear(false); }}>Clear Trail</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
+class TrailControl {
+  onAdd() {
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    return this._container;
+  }
+  update(points, ready, recording, onStart, onStop, onClear) {
+    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} onStart={onStart} onStop={onStop} onClear={onClear} />);
+  }
+  onRemove() {
+    this._root?.unmount();
+    this._container?.remove();
+    this._root = null;
+    this._container = null;
+  }
+}
+
 
 function CoordUI({ lat, long, lastRead, color }) {
   return (
@@ -272,11 +335,17 @@ export default function Map() {
   const resetZoomRef = useRef(null);
   const suppressTrackRef = useRef(false);
 
+  const trailControlRef = useRef(null);
+  const trailPointsRef = useRef([]);
+  const trailControlStateRef = useRef(null);
+
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
 
-  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff } = useGPS();
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, startRecording, stopRecording, clearTrail } = useGPS();
+  trailPointsRef.current = trailPoints;
+  trailControlStateRef.current = { trailReady,isRecording, startRecording, stopRecording, clearTrail };
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
@@ -379,6 +448,12 @@ export default function Map() {
       map.addControl(resetZoomControl, "top-left");
       resetZoomRef.current = resetZoomControl;
 
+      const trailControl = new TrailControl();
+      map.addControl(trailControl, "top-right");
+      trailControlRef.current = trailControl;
+      const currentTrailState = trailControlStateRef.current;
+      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail);
+
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
       const sources = style && style.sources ? Object.keys(style.sources) : [];
@@ -402,6 +477,14 @@ export default function Map() {
           console.warn("Could not add 3D-buildings layer:", e);
         }
       }
+      map.addSource(TRAIL_SOURCE, { type: "geojson", data: trailGeoJSON(trailPointsRef.current) });
+      map.addLayer({
+        id: TRAIL_SOURCE,
+        type: "line",
+        source: TRAIL_SOURCE,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#e65100", "line-width": 5, "line-opacity": 0.9 },
+      });
     };
 
     map.on("load", onLoad);
@@ -424,6 +507,12 @@ export default function Map() {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource(TRAIL_SOURCE);
+    if (source) source.setData(trailGeoJSON(trailPoints));
+    trailControlRef.current?.update(trailPoints, trailReady, isRecording, startRecording, stopRecording, clearTrail);
+  }, [trailPoints, trailReady, isRecording, startRecording, stopRecording, clearTrail]);
 
   useEffect(() => {
     if (webglSupported === false) return;
