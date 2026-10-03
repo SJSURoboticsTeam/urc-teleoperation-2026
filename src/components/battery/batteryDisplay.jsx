@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 
 const TIMEOUT_SEC = 5;
+const LOW_BATTERY_THRESHOLD = 20;
 
 export default function BatteryDisplay() {
 	const [batteryPercentage, setBatteryPercentage] = useState(null);
@@ -31,7 +32,7 @@ export default function BatteryDisplay() {
 	}, []);
 
 	const hasData = batteryPercentage !== null;
-	const isLow = hasData && batteryPercentage < 20;
+	const isLow = hasData && batteryPercentage < LOW_BATTERY_THRESHOLD;
 	const toolTipTitle = hasData ? "" : "No data";
 
 	return (
