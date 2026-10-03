@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
+import { loadTrailPoints, saveTrailPoints, clearStoredTrail } from "../lib/gpsTrailStorage";
 
 export const GPSProvider = ({ children }) => {
     const robotLastSignalTime = useRef(Date.now()); 
@@ -9,6 +10,13 @@ export const GPSProvider = ({ children }) => {
     const baseSignalDiff = useRef();
     const robotSignalTimeout = useRef(null);
     const baseSignalTimeout = useRef(null);
+    const trailRef = useRef([]);
+    const trailReadyRef = useRef(false);
+    const recordingRef = useRef(false);
+    const nextPointStartsSegmentRef = useRef(true);
+    const [trailPoints, setTrailPoints] = useState([]);
+    const [trailReady, setTrailReady] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
 
     const [robotCoordinates, setRobotCoordinates] = useState({
         long: -121.881194,
@@ -22,48 +30,75 @@ export const GPSProvider = ({ children }) => {
         receive: false,
     });
 
-
     useEffect(() => {
-        const robotHandler = (data) => {
-        if (robotSignalTimeout.current) {
-            clearTimeout(robotSignalTimeout.current);
+        trailReadyRef.current = false;
+        try {
+            trailRef.current = loadTrailPoints();
+            setTrailPoints(trailRef.current);  
+        } catch {
+            // Ignore storage errors, use empty trail
         }
+        trailReadyRef.current = true;
+        setTrailReady(true)
+      
+        const robotHandler = (data) => {
+            if (!data) return;
+            if (robotSignalTimeout.current) {
+                clearTimeout(robotSignalTimeout.current);
+            }
 
-        const newTime = Date.now();
-        robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
-        robotLastSignalTime.current = newTime;
+            const newTime = Date.now();
+            robotSignalDiff.current = (newTime - robotLastSignalTime.current) / 1000;
+            robotLastSignalTime.current = newTime;
 
-        // console.log("Received GPS data:", data);
-        setRobotCoordinates({
-            long: data.longitude,
-            lat: data.latitude,
-            receive: true,
-        });
+            // console.log("Received GPS data:", data);
+            setRobotCoordinates({
+                long: data.longitude,
+                lat: data.latitude,
+                receive: true,
+            });
 
-        robotSignalTimeout.current = setTimeout(() => {
-            setRobotCoordinates((prev) => ({ ...prev, receive: false }));
-        }, 3000);
+            if (recordingRef.current) {
+                // Check if this new point is the start of a new segment, add the segmentStart flag to the point
+                const recordedPoint = nextPointStartsSegmentRef.current
+                ? { ...data, segmentStart: true }
+                : data;
+
+                nextPointStartsSegmentRef.current = false;
+                trailRef.current = [...trailRef.current, recordedPoint];
+                setTrailPoints(trailRef.current);
+
+                try {
+                    saveTrailPoints(trailRef.current);
+                } catch {
+                    // Ignore errors
+                }
+            }
+
+            robotSignalTimeout.current = setTimeout(() => {
+                setRobotCoordinates((prev) => ({ ...prev, receive: false }));
+            }, 3000);
         };
 
         const baseHandler = (data) => {
-        if (baseSignalTimeout.current) {
-            clearTimeout(baseSignalTimeout.current);
-        }
+            if (baseSignalTimeout.current) {
+                clearTimeout(baseSignalTimeout.current);
+            }
 
-        const newTime = Date.now();
-        baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
-        baseLastSignalTime.current = newTime;
+            const newTime = Date.now();
+            baseSignalDiff.current = (newTime - baseLastSignalTime.current) / 1000;
+            baseLastSignalTime.current = newTime;
 
-        // console.log("Received GPS data:", data);
-        setBaseCoordinates({
-            long: data.longitude,
-            lat: data.latitude,
-            receive: true,
-        });
+            // console.log("Received GPS data:", data);
+            setBaseCoordinates({
+                long: data.longitude,
+                lat: data.latitude,
+                receive: true,
+            });
 
-        baseSignalTimeout.current = setTimeout(() => {
-            setBaseCoordinates((prev) => ({ ...prev, receive: false }));
-        }, 3000);
+            baseSignalTimeout.current = setTimeout(() => {
+                setBaseCoordinates((prev) => ({ ...prev, receive: false }));
+            }, 3000);
         };
 
         robotsocket.on("gpsData", robotHandler);
@@ -87,11 +122,37 @@ export const GPSProvider = ({ children }) => {
         }
     }, []);
 
+    const startRecording = useCallback(() => {
+        if (!trailReadyRef.current || recordingRef.current) return;
+        nextPointStartsSegmentRef.current = true;
+        recordingRef.current = true;
+        setIsRecording(true);
+    }, []);
+
+    const stopRecording = useCallback(() => {
+        recordingRef.current = false;
+        setIsRecording(false);
+    }, []);
+
+    const clearTrail = useCallback(() => {
+        if (!trailReadyRef.current) return;
+        trailRef.current = [];
+        nextPointStartsSegmentRef.current = true;
+        setTrailPoints([]);
+        clearStoredTrail();
+    }, []);
+
     const value = {
-    robotCoordinates,
-    baseCoordinates,
-    robotSignalDiff,
-    baseSignalDiff,
+        robotCoordinates,
+        baseCoordinates,
+        robotSignalDiff,
+        baseSignalDiff,
+        trailPoints,
+        trailReady,
+        isRecording,
+        startRecording,
+        stopRecording,
+        clearTrail,
     };
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;
