@@ -1,6 +1,6 @@
-export const GPS_GAP_MS = 10_000;
+export const GPS_GAP_MS = 15_000;
 
-// Convert an array of GPS points to JSON
+// Convert an array of GPS points to JSON for the map to process and draw
 export function trailGeoJSON(points) {
     const features = [];
     let segment = [];
@@ -20,11 +20,29 @@ export function trailGeoJSON(points) {
     for (const point of points) {
         const time = Date.parse(point.timestamp);
 
-        // If time is invalid, skip this point
+        // If time is invalid, skip the point and break the trail
+        if (Number.isNaN(time)) {
+          finish();
+          previousTime = null;
+          continue;
+        }
+
+        // Start a new segment if the recording stops midway or if there is a time gap > 15 seconds
         if (previousTime !== null && (point.segmentStart || time - previousTime > GPS_GAP_MS || time < previousTime)) {
             finish();
         }
         segment.push([point.longitude, point.latitude]);
+
+        // Also add a point for each GPS recording, so the trail on the map looks like a line segment
+        features.push({
+          type: "Feature",
+          properties: {},
+          geometry: {
+            type: "Point",
+            coordinates: [point.longitude, point.latitude],
+          },
+        });
+
         previousTime = time;
     }
     finish();
@@ -32,7 +50,7 @@ export function trailGeoJSON(points) {
     return { type: "FeatureCollection", features };
 }
 
-// Convert an array of GPS points to trail log
+// Convert an array of GPS points to trail log for exporting
 export function serializeTrailLog(points) {
     const rows = [
         { type: "metadata", format: "urc-gps-trail", version: 1 },

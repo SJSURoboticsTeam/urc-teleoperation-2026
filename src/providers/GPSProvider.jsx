@@ -36,7 +36,7 @@ export const GPSProvider = ({ children }) => {
             trailRef.current = loadTrailPoints();
             setTrailPoints(trailRef.current);  
         } catch {
-            // ignore storage errors, use empty trail
+            // Ignore storage errors, use empty trail
         }
         trailReadyRef.current = true;
         setTrailReady(true)
@@ -59,6 +59,7 @@ export const GPSProvider = ({ children }) => {
             });
 
             if (recordingRef.current) {
+                // Check if this new point is the start of a new segment, add the segmentStart flag to the point
                 const recordedPoint = nextPointStartsSegmentRef.current
                 ? { ...data, segmentStart: true }
                 : data;
@@ -70,7 +71,7 @@ export const GPSProvider = ({ children }) => {
                 try {
                     saveTrailPoints(trailRef.current);
                 } catch {
-                    // ignore errors
+                    // Ignore errors
                 }
             }
 

@@ -108,9 +108,9 @@ async def read_gps_data(serial_ports, sio):
             if gps.has_gps_lock():
                 position = gps.get_position()
                 data = {
-                        'latitude': position.latitude,
-                        'longitude': position.longitude,
-                        'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    'latitude': position.latitude,
+                    'longitude': position.longitude,
+                    'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 }
                 await sio.emit("gpsData", data)
                 print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")

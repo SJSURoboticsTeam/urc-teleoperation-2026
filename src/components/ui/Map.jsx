@@ -16,6 +16,7 @@ function TrailControlUI({ points, ready, recording, onStart, onStop, onClear }) 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
+    // File name of the log is a timestamp of when it was downloaded
     link.download = `rover-gps-trail-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
     document.body.appendChild(link);
     link.click();
@@ -24,7 +25,7 @@ function TrailControlUI({ points, ready, recording, onStart, onStop, onClear }) 
   };
 
   return (
-    <Box sx={{ bgcolor: "rgba(255,255,255,0.94)", p: 1, border: "1px solid black", borderRadius: 1, minWidth: 180, maxWidth: 260 }}>
+    <Box sx={{ bgcolor: "rgba(255,255,255,0.94)", p: 1, border: "1px solid black", borderRadius: 1, minWidth: 180, maxWidth: 225 }}>
       <Typography variant="body2" fontWeight="bold">GPS Trail · {points.length} {points.length === 1 ? "point" : "points"}</Typography>
       <Typography variant="caption" color={recording ? "success.main" : "text.secondary"}>
         {recording ? "Recording" : "Not recording"}
@@ -477,13 +478,33 @@ export default function Map() {
           console.warn("Could not add 3D-buildings layer:", e);
         }
       }
+
+      // Add the GPS trail source and layer to the map
       map.addSource(TRAIL_SOURCE, { type: "geojson", data: trailGeoJSON(trailPointsRef.current) });
+
+      // Draws lines through each point
       map.addLayer({
         id: TRAIL_SOURCE,
         type: "line",
         source: TRAIL_SOURCE,
+        filter: ["==", ["geometry-type"], "LineString"],
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#e65100", "line-width": 5, "line-opacity": 0.9 },
+        paint: { "line-color": "#e65100", "line-width": 4, "line-opacity": 0.9 },
+      });
+
+      // Draws circles at each point to represent a line segment
+      map.addLayer({
+        id: `${TRAIL_SOURCE}-points`,
+        type: "circle",
+        source: TRAIL_SOURCE,
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: {
+          "circle-radius": 4,
+          "circle-color": "#e65100",
+          "circle-stroke-width": 1.5,
+          "circle-stroke-color": "#ffffff",
+          "circle-opacity": 0.95,
+        },
       });
     };
 
