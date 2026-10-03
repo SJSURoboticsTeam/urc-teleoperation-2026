@@ -24,6 +24,9 @@ import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
 import DemoPopup from "../components/ui/DemoPane";
 
+// Provides shared socket connection status to the application. Add by Sunny_100226
+import ConnectionProvider from "../providers/ConnectionProvider";
+
 function App() {
   // Global autonomy state so every view can react to it
   // Start in TELEOP mode on initial load
@@ -69,61 +72,64 @@ function App() {
   }, [selectedElements, hydrated]);
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexGrow: 1,
-        flexDirection: "column",
-        height: "100vh",
-        overflow: "hidden",
-      }}
-    >
-      {/* snackbar */}
-        <DemoPopup />
-        <SerialProvider>
-          <PeripheralProvider>
-            <GPSProvider>
-              <MetricsProvider>
-                <AutonomyModeProvider>
-                  <ArmCommandProvider>
-                    <GamepadProvider>
-                      <DriveCommandProvider>
-                        <MastCommandProvider>
-                          <CssBaseline />
-                          {/* Normalizes styles */}
-                          <TopAppBar
-                            selectedElements={selectedElements}
-                            setSelectedElements={setSelectedElements}
-                            addSnackbarMessage={addSnackbarMessage}
-                          />
+    // Makes shared connection status available to all child components. Edit by Sunny_100226
+    <ConnectionProvider>
+      <Box
+        sx={{
+          display: "flex",
+          flexGrow: 1,
+          flexDirection: "column",
+          height: "100vh",
+          overflow: "hidden",
+        }}
+      >
+        {/* snackbar */}
+          <DemoPopup />
+          <SerialProvider>
+            <PeripheralProvider>
+              <GPSProvider>
+                <MetricsProvider>
+                  <AutonomyModeProvider>
+                    <ArmCommandProvider>
+                      <GamepadProvider>
+                        <DriveCommandProvider>
+                          <MastCommandProvider>
+                            <CssBaseline />
+                            {/* Normalizes styles */}
+                            <TopAppBar
+                              selectedElements={selectedElements}
+                              setSelectedElements={setSelectedElements}
+                              addSnackbarMessage={addSnackbarMessage}
+                            />
 
-                          <Box
-                            component="main"
-                            sx={{
-                              flexGrow: 1,
-                              p: 2,
-                              display: "flex",
-                              flexDirection: "column",
-                              overflow: "hidden",
-                              minHeight: 0,
-                              marginTop: "60px",
-                            }}
-                          >
-                            <SplitView selectedElements={selectedElements}>
-                              {/* we pass all these elements as "children" into SplitView */}
-                              <Outlet />
-                            </SplitView>
-                          </Box>
-                        </MastCommandProvider>
-                      </DriveCommandProvider>
-                    </GamepadProvider>
-                  </ArmCommandProvider>
-                </AutonomyModeProvider>
-              </MetricsProvider>
-            </GPSProvider>
-          </PeripheralProvider>
-        </SerialProvider>
-    </Box>
+                            <Box
+                              component="main"
+                              sx={{
+                                flexGrow: 1,
+                                p: 2,
+                                display: "flex",
+                                flexDirection: "column",
+                                overflow: "hidden",
+                                minHeight: 0,
+                                marginTop: "60px",
+                              }}
+                            >
+                              <SplitView selectedElements={selectedElements}>
+                                {/* we pass all these elements as "children" into SplitView */}
+                                <Outlet />
+                              </SplitView>
+                            </Box>
+                          </MastCommandProvider>
+                        </DriveCommandProvider>
+                      </GamepadProvider>
+                    </ArmCommandProvider>
+                  </AutonomyModeProvider>
+                </MetricsProvider>
+              </GPSProvider>
+            </PeripheralProvider>
+          </SerialProvider>
+      </Box>
+    </ConnectionProvider>
   );
 }
 
