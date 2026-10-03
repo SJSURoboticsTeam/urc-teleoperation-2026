@@ -1,16 +1,23 @@
 import { basesocket, robotsocket } from "../socket.io/socket";
+
+// Read shared robot and base-pi connection status for the metrics UI. Edit by Sunny_100226
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import { useState, useEffect, } from "react";
 import Typography from "@mui/material/Typography";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
-import { useRobotSocketStatus, useBaseSocketStatus } from "../socket.io/socket";
 import { Box } from "@mui/system";
 import { useAntennaData } from "./antennaData";
 
 
 
 export default function Metrics({ openPane, setOpenPane }) {
-  const isRobotConnected = useRobotSocketStatus();
-  const isBaseConnected = useBaseSocketStatus();
+  // Use centralized connection state instead of registering duplicate status listeners. Edit by Sunny_100226
+  const {
+    robotConnected: isRobotConnected,
+    baseConnected: isBaseConnected,
+  } = useConnectionStatus();
+
   // antenna telemtry
 
   const [antenna900, antenna5] = useAntennaData();
@@ -194,7 +201,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                     </Typography>
                     <Typography sx={{ color: "black" }}>
                       {antenna5.freqw} MHz
-                    </Typography>  
+                    </Typography>
 
                     <Typography sx={{ color: "black" }}>Delay</Typography>
                     <Typography sx={{ color: "black" }}>

@@ -25,10 +25,11 @@ import NavConnectionStatus from "../components/socket.io/BackendConnectionManage
 import GamepadPanel from "../components/gamepad/Gamepad";
 import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
-import {
-  robotsocket,
-  useRobotSocketStatus,
-} from "../components/socket.io/socket";
+
+// Use the socket for E-STOP commands and shared context for connection status. Edit by Sunny_100226
+import { robotsocket } from "../components/socket.io/socket";
+import { useConnectionStatus } from "../contexts/ConnectionContext";
+
 import { useNavigate } from "react-router-dom";
 
 export default function TopAppBar({ selectedElements, setSelectedElements }) {
@@ -43,7 +44,9 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
 
   const [capsLockActive, setCapsLockState] = useState(false);
   const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
-  const isRobotConnected = useRobotSocketStatus();
+
+// Use shared robot connection state to control E-STOP availability. Edit by Sunny_100226
+  const { robotConnected: isRobotConnected } = useConnectionStatus();
 
   function initiateEstop() {
     console.log("E-STOP!");
@@ -118,7 +121,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
                   .split("/")
                   .filter(Boolean)[0] || "drive")
               }
-              
+
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{

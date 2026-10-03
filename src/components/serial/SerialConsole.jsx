@@ -13,12 +13,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRobotSocketStatus } from "../socket.io/socket";
+
+// Read shared robot connection status for the serial console. Edit by Sunny_100226
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import { useSerial } from "../../contexts/SerialContext";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 
 export default function SerialConsole() {
-  const serverConnected = useRobotSocketStatus();
+  // Use centralized connection state to control serial console actions. Edit by Sunny_100226
+  const { robotConnected: serverConnected } = useConnectionStatus();
+
   const {
     pulseDtr,
     updateDtr,
@@ -52,7 +57,7 @@ export default function SerialConsole() {
     rts,
   } = useSerial();
   const { canState } = usePeripherals();
-  
+
   return (
     <Paper
       sx={{

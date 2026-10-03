@@ -11,14 +11,17 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { green, red } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
-import {
-  robotsocket,
-  useRobotSocketStatus,
-} from "../components/socket.io/socket";
+import { robotsocket } from "../components/socket.io/socket";
+
+// Read the shared robot connection state for the emergency-stop UI. Edit by Sunny_100226
+import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 export default function EmergencyView() {
   const navigate = useNavigate();
-  const isRobotConnected = useRobotSocketStatus();
+
+  // Use centralized connection state to control emergency-stop availability. Edit by Sunny
+  const { robotConnected: isRobotConnected } = useConnectionStatus();
+
   const [estopStatus, setEstopStatus] = useState("STANDBY");
 
   function initiateEstop() {
