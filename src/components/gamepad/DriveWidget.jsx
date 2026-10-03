@@ -16,8 +16,66 @@ import { TbRocket, TbHourglassLow } from "react-icons/tb";
 import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
 import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
 import { useConnectedGamepads } from "../../contexts/GamepadContext.jsx";
+import { useDriveFeedback } from "../../contexts/DriveFeedbackContext.jsx";
 
 const HEADER_HEIGHT = 56;
+
+const DIVERGENCE_MIN_COMMAND = 0.2;   // ignore noise around a standstill
+const DIVERGENCE_RATIO = 0.5;         // actual below half of commanded is suspect
+
+function formatValue(value) {
+  // Actual is null until the rover reports; null.toFixed() would throw.
+  return Number.isFinite(value) ? value.toFixed(1) : "--";
+}
+
+function isDiverged(commanded, actual) {
+  if (!Number.isFinite(commanded) || !Number.isFinite(actual)) return false;
+  if (Math.abs(commanded) < DIVERGENCE_MIN_COMMAND) return false;
+  return Math.abs(actual) < Math.abs(commanded) * DIVERGENCE_RATIO;
+}
+
+// Module scope on purpose: defined inside the parent it remounts every render.
+function VelocityItem({ commanded, actual, label, dimmed }) {
+  const diverged = isDiverged(commanded, actual);
+
+  return (
+    <Box
+      sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
+      <Box
+        sx={{
+          width: 75,
+          height: 50,
+          border: "2px solid",
+          borderColor: diverged ? "error.main" : "black",
+          backgroundColor: diverged ? "#fdecea" : "transparent",
+          borderRadius: 2,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: dimmed ? 0.55 : 1,
+        }}
+      >
+        <Typography variant="body2" sx={{ lineHeight: 1.1, fontWeight: 600 }}>
+          {formatValue(commanded)}
+        </Typography>
+        <Typography
+          variant="caption"
+          color={diverged ? "error.dark" : "success.main"}
+          sx={{ lineHeight: 1.1, fontWeight: 600 }}
+        >
+          {formatValue(actual)}
+        </Typography>
+      </Box>
+
+      <Typography variant="body2" sx={{ marginTop: 0.5 }}>
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
 
 export default function DriveManualInput({ controlsLocked = false }) {
   // Server connection status
@@ -28,7 +86,10 @@ export default function DriveManualInput({ controlsLocked = false }) {
   const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
+  const { measured, reportedCommand } = useDriveFeedback();
   const [driveCommands, setDriveCommands] = useDriveCommands();
+  // No controller means nothing drives the local axes, so use the backend's.
+  const useLocalCommand = driveConnectedOne != null;
   const {
     sidewaysVelocity,
     forwardsVelocity,
@@ -171,34 +232,6 @@ export default function DriveManualInput({ controlsLocked = false }) {
     }));
   };
 
-  const VelocityItem = ({ value, label }) => (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      <Box
-        sx={{
-          width: 75,
-          height: 50,
-          border: "2px solid black",
-          borderRadius: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: controlsLocked ? 0.55 : 1,
-        }}
-      >
-        <Typography variant="body1">{value}</Typography>
-      </Box>
-
-      <Typography variant="body2" sx={{ marginTop: 0.5 }}>
-        {label}
-      </Typography>
-    </Box>
-  );
 
   return (
     <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -259,11 +292,23 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 2,
             }}
           >
-            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
             <VelocityItem
-              value={rotationalVelocity.toFixed(1)}
+              commanded={useLocalCommand ? forwardsVelocity : reportedCommand.xVel}
+              actual={measured.xVel}
+              label="X Vel"
+              dimmed={controlsLocked}
+            />
+            <VelocityItem
+              commanded={useLocalCommand ? sidewaysVelocity : reportedCommand.yVel}
+              actual={measured.yVel}
+              label="Y Vel"
+              dimmed={controlsLocked}
+            />
+            <VelocityItem
+              commanded={useLocalCommand ? rotationalVelocity : reportedCommand.rotVel}
+              actual={measured.rotVel}
               label="Rotational"
+              dimmed={controlsLocked}
             />
           </Box>
           <Box
@@ -349,9 +394,9 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 2,
             }}
           >
-            <VelocityItem value={panX} label="Mast W" />
-            <VelocityItem value={panY} label="Mast H" />
-            <VelocityItem value={wheels_x} label="Wheels" />
+            <VelocityItem commanded={panX} actual={null} label="Mast W" dimmed={controlsLocked} />
+            <VelocityItem commanded={panY} actual={null} label="Mast H" dimmed={controlsLocked} />
+            <VelocityItem commanded={wheels_x} actual={null} label="Wheels" dimmed={controlsLocked} />
           </Box>
           <Box
             sx={{

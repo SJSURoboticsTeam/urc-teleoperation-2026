@@ -1,5 +1,7 @@
 import asyncio
 
+from drive_feedback import apply_parsed
+
 DRIVE_MSG_ID = {
     "SET_CHASSIS_VELOCITIES": 0x40,
     "HEARTBEAT": 0x41,
@@ -61,9 +63,12 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio, serial_ports, drive_command_lock):
+def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
     @sio.event
     async def driveCommands(sid, data):
+        # Recorded before the send - see drive.py
+        if drive_state is not None:
+            drive_state.note_command(data["xVel"], data["yVel"], data["rotVel"])
         try:
             async with drive_command_lock:
                 await send_drive_command(
@@ -116,6 +121,13 @@ async def parse_drive_packet(packet):
 
             print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
 
+            return {
+                "type": "velocities",
+                "xVel": x_vel,
+                "yVel": y_vel,
+                "rotVel": rot_vel,
+            }
+
         elif msg_id == DRIVE_REPLY_ID["SET_VELOCITIES_RESPONSE"]:
             if len(payload) != 7:
                 print("Bad set velocities response payload length")
@@ -133,6 +145,14 @@ async def parse_drive_packet(packet):
                 f"\ntransition type: {transition_type}"
             )
 
+            # Acked on every command we send, so no polling needed.
+            return {
+                "type": "velocities",
+                "xVel": x_vel,
+                "yVel": y_vel,
+                "rotVel": rot_vel,
+            }
+
         elif msg_id == DRIVE_REPLY_ID["RETURN_OFFSET"]:
             if len(payload) != 3:
                 print("Bad return offset payload length")
@@ -143,22 +163,31 @@ async def parse_drive_packet(packet):
             module_position = payload[2]
             print(f"angle offset: {angle_offset} \nmodule position: {module_position}")
 
+            return {
+                "type": "offset",
+                "modulePosition": module_position,
+                "rawAngle": angle_offset,
+            }
+
     except Exception as e:
         print(f'Error parsing drive UART packet: {e}')
 
 
-async def read_drive_uart_loop(serial_ports):
-    try:
-        while True:
+async def read_drive_uart_loop(serial_ports, drive_state=None):
+    while True:
+        try:
             # read_packet is blocking so run it in a thread
             drive = serial_ports["drive"]
             if drive is not None:
                 packet = await asyncio.to_thread(drive.read_packet)
                 if packet:
-                    await parse_drive_packet(packet)
+                    parsed = await parse_drive_packet(packet)
+                    if drive_state is not None:
+                        apply_parsed(drive_state, parsed)
             await asyncio.sleep(0.01)
-    except Exception as e:
-        print(f'Drive UART task error: {e}')
+        except Exception as e:
+            print(f'Drive UART task error: {e}')
+            await asyncio.sleep(0.25)
 
 
 # send heartbeat once in a while so drive can confirm MC is still alive
