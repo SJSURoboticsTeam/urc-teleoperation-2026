@@ -5,7 +5,7 @@ import Button from "@mui/material/Button";
 import { green, red, yellow } from "@mui/material/colors";
 
 // Read shared connection state from the centralized context. Edit by Sunny_100226
-import { useConnectionStatus } from "../../contexts/ConnectionContext"; 
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
