@@ -67,14 +67,18 @@ class ZEDF9P:
         """
         try:
             parts = line.strip().split(",")
+            fix_quality = int(parts[6])
             hdop = float(parts[8])
+            if fix_quality <= 0 or hdop <= 0 or not math.isfinite(hdop):
+                self.__accuracy = None
+                return
             accuracy_m = round(hdop * 4, 3) 
             self.__accuracy = AccuracyEstimate(
                 horizontal_m=accuracy_m,
                 source="HDOP"
             )
         except (ValueError, IndexError):
-            pass
+            self.__accuracy = None
 
     def get_position(self) -> GPS_Data:
         """
