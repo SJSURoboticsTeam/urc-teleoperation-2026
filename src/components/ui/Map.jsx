@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -306,8 +306,10 @@ export default function Map() {
 
   const robotCoordsRef = useRef(robotCoordinates);
   const baseCoordsRef = useRef(baseCoordinates);
-  robotCoordsRef.current = robotCoordinates;
-  baseCoordsRef.current = baseCoordinates;
+  useLayoutEffect(() => {
+    robotCoordsRef.current = robotCoordinates;
+    baseCoordsRef.current = baseCoordinates;
+  }, [robotCoordinates, baseCoordinates]);
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
