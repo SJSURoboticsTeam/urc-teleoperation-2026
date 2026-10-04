@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Union
 import time
 import asyncio
+import math
 
 @dataclass
 class GNRMC:
