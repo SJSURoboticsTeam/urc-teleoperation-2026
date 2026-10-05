@@ -26,7 +26,8 @@ import GamepadPanel from "../components/gamepad/Gamepad";
 import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
 
-// Use the socket for E-STOP commands and shared context for connection status. Edit by Sunny_100226
+// Use the socket for E-STOP commands and shared context for connection status. Edit by Sunny_100526
+import BatteryDisplay from "../components/battery/batteryDisplay";
 import { robotsocket } from "../components/socket.io/socket";
 import { useConnectionStatus } from "../contexts/ConnectionContext";
 
@@ -197,7 +198,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />
           <StateMachine openPane={openPane} setOpenPane={setOpenPane} />
-
+          <BatteryDisplay/>
           <IconButton
             edge="end"
             color="inherit"

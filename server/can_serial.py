@@ -33,29 +33,48 @@ class CanSerial(serial.Serial):
         self.rts = False
         time.sleep(0.2)
 
-        # Carriage returns to empty any prior command or queued character in the CANUSB
-        self.write(('\r\r\r\r').encode())
-        resp = self.read_can(0.2)
-        print("RESPONSE:" + repr(resp))
-        # if b"\r" not in self.read_can(0.2):
-        if b"\r" not in resp:
-            raise ValueError("Carriage Return Not Found-RESPONSE")
+        # Empty prior queued characters. Each CR produces its own response,
+        # and all responses must be consumed before issuing another command.
+        self.write(b'\r\r\r')
+        for _ in range(3):
+            resp = self.read_can(0.5)
+            # print(f"CANUSB FLUSH RESPONSE: {resp!r}")
+            if not resp or resp[-1:] not in (b"\r", b"\x07"):
+                raise ValueError("CANUSB did not acknowledge buffer flush")
 
         # Check CANUSB version to ensure communication with the unit
-        self.write(('V\r').encode())
-        if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-VERSION")
+        self.write(b'V\r')
+        resp = self.read_can(0.5)
+        # print(f"CANUSB VERSION RESPONSE: {resp!r}")
+        if not resp.startswith(b"V") or not resp.endswith(b"\r"):
+            raise ValueError(f"Invalid CANUSB version response: {resp!r}")
 
         # Set up CAN speed before opening the channel
-        self.write((f'{CAN_BITRATE_CMD}\r').encode())
-        if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-SPEED")
+        self.write(f'{CAN_BITRATE_CMD}\r'.encode())
+        resp = self.read_can(0.5)
+        # print(f"CANUSB SPEED RESPONSE: {resp!r}")
+        if resp != b"\r":
+            raise ValueError(f"CANUSB rejected bitrate {CAN_BITRATE_CMD}: {resp!r}")
 
         # Opens the CAN port
-        self.write(('O\r').encode())
-        if b"\r" not in self.read_can(0.2):
-            raise ValueError("Carriage Return Not Found-PORT OPEN")
+        self.write(b'O\r')
+        resp = self.read_can(0.5)
+        # print(f"CANUSB OPEN RESPONSE: {resp!r}")
+        if resp != b"\r":
+            raise ValueError(f"CANUSB rejected open command: {resp!r}")
 
     def read_can(self, timeout):
         self.timeout = timeout
-        return self.read_until(b"\r")
+        response = bytearray()
+
+        # CAN232 status failures return BELL (ASCII 7) without a CR.
+        # Read one byte at a time so that response does not block waiting
+        # for a terminator that will never arrive.
+        while True:
+            byte = self.read(1)
+            if not byte:
+                return bytes(response)
+
+            response.extend(byte)
+            if byte in (b"\r", b"\x07"):
+                return bytes(response)
