@@ -30,6 +30,7 @@ import {
   robotsocket,
   useRobotSocketStatus,
 } from "../components/socket.io/socket";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import { useNavigate } from "react-router-dom";
 
 export default function TopAppBar({ selectedElements, setSelectedElements }) {
@@ -45,6 +46,29 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
   const [capsLockActive, setCapsLockState] = useState(false);
   const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
   const isRobotConnected = useRobotSocketStatus();
+
+  const { softStopActive, setSoftStopActive } = useSoftStop();
+  const [softStopLoading, setSoftStopLoading] = useState(false);
+
+  function triggerSoftStop() {
+    setSoftStopLoading(true);
+    robotsocket.emit("softStop", (response) => {
+      setSoftStopLoading(false);
+      if (response === "OK") {
+        setSoftStopActive(true);
+      }
+    });
+  }
+
+  function resumeControls() {
+    setSoftStopLoading(true);
+    robotsocket.emit("resumeControls", (response) => {
+      setSoftStopLoading(false);
+      if (response === "OK") {
+        setSoftStopActive(false);
+      }
+    });
+  }
 
   function initiateEstop() {
     console.log("E-STOP!");
@@ -152,6 +176,20 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <Button
+            sx={{
+              mr: 2,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+            variant="contained"
+            color={softStopActive ? "success" : "warning"}
+            loading={softStopLoading}
+            disabled={!isRobotConnected}
+            onClick={softStopActive ? resumeControls : triggerSoftStop}
+          >
+            {softStopActive ? "RESUME" : "SOFT STOP"}
+          </Button>
           <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
             <span>
               <Button
