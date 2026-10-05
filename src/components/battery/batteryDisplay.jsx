@@ -4,12 +4,15 @@ import { Box, Tooltip, Typography } from "@mui/material";
 
 const TIMEOUT_SEC = 5;
 const LOW_BATTERY_THRESHOLD = 20;
+const IS_DEMO = import.meta.env.MODE == "demo";
 
 export default function BatteryDisplay() {
-	const [batteryPercentage, setBatteryPercentage] = useState(null);
+	const [batteryPercentage, setBatteryPercentage] = useState(IS_DEMO ? 100 : null);
 	const timeoutReference = useRef(null);
 
 	useEffect(() => {
+		if (IS_DEMO) return;
+
 		const handleBatteryData = (percentage) => {
 			setBatteryPercentage(percentage);
 
