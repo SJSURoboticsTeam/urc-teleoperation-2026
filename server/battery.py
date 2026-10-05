@@ -6,7 +6,9 @@ MIN_VOLTAGE = 36
 
 async def get_battery_data(sio):
     # TODO: implement once firmware is ready
-    pass
+    while True:
+        await sio.emit('batteryPercentage', 100)
+        await asyncio.sleep(1)
 
 async def send_fake_battery_data(sio):
     voltage = MAX_VOLTAGE
