@@ -1,5 +1,5 @@
 import "react-resizable/css/styles.css";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { robotsocket } from "../socket.io/socket";
@@ -28,41 +28,18 @@ export default function DriveManualInput({ controlsLocked = false }) {
   const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
-  const [driveCommands, setDriveCommands] = useDriveCommands();
+  const [driveCommands, setDriveCommands, driveCommandsRef] = useDriveCommands();
   const {
     sidewaysVelocity,
     forwardsVelocity,
     rotationalVelocity,
-    moduleConflicts,
     driveSpeed,
   } = driveCommands;
 
   // Mast
-  const {mastCommands, setMastCommands, panAnglesRef} = useMastCommands();
-  const { px: panX, py: panY, wheels_x, panSpeed, setPanAngles } = mastCommands;
-
-  // refs update whenever mast panning changes
-  const panXRef = useRef(panX);
-  const panYRef = useRef(panY);
-  const wheelsXRef = useRef(wheels_x);
-
-  useEffect(() => {
-    panXRef.current = panX;
-  }, [panX]);
-
-  useEffect(() => {
-    panYRef.current = panY;
-  }, [panY]);
-
-  useEffect(() => {
-    wheelsXRef.current = wheels_x;
-  }, [wheels_x]);
-
-  const driveCommandsRef = useRef(driveCommands);
-
-  useEffect(() => {
-    driveCommandsRef.current = driveCommands;
-  }, [driveCommands]);
+  const { mastCommands, setMastCommands, mastCommandsRef, panAnglesRef } =
+    useMastCommands();
+  const { px: panX, py: panY, wheels_x, panSpeed } = mastCommands;
 
   // If autonomy starts, immediately turn off AUTO TX.
   useEffect(() => {
@@ -91,7 +68,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
     }, FrameRateConstant);
 
     return () => clearInterval(interval);
-  }, [controlsLocked, serverConnected, driveConnectedOne, txon]);
+  }, [controlsLocked, serverConnected, driveConnectedOne, txon, driveCommandsRef]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -105,14 +82,14 @@ export default function DriveManualInput({ controlsLocked = false }) {
       }
 
       robotsocket.emit("mastCommands", {
-        xVel: panXRef.current,
-        yVel: panYRef.current,
-        wheels_x: wheelsXRef.current,
+        xVel: mastCommandsRef.current.px,
+        yVel: mastCommandsRef.current.py,
+        wheels_x: mastCommandsRef.current.wheels_x,
       });
     }, FrameRateConstant);
 
     return () => clearInterval(interval);
-  }, [controlsLocked, serverConnected, driveConnectedOne, txon]);
+  }, [controlsLocked, serverConnected, driveConnectedOne, txon, mastCommandsRef]);
 
   const handleHoming = () => {
     if (controlsLocked || !serverConnected) return;
@@ -120,18 +97,18 @@ export default function DriveManualInput({ controlsLocked = false }) {
     robotsocket.emit("driveHoming");
   };
 
-    const recenter = () => {
+  const recenter = () => {
     if (controlsLocked || driveConnectedOne == null) return;
 
     panAnglesRef.current.px = 0;
     panAnglesRef.current.py = 0;
     panAnglesRef.current.wheelsx = 0;
-    setPanAngles((prev) => ({
+    setMastCommands((prev) => ({
       ...prev,
-      px : 0,
+      px: 0,
       py: 0,
-      wheelsx: 0
-    }))
+      wheels_x: 0,
+    }));
   };
 
   const handleManualTx = () => {
@@ -140,16 +117,16 @@ export default function DriveManualInput({ controlsLocked = false }) {
     console.log("Manual TX");
 
     robotsocket.emit("driveCommands", {
-      xVel: forwardsVelocity,
-      yVel: sidewaysVelocity,
-      rotVel: rotationalVelocity,
-      moduleConflicts: Number(moduleConflicts),
+      xVel: driveCommandsRef.current.forwardsVelocity,
+      yVel: driveCommandsRef.current.sidewaysVelocity,
+      rotVel: driveCommandsRef.current.rotationalVelocity,
+      moduleConflicts: Number(driveCommandsRef.current.moduleConflicts),
     });
 
     robotsocket.emit("mastCommands", {
-      xVel: panX,
-      yVel: panY,
-      wheels_x: wheels_x,
+      xVel: mastCommandsRef.current.px,
+      yVel: mastCommandsRef.current.py,
+      wheels_x: mastCommandsRef.current.wheels_x,
     });
   };
 

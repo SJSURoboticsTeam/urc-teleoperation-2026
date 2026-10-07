@@ -36,7 +36,7 @@ function valuesDiffer(a, b, epsilon = 0.01) {
 export default function ArmView() {
 
   const { canState } = usePeripherals();
-  const [armCommands, setArmCommands] = useArmCommands();
+  const [armCommands, setArmCommands, armCommandsRef] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
   const serverConnected = useRobotSocketStatus();
 
@@ -61,7 +61,6 @@ export default function ArmView() {
   const initializedDefaults = useMemo(() => ARM_DEFAULTS, []);
   const safeArmCommands = armCommands ?? initializedDefaults;
 
-  const armCommandsRef = useRef(safeArmCommands);
   const prevArmCommandsRef = useRef(safeArmCommands);
   const prevDisplayCommandsRef = useRef(safeArmCommands);
   const pulseTimeoutsRef = useRef({});
@@ -74,10 +73,6 @@ export default function ArmView() {
 
   const controlModeLabel = gamepadMode ? "Gamepad Control" : "Slider Control";
   const sendModeLabel = controlsLocked ? "Locked" : txon ? "Auto" : "Manual";
-
-  useEffect(() => {
-    armCommandsRef.current = safeArmCommands;
-  }, [safeArmCommands]);
 
   // Initialize to config-based defaults if commands are missing or invalid.
   useEffect(() => {
@@ -100,7 +95,7 @@ export default function ArmView() {
       prevDisplayCommandsRef.current = nextCommands;
       armCommandsRef.current = nextCommands;
     }
-  }, [armCommands, initializedDefaults, setArmCommands]);
+  }, [armCommands, initializedDefaults, setArmCommands, armCommandsRef]);
 
   // If autonomy starts, immediately stop auto-transmission.
   useEffect(() => {
@@ -124,7 +119,7 @@ export default function ArmView() {
         prevDisplayCommandsRef.current = snapshot;
       }
     }
-  }, [armConnectedOne]);
+  }, [armConnectedOne, armCommandsRef]);
 
   const pulseJoint = useCallback((key) => {
     if (pulseTimeoutsRef.current[key]) {
@@ -167,7 +162,7 @@ export default function ArmView() {
 
     const intervalId = setInterval(() => {
       const current = armCommandsRef.current;
-      const previous = prevArmCommandsRef.current;
+      const previous = { ...prevArmCommandsRef.current };
       let sentAny = false;
 
       ARM_JOINT_KEYS.forEach((joint) => {
@@ -178,6 +173,10 @@ export default function ArmView() {
             joint,
             value: current[joint],
           });
+
+          // Compare against the last transmitted target so small movements
+          // accumulate across ticks instead of being lost at the faster TX rate.
+          previous[joint] = current[joint];
 
           emitCounterRef.current.joint += 1;
           pulseJoint(joint);
@@ -197,11 +196,11 @@ export default function ArmView() {
         pulseTx();
       }
 
-      prevArmCommandsRef.current = { ...current };
+      prevArmCommandsRef.current = previous;
     }, FrameRateConstant);
 
     return () => clearInterval(intervalId);
-  }, [controlsLocked, serverConnected, txon, pulseJoint, pulseTx]);
+  }, [controlsLocked, serverConnected, txon, pulseJoint, pulseTx, armCommandsRef]);
 
   // Listen for arm feedback from the robot.
   useEffect(() => {
@@ -243,7 +242,7 @@ export default function ArmView() {
   const handleManualUpdate = () => {
     if (controlsLocked || !serverConnected) return;
 
-    robotsocket.emit("armCommands", safeArmCommands);
+    robotsocket.emit("armCommands", armCommandsRef.current);
 
     emitCounterRef.current.full += 1;
     pulseTx();

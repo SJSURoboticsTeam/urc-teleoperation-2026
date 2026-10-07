@@ -1,5 +1,5 @@
 import "react-resizable/css/styles.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import { robotsocket } from "../socket.io/socket";
 
@@ -11,14 +11,19 @@ export default function Wheel() {
     backRight: 0,
   });
 
-  robotsocket.on("wheelAngles", (data) => {
-    setWheelAngles({
-      frontLeft: data.fLAngle,
-      frontRight: data.fRAngle,
-      backLeft: data.bLAngle,
-      backRight: data.bRAngle,
-    });
-  });
+  useEffect(() => {
+    const handleWheelAngles = (data) => {
+      setWheelAngles({
+        frontLeft: data.fLAngle,
+        frontRight: data.fRAngle,
+        backLeft: data.bLAngle,
+        backRight: data.bRAngle,
+      });
+    };
+
+    robotsocket.on("wheelAngles", handleWheelAngles);
+    return () => robotsocket.off("wheelAngles", handleWheelAngles);
+  }, []);
 
   return (
     <Box

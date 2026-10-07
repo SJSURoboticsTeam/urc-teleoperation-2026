@@ -13,6 +13,7 @@ import { useMastCommands } from "../../contexts/MastCommandContext";
 import { ARM_LIMITS, ARM_DEFAULTS } from "../../constants/armConfig";
 
 import { getOS } from "./getOS";
+import { GamepadDisplayInterval } from "./FrameRateConstant";
 
 // Handles gamepad connections and state
 export default function GamepadPanel() {
@@ -30,24 +31,21 @@ export default function GamepadPanel() {
   const osRef = useRef(getOS());
 
   // drive
-  const [_driveCommands, setDriveCommands] = useDriveCommands();
+  const [_driveCommands, setDriveCommands, driveCommandsRef, publishDriveCommands] =
+    useDriveCommands();
   const { driveSpeed } = _driveCommands;
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
   // pan-tilt
-  const {mastCommands, setMastCommands, panAnglesRef} = useMastCommands(); // includes pan angles and speed
+  const { mastCommands, mastCommandsRef, publishMastCommands, panAnglesRef } =
+    useMastCommands();
   const panAnimationIdRef = useRef(null);
 
   // arm
-  const [armCommands, setArmCommands] = useArmCommands();
+  const [, , armCommandsRef, publishArmCommands] = useArmCommands();
   const armConnectedOne = connectedGamepads.arm;
   const armAnimationIdRef = useRef(null);
-  const armCommandsRef = useRef(armCommands);
-
-  useEffect(() => {
-    armCommandsRef.current = armCommands;
-  }, [armCommands]);
 
   // Handle gamepad connections and disconnections
   useEffect(() => {
@@ -114,35 +112,38 @@ export default function GamepadPanel() {
   useEffect(() => {
     const deadZone = (v, threshold = 0.15) =>
       Math.abs(v) <= threshold ? 0 : v;
+    let lastPublishMs = -Infinity;
+    let lastPublished = driveCommandsRef.current;
 
-    const pollAxes = () => {
+    const pollAxes = (timeMs) => {
       const gp = navigator.getGamepads()[driveConnectedOne];
-      if (!gp) return;
       const next = {
         sidewaysVelocity:
-          deadZone(Math.round(driveSpeed * gp.axes[0] * 100) / 100) || 0,
+          deadZone(Math.round(driveSpeed * (gp?.axes[0] ?? 0) * 100) / 100) || 0,
         forwardsVelocity:
-          deadZone(-Math.round(driveSpeed * gp.axes[1] * 100) / 100) || 0,
+          deadZone(-Math.round(driveSpeed * (gp?.axes[1] ?? 0) * 100) / 100) || 0,
         rotationalVelocity:
-          deadZone(Math.round(driveSpeed * gp.axes[2] * 100) / 100) || 0,
+          deadZone(Math.round(driveSpeed * (gp?.axes[2] ?? 0) * 100) / 100) || 0,
       };
 
-      setDriveCommands((prev) => {
-        const changed =
-          prev.sidewaysVelocity !== next.sidewaysVelocity ||
-          prev.forwardsVelocity !== next.forwardsVelocity ||
-          prev.rotationalVelocity !== next.rotationalVelocity;
+      // TX sees every sample, including neutral, without waiting for a render.
+      driveCommandsRef.current = { ...driveCommandsRef.current, ...next };
+      const changed =
+        lastPublished.sidewaysVelocity !== next.sidewaysVelocity ||
+        lastPublished.forwardsVelocity !== next.forwardsVelocity ||
+        lastPublished.rotationalVelocity !== next.rotationalVelocity;
+      const stopped = Object.values(next).every((value) => value === 0);
 
-        if (!changed) return prev;
-
-        // preserve moduleConflicts (and anything else you may add later)
-        return { ...prev, ...next };
-      });
+      if (changed && (stopped || timeMs - lastPublishMs >= GamepadDisplayInterval)) {
+        publishDriveCommands(driveCommandsRef.current);
+        lastPublished = driveCommandsRef.current;
+        lastPublishMs = timeMs;
+      }
     };
 
     if (driveConnectedOne != null) {
-      const loop = () => {
-        pollAxes();
+      const loop = (timeMs) => {
+        pollAxes(timeMs);
         driveAnimationIdRef.current = requestAnimationFrame(loop);
       };
       driveAnimationIdRef.current = requestAnimationFrame(loop);
@@ -162,11 +163,16 @@ export default function GamepadPanel() {
         driveAnimationIdRef.current = null;
       }
     };
-  }, [driveSpeed, driveConnectedOne, setDriveCommands]);
+  }, [
+    driveSpeed, driveConnectedOne, setDriveCommands,
+    driveCommandsRef, publishDriveCommands,
+  ]);
 
   const lastTimeRef = useRef(null);
   useEffect(() => {
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+    let lastPublishMs = -Infinity;
+    let lastPublished = mastCommandsRef.current;
 
     const pollAxes = (time) => {
       if (lastTimeRef.current == null) {
@@ -199,16 +205,21 @@ export default function GamepadPanel() {
           90,
         );
 
-        // publish to context (UI domain)
+        // The CAN payload uses integer angles; update it at the sampling rate.
         const px = Math.round(panAnglesRef.current.px);
         const py = Math.round(panAnglesRef.current.py);
         const wheels_x = Math.round(panAnglesRef.current.wheelsx);
-        setMastCommands((prev) => {
-          if (!prev) return { px, py, panSpeed: speed, wheels_x };
-          if (prev.px === px && prev.py === py && prev.wheels_x === wheels_x)
-            return prev;
-          return { ...prev, px, py, wheels_x };
-        });
+        mastCommandsRef.current = { ...mastCommandsRef.current, px, py, wheels_x };
+        const changed =
+          lastPublished.px !== px || lastPublished.py !== py ||
+          lastPublished.wheels_x !== wheels_x;
+        const stopped = Object.values(newVel).every((value) => value === 0);
+
+        if (changed && (stopped || time - lastPublishMs >= GamepadDisplayInterval)) {
+          publishMastCommands(mastCommandsRef.current);
+          lastPublished = mastCommandsRef.current;
+          lastPublishMs = time;
+        }
       }
 
       panAnimationIdRef.current = requestAnimationFrame(pollAxes);
@@ -221,7 +232,10 @@ export default function GamepadPanel() {
       panAnimationIdRef.current = null;
       lastTimeRef.current = null;
     };
-  }, [driveConnectedOne, mastCommands?.panSpeed, setMastCommands]);
+  }, [
+    driveConnectedOne, mastCommands?.panSpeed, mastCommandsRef,
+    publishMastCommands, panAnglesRef,
+  ]);
 
   // Polling for arm gamepad input
   useEffect(() => {
@@ -281,14 +295,12 @@ export default function GamepadPanel() {
     let lastPublishMs = 0;
     let lastPublishedVal = { ...prevVal };
 
-    const publishPeriodMs = 33; // ~30Hz UI/state publish rate
-
     const pollAxes = (timeMs) => {
       const gp = navigator.getGamepads()[armConnectedOne];
 
-      // Gamepad disappeared (e.g., unplugged) -> reset to safe zero state
-      // so stale arm commands do not persist after disconnect
+      // Preserve the final sampled position when the gamepad disappears.
       if (!gp) {
+        publishArmCommands(armCommandsRef.current);
         setConnectedGamepads((prev) => ({
           ...prev,
           arm: null,
@@ -385,9 +397,9 @@ export default function GamepadPanel() {
       };
       //console.log("Arm Commands: ", nextVal);
 
-      // Always advance the integration state (so motion remains smooth),
-      // but throttle publishing into React state to avoid starving UI paints.
+      // Advance live targets every frame; UI snapshots must not overwrite them.
       prevVal = nextVal;
+      armCommandsRef.current = nextVal;
 
       const inputsActive =
         Math.abs(armInputs.elbow) > 0 ||
@@ -397,13 +409,13 @@ export default function GamepadPanel() {
         Math.abs(armInputs.roll) > 0 ||
         Math.abs(armInputs.clamp) > 0;
 
-      const publishDue = timeMs - lastPublishMs >= publishPeriodMs;
+      const publishDue = timeMs - lastPublishMs >= GamepadDisplayInterval;
 
       // Publish regularly while inputs are active (throttled), and also publish
       // once when inputs stop to flush the final value to the UI.
       if (inputsActive) {
         if (publishDue) {
-          setArmCommands(nextVal);
+          publishArmCommands(nextVal);
           lastPublishedVal = nextVal;
           lastPublishMs = timeMs;
         }
@@ -413,7 +425,7 @@ export default function GamepadPanel() {
         );
 
         if (differsFromLastPublish) {
-          setArmCommands(nextVal);
+          publishArmCommands(nextVal);
           lastPublishedVal = nextVal;
           lastPublishMs = timeMs;
         }
@@ -430,7 +442,7 @@ export default function GamepadPanel() {
         armAnimationIdRef.current = null;
       }
     };
-  }, [armConnectedOne, setArmCommands, setConnectedGamepads]);
+  }, [armConnectedOne, armCommandsRef, publishArmCommands, setConnectedGamepads]);
 
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");
