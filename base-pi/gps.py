@@ -14,9 +14,15 @@ class GNRMC:
     valid: bool  # is the GNRMC sentence valid (do we have a GPS lock)
 
 @dataclass
+class AccuracyEstimate:
+    horizontal_m: float
+    source: str
+
+@dataclass
 class GPS_Data:
     latitude: float
     longitude: float
+    accuracy: Union[AccuracyEstimate, None] = None
 
 GPS_AUTO_ID = "1546:01A9"
 
@@ -61,6 +67,7 @@ class ZEDF9P:
         self.gps_port = serial.Serial(port, baudrate, timeout=timeout)
         self.lines = []
         self.__gnrmc: GNRMC = GNRMC(None, None, False)
+        self.__accuracy: Union[AccuracyEstimate, None] = None
 
         # sleep for a second to ensure we have data to populate self.gnrmc
         time.sleep(1)
@@ -89,6 +96,27 @@ class ZEDF9P:
                 longitude *= -1
         return GNRMC(longitude, latitude, valid)
 
+    def process_gngga(self, line: str):
+        """
+        Parse GNGGA for HDOP-based accuracy estimate.
+        TODO: replace with hAcc from NAV-PVT or HPL from NAV-PL
+        once firmware is updated to HPG 1.30+
+        """
+        try:
+            parts = line.strip().split(",")
+            fix_quality = int(parts[6])
+            hdop = float(parts[8])
+            if fix_quality <= 0 or hdop <= 0 or not math.isfinite(hdop):
+                self.__accuracy = None
+                return
+            accuracy_m = round(hdop * 4, 3) 
+            self.__accuracy = AccuracyEstimate(
+                horizontal_m=accuracy_m,
+                source="HDOP"
+            )
+        except (ValueError, IndexError):
+            self.__accuracy = None
+
     def get_position(self) -> GPS_Data:
         """
         Should only be called when gnrmc is valid, otherwise
@@ -96,7 +124,7 @@ class ZEDF9P:
         (not castable to float)
         """
         val = self.gnrmc
-        return GPS_Data(longitude=val.longitude, latitude=val.latitude)
+        return GPS_Data(longitude=val.longitude, latitude=val.latitude, accuracy=self.__accuracy)
 
     def has_gps_lock(self) -> bool:
         """
@@ -114,10 +142,14 @@ class ZEDF9P:
         """
         lines = []
         while 1:
-            b = self.gps_port.readline().decode("utf-8")
-            if b.strip() == "":
+            b = self.gps_port.readline()
+            if b.strip() == b"":
                 break
-            lines.append(b)
+            try:
+                decoded = b.decode("utf-8")
+                lines.append(decoded)
+            except UnicodeDecodeError:
+                continue
         self.lines = lines
         self._process_available_sentences()
 
@@ -126,11 +158,10 @@ class ZEDF9P:
         Processes all available sentences, updating self.gnrmc
         """
         for line in self.lines:
-            if "$GNRMC" in line:
-                try:
-                    self.__gnrmc = self.process_gnrmc(line)
-                except (IndexError, ValueError):
-                    continue
+            if line.startswith("$") and line[3:6] == "RMC":
+                self.__gnrmc = self.process_gnrmc(line)
+            if "$GNGGA" in line:
+                self.process_gngga(line)
     
     def close(self) -> None:
         self.gps_port.close()
@@ -162,19 +193,33 @@ async def read_gps_data(serial_ports, sio, gps_state):
             continue
 
         gps = serial_ports['gps']
+
         try:
-            gnrmc = gps.gnrmc
-            if gnrmc.valid:
+            if gps.has_gps_lock():
+                position = gps.get_position()
                 data = {
-                        'latitude': gnrmc.latitude,
-                        'longitude': gnrmc.longitude,
+                        'latitude': position.latitude,
+                        'longitude': position.longitude,
+                        'accuracy_m': position.accuracy.horizontal_m if position.accuracy else None,
+                        'accuracy_source': position.accuracy.source if position.accuracy else None
                 }
                 add_distance_and_heading(data, gps_state)
                 await sio.emit("gpsData2", data)
-                # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
+                print(f"Latitude: {position.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}")
             else:
                 print("No GPS lock")
-            # time.sleep(0.01)
+        # try:
+        #     gnrmc = gps.gnrmc
+        #     if gnrmc.valid:
+        #         data = {
+        #                 'latitude': gnrmc.latitude,
+        #                 'longitude': gnrmc.longitude,
+        #         }
+        #         await sio.emit("gpsData2", data)
+        #         print(f"Latitude: {gnrmc.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}")
+        #     else:
+        #         print("No GPS lock")
+        #     # time.sleep(0.01)
         except Exception as e:
             print(f'GPS thread error: {e}')
             try: gps.close()
