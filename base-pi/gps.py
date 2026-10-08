@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Union
 import time
 import asyncio
+import math
 
 @dataclass
 class GNRMC:
@@ -19,6 +20,41 @@ class GPS_Data:
 
 GPS_AUTO_ID = "1546:01A9"
 
+def calculate_distance_and_heading(start, end):
+    """Return distance in meters and initial bearing clockwise from north."""
+    start_latitude = math.radians(float(start["latitude"]))
+    start_longitude = math.radians(float(start["longitude"]))
+    end_latitude = math.radians(float(end["latitude"]))
+    end_longitude = math.radians(float(end["longitude"]))
+
+    latitude_delta = end_latitude - start_latitude
+    longitude_delta = end_longitude - start_longitude
+    haversine = (
+        math.sin(latitude_delta / 2) ** 2
+        + math.cos(start_latitude)
+        * math.cos(end_latitude)
+        * math.sin(longitude_delta / 2) ** 2
+    )
+    distance = 2 * 6_371_000 * math.asin(math.sqrt(haversine))
+
+    y = math.sin(longitude_delta) * math.cos(end_latitude)
+    x = (
+        math.cos(start_latitude) * math.sin(end_latitude)
+        - math.sin(start_latitude) * math.cos(end_latitude) * math.cos(longitude_delta)
+    )
+    heading = (math.degrees(math.atan2(y, x)) + 360) % 360
+    return distance, heading
+
+
+def add_distance_and_heading(data, gps_state):
+    robot_position = gps_state.get("robot")
+    if robot_position:
+        data["distanceMeters"], data["headingDegrees"] = calculate_distance_and_heading(
+            data, robot_position
+        )
+    else:
+        data["distanceMeters"] = None
+        data["headingDegrees"] = None
 
 class ZEDF9P:
     def __init__(self, port, baudrate, timeout: float = 0.01):
@@ -107,7 +143,7 @@ def find_gps_port(vid_pid=GPS_AUTO_ID):
             return port.device
     return None
 
-async def read_gps_data(serial_ports, sio):
+async def read_gps_data(serial_ports, sio, gps_state):
     disconnect_delay = 2
     connect_delay = 0.5
     while True:
@@ -133,6 +169,7 @@ async def read_gps_data(serial_ports, sio):
                         'latitude': gnrmc.latitude,
                         'longitude': gnrmc.longitude,
                 }
+                add_distance_and_heading(data, gps_state)
                 await sio.emit("gpsData2", data)
                 # print(f"Latitude: {position.latitude}, Longitude: {position.longitude}")
             else:
@@ -147,7 +184,7 @@ async def read_gps_data(serial_ports, sio):
         finally:
             await asyncio.sleep(connect_delay)  # Sleep briefly to prevent tight loop on error
 
-async def send_fake_gps_data(sio):
+async def send_fake_gps_data(sio, gps_state):
     while True:
         data = {
 
@@ -155,5 +192,6 @@ async def send_fake_gps_data(sio):
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
         }
 
+        add_distance_and_heading(data, gps_state)
         await sio.emit('gpsData2', data)
         await asyncio.sleep(random.uniform(2,7))
