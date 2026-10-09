@@ -31,19 +31,23 @@ export default function GamepadPanel() {
   const osRef = useRef(getOS());
 
   // drive
-  const [_driveCommands, setDriveCommands, driveCommandsRef, publishDriveCommands] =
-    useDriveCommands();
-  const { driveSpeed } = _driveCommands;
+  const {
+    driveCommands,
+    setDriveCommands,
+    driveCommandsRef,
+    publishDriveSnapshot,
+  } = useDriveCommands();
+  const { driveSpeed } = driveCommands;
   const driveConnectedOne = connectedGamepads.drive;
   const driveAnimationIdRef = useRef(null);
 
   // pan-tilt
-  const { mastCommands, mastCommandsRef, publishMastCommands, panAnglesRef } =
+  const { mastCommands, mastCommandsRef, publishMastSnapshot, panAnglesRef } =
     useMastCommands();
   const panAnimationIdRef = useRef(null);
 
   // arm
-  const [, , armCommandsRef, publishArmCommands] = useArmCommands();
+  const { armCommandsRef, publishArmSnapshot } = useArmCommands();
   const armConnectedOne = connectedGamepads.arm;
   const armAnimationIdRef = useRef(null);
 
@@ -135,7 +139,7 @@ export default function GamepadPanel() {
       const stopped = Object.values(next).every((value) => value === 0);
 
       if (changed && (stopped || timeMs - lastPublishMs >= GamepadDisplayInterval)) {
-        publishDriveCommands(driveCommandsRef.current);
+        publishDriveSnapshot();
         lastPublished = driveCommandsRef.current;
         lastPublishMs = timeMs;
       }
@@ -165,7 +169,7 @@ export default function GamepadPanel() {
     };
   }, [
     driveSpeed, driveConnectedOne, setDriveCommands,
-    driveCommandsRef, publishDriveCommands,
+    driveCommandsRef, publishDriveSnapshot,
   ]);
 
   const lastTimeRef = useRef(null);
@@ -216,7 +220,7 @@ export default function GamepadPanel() {
         const stopped = Object.values(newVel).every((value) => value === 0);
 
         if (changed && (stopped || time - lastPublishMs >= GamepadDisplayInterval)) {
-          publishMastCommands(mastCommandsRef.current);
+          publishMastSnapshot();
           lastPublished = mastCommandsRef.current;
           lastPublishMs = time;
         }
@@ -234,7 +238,7 @@ export default function GamepadPanel() {
     };
   }, [
     driveConnectedOne, mastCommands?.panSpeed, mastCommandsRef,
-    publishMastCommands, panAnglesRef,
+    publishMastSnapshot, panAnglesRef,
   ]);
 
   // Polling for arm gamepad input
@@ -300,7 +304,7 @@ export default function GamepadPanel() {
 
       // Preserve the final sampled position when the gamepad disappears.
       if (!gp) {
-        publishArmCommands(armCommandsRef.current);
+        publishArmSnapshot();
         setConnectedGamepads((prev) => ({
           ...prev,
           arm: null,
@@ -415,7 +419,7 @@ export default function GamepadPanel() {
       // once when inputs stop to flush the final value to the UI.
       if (inputsActive) {
         if (publishDue) {
-          publishArmCommands(nextVal);
+          publishArmSnapshot();
           lastPublishedVal = nextVal;
           lastPublishMs = timeMs;
         }
@@ -425,7 +429,7 @@ export default function GamepadPanel() {
         );
 
         if (differsFromLastPublish) {
-          publishArmCommands(nextVal);
+          publishArmSnapshot();
           lastPublishedVal = nextVal;
           lastPublishMs = timeMs;
         }
@@ -442,7 +446,7 @@ export default function GamepadPanel() {
         armAnimationIdRef.current = null;
       }
     };
-  }, [armConnectedOne, armCommandsRef, publishArmCommands, setConnectedGamepads]);
+  }, [armConnectedOne, armCommandsRef, publishArmSnapshot, setConnectedGamepads]);
 
   // Update connection status icon based on current view and gamepad connections
   const [info, setInfo] = useState("");

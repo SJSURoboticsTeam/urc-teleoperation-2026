@@ -19,7 +19,7 @@ export default function GamepadDiv({ name }) {
   const connectedOne =
     name === "/drive" ? connectedGamepads?.drive : connectedGamepads?.arm;
 
-  const [driveCommands, setDriveCommands] = useDriveCommands();
+  const { driveCommands, setDriveCommands } = useDriveCommands();
   const moduleConflicts = driveCommands.moduleConflicts;
 
   return (

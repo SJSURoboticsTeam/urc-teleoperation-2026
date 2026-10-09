@@ -4,8 +4,11 @@ export const DriveCommandContext = createContext(null);
 
 // Import this to use and set drive commands
 export function useDriveCommands() {
-  // lx, ly, rx, moduleConflicts
-  const { driveCommands, setDriveCommands, driveCommandsRef, publishDriveCommands } =
-    useContext(DriveCommandContext);
-  return [driveCommands, setDriveCommands, driveCommandsRef, publishDriveCommands];
+  const context = useContext(DriveCommandContext);
+
+  if (!context) {
+    throw new Error("DriveCommandContext must be used inside DriveCommandProvider");
+  }
+
+  return context;
 }

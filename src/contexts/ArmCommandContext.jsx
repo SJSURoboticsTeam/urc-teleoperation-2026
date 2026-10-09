@@ -3,7 +3,11 @@ import { createContext, useContext } from "react";
 export const ArmCommandContext = createContext(null);
 
 export function useArmCommands() {
-  const { armCommands, setArmCommands, armCommandsRef, publishArmCommands } =
-    useContext(ArmCommandContext);
-  return [armCommands, setArmCommands, armCommandsRef, publishArmCommands];
+  const context = useContext(ArmCommandContext);
+
+  if (!context) {
+    throw new Error("ArmCommandContext must be used inside ArmCommandProvider");
+  }
+
+  return context;
 }

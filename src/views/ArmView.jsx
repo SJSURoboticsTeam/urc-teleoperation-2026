@@ -36,7 +36,7 @@ function valuesDiffer(a, b, epsilon = 0.01) {
 export default function ArmView() {
 
   const { canState } = usePeripherals();
-  const [armCommands, setArmCommands, armCommandsRef] = useArmCommands();
+  const { armCommands, setArmCommands, armCommandsRef } = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
   const serverConnected = useRobotSocketStatus();
 

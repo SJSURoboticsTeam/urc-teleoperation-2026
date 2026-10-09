@@ -28,7 +28,8 @@ export default function DriveManualInput({ controlsLocked = false }) {
   const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
-  const [driveCommands, setDriveCommands, driveCommandsRef] = useDriveCommands();
+  const { driveCommands, setDriveCommands, driveCommandsRef } =
+    useDriveCommands();
   const {
     sidewaysVelocity,
     forwardsVelocity,
