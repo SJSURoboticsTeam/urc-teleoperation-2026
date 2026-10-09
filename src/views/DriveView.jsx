@@ -1,8 +1,9 @@
 import DriveManualInput from "../components/gamepad/DriveWidget";
 import { lazy, Suspense, useRef } from "react";
-import { Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import { usePeripherals } from "../contexts/PeripheralContext";
+import { useDriveControl } from "../contexts/DriveControlContext";
 
 const Map = lazy(() => import("../components/ui/Map"));
 
@@ -12,7 +13,11 @@ export default function DriveComponents() {
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
+  const { hasControl } = useDriveControl();
   const controlsLocked = autonomyEnabled;
+  const driveLocked = autonomyEnabled || !hasControl;
+  const showCanWarning = canState.driveState == "idle" && !controlsLocked;
+  const showControlWarning = !controlsLocked && !hasControl;
 
   return (
     <div
@@ -21,15 +26,28 @@ export default function DriveComponents() {
       style={{ userSelect: "none" }}
     >
       <div className="flex-1 flex flex-col gap-2 p-2 min-h-0">
-        {(canState.driveState == "idle" && !controlsLocked) && (
+        {(showCanWarning || showControlWarning) && (
           <Typography
             sx={{
               textAlign: "center",
               fontWeight: 700,
             }}
-            color="error"
           >
-            You don't have {canState.uartMode} connected!
+            {showCanWarning && (
+              <Box component="span" sx={{ color: "error.main" }}>
+                You don't have {canState.uartMode} connected!
+              </Box>
+            )}
+            {showCanWarning && showControlWarning && (
+              <Box component="span" sx={{ color: "text.secondary", mx: 1 }}>
+                •
+              </Box>
+            )}
+            {showControlWarning && (
+              <Box component="span" sx={{ color: "warning.main" }}>
+                No drive control: take it from STATUS (mast still works).
+              </Box>
+            )}
           </Typography>
         )}
         {controlsLocked && (
@@ -45,7 +63,7 @@ export default function DriveComponents() {
         )}
 
         <div className="flex flex-row items-center justify-center gap-6">
-          <DriveManualInput controlsLocked={controlsLocked} />
+          <DriveManualInput controlsLocked={controlsLocked} driveLocked={driveLocked} />
         </div>
 
         <Suspense

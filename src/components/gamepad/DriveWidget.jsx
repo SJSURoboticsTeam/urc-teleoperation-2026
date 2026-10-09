@@ -19,7 +19,7 @@ import { useConnectedGamepads } from "../../contexts/GamepadContext.jsx";
 
 const HEADER_HEIGHT = 56;
 
-export default function DriveManualInput({ controlsLocked = false }) {
+export default function DriveManualInput({ controlsLocked = false, driveLocked = false }) {
   // Server connection status
   const serverConnected = useRobotSocketStatus();
   const [txon, settxon] = useState(false);
@@ -64,17 +64,16 @@ export default function DriveManualInput({ controlsLocked = false }) {
     driveCommandsRef.current = driveCommands;
   }, [driveCommands]);
 
-  // If autonomy starts, immediately turn off AUTO TX.
+  // Re-arm AUTO TX on every drive-lock change (autonomy or control handover),
+  // so gaining or losing drive control never starts driving as a side effect.
   useEffect(() => {
-    if (controlsLocked) {
-      settxon(false);
-    }
-  }, [controlsLocked]);
+    settxon(false);
+  }, [driveLocked]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (
-        controlsLocked ||
+        driveLocked ||
         !serverConnected ||
         driveConnectedOne == null ||
         !txon
@@ -91,7 +90,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
     }, FrameRateConstant);
 
     return () => clearInterval(interval);
-  }, [controlsLocked, serverConnected, driveConnectedOne, txon]);
+  }, [driveLocked, serverConnected, driveConnectedOne, txon]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -115,7 +114,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
   }, [controlsLocked, serverConnected, driveConnectedOne, txon]);
 
   const handleHoming = () => {
-    if (controlsLocked || !serverConnected) return;
+    if (driveLocked || !serverConnected) return;
 
     robotsocket.emit("driveHoming");
   };
@@ -139,12 +138,14 @@ export default function DriveManualInput({ controlsLocked = false }) {
 
     console.log("Manual TX");
 
-    robotsocket.emit("driveCommands", {
-      xVel: forwardsVelocity,
-      yVel: sidewaysVelocity,
-      rotVel: rotationalVelocity,
-      moduleConflicts: Number(moduleConflicts),
-    });
+    if (!driveLocked) {
+      robotsocket.emit("driveCommands", {
+        xVel: forwardsVelocity,
+        yVel: sidewaysVelocity,
+        rotVel: rotationalVelocity,
+        moduleConflicts: Number(moduleConflicts),
+      });
+    }
 
     robotsocket.emit("mastCommands", {
       xVel: panX,
@@ -154,7 +155,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
   };
 
   const handleDriveSpeedChange = (_, value) => {
-    if (controlsLocked) return;
+    if (driveLocked) return;
 
     setDriveCommands((prev) => ({
       ...prev,
@@ -171,7 +172,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
     }));
   };
 
-  const VelocityItem = ({ value, label }) => (
+  const VelocityItem = ({ value, label, locked }) => (
     <Box
       sx={{
         display: "flex",
@@ -188,7 +189,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          opacity: controlsLocked ? 0.55 : 1,
+          opacity: locked ? 0.55 : 1,
         }}
       >
         <Typography variant="body1">{value}</Typography>
@@ -231,7 +232,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
             <Stack
               spacing={2}
               direction="row"
-              sx={{ alignItems: "center", mb: 1 }}
+              sx={{ alignItems: "center", mb: 1, opacity: driveLocked ? 0.65 : 1 }}
             >
               <TbHourglassLow size="30px" />
               <Slider
@@ -244,7 +245,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `Drive Speed: ${value}`}
                 sx={{ width: 150 }}
-                disabled={controlsLocked}
+                disabled={driveLocked}
               />
               <TbRocket size="30px" />
             </Stack>
@@ -259,11 +260,12 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 2,
             }}
           >
-            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" />
-            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" />
+            <VelocityItem value={forwardsVelocity.toFixed(1)} label="X Vel" locked={driveLocked} />
+            <VelocityItem value={sidewaysVelocity.toFixed(1)} label="Y Vel" locked={driveLocked} />
             <VelocityItem
               value={rotationalVelocity.toFixed(1)}
               label="Rotational"
+              locked={driveLocked}
             />
           </Box>
           <Box
@@ -349,9 +351,9 @@ export default function DriveManualInput({ controlsLocked = false }) {
               gap: 2,
             }}
           >
-            <VelocityItem value={panX} label="Mast W" />
-            <VelocityItem value={panY} label="Mast H" />
-            <VelocityItem value={wheels_x} label="Wheels" />
+            <VelocityItem value={panX} label="Mast W" locked={controlsLocked} />
+            <VelocityItem value={panY} label="Mast H" locked={controlsLocked} />
+            <VelocityItem value={wheels_x} label="Wheels" locked={controlsLocked} />
           </Box>
           <Box
             sx={{
@@ -365,7 +367,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
               variant="contained"
               onClick={handleHoming}
               sx={{ whiteSpace: "nowrap" }}
-              disabled={controlsLocked || !serverConnected}
+              disabled={driveLocked || !serverConnected}
             >
               Homing
             </Button>
@@ -388,8 +390,8 @@ export default function DriveManualInput({ controlsLocked = false }) {
             flexDirection: "column",
             p: "clamp(4px, 0.5vw, 8px)",
             borderColor: "gray",
-            opacity: controlsLocked ? 0.55 : 1,
-            pointerEvents: controlsLocked ? "none" : "auto",
+            opacity: driveLocked ? 0.55 : 1,
+            pointerEvents: driveLocked ? "none" : "auto",
           }}
         >
           <Wheel />
