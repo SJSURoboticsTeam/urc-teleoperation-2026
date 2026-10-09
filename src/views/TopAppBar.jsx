@@ -25,6 +25,7 @@ import NavConnectionStatus from "../components/socket.io/BackendConnectionManage
 import GamepadPanel from "../components/gamepad/Gamepad";
 import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
+import BatteryDisplay from "../components/battery/batteryDisplay"
 import {
   robotsocket,
   useRobotSocketStatus,
@@ -198,7 +199,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
             setOpenPane={setOpenPane}
             isRobotConnected={isRobotConnected}
           />
-
+          <BatteryDisplay/>
           <IconButton
             edge="end"
             color="inherit"
