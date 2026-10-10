@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
 import { useGPS } from "../../contexts/GPSContext";
 
-function CoordUI({ lat, long, lastRead, color }) {
+function CoordUI({ lat, long, lastRead, color, distanceMeters, headingDegrees }) {
   return (
     <Box
       sx={{
@@ -22,6 +22,16 @@ function CoordUI({ lat, long, lastRead, color }) {
       <Typography variant="body2">Latitude: {lat}</Typography>
       <Typography variant="body2">Longitude: {long}</Typography>
       <Typography variant="body2">Last Read: {lastRead}</Typography>
+      {distanceMeters !== undefined && (
+        <>
+          <Typography variant="body2">
+            Distance to Robot: {Number.isFinite(distanceMeters) ? `${distanceMeters.toFixed(1)} m` : "--"}
+          </Typography>
+          <Typography variant="body2">
+            Heading to Robot: {Number.isFinite(headingDegrees) ? `${headingDegrees.toFixed(1)}°` : "--"}
+          </Typography>
+        </>
+      )}
     </Box>
   );
 }
@@ -42,7 +52,7 @@ class CoordControl {
     this.update("---", "---", "---");
     return this._container;
   }
-  update(lat, long, lastRead) {
+  update(lat, long, lastRead, distanceMeters, headingDegrees) {
     if(!this._root) {
       return;
     }
@@ -55,6 +65,8 @@ class CoordControl {
         long = {long}  
         lastRead = {lastRead}  
         color = {this.color}
+        distanceMeters = {distanceMeters}
+        headingDegrees = {headingDegrees}
       />
     );
   }
@@ -375,17 +387,15 @@ export default function Map() {
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Base Target"))
       .addTo(map);
-    const onStyleImageMissing = (event) => {
-      if (map.hasImage(event.id)) {
+    map.setMissingStyleImageResolver((imageId) => {
+      if (map.hasImage(imageId)) {
         return;
       }
 
       if (fallbackImage) {
-        map.addImage(event.id, fallbackImage, { pixelRatio: 2 });
+        map.addImage(imageId, fallbackImage, { pixelRatio: 2 });
       }
-    };
-
-    map.on("styleimagemissing", onStyleImageMissing);
+    });
 
     const lockOnControl = new LockOnControl(() =>
       setIsLockedOn((prev) => !prev), 
@@ -505,7 +515,6 @@ export default function Map() {
     return () => {
       cancelAnimationFrame(initialResizeRaf);
       window.removeEventListener("resize", onWindowResize);
-      map.off("styleimagemissing", onStyleImageMissing);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
       // Clean up map instance
@@ -543,6 +552,8 @@ export default function Map() {
         baseCoordinates.lat.toFixed(6),
         baseCoordinates.long.toFixed(6),
         baseCoordinates.receive ? baseSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
+        baseCoordinates.distanceMeters,
+        baseCoordinates.headingDegrees,
       );
     }
 
