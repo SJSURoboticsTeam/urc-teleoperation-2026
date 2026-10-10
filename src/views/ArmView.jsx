@@ -5,10 +5,12 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
 import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
-import {
-  useRobotSocketStatus,
-  robotsocket,
-} from "../components/socket.io/socket";
+
+import { robotsocket } from "../components/socket.io/socket";
+
+// Read shared robot connection status for arm controls. Edit by Sunny_100226
+import { useConnectionStatus } from "../contexts/ConnectionContext";
+
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
@@ -38,7 +40,9 @@ export default function ArmView() {
   const { canState } = usePeripherals();
   const [armCommands, setArmCommands] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
-  const serverConnected = useRobotSocketStatus();
+
+  // Use centralized connection state to control arm commands. Edit by Sunny_100226
+  const { robotConnected: serverConnected } = useConnectionStatus();
 
   const { autonomyEnabled } = useAutonomyMode();
 

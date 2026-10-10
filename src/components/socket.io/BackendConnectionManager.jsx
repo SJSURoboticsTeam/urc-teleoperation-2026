@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { green, red, yellow } from "@mui/material/colors";
-import { useRobotSocketStatus, useBaseSocketStatus } from "./socket";
+
+// Read shared connection state from the centralized context. Edit by Sunny_100226
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
@@ -11,8 +14,11 @@ import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
-  const isRobotConnected = useRobotSocketStatus(); // get socket status from ui
-  const isBaseConnected = useBaseSocketStatus(); // get socket status from ui
+  // Use centralized status instead of registering separate socket listeners here. Edit by Sunny_100226
+  const {
+    robotConnected: isRobotConnected,
+    baseConnected: isBaseConnected,
+  } = useConnectionStatus();
 
   // robot
   const [robotLatency, setRobotLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping

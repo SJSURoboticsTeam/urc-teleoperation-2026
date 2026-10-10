@@ -2,10 +2,13 @@ import "react-resizable/css/styles.css";
 import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+
+// Use the socket for drive commands and shared context for connection status. Edit bt Sunny_100226
 import { robotsocket } from "../socket.io/socket";
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
-import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
@@ -21,7 +24,10 @@ const HEADER_HEIGHT = 56;
 
 export default function DriveManualInput({ controlsLocked = false, driveLocked = false }) {
   // Server connection status
-  const serverConnected = useRobotSocketStatus();
+
+  // Use centralized robot connection state to control drive features. Edit by Sunny_100226
+  const { robotConnected: serverConnected } = useConnectionStatus();
+
   const [txon, settxon] = useState(false);
 
   // Drive
