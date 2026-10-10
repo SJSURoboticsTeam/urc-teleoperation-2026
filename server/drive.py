@@ -2,6 +2,7 @@ import asyncio
 import config
 import can_serial
 import math
+from drive_control import is_drive_controller
 
 
 drive_send_ID = {
@@ -62,6 +63,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
     async def driveCommands(sid, data):
         try:
             async with drive_command_lock:
+                if not is_drive_controller(sid):
+                    print(f'[{sid}] Ignored drive command: not in control')
+                    return
                 can_msg = await send_drive_command(
                     serial_ports,
                     data['xVel'],
@@ -77,6 +81,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
 
     @sio.event
     async def driveHoming(sid):
+        if not is_drive_controller(sid):
+            print(f'[{sid}] Ignored homing request: not in control')
+            return
         try:
             can_msg = f't{drive_send_ID["HOMING_SEQUENCE"]}0\r'
             await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
