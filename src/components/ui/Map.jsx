@@ -387,17 +387,15 @@ export default function Map() {
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Base Target"))
       .addTo(map);
-    const onStyleImageMissing = (event) => {
-      if (map.hasImage(event.id)) {
+    map.setMissingStyleImageResolver((imageId) => {
+      if (map.hasImage(imageId)) {
         return;
       }
 
       if (fallbackImage) {
-        map.addImage(event.id, fallbackImage, { pixelRatio: 2 });
+        map.addImage(imageId, fallbackImage, { pixelRatio: 2 });
       }
-    };
-
-    map.on("styleimagemissing", onStyleImageMissing);
+    });
 
     const lockOnControl = new LockOnControl(() =>
       setIsLockedOn((prev) => !prev), 
@@ -517,7 +515,6 @@ export default function Map() {
     return () => {
       cancelAnimationFrame(initialResizeRaf);
       window.removeEventListener("resize", onWindowResize);
-      map.off("styleimagemissing", onStyleImageMissing);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
       // Clean up map instance
