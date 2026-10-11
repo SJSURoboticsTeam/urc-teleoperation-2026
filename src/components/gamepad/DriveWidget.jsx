@@ -44,8 +44,8 @@ function VelocityItem({ commanded, actual, label, dimmed }) {
     >
       <Box
         sx={{
-          width: 75,
-          height: 50,
+          width: 86,
+          height: 54,
           border: "2px solid",
           borderColor: diverged ? "error.main" : "black",
           backgroundColor: diverged ? "#fdecea" : "transparent",
@@ -57,19 +57,18 @@ function VelocityItem({ commanded, actual, label, dimmed }) {
           opacity: dimmed ? 0.55 : 1,
         }}
       >
-        <Typography variant="body2" sx={{ lineHeight: 1.1, fontWeight: 600 }}>
+        <Typography sx={{ fontSize: "1.25rem", lineHeight: 1.05, fontWeight: 700 }}>
           {formatValue(commanded)}
         </Typography>
         <Typography
-          variant="caption"
           color={diverged ? "error.dark" : "success.main"}
-          sx={{ lineHeight: 1.1, fontWeight: 600 }}
+          sx={{ fontSize: "1rem", lineHeight: 1.05, fontWeight: 700 }}
         >
           {formatValue(actual)}
         </Typography>
       </Box>
 
-      <Typography variant="body2" sx={{ marginTop: 0.5 }}>
+      <Typography sx={{ fontSize: "0.9rem", marginTop: 0.25 }}>
         {label}
       </Typography>
     </Box>
@@ -289,7 +288,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              gap: 2,
+              gap: 1.25,
             }}
           >
             <VelocityItem
@@ -391,7 +390,7 @@ export default function DriveManualInput({ controlsLocked = false }) {
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              gap: 2,
+              gap: 1.25,
             }}
           >
             <VelocityItem commanded={panX} actual={null} label="Mast W" dimmed={controlsLocked} />

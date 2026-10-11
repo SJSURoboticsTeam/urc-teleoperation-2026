@@ -11,7 +11,6 @@ and publish together on a timer.
 
 import asyncio
 import math
-import random
 import time
 
 
@@ -190,6 +189,7 @@ _MODULE_OFFSETS = {
 # Corner that refuses to move, to demonstrate the divergence warning.
 # Set to None for a healthy rover.
 STALLED_CORNER = "bR"
+STALLED_ANGLE = 18.0   # degrees it is jammed at, visibly off from the others
 
 # How quickly measured values converge on commanded ones. 0..1 per tick.
 _LAG = 0.18
@@ -242,8 +242,10 @@ async def simulate_drive_feedback(sio, state):
 
             for corner in CORNERS:
                 if corner == STALLED_CORNER:
-                    # Jammed module: drifts slightly but never reaches target.
-                    current[corner] += random.uniform(-0.4, 0.4)
+                    # Jammed module: eases toward a fixed stuck angle instead of
+                    # following the target. Held, not vibrating - a wheel that
+                    # cannot steer should look stuck, not noisy.
+                    current[corner] += (STALLED_ANGLE - current[corner]) * _LAG
                 else:
                     target = targets[corner]
                     if target is not None:
@@ -251,7 +253,6 @@ async def simulate_drive_feedback(sio, state):
                         # Take the short way round the circle.
                         delta = (delta + 180.0) % 360.0 - 180.0
                         current[corner] += delta * _LAG
-                    current[corner] += random.uniform(-0.2, 0.2)
 
                 state.note_offset(
                     CORNER_TO_MODULE_POSITION[corner],
@@ -264,7 +265,6 @@ async def simulate_drive_feedback(sio, state):
             for axis in ("xVel", "yVel", "rotVel"):
                 goal = command[axis] * efficiency
                 measured[axis] += (goal - measured[axis]) * _LAG
-                measured[axis] += random.uniform(-0.01, 0.01)
 
             state.note_velocities(measured["xVel"], measured["yVel"], measured["rotVel"])
 
