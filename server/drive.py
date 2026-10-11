@@ -59,8 +59,15 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 # =================== Client Drive Event Handlers ====================
 
 def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
+    """Register the socket handlers that drive the rover over CAN.
+
+    drive_state is optional so existing callers keep working; when given,
+    outgoing commands are mirrored into it for the commanded-vs-actual UI.
+    """
+
     @sio.event
     async def driveCommands(sid, data):
+        """Socket handler: send one chassis velocity command."""
         # Recorded before the send: offline the write throws and is swallowed.
         if drive_state is not None:
             drive_state.note_command(data['xVel'], data['yVel'], data['rotVel'])
@@ -81,6 +88,7 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
 
     @sio.event
     async def driveHoming(sid):
+        """Socket handler: start the drive homing sequence."""
         try:
             can_msg = f't{drive_send_ID["HOMING_SEQUENCE"]}0\r'
             await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
@@ -90,6 +98,11 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
 
 
 async def parse_drive_data(data):
+    """Decode one CANUSB frame.
+
+    Returns a dict the caller feeds to apply_parsed, or None for frames
+    that carry no telemetry. Values stay fixed-point here.
+    """
     try:
         string_data = data.decode()
 
@@ -185,6 +198,7 @@ async def parse_drive_data(data):
         print(f'Error parsing drive data: {e}')
 
 async def read_drive_can_loop(serial_ports, drive_state=None):
+    """Background task: read CAN frames and feed them into drive_state."""
     while True:
         try:
             # Guard so the task survives a disconnected port (see arm.py:576).
@@ -207,6 +221,7 @@ async def read_drive_can_loop(serial_ports, drive_state=None):
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
 async def send_drive_status_request(serial_ports):
+    """Background task: poll the CANUSB adapter for its status flags."""
     while True:
         try:
             # Same guard as read_drive_can_loop.

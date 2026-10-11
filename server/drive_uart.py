@@ -22,6 +22,7 @@ DRIVE_REPLY_ID = {
 
 
 def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts):
+    """Pack chassis velocities into the UART payload as fixed-point bytes."""
     # 16 bit signed integer correlating to the velocity in 2^12x meters/sec
     x_vel_scaled = int(x_vel * (2 ** 12))
     y_vel_scaled = int(y_vel * (2 ** 12))
@@ -64,8 +65,14 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 # =================== Client Drive Event Handlers ====================
 
 def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
+    """Register the socket handlers that drive the rover over UART.
+
+    UART twin of the CAN version in drive.py.
+    """
+
     @sio.event
     async def driveCommands(sid, data):
+        """Socket handler: send one chassis velocity command."""
         # Recorded before the send - see drive.py
         if drive_state is not None:
             drive_state.note_command(data["xVel"], data["yVel"], data["rotVel"])
@@ -84,6 +91,7 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
 
     @sio.event
     async def driveHoming(sid):
+        """Socket handler: start the drive homing sequence."""
         try:
             # make sure drive UART is connected first
             if serial_ports["drive"] is None:
@@ -101,6 +109,11 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
 
 
 async def parse_drive_packet(packet):
+    """Decode one UART packet.
+
+    Returns the same dict shape as the CAN parser so the frontend never
+    learns which transport is active, or None for non-telemetry packets.
+    """
     try:
         msg_id, payload = packet
 
@@ -174,6 +187,7 @@ async def parse_drive_packet(packet):
 
 
 async def read_drive_uart_loop(serial_ports, drive_state=None):
+    """Background task: read UART packets and feed them into drive_state."""
     while True:
         try:
             # read_packet is blocking so run it in a thread
@@ -192,6 +206,7 @@ async def read_drive_uart_loop(serial_ports, drive_state=None):
 
 # send heartbeat once in a while so drive can confirm MC is still alive
 async def send_drive_heartbeat(serial_ports):
+    """Background task: periodic heartbeat so firmware knows we are alive."""
     try:
         while True:
             drive = serial_ports["drive"]

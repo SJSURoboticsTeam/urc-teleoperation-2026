@@ -1,4 +1,5 @@
 import "react-resizable/css/styles.css";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { useDriveFeedback } from "../../contexts/DriveFeedbackContext";
@@ -17,6 +18,28 @@ function hasAngle(value) {
 // frame would visibly accelerate and brake.
 const SWEEP = { transition: "transform 200ms linear" };
 const SWEEP_D = { transition: "d 200ms linear" };
+// Honour the OS "reduce motion" setting: the wheels still update, they just
+// jump straight to the new value instead of sweeping.
+const NO_MOTION = { transition: "none" };
+
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false,
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia?.(REDUCED_MOTION_QUERY);
+    if (!query) return;
+
+    const onChange = (event) => setReduced(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  return reduced;
+}
 
 // The direction vector also doubles as a speed gauge: short stub when stopped,
 // full length at speed. Both maxima are 4 because Gamepad.jsx scales all three
@@ -47,6 +70,9 @@ function vectorPath(x, y, length) {
 
 export default function Wheel() {
     const { wheelAngles, measured, receive } = useDriveFeedback();
+  const reducedMotion = usePrefersReducedMotion();
+  const sweep = reducedMotion ? NO_MOTION : SWEEP;
+  const sweepD = reducedMotion ? NO_MOTION : SWEEP_D;
 
   // 0 degrees is a real angle, so an unheard-from corner must not render as one.
   const known = {
@@ -122,7 +148,7 @@ export default function Wheel() {
           <g
             id="Front_Left"
             opacity={known.frontLeft ? 1 : 0.25}
-            style={SWEEP}
+            style={sweep}
             transform={`rotate(${drawAngle(wheelAngles.frontLeft)} 27.505 98.385)`}
           >
             {/* wheel rectangle */}
@@ -130,7 +156,7 @@ export default function Wheel() {
             {/* vector */}
             <path
               id="Front_Left_Vector"
-              style={SWEEP_D}
+              style={sweepD}
               d={vectorPath(27.51, 93.84, vectorLength)}
               className="cls-2"
             />
@@ -147,13 +173,13 @@ export default function Wheel() {
           <g
             id="Back_Left"
             opacity={known.backLeft ? 1 : 0.25}
-            style={SWEEP}
+            style={sweep}
             transform={`rotate(${drawAngle(wheelAngles.backLeft)} 26.76 316.11)`}
           >
             <path d="M.5 267.62h52.53v96.97H.5z" className="wheel" />
             <path
               id="Back_Left_Vector"
-              style={SWEEP_D}
+              style={sweepD}
               d={vectorPath(26.76, 311.56, vectorLength)}
               className="cls-2"
             />
@@ -170,13 +196,13 @@ export default function Wheel() {
           <g
             id="Back_Right"
             opacity={known.backRight ? 1 : 0.25}
-            style={SWEEP}
+            style={sweep}
             transform={`rotate(${drawAngle(wheelAngles.backRight)} 203.51 316.11)`}
           >
             <path d="M177.25 265.6h52.53v96.97h-52.53z" className="wheel" />
             <path
               id="Back_Right_Vector"
-              style={SWEEP_D}
+              style={sweepD}
               d={vectorPath(203.51, 309.54, vectorLength)}
               className="cls-2"
             />
@@ -193,13 +219,13 @@ export default function Wheel() {
           <g
             id="Front_Right"
             opacity={known.frontRight ? 1 : 0.25}
-            style={SWEEP}
+            style={sweep}
             transform={`rotate(${drawAngle(wheelAngles.frontRight)} 203.51 98.385)`}
           >
             <path d="M175.55 47.98h52.53v96.97h-52.53z" className="wheel" />
             <path
               id="Front_Right_Vector"
-              style={SWEEP_D}
+              style={sweepD}
               d={vectorPath(201.82, 91.92, vectorLength)}
               className="cls-2"
             />

@@ -47,6 +47,7 @@ class DriveFeedbackState:
     """
 
     def __init__(self):
+        """Start with nothing reported and no command sent."""
         # Per corner, degrees. None means never reported.
         self._angles = {corner: None for corner in CORNERS}
         self._measured = {"xVel": None, "yVel": None, "rotVel": None}
@@ -74,6 +75,7 @@ class DriveFeedbackState:
             self._command_seen = True
 
     def has_operator_command(self):
+        """True once a real operator command has been recorded."""
         return self._command_seen
 
     def note_offset(self, module_position, raw_angle):
@@ -130,6 +132,7 @@ class DriveFeedbackState:
         }
 
     def commanded(self):
+        """A copy of the last commanded velocities."""
         return dict(self._commanded)
 
 
