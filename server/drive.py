@@ -2,6 +2,7 @@ import asyncio
 import config
 import can_serial
 import math
+from drive_control import is_drive_controller
 from drive_feedback import apply_parsed
 
 
@@ -62,17 +63,25 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
     """Register the socket handlers that drive the rover over CAN.
 
     drive_state is optional so existing callers keep working; when given,
-    outgoing commands are mirrored into it for the commanded-vs-actual UI.
+    accepted commands are mirrored into it for the commanded-vs-actual UI.
     """
 
     @sio.event
     async def driveCommands(sid, data):
         """Socket handler: send one chassis velocity command."""
-        # Recorded before the send: offline the write throws and is swallowed.
-        if drive_state is not None:
-            drive_state.note_command(data['xVel'], data['yVel'], data['rotVel'])
         try:
             async with drive_command_lock:
+                if not is_drive_controller(sid):
+                    print(f'[{sid}] Ignored drive command: not in control')
+                    return
+
+                # Recorded only once the command is accepted, and before the
+                # send, which raises and is swallowed when running --offline.
+                if drive_state is not None:
+                    drive_state.note_command(
+                        data['xVel'], data['yVel'], data['rotVel'],
+                    )
+
                 can_msg = await send_drive_command(
                     serial_ports,
                     data['xVel'],
@@ -89,6 +98,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
     @sio.event
     async def driveHoming(sid):
         """Socket handler: start the drive homing sequence."""
+        if not is_drive_controller(sid):
+            print(f'[{sid}] Ignored homing request: not in control')
+            return
         try:
             can_msg = f't{drive_send_ID["HOMING_SEQUENCE"]}0\r'
             await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
@@ -97,27 +109,45 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
             print(f'Error in driveHoming: {e}')
 
 
-async def parse_drive_data(data):
+async def parse_drive_data(data, serial_ports):
     """Decode one CANUSB frame.
 
-    Returns a dict the caller feeds to apply_parsed, or None for frames
-    that carry no telemetry. Values stay fixed-point here.
+    Returns a dict the caller feeds to apply_parsed, or None for frames that
+    carry no telemetry. Values stay fixed-point here.
     """
     try:
-        string_data = data.decode()
+        if not data:
+            return
+
+        # CANUSB returns BELL when a command is rejected. For a transmit
+        # command this commonly means the CAN transmit FIFO is full.
+        if data.startswith(b"\x07"):
+            print("CAN error: command rejected; possible transmit FIFO full")
+            status_event = serial_ports.get("drive_status_event")
+            if status_event:
+                status_event.set()
+            return
+
+        string_data = data.decode("ascii").strip()
 
         # Reading status flag - 8 bits of data
-        if string_data[0] in "F":
-            # convert data into bits to parse errors
-            binary_string_padded = format(int(string_data[1:3], 16), '08b')
-            print(f"Error bits: {binary_string_padded}")
-            for i, bit in enumerate(binary_string_padded):
-                if bit == 1:
-                    print(can_serial.status_flags[i])
-                    match i:
-                        case 6, 7:
-                            can_msg = '\r\r\r\r'
-                            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+        if string_data.startswith("F"):
+            if len(string_data) < 3:
+                print(f"Invalid status response: {data!r}")
+                return
+
+            flags = int(string_data[1:3], 16)
+            if flags:
+                print(f"CAN status flags: 0x{flags:02X}")
+                for bit_number, description in can_serial.status_flags.items():
+                    if flags & (1 << bit_number):
+                        print(f"CAN error bit {bit_number}: {description}")
+
+            status_event = serial_ports.get("drive_status_event")
+            if status_event:
+                status_event.set()
+
+            return
 
         if len(string_data) < 5:
             return
@@ -148,7 +178,7 @@ async def parse_drive_data(data):
                 "yVel": y_vel,
                 "rotVel": rot_vel,
             }
-
+        
         elif address == drive_receive_ID['HEARTBEAT_REPLY']:
             print("Heartbeat Reply")
 
@@ -198,42 +228,71 @@ async def parse_drive_data(data):
         print(f'Error parsing drive data: {e}')
 
 async def read_drive_can_loop(serial_ports, drive_state=None):
-    """Background task: read CAN frames and feed them into drive_state."""
+    """Read CAN data and feed any decoded telemetry into drive_state."""
     while True:
+        drive = serial_ports.get("drive")
+        # The task starts when the client connects, but the drive can be
+        # connected later through connectDrive.
+        if drive is None or serial_ports.get("driveId") == "disconnect":
+            await asyncio.sleep(0.1)
+            continue
         try:
-            # Guard so the task survives a disconnected port (see arm.py:576).
-            drive = serial_ports["drive"]
-            if drive is None:
-                await asyncio.sleep(0.1)
-                continue
-
-            # read_can is blocking so run it in a thread
-            data = await asyncio.to_thread(drive.read_can, None)
+            # read_can is blocking, so run it in a thread.
+            # A finite timeout prevents one incomplete/stale response from
+            # blocking all later status responses forever.
+            data = await asyncio.to_thread(drive.read_can, 0.5)
             if data:
-                parsed = await parse_drive_data(data)
+                parsed = await parse_drive_data(data, serial_ports)
                 if drive_state is not None:
                     apply_parsed(drive_state, parsed)
-            await asyncio.sleep(0.01)
         except Exception as e:
-            print(f'Drive CAN task error: {e}')
-            await asyncio.sleep(0.25)
+            print(f"Drive CAN task error: {e}")
+            await asyncio.sleep(0.1)
 
 # Then once in a while send the F command to see if there are any errors (e.g. each 500-1000mS or if you get an error back from the CAN232). 
 # If you get to many errors back after sending commands to the unit, send 2-3 [CR] to empty the buffer
-async def send_drive_status_request(serial_ports):
-    """Background task: poll the CANUSB adapter for its status flags."""
-    while True:
-        try:
-            # Same guard as read_drive_can_loop.
-            drive = serial_ports["drive"]
-            if drive is None:
-                await asyncio.sleep(1)
-                continue
+async def send_drive_status_request(serial_ports, sio):
+    """Continuously query the CAN adapter and report outage state changes."""
+    active_drive = None
+    overload_reported = False
 
-            can_msg = 'F\r'
-            await asyncio.to_thread(drive.write, can_msg.encode())
-            print('Reading drive status flags')
+    while True:
+        drive = serial_ports.get("drive")
+        if drive is None or serial_ports.get("driveId") == "disconnect":
+            active_drive = None
+            overload_reported = False
+            # The drive may be connected later, so keep the monitor alive.
             await asyncio.sleep(5)
+            continue
+
+        try:
+            if drive is not active_drive:
+                active_drive = drive
+                overload_reported = False
+
+            status_event = serial_ports["drive_status_event"]
+            status_event.clear()
+            await asyncio.to_thread(drive.write, b'F\r')
+
+            try:
+                await asyncio.wait_for(status_event.wait(), timeout=0.25)
+            except asyncio.TimeoutError:
+                if not overload_reported:
+                    overload_reported = True
+                    print(
+                        "\033[91mCAN not responding; bus full/error\033[0m"
+                    )
+                    await sio.emit("canoverload", "drive")
+            else:
+                # Emit recovery once, but continue polling because the fault can
+                # return after the adapter automatically clears its buffer.
+                if overload_reported:
+                    overload_reported = False
+                    print("\033[92mDrive CAN responding again\033[0m")
+                    await sio.emit("canoverloadclear", "drive")
         except Exception as e:
+            # A transient serial/socket failure must not kill status monitoring.
             print(f'Read drive status flag error: {e}')
-            await asyncio.sleep(5)
+
+        # The CANUSB manual recommends polling status every 500-1000 ms.
+        await asyncio.sleep(0.75)

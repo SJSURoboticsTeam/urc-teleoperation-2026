@@ -1,4 +1,5 @@
 import asyncio
+from drive_control import is_drive_controller
 
 from drive_feedback import apply_parsed
 
@@ -73,11 +74,18 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
     @sio.event
     async def driveCommands(sid, data):
         """Socket handler: send one chassis velocity command."""
-        # Recorded before the send - see drive.py
-        if drive_state is not None:
-            drive_state.note_command(data["xVel"], data["yVel"], data["rotVel"])
         try:
             async with drive_command_lock:
+                if not is_drive_controller(sid):
+                    print(f'[{sid}] Ignored drive command: not in control')
+                    return
+
+                # Recorded only once accepted, and before the send - see drive.py
+                if drive_state is not None:
+                    drive_state.note_command(
+                        data["xVel"], data["yVel"], data["rotVel"],
+                    )
+
                 await send_drive_command(
                     serial_ports,
                     data["xVel"],
@@ -92,6 +100,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
     @sio.event
     async def driveHoming(sid):
         """Socket handler: start the drive homing sequence."""
+        if not is_drive_controller(sid):
+            print(f'[{sid}] Ignored homing request: not in control')
+            return
         try:
             # make sure drive UART is connected first
             if serial_ports["drive"] is None:

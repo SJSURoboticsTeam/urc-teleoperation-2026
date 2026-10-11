@@ -6,4 +6,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig(({ mode }) => ({
   base: mode === "demo" ? "/urc-teleoperation-2026/" : "/",
   plugins: [react(), tailwindcss()],
+  server: {
+    watch: {
+      ignored: ["**/server/**", "**/base-pi/**"],
+    },
+  },
 }));

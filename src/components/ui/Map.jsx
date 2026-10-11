@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -261,6 +261,32 @@ function createFallbackImage() {
 
 const fallbackImage = createFallbackImage();
 
+function metersToPixels(lat, zoom, meters) {
+  const metersPerPixel =
+    (40075016.686 * Math.cos((lat * Math.PI) / 180)) /
+    (512 * Math.pow(2, zoom));
+  return meters / metersPerPixel;
+}
+
+function updateAccuracyRadius(map, layerId, coords) {
+  const radius =
+    coords.receive && coords.accuracy_m
+      ? metersToPixels(coords.lat, map.getZoom(), coords.accuracy_m)
+      : 0;
+  map.setPaintProperty(layerId, "circle-radius", radius);
+}
+
+function updateAccuracyCircle(map, sourceId, layerId, coords) {
+  const source = map.getSource(sourceId);
+  if (!source) return;
+
+  source.setData({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [coords.long, coords.lat] },
+  });
+  updateAccuracyRadius(map, layerId, coords);
+}
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -277,6 +303,13 @@ export default function Map() {
   const [webglSupported, setWebglSupported] = useState(null);
 
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff } = useGPS();
+
+  const robotCoordsRef = useRef(robotCoordinates);
+  const baseCoordsRef = useRef(baseCoordinates);
+  useLayoutEffect(() => {
+    robotCoordsRef.current = robotCoordinates;
+    baseCoordsRef.current = baseCoordinates;
+  }, [robotCoordinates, baseCoordinates]);
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
@@ -366,6 +399,11 @@ export default function Map() {
       () => resetMapCam({ pitch: 60, bearing: -20 })
     );
 
+    const onZoom = () => {
+      updateAccuracyRadius(map, "robot-accuracy-circle-layer", robotCoordsRef.current);
+      updateAccuracyRadius(map, "base-accuracy-circle-layer", baseCoordsRef.current);
+    };
+
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
       controlRef.current = lockOnControl;
@@ -402,6 +440,58 @@ export default function Map() {
           console.warn("Could not add 3D-buildings layer:", e);
         }
       }
+
+      map.addSource('robot-accuracy-circle', {
+          type: 'geojson',
+          data: {
+              type: 'Feature',
+              geometry: {
+                  type: 'Point',
+                  coordinates: [robotCoordinates.long, robotCoordinates.lat],
+              }
+          }
+      });
+
+      map.addLayer({
+          id: 'robot-accuracy-circle-layer',
+          type: 'circle',
+          source: 'robot-accuracy-circle',
+          paint: {
+              'circle-radius': 0,  // updated dynamically
+              'circle-color': 'rgba(0, 120, 255, 0.15)',
+              'circle-stroke-color': 'rgba(0, 120, 255, 0.8)',
+              'circle-stroke-width': 2,
+              'circle-pitch-alignment': 'map',
+          }
+      });
+
+      map.addSource('base-accuracy-circle', {
+          type: 'geojson',
+          data: {
+              type: 'Feature',
+              geometry: {
+                  type: 'Point',
+                  coordinates: [baseCoordinates.long, baseCoordinates.lat],
+              }
+          }
+      });
+
+      map.addLayer({
+          id: 'base-accuracy-circle-layer',
+          type: 'circle',
+          source: 'base-accuracy-circle',
+          paint: {
+              'circle-radius': 0,  // updated dynamically
+              'circle-color': 'rgba(0, 120, 255, 0.15)',
+              'circle-stroke-color': 'rgba(0, 120, 255, 0.8)',
+              'circle-stroke-width': 2,
+              'circle-pitch-alignment': 'map',
+          }
+      });
+      map.on("zoom", onZoom);
+
+      updateAccuracyCircle(map, "robot-accuracy-circle", "robot-accuracy-circle-layer", robotCoordsRef.current);
+      updateAccuracyCircle(map, "base-accuracy-circle", "base-accuracy-circle-layer", baseCoordsRef.current);
     };
 
     map.on("load", onLoad);
@@ -416,6 +506,7 @@ export default function Map() {
       cancelAnimationFrame(initialResizeRaf);
       window.removeEventListener("resize", onWindowResize);
       map.off("styleimagemissing", onStyleImageMissing);
+      map.off("zoom", onZoom);
       map.off("load", onLoad);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
@@ -426,11 +517,18 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    if (webglSupported === false) return;
-    if(robotMarker.current && baseMarker.current){
+    if (robotMarker.current && baseMarker.current) {
       robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
       baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
     }
+
+    if (mapRef.current) {
+      updateAccuracyCircle(mapRef.current, "robot-accuracy-circle", "robot-accuracy-circle-layer", robotCoordinates);
+      updateAccuracyCircle(mapRef.current, "base-accuracy-circle", "base-accuracy-circle-layer", baseCoordinates);
+    }
+
+    // console.log("robotCoordinates:", robotCoordinates);
+    // console.log("baseCoordinates:", baseCoordinates);
     
     if(coordRef.current) {
       coordRef.current.update(
@@ -468,9 +566,6 @@ export default function Map() {
 
     if(controlRef.current) {
       controlRef.current.update(isLockedOn, isCentered);
-    }
-    return () => {
-
     }
   }, [robotCoordinates, baseCoordinates, isLockedOn, isCentered]);
 
