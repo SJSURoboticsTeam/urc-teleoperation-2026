@@ -42,6 +42,8 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
+                distanceMeters: data.distanceMeters ?? null,
+                headingDegrees: data.headingDegrees ?? null,
                 accuracy_m: data.accuracy_m ?? null,
             });
 
@@ -64,8 +66,6 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
-                distanceMeters: data.distanceMeters ?? null,
-                headingDegrees: data.headingDegrees ?? null,
                 accuracy_m: data.accuracy_m ?? null,
             });
 
@@ -76,7 +76,6 @@ export const GPSProvider = ({ children }) => {
 
         robotsocket.on("gpsData", robotHandler);
         basesocket.on("gpsData2", baseHandler);
-        basesocket
         robotSignalTimeout.current = setTimeout(() => {
         setRobotCoordinates((prev) => ({ ...prev, receive: false }));
         }, 3000);

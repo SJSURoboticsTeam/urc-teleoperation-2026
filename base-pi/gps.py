@@ -41,7 +41,7 @@ def calculate_distance_and_heading(start, end):
         * math.cos(end_latitude)
         * math.sin(longitude_delta / 2) ** 2
     )
-    distance = 2 * 6_371_000 * math.asin(math.sqrt(haversine))
+    distance = 2 * 6_371_000 * math.asin(math.sqrt(min(1, haversine)))
 
     y = math.sin(longitude_delta) * math.cos(end_latitude)
     x = (
@@ -61,6 +61,7 @@ def add_distance_and_heading(data, gps_state):
     else:
         data["distanceMeters"] = None
         data["headingDegrees"] = None
+
 
 class ZEDF9P:
     def __init__(self, port, baudrate, timeout: float = 0.01):
