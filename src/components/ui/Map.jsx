@@ -568,10 +568,10 @@ export default function Map() {
     }
 
     if(coordRef2.current) {
-      const { distanceMeters, headingDegrees } = calculateDistanceAndHeading(
-        baseCoordinates,
-        robotCoordinates,
-      );
+      const { distanceMeters, headingDegrees } =
+        baseCoordinates.receive && robotCoordinates.receive
+          ? calculateDistanceAndHeading(baseCoordinates, robotCoordinates)
+          : { distanceMeters: null, headingDegrees: null };
       coordRef2.current.update(
         baseCoordinates.lat.toFixed(6),
         baseCoordinates.long.toFixed(6),
