@@ -8,7 +8,7 @@ import { trailGeoJSON, serializeTrailLog } from "../../lib/gpsTrail";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 
-function TrailControlUI({ points, ready, recording, onStart, onStop, onClear }) {
+function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear }) {
   const [confirmClear, setConfirmClear] = useState(false);
 
   const exportLog = () => {
@@ -30,6 +30,11 @@ function TrailControlUI({ points, ready, recording, onStart, onStop, onClear }) 
       <Typography variant="caption" color={recording ? "success.main" : "text.secondary"}>
         {recording ? "Recording" : "Not recording"}
       </Typography>
+      {hasUnsavedTrail && (
+        <Typography role="alert" variant="body2" color="error.main">
+          Trail changes could not be saved. Export Log before reloading or closing this page.
+        </Typography>
+      )}
       <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
         <Button size="small" variant="contained" disabled={!ready || recording} onClick={onStart}>Start Recording</Button>
         <Button size="small" variant="outlined" disabled={!recording} onClick={onStop}>Stop Recording</Button>
@@ -57,8 +62,8 @@ class TrailControl {
     this._root = ReactDOM.createRoot(this._container);
     return this._container;
   }
-  update(points, ready, recording, onStart, onStop, onClear) {
-    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} onStart={onStart} onStop={onStop} onClear={onClear} />);
+  update(points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear) {
+    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} />);
   }
   onRemove() {
     this._root?.unmount();
@@ -344,9 +349,9 @@ export default function Map() {
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
 
-  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, startRecording, stopRecording, clearTrail } = useGPS();
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
   trailPointsRef.current = trailPoints;
-  trailControlStateRef.current = { trailReady,isRecording, startRecording, stopRecording, clearTrail };
+  trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail };
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
@@ -453,7 +458,7 @@ export default function Map() {
       map.addControl(trailControl, "top-right");
       trailControlRef.current = trailControl;
       const currentTrailState = trailControlStateRef.current;
-      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail);
+      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail);
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -532,8 +537,8 @@ export default function Map() {
   useEffect(() => {
     const source = mapRef.current?.getSource(TRAIL_SOURCE);
     if (source) source.setData(trailGeoJSON(trailPoints));
-    trailControlRef.current?.update(trailPoints, trailReady, isRecording, startRecording, stopRecording, clearTrail);
-  }, [trailPoints, trailReady, isRecording, startRecording, stopRecording, clearTrail]);
+    trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail);
+  }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail]);
 
   useEffect(() => {
     if (webglSupported === false) return;

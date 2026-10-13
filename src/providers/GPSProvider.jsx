@@ -17,6 +17,7 @@ export const GPSProvider = ({ children }) => {
     const [trailPoints, setTrailPoints] = useState([]);
     const [trailReady, setTrailReady] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
+    const [hasUnsavedTrail, setHasUnsavedTrail] = useState(false);
 
     const [robotCoordinates, setRobotCoordinates] = useState({
         long: -121.881194,
@@ -70,8 +71,10 @@ export const GPSProvider = ({ children }) => {
 
                 try {
                     saveTrailPoints(trailRef.current);
+                    setHasUnsavedTrail(false);
                 } catch {
-                    // Ignore errors
+                    // If localStorage fails, set unsaved trail state to warn the operator
+                    setHasUnsavedTrail(true);
                 }
             }
 
@@ -136,10 +139,11 @@ export const GPSProvider = ({ children }) => {
 
     const clearTrail = useCallback(() => {
         if (!trailReadyRef.current) return;
+        clearStoredTrail();
         trailRef.current = [];
         nextPointStartsSegmentRef.current = true;
         setTrailPoints([]);
-        clearStoredTrail();
+        setHasUnsavedTrail(false);
     }, []);
 
     const value = {
@@ -150,6 +154,7 @@ export const GPSProvider = ({ children }) => {
         trailPoints,
         trailReady,
         isRecording,
+        hasUnsavedTrail,
         startRecording,
         stopRecording,
         clearTrail,
