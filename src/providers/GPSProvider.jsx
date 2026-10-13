@@ -21,8 +21,6 @@ export const GPSProvider = ({ children }) => {
         long: -121.881194,
         lat: 37.336847,
         receive: false,
-        distanceMeters: null,
-        headingDegrees: null,
         accuracy_m: null,
     });
 
@@ -42,8 +40,6 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
-                distanceMeters: data.distanceMeters ?? null,
-                headingDegrees: data.headingDegrees ?? null,
                 accuracy_m: data.accuracy_m ?? null,
             });
 
