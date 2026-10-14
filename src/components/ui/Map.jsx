@@ -25,7 +25,7 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
   };
 
   return (
-    <Box sx={{ bgcolor: "rgba(255,255,255,0.94)", p: 1, border: "1px solid black", borderRadius: 1, minWidth: 180, maxWidth: 225 }}>
+    <Box sx={{ bgcolor: "rgba(255,255,255,0.94)", p: 1, border: "1px solid black", borderRadius: 1, minWidth: 180, maxWidth: 180, "& .MuiButton-root": { minWidth: 0, px: 0.5, fontSize: "12px" } }}>
       <Typography variant="body2" fontWeight="bold">GPS Trail · {points.length} {points.length === 1 ? "point" : "points"}</Typography>
       <Typography variant="caption" color={recording ? "success.main" : "text.secondary"}>
         {recording ? "Recording" : "Not recording"}
@@ -35,11 +35,11 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
           Trail changes could not be saved. Export Log before reloading or closing this page.
         </Typography>
       )}
-      <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
         <Button size="small" variant="contained" disabled={!ready || recording} onClick={onStart}>Start Recording</Button>
         <Button size="small" variant="outlined" disabled={!recording} onClick={onStop}>Stop Recording</Button>
       </Box>
-      <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
         <Button size="small" variant="outlined" disabled={!ready || points.length === 0} onClick={exportLog}>Export Log</Button>
         <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
       </Box>
@@ -456,7 +456,7 @@ export default function Map() {
       resetZoomRef.current = resetZoomControl;
 
       const trailControl = new TrailControl();
-      map.addControl(trailControl, "top-right");
+      map.addControl(trailControl, "bottom-left");
       trailControlRef.current = trailControl;
       const currentTrailState = trailControlStateRef.current;
       trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail);
