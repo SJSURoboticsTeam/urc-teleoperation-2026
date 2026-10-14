@@ -4,7 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { useGPS } from "../../contexts/GPSContext";
-import { trailGeoJSON, serializeTrailLog } from "../../lib/gpsTrail";
+import { createTrailUpdater, serializeTrailLog } from "../../lib/gpsTrail";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 
@@ -344,6 +344,7 @@ export default function Map() {
   const trailControlRef = useRef(null);
   const trailPointsRef = useRef([]);
   const trailControlStateRef = useRef(null);
+  const trailUpdaterRef = useRef(null);
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
@@ -485,7 +486,13 @@ export default function Map() {
       }
 
       // Add the GPS trail source and layer to the map
-      map.addSource(TRAIL_SOURCE, { type: "geojson", data: trailGeoJSON(trailPointsRef.current) });
+      const trailUpdater = createTrailUpdater();
+      const initialTrail = trailUpdater.update(trailPointsRef.current);
+      trailUpdaterRef.current = trailUpdater;
+      map.addSource(TRAIL_SOURCE, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: initialTrail.add ?? [] },
+      });
 
       // Draws lines through each point
       map.addLayer({
@@ -531,12 +538,18 @@ export default function Map() {
         map.remove();
       }
       mapRef.current = null;
+      trailUpdaterRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     const source = mapRef.current?.getSource(TRAIL_SOURCE);
-    if (source) source.setData(trailGeoJSON(trailPoints));
+    if (!source || !trailUpdaterRef.current) return;
+    const diff = trailUpdaterRef.current.update(trailPoints);
+    if (diff.removeAll || diff.add?.length) source.updateData(diff);
+  }, [trailPoints]);
+
+  useEffect(() => {
     trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail);
   }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail]);
 

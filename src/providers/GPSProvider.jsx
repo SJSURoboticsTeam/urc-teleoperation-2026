@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSnackbar } from "notistack";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
 import { loadTrailPoints, saveTrailPoints, clearStoredTrail } from "../lib/gpsTrailStorage";
 
 export const GPSProvider = ({ children }) => {
+    const { enqueueSnackbar } = useSnackbar();
     const robotLastSignalTime = useRef(Date.now()); 
     const baseLastSignalTime = useRef(Date.now()); 
     const robotSignalDiff = useRef();
@@ -139,12 +141,20 @@ export const GPSProvider = ({ children }) => {
 
     const clearTrail = useCallback(() => {
         if (!trailReadyRef.current) return;
-        clearStoredTrail();
+        try {
+            clearStoredTrail();
+        } catch {
+            enqueueSnackbar("Could not clear the saved GPS trail. Your points are still available, export a log or try again.", {
+                variant: "error",
+                preventDuplicate: true,
+            });
+            return;
+        }
         trailRef.current = [];
         nextPointStartsSegmentRef.current = true;
         setTrailPoints([]);
         setHasUnsavedTrail(false);
-    }, []);
+    }, [enqueueSnackbar]);
 
     const value = {
         robotCoordinates,
