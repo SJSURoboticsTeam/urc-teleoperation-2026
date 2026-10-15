@@ -146,6 +146,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
               <Tab label="Arm" value="/arm" />
               <Tab label="Science" value="/science" />
               <Tab label="Autonomy" value="/autonomy" />
+              <Tab label="Graphs" value="/graphs" />
               <Tab label="Extras" value="/extras" />
             </Tabs>
           </Box>
@@ -267,6 +268,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
               <Tab label="Arm" value="/arm" />
               <Tab label="Science" value="/science" />
               <Tab label="Autonomy" value="/autonomy" />
+              <Tab label="Graphs" value="/graphs" />
               <Tab label="Extras" value="/extras" />
             </Tabs>
           </Box>

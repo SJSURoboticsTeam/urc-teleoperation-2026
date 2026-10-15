@@ -55,17 +55,17 @@ const approuter = createBrowserRouter([
         path: "autonomy",
         element: <AutonomyView />,
       },
+        {
+        path: "graphs",
+        element: <Graphs />,
+      },
       {
         path: "extras",
         element: <ExtrasView />,
         children: [
           {
             index: true,
-            element: <Navigate to="/extras/graphs" replace />,
-          },
-          {
-            path: "graphs",
-            element: <Graphs />,
+            element: <Navigate to="/extras/serial" replace />,
           },
           {
             path: "files",
