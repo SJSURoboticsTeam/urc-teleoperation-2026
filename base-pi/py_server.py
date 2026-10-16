@@ -101,16 +101,27 @@ ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://192.168.1.49:4000"
 
 async def robot_server_loop():
     while not shutting_down:
+        robot = socketio.AsyncClient()
+
+        @robot.on("gpsData")
+        async def receive_robot_gps(data):
+            if data.get("latitude") is not None and data.get("longitude") is not None:
+                gps_state["robot"] = {
+                    "latitude": data["latitude"],
+                    "longitude": data["longitude"],
+                }
+
         try:
-            async with socketio.AsyncSimpleClient() as robot:
-                robot.on("gpsData", handler=send_robot_gps)
-                await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
-                print(f"Connected to robot server at {ROBOT_SERVER_URL}")
-                await robot.wait()
+            await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
+            print(f"Connected to robot server at {ROBOT_SERVER_URL}")
+            await robot.wait()
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             print(f"Robot server connection failed: {exc}")
+        finally:
+            if robot.connected:
+                await robot.disconnect()
         if not shutting_down:
             await asyncio.sleep(5)
 
@@ -148,7 +159,7 @@ async def connect(sid,environ):
         pass
 
     # Start background loop once
-    if not robot_gps_task_started and not offline:
+    if not robot_gps_task_started:
         robot_gps_task_started = True
         sio.start_background_task(robot_server_loop)
 
@@ -163,7 +174,6 @@ async def connect(sid,environ):
     if not gps_task_started:
         gps_task_started = True
         if offline:
-            gps_state["robot"] = {"latitude": 37.3345, "longitude": -121.8825}
             sio.start_background_task(send_fake_gps_data, sio, gps_state)
         else:
             sio.start_background_task(read_gps_data, serial_ports, sio, gps_state)
