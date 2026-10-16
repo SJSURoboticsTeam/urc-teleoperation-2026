@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSnackbar } from "notistack";
+import Button from "@mui/material/Button";
 import {
   basesocket,
   robotsocket,
@@ -52,6 +53,20 @@ export default function ConnectionProvider({ children }) {
           {
             variant: "warning",
             persist: true,
+            action: (snackbarKey) => (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  closeSnackbar(snackbarKey);
+                  if (robotSnackbarKey.current === snackbarKey) {
+                    robotSnackbarKey.current = null;
+                  }
+                }}
+              >
+                Dismiss
+              </Button>
+            ),
             anchorOrigin: {
               vertical: "bottom",
               horizontal: "left",
@@ -85,6 +100,20 @@ export default function ConnectionProvider({ children }) {
           {
             variant: "warning",
             persist: true,
+            action: (snackbarKey) => (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  closeSnackbar(snackbarKey);
+                  if (baseSnackbarKey.current === snackbarKey) {
+                    baseSnackbarKey.current = null;
+                  }
+                }}
+              >
+                Dismiss
+              </Button>
+            ),
             anchorOrigin: {
               vertical: "bottom",
               horizontal: "left",
