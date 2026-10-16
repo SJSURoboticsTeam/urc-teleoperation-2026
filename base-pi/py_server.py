@@ -120,6 +120,7 @@ async def robot_server_loop():
         except Exception as exc:
             print(f"Robot server connection failed: {exc}")
         finally:
+            gps_state["robot"] = None
             if robot.connected:
                 await robot.disconnect()
         if not shutting_down:
