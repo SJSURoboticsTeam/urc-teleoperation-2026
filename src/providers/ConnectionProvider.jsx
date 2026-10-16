@@ -53,8 +53,8 @@ export default function ConnectionProvider({ children }) {
             variant: "warning",
             persist: true,
             anchorOrigin: {
-              vertical: "top",
-              horizontal: "center",
+              vertical: "bottom",
+              horizontal: "left",
             },
           },
         );
@@ -86,8 +86,8 @@ export default function ConnectionProvider({ children }) {
             variant: "warning",
             persist: true,
             anchorOrigin: {
-              vertical: "top",
-              horizontal: "center",
+              vertical: "bottom",
+              horizontal: "left",
             },
           },
         );
