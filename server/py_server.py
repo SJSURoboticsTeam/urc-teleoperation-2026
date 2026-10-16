@@ -30,6 +30,7 @@ from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 from drive_control import register_drive_control_events, release_drive_control
 from battery import send_fake_battery_data, get_battery_data
+from soft_stop import is_soft_stopped, set_soft_stop
 
 
 print("\033[0m----------------")
@@ -451,8 +452,6 @@ cpu_started = False
 drive_command_lock = asyncio.Lock()
 autonomy_started = False
 battery_started = False
-# Server-authoritative Soft Stop state, shared across all connected clients
-soft_stop_active = False
 
 
 async def _send_drive_stop_command():
@@ -570,12 +569,11 @@ async def connect(sid,environ):
             sio.start_background_task(get_battery_data, sio)
 
     # Sync a newly-connecting client to the current Soft Stop state
-    await sio.emit("softStopChanged", soft_stop_active, room=sid)
+    await set_soft_stop(sio, is_soft_stopped(), sid=sid)
 
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
     """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
-    global soft_stop_active
     if serial_ports["drive"]:
         async with drive_command_lock:
             try:
@@ -590,8 +588,7 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
         print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
 
     # Broadcast to every connected client so they all lock, not just the sender
-    soft_stop_active = True
-    await sio.emit("softStopChanged", soft_stop_active)
+    await set_soft_stop(sio, True)
 
     # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
     # drive specifically being connected.
@@ -601,10 +598,8 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
 @sio.event
 async def resumeControls(sid):
     """Acknowledge the frontend unlocking controls after a Soft Stop"""
-    global soft_stop_active
     print(f'[{sid}] Controls resumed after Soft Stop.')
-    soft_stop_active = False
-    await sio.emit("softStopChanged", soft_stop_active)
+    await set_soft_stop(sio, False)
     return "OK"
 
 
