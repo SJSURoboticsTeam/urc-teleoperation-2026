@@ -23,6 +23,7 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import DriveControlProvider from "../providers/DriveControlProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
 
@@ -90,36 +91,38 @@ function App() {
                   <SoftStopProvider>
                     <ArmCommandProvider>
                       <GamepadProvider>
-                        <DriveCommandProvider>
-                          <MastCommandProvider>
-                            <CssBaseline />
-                            {/* Normalizes styles */}
-                            <TopAppBar
-                              selectedElements={selectedElements}
-                              setSelectedElements={setSelectedElements}
-                              addSnackbarMessage={addSnackbarMessage}
-                            />
+                        <DriveControlProvider>
+                          <DriveCommandProvider>
+                            <MastCommandProvider>
+                              <CssBaseline />
+                              {/* Normalizes styles */}
+                              <TopAppBar
+                                selectedElements={selectedElements}
+                                setSelectedElements={setSelectedElements}
+                                addSnackbarMessage={addSnackbarMessage}
+                              />
 
-                            <Box
-                              component="main"
-                              sx={{
-                                flexGrow: 1,
-                                p: 2,
-                                display: "flex",
-                                flexDirection: "column",
-                                overflow: "hidden",
-                                minHeight: 0,
-                                marginTop: "60px",
-                              }}
-                            >
-                              <SoftStopBanner />
-                              <SplitView selectedElements={selectedElements}>
-                                {/* we pass all these elements as "children" into SplitView */}
-                                <Outlet />
-                              </SplitView>
-                            </Box>
-                          </MastCommandProvider>
-                        </DriveCommandProvider>
+                              <Box
+                                component="main"
+                                sx={{
+                                  flexGrow: 1,
+                                  p: 2,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  overflow: "hidden",
+                                  minHeight: 0,
+                                  marginTop: "60px",
+                                }}
+                              >
+                                <SoftStopBanner />
+                                <SplitView selectedElements={selectedElements}>
+                                  {/* we pass all these elements as "children" into SplitView */}
+                                  <Outlet />
+                                </SplitView>
+                              </Box>
+                            </MastCommandProvider>
+                          </DriveCommandProvider>
+                        </DriveControlProvider>
                       </GamepadProvider>
                     </ArmCommandProvider>
                   </SoftStopProvider>

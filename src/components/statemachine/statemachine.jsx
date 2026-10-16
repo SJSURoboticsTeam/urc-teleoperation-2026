@@ -1,14 +1,32 @@
-import { Typography } from "@mui/material";
+import { Typography, Button } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import {useState, useEffect} from "react"
 import {robotsocket } from "../socket.io/socket";
+import { useDriveControl } from "../../contexts/DriveControlContext";
 
-export default function StateMachine({ openPane, setOpenPane, missionMode }) {
+export default function StateMachine({ openPane, setOpenPane, missionMode, isRobotConnected }) {
   const [autonomyData, setautonomyData] = useState({
    isBooted: null,
    isTeleoperating: null
 });
-  
+
+  const {
+    hasControl,
+    controlledByOther,
+    pending,
+    offlineMode,
+    requestControl,
+    releaseControl,
+  } = useDriveControl();
+
+  const driveControlStatusText = offlineMode
+    ? "Not enforced (offline mode)"
+    : hasControl
+    ? "You are driving"
+    : controlledByOther
+    ? "Another station is driving"
+    : "Nobody is driving";
+
   useEffect(() => {
     const handler = (data) => {
       console.log("autonomy data:", data);
@@ -37,6 +55,7 @@ export default function StateMachine({ openPane, setOpenPane, missionMode }) {
           alignItems: "center",
           gap: 4,
           marginRight: 10,
+          color: hasControl && !offlineMode ? "lightgreen" : undefined,
         }}
       >
         STATUS
@@ -69,6 +88,34 @@ export default function StateMachine({ openPane, setOpenPane, missionMode }) {
               isBooted: {String(autonomyData.isBooted)}
             </Typography>
 
+            <Typography sx={{ color: 'black', mt: 1 }} variant="h6">DRIVE CONTROL</Typography>
+            <Typography sx={{ color: 'black' }}>
+              {driveControlStatusText}
+            </Typography>
+            {!offlineMode && (
+              hasControl ? (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  loading={pending}
+                  onClick={releaseControl}
+                  sx={{ mt: 1 }}
+                >
+                  Release control
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  loading={pending}
+                  disabled={!isRobotConnected || controlledByOther || pending}
+                  onClick={requestControl}
+                  sx={{ mt: 1 }}
+                >
+                  Take control
+                </Button>
+              )
+            )}
 
           </div>
         )}
