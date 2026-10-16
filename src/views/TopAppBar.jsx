@@ -47,26 +47,24 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
   const [estopStatus, setestopStatus] = useState("STANDBY"); //STANDBY, LOADING, KILLED
   const isRobotConnected = useRobotSocketStatus();
 
-  const { softStopActive, setSoftStopActive } = useSoftStop();
+  const { softStopActive } = useSoftStop();
   const [softStopLoading, setSoftStopLoading] = useState(false);
 
+  // softStopActive itself updates from the server's "softStopChanged"
+  // broadcast (see SoftStopProvider), not from this client's own ack -
+  // that way every connected client stays in sync, not just the one
+  // that clicked the button.
   function triggerSoftStop() {
     setSoftStopLoading(true);
-    robotsocket.emit("softStop", (response) => {
+    robotsocket.emit("softStop", () => {
       setSoftStopLoading(false);
-      if (response === "OK") {
-        setSoftStopActive(true);
-      }
     });
   }
 
   function resumeControls() {
     setSoftStopLoading(true);
-    robotsocket.emit("resumeControls", (response) => {
+    robotsocket.emit("resumeControls", () => {
       setSoftStopLoading(false);
-      if (response === "OK") {
-        setSoftStopActive(false);
-      }
     });
   }
 
