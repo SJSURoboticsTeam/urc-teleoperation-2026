@@ -18,6 +18,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
+import ExpandIcon from '@mui/icons-material/Expand';
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
@@ -32,7 +33,7 @@ import {
 } from "../components/socket.io/socket";
 import { useNavigate } from "react-router-dom";
 
-export default function TopAppBar({ selectedElements, setSelectedElements }) {
+export default function TopAppBar({ selectedElements, setSelectedElements, showbottbar, setshowbottbar }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
 
@@ -207,6 +208,18 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
           >
             <FullscreenIcon />
           </IconButton>
+
+                    <IconButton
+            edge="end"
+            color="inherit"
+            onClick={() => {
+              setshowbottbar(!showbottbar);
+            }}
+          >
+            <ExpandIcon />
+          </IconButton>
+
+          
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
