@@ -24,9 +24,14 @@ import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
 import BatteryDisplay from "../components/battery/batteryDisplay";
 import CameraManager from "../components/cameras/CameraManager"
+import Clock from "../components/clock/clock";
+import {
+  useRobotSocketStatus,
+} from "../components/socket.io/socket";
 
-export default function TopAppBar({ selectedElements, setSelectedElements,showbottbar, setshowbottbar }) {
+export default function TopAppBar({showbottbar }) {
   const [openPane, setOpenPane] = useState("None");
+  const isRobotConnected = useRobotSocketStatus();
 
   return (
     showbottbar? (
@@ -38,14 +43,14 @@ export default function TopAppBar({ selectedElements, setSelectedElements,showbo
       >
         <Toolbar>
           <BatteryDisplay/>
-          11:59PM - 42m left
+          <Clock openPane={openPane} setOpenPane={setOpenPane} openUp/>
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
           <CameraManager openPane={openPane} setOpenPane={setOpenPane} openUp/>
           <AntennaRotation openPane={openPane} setOpenPane={setOpenPane} openUp/> 
           <Metrics openPane={openPane} setOpenPane={setOpenPane} openUp />
-          <StateMachine openPane={openPane} setOpenPane={setOpenPane} openUp />
+          <StateMachine openPane={openPane} setOpenPane={setOpenPane} isRobotConnected={isRobotConnected} openUp />
           
 
         </Toolbar>

@@ -18,7 +18,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
-import ExpandIcon from '@mui/icons-material/Expand';
+import ExpandIcon from "@mui/icons-material/Expand";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
@@ -26,14 +26,19 @@ import NavConnectionStatus from "../components/socket.io/BackendConnectionManage
 import GamepadPanel from "../components/gamepad/Gamepad";
 import Metrics from "../components/metrics/metricsPanel";
 
-import BatteryDisplay from "../components/battery/batteryDisplay"
+import BatteryDisplay from "../components/battery/batteryDisplay";
 import {
   robotsocket,
   useRobotSocketStatus,
 } from "../components/socket.io/socket";
 import { useNavigate } from "react-router-dom";
 
-export default function TopAppBar({ selectedElements, setSelectedElements, showbottbar, setshowbottbar }) {
+export default function TopAppBar({
+  selectedElements,
+  setSelectedElements,
+  showbottbar,
+  setshowbottbar,
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
 
@@ -120,7 +125,6 @@ export default function TopAppBar({ selectedElements, setSelectedElements, showb
                   .split("/")
                   .filter(Boolean)[0] || "drive")
               }
-              
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
@@ -195,10 +199,21 @@ export default function TopAppBar({ selectedElements, setSelectedElements, showb
             name="Drive"
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
+
           <IconButton
             edge="end"
             color="inherit"
-            style={{marginRight: 0}}
+            style={{ marginRight: 0 }}
+            onClick={() => {
+              setshowbottbar(!showbottbar);
+            }}
+          >
+            <ExpandIcon />
+          </IconButton>
+          <IconButton
+            edge="end"
+            color="inherit"
+            style={{ marginRight: 0, marginLeft:0 }}
             onClick={() => {
               if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen(); // enter fullscreen
@@ -209,19 +224,6 @@ export default function TopAppBar({ selectedElements, setSelectedElements, showb
           >
             <FullscreenIcon />
           </IconButton>
-
-          <IconButton
-            edge="end"
-            color="inherit"
-
-            onClick={() => {
-              setshowbottbar(!showbottbar);
-            }}
-          >
-            <ExpandIcon />
-          </IconButton>
-
-          
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
