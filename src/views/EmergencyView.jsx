@@ -13,13 +13,13 @@ import { green, red } from "@mui/material/colors";
 import { useNavigate } from "react-router-dom";
 import { robotsocket } from "../components/socket.io/socket";
 
-// Read the shared robot connection state for the emergency-stop UI. Edit by Sunny_100226
+// Read the shared robot connection state for the emergency-stop UI
 import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 export default function EmergencyView() {
   const navigate = useNavigate();
 
-  // Use centralized connection state to control emergency-stop availability. Edit by Sunny
+  // Use centralized connection state to control emergency-stop availability
   const { robotConnected: isRobotConnected } = useConnectionStatus();
 
   const [estopStatus, setEstopStatus] = useState("STANDBY");

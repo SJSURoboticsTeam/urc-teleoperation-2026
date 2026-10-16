@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
-// Use the socket for drive commands and shared context for connection status. Edit bt Sunny_100226
+// Use the socket for drive commands and shared context for connection status
 import { robotsocket } from "../socket.io/socket";
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
@@ -25,7 +25,7 @@ const HEADER_HEIGHT = 56;
 export default function DriveManualInput({ controlsLocked = false }) {
   // Server connection status
 
-  // Use centralized robot connection state to control drive features. Edit by Sunny_100226
+  // Use centralized robot connection state to control drive features
   const { robotConnected: serverConnected } = useConnectionStatus();
 
   const [txon, settxon] = useState(false);

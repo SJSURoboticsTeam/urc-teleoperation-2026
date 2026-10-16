@@ -4,7 +4,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { green, red, yellow } from "@mui/material/colors";
 
-// Read shared connection state from the centralized context. Edit by Sunny_100226
+// Read shared connection state from the centralized context
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
@@ -14,7 +14,7 @@ import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 
 export default function NavConnectionStatus({ openPane, setOpenPane }) {
-  // Use centralized status instead of registering separate socket listeners here. Edit by Sunny_100226
+  // Use centralized status instead of registering separate socket listeners here
   const {
     robotConnected: isRobotConnected,
     baseConnected: isBaseConnected,

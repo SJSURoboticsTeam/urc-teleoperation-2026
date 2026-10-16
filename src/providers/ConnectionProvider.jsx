@@ -1,4 +1,4 @@
-// Add by Sunny_100226
+// Tracks service connections and shares their status with child components.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSnackbar } from "notistack";

@@ -9,13 +9,13 @@ import {
 } from "@mui/material";
 import { robotsocket, basesocket } from "./socket";
 
-// Read shared connection state for shutdown command routing. Edit by Sunny_100226
+// Read shared connection state for shutdown command routing
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 import { useState } from "react";
 
 export default function ShutdownManager() {
-  // Use centralized status to select the available shutdown socket. Edit by Sunny_100226
+  // Use centralized status to select the available shutdown socket
   const {
     robotConnected: serverConnected,
     baseConnected,

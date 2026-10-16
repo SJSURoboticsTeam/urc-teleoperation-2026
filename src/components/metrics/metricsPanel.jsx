@@ -1,6 +1,6 @@
 import { basesocket, robotsocket } from "../socket.io/socket";
 
-// Read shared robot and base-pi connection status for the metrics UI. Edit by Sunny_100226
+// Read shared robot and base-pi connection status for the metrics UI
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 import { useState, useEffect, } from "react";
@@ -12,7 +12,7 @@ import { useAntennaData } from "./antennaData";
 
 
 export default function Metrics({ openPane, setOpenPane }) {
-  // Use centralized connection state instead of registering duplicate status listeners. Edit by Sunny_100226
+  // Use centralized connection state instead of registering duplicate status listeners
   const {
     robotConnected: isRobotConnected,
     baseConnected: isBaseConnected,

@@ -1,4 +1,4 @@
-// Add by Sunny_100226
+// Provides shared connection status to application components.
 
 import { createContext, useContext } from "react";
 

@@ -14,14 +14,14 @@ import {
   Typography,
 } from "@mui/material";
 
-// Read shared robot connection status for the serial console. Edit by Sunny_100226
+// Read shared robot connection status for the serial console
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 import { useSerial } from "../../contexts/SerialContext";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 
 export default function SerialConsole() {
-  // Use centralized connection state to control serial console actions. Edit by Sunny_100226
+  // Use centralized connection state to control serial console actions
   const { robotConnected: serverConnected } = useConnectionStatus();
 
   const {
