@@ -25,7 +25,7 @@ import { orange } from "@mui/material/colors";
 import NavConnectionStatus from "../components/socket.io/BackendConnectionManager";
 import GamepadPanel from "../components/gamepad/Gamepad";
 import Metrics from "../components/metrics/metricsPanel";
-import StateMachine from "../components/statemachine/statemachine";
+
 import BatteryDisplay from "../components/battery/batteryDisplay"
 import {
   robotsocket,
@@ -198,6 +198,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements, showb
           <IconButton
             edge="end"
             color="inherit"
+            style={{marginRight: 0}}
             onClick={() => {
               if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen(); // enter fullscreen
@@ -209,9 +210,10 @@ export default function TopAppBar({ selectedElements, setSelectedElements, showb
             <FullscreenIcon />
           </IconButton>
 
-                    <IconButton
+          <IconButton
             edge="end"
             color="inherit"
+
             onClick={() => {
               setshowbottbar(!showbottbar);
             }}

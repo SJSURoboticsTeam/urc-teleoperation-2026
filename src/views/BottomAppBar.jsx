@@ -22,6 +22,8 @@ import { orange } from "@mui/material/colors";
 import AntennaRotation from "../components/antenna/antennarotation";
 import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
+import BatteryDisplay from "../components/battery/batteryDisplay";
+import CameraManager from "../components/cameras/CameraManager"
 
 export default function TopAppBar({ selectedElements, setSelectedElements,showbottbar, setshowbottbar }) {
   const [openPane, setOpenPane] = useState("None");
@@ -35,10 +37,12 @@ export default function TopAppBar({ selectedElements, setSelectedElements,showbo
         }}
       >
         <Toolbar>
+          <BatteryDisplay/>
           11:59PM - 42m left
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <CameraManager openPane={openPane} setOpenPane={setOpenPane} openUp/>
           <AntennaRotation openPane={openPane} setOpenPane={setOpenPane} openUp/> 
           <Metrics openPane={openPane} setOpenPane={setOpenPane} openUp />
           <StateMachine openPane={openPane} setOpenPane={setOpenPane} openUp />

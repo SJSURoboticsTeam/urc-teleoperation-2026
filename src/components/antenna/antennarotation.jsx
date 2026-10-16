@@ -16,7 +16,7 @@ export default function AntennaRotation({ openPane, setOpenPane, openUp = false 
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 10,
+          marginRight: 20,
         }}
       >
         ANTENNA

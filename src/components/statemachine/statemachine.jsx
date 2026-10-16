@@ -4,7 +4,7 @@ import {useState, useEffect} from "react"
 import {robotsocket } from "../socket.io/socket";
 import { useDriveControl } from "../../contexts/DriveControlContext";
 
-export default function StateMachine({ openPane, setOpenPane, missionMode, isRobotConnected }) {
+export default function StateMachine({ openPane, setOpenPane, missionMode, isRobotConnected, openUp }) {
   const [autonomyData, setautonomyData] = useState({
    isBooted: null,
    isTeleoperating: null
@@ -54,7 +54,7 @@ export default function StateMachine({ openPane, setOpenPane, missionMode, isRob
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 10,
+          
           color: hasControl && !offlineMode ? "lightgreen" : undefined,
         }}
       >
@@ -66,7 +66,8 @@ export default function StateMachine({ openPane, setOpenPane, missionMode, isRob
           <div
             style={{
               position: "absolute",
-              top: "100%",
+              // open above the anchor when the bar is at the bottom of the screen
+              ...(openUp ? { bottom: "100%" } : { top: "100%" }),
               left: "50%",
               transform: "translateX(-50%)",
               background: "white",

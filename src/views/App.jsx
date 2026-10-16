@@ -8,6 +8,7 @@ import { Outlet } from "react-router-dom";
 
 // Local imports
 import TopAppBar from "./TopAppBar";
+import BottomAppBar from "./BottomAppBar";
 import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 

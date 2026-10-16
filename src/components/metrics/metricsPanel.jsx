@@ -1,14 +1,12 @@
 import { basesocket, robotsocket } from "../socket.io/socket";
-import { useState, useEffect, } from "react";
+import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import { useRobotSocketStatus, useBaseSocketStatus } from "../socket.io/socket";
 import { Box } from "@mui/system";
 import { useAntennaData } from "./antennaData";
 
-
-
-export default function Metrics({ openPane, setOpenPane }) {
+export default function Metrics({ openPane, setOpenPane, openUp }) {
   const isRobotConnected = useRobotSocketStatus();
   const isBaseConnected = useBaseSocketStatus();
   // antenna telemtry
@@ -78,7 +76,7 @@ export default function Metrics({ openPane, setOpenPane }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 10,
+          marginRight: 20,
         }}
       >
         METRICS
@@ -89,7 +87,8 @@ export default function Metrics({ openPane, setOpenPane }) {
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            // open above the anchor when the bar is at the bottom of the screen
+            ...(openUp ? { bottom: "100%" } : { top: "100%" }),
             left: "50%",
             transform: "translateX(-50%)",
             background: "white",
@@ -150,7 +149,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                         gridColumn: "1 / -1",
                         backgroundColor: "gray",
                         borderTop: "1px solid gray",
-                        height: 0
+                        height: 0,
                       }}
                     />
 
@@ -176,7 +175,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                         gridColumn: "1 / -1",
                         backgroundColor: "gray",
                         borderTop: "1px solid gray",
-                        height: 0
+                        height: 0,
                       }}
                     />
 
@@ -194,7 +193,7 @@ export default function Metrics({ openPane, setOpenPane }) {
                     </Typography>
                     <Typography sx={{ color: "black" }}>
                       {antenna5.freqw} MHz
-                    </Typography>  
+                    </Typography>
 
                     <Typography sx={{ color: "black" }}>Delay</Typography>
                     <Typography sx={{ color: "black" }}>
