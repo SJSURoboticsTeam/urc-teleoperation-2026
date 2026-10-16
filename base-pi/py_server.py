@@ -1,7 +1,9 @@
 import socketio
 import uvicorn
 import metrics
+import asyncio
 import signal
+import os
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
@@ -54,6 +56,8 @@ serial_ports = {
     "gps": None,
     "gpsId" : "disconnect",
 }
+gps_state = {"robot": None}
+
 GPS_AUTO_ID = "1546:01A9"
 
 # =================== Clean Shutdown ===================
@@ -93,17 +97,26 @@ app = socketio.ASGIApp(sio)
 
 # =================== Robot Client Setup ===================
 
-# async def main():
-#     async with socketio.AsyncSimpleClient() as rsio:
-#         try:
-#             await rsio.connect('http://localhost:4000')
-#             print('Connected, my sid is', rsio.sid)
-#         except:
-#             print("Failed to connect.")
+ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://192.168.1.49:4000")
 
-# asyncio.run(main())
+async def robot_server_loop():
+    while not shutting_down:
+        try:
+            async with socketio.AsyncSimpleClient() as robot:
+                robot.on("gpsData", handler=send_robot_gps)
+                await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
+                print(f"Connected to robot server at {ROBOT_SERVER_URL}")
+                await robot.wait()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            print(f"Robot server connection failed: {exc}")
+        if not shutting_down:
+            await asyncio.sleep(5)
 
 # =================== GPS connections ===================
+
+
 
 # =================== Initialization ===================
 # Background task guard
@@ -111,6 +124,7 @@ can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
 gps_task_started = False
+robot_gps_task_started = False
 async_ssh_started = False
 cpu_started = False
 
@@ -124,6 +138,7 @@ async def connect(sid,environ):
     global async_ssh_started
     global cpu_started
     global gps_task_started
+    global robot_gps_task_started
     global numClients
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -131,6 +146,11 @@ async def connect(sid,environ):
         metrics.numClients += 1
     except Exception:
         pass
+
+    # Start background loop once
+    if not robot_gps_task_started and not offline:
+        robot_gps_task_started = True
+        sio.start_background_task(robot_server_loop)
 
     if not async_ssh_started:
         async_ssh_started = True
@@ -143,9 +163,10 @@ async def connect(sid,environ):
     if not gps_task_started:
         gps_task_started = True
         if offline:
-            sio.start_background_task(send_fake_gps_data, sio)
+            gps_state["robot"] = {"latitude": 37.3345, "longitude": -121.8825}
+            sio.start_background_task(send_fake_gps_data, sio, gps_state)
         else:
-            sio.start_background_task(read_gps_data, serial_ports, sio)
+            sio.start_background_task(read_gps_data, serial_ports, sio, gps_state)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

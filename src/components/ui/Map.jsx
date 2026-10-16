@@ -1,31 +1,9 @@
 import React, { useEffect, useRef, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import * as maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
 import { useGPS } from "../../contexts/GPSContext";
-
-function calculateDistanceAndHeading(from, to) {
-  const latitude1 = (from.lat * Math.PI) / 180;
-  const latitude2 = (to.lat * Math.PI) / 180;
-  const latitudeDelta = latitude2 - latitude1;
-  const longitudeDelta = ((to.long - from.long) * Math.PI) / 180;
-  const haversine =
-    Math.sin(latitudeDelta / 2) ** 2 +
-    Math.cos(latitude1) *
-      Math.cos(latitude2) *
-      Math.sin(longitudeDelta / 2) ** 2;
-  const distanceMeters =
-    2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
-
-  const y = Math.sin(longitudeDelta) * Math.cos(latitude2);
-  const x =
-    Math.cos(latitude1) * Math.sin(latitude2) -
-    Math.sin(latitude1) * Math.cos(latitude2) * Math.cos(longitudeDelta);
-  const headingDegrees = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-
-  return { distanceMeters, headingDegrees };
-}
 
 function CoordUI({ lat, long, lastRead, color, distanceMeters, headingDegrees }) {
   return (
@@ -536,7 +514,6 @@ export default function Map() {
       window.removeEventListener("resize", onWindowResize);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
-      map.off("styleimagemissing", onStyleImageMissing);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
         map.remove();
@@ -568,16 +545,12 @@ export default function Map() {
     }
 
     if(coordRef2.current) {
-      const { distanceMeters, headingDegrees } =
-        baseCoordinates.receive && robotCoordinates.receive
-          ? calculateDistanceAndHeading(baseCoordinates, robotCoordinates)
-          : { distanceMeters: null, headingDegrees: null };
       coordRef2.current.update(
         baseCoordinates.lat.toFixed(6),
         baseCoordinates.long.toFixed(6),
         baseCoordinates.receive ? baseSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
-        distanceMeters,
-        headingDegrees,
+        baseCoordinates.distanceMeters,
+        baseCoordinates.headingDegrees,
       );
     }
 
