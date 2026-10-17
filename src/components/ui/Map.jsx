@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {useEffect, useRef, useState, useCallback, useLayoutEffect} from "react";
 import ReactDOM from "react-dom/client";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useGPS } from "../../contexts/GPSContext";
 import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON } from "../../lib/gpsTrail";
 
@@ -102,7 +103,10 @@ class TrailControl {
 }
 
 
-function CoordUI({ lat, long, lastRead, color }) {
+// MapLibre v6 loads its worker from a URL Vite can't detect, so bundle it explicitly
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
+
+function CoordUI({ lat, long, lastRead, color, distanceMeters, headingDegrees }) {
   return (
     <Box
       sx={{
@@ -119,6 +123,16 @@ function CoordUI({ lat, long, lastRead, color }) {
       <Typography variant="body2">Latitude: {lat}</Typography>
       <Typography variant="body2">Longitude: {long}</Typography>
       <Typography variant="body2">Last Read: {lastRead}</Typography>
+      {distanceMeters !== undefined && (
+        <>
+          <Typography variant="body2">
+            Distance to Robot: {Number.isFinite(distanceMeters) ? `${distanceMeters.toFixed(1)} m` : "--"}
+          </Typography>
+          <Typography variant="body2">
+            Heading to Robot: {Number.isFinite(headingDegrees) ? `${headingDegrees.toFixed(1)}°` : "--"}
+          </Typography>
+        </>
+      )}
     </Box>
   );
 }
@@ -139,7 +153,7 @@ class CoordControl {
     this.update("---", "---", "---");
     return this._container;
   }
-  update(lat, long, lastRead) {
+  update(lat, long, lastRead, distanceMeters, headingDegrees) {
     if(!this._root) {
       return;
     }
@@ -152,6 +166,8 @@ class CoordControl {
         long = {long}
         lastRead = {lastRead}
         color = {this.color}
+        distanceMeters = {distanceMeters}
+        headingDegrees = {headingDegrees}
       />
     );
   }
@@ -371,6 +387,32 @@ function createFallbackImage() {
 
 const fallbackImage = createFallbackImage();
 
+function metersToPixels(lat, zoom, meters) {
+  const metersPerPixel =
+    (40075016.686 * Math.cos((lat * Math.PI) / 180)) /
+    (512 * Math.pow(2, zoom));
+  return meters / metersPerPixel;
+}
+
+function updateAccuracyRadius(map, layerId, coords) {
+  const radius =
+    coords.receive && coords.accuracy_m
+      ? metersToPixels(coords.lat, map.getZoom(), coords.accuracy_m)
+      : 0;
+  map.setPaintProperty(layerId, "circle-radius", radius);
+}
+
+function updateAccuracyCircle(map, sourceId, layerId, coords) {
+  const source = map.getSource(sourceId);
+  if (!source) return;
+
+  source.setData({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [coords.long, coords.lat] },
+  });
+  updateAccuracyRadius(map, layerId, coords);
+}
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -401,6 +443,13 @@ export default function Map() {
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
   trailPointsRef.current = trailPoints;
   trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
+
+  const robotCoordsRef = useRef(robotCoordinates);
+  const baseCoordsRef = useRef(baseCoordinates);
+  useLayoutEffect(() => {
+    robotCoordsRef.current = robotCoordinates;
+    baseCoordsRef.current = baseCoordinates;
+  }, [robotCoordinates, baseCoordinates]);
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
@@ -458,6 +507,13 @@ export default function Map() {
 
     // Added before the zoom controls so it stacks above them
     map.addControl(new CollapsedAttributionControl(), "top-right");
+    const onStyleImageMissing = ({ id }) => {
+      if (!map.hasImage(id) && fallbackImage) {
+        map.addImage(id, fallbackImage, { pixelRatio: 2 });
+      }
+    };
+    map.on("styleimagemissing", onStyleImageMissing);
+
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     robotMarker.current = new maplibregl.Marker({ color: "#ff0000" })
@@ -469,18 +525,6 @@ export default function Map() {
       .setLngLat(target)
       .setPopup(new maplibregl.Popup().setText("Base Target"))
       .addTo(map);
-    const onStyleImageMissing = (event) => {
-      if (map.hasImage(event.id)) {
-        return;
-      }
-
-      if (fallbackImage) {
-        map.addImage(event.id, fallbackImage, { pixelRatio: 2 });
-      }
-    };
-
-    map.on("styleimagemissing", onStyleImageMissing);
-
     const lockOnControl = new LockOnControl(() =>
       setIsLockedOn((prev) => !prev),
       ()  => setIsCentered((prev) => !prev)
@@ -492,6 +536,11 @@ export default function Map() {
       () => resetMapCam({ zoom: 17 }),
       () => resetMapCam({ pitch: 60, bearing: -20 })
     );
+
+    const onZoom = () => {
+      updateAccuracyRadius(map, "robot-accuracy-circle-layer", robotCoordsRef.current);
+      updateAccuracyRadius(map, "base-accuracy-circle-layer", baseCoordsRef.current);
+    };
 
     const onLoad = () => {
       map.addControl(lockOnControl, "bottom-left");
@@ -613,6 +662,57 @@ export default function Map() {
           "circle-stroke-width": ["case", ["all", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], 3, 1.5],
         },
       });
+      map.addSource('robot-accuracy-circle', {
+          type: 'geojson',
+          data: {
+              type: 'Feature',
+              geometry: {
+                  type: 'Point',
+                  coordinates: [robotCoordinates.long, robotCoordinates.lat],
+              }
+          }
+      });
+
+      map.addLayer({
+          id: 'robot-accuracy-circle-layer',
+          type: 'circle',
+          source: 'robot-accuracy-circle',
+          paint: {
+              'circle-radius': 0,  // updated dynamically
+              'circle-color': 'rgba(0, 120, 255, 0.15)',
+              'circle-stroke-color': 'rgba(0, 120, 255, 0.8)',
+              'circle-stroke-width': 2,
+              'circle-pitch-alignment': 'map',
+          }
+      });
+
+      map.addSource('base-accuracy-circle', {
+          type: 'geojson',
+          data: {
+              type: 'Feature',
+              geometry: {
+                  type: 'Point',
+                  coordinates: [baseCoordinates.long, baseCoordinates.lat],
+              }
+          }
+      });
+
+      map.addLayer({
+          id: 'base-accuracy-circle-layer',
+          type: 'circle',
+          source: 'base-accuracy-circle',
+          paint: {
+              'circle-radius': 0,  // updated dynamically
+              'circle-color': 'rgba(0, 120, 255, 0.15)',
+              'circle-stroke-color': 'rgba(0, 120, 255, 0.8)',
+              'circle-stroke-width': 2,
+              'circle-pitch-alignment': 'map',
+          }
+      });
+      map.on("zoom", onZoom);
+
+      updateAccuracyCircle(map, "robot-accuracy-circle", "robot-accuracy-circle-layer", robotCoordsRef.current);
+      updateAccuracyCircle(map, "base-accuracy-circle", "base-accuracy-circle-layer", baseCoordsRef.current);
     };
 
     map.on("load", onLoad);
@@ -626,7 +726,7 @@ export default function Map() {
     return () => {
       cancelAnimationFrame(initialResizeRaf);
       window.removeEventListener("resize", onWindowResize);
-      map.off("styleimagemissing", onStyleImageMissing);
+      map.off("zoom", onZoom);
       map.off("load", onLoad);
       // Clean up map instance
       if (map && typeof map.remove === "function") {
@@ -649,17 +749,6 @@ export default function Map() {
     const source = map?.getSource(IMPORTED_TRAIL_SOURCE);
     if (!source) return;
     source.setData(importedTrailGeoJSON(importedTrail?.points ?? []));
-    // if (importedTrail) {
-    //   const bounds = new maplibregl.LngLatBounds();
-    //   for (const point of importedTrail.points) bounds.extend([point.longitude, point.latitude]);
-    //   map.fitBounds(bounds, {
-    //     padding: 60,
-    //     maxZoom: 17,
-    //     duration: 500,
-    //     animate: true,
-    //     essential: true,
-    //   });
-    // }
   }, [importedTrail]);
 
   useEffect(() => {
@@ -669,10 +758,19 @@ export default function Map() {
   useEffect(() => {
     if (webglSupported === false) return;
     if(robotMarker.current && baseMarker.current){
+    if (robotMarker.current && baseMarker.current) {
       robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
       baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
     }
 
+    if (mapRef.current) {
+      updateAccuracyCircle(mapRef.current, "robot-accuracy-circle", "robot-accuracy-circle-layer", robotCoordinates);
+      updateAccuracyCircle(mapRef.current, "base-accuracy-circle", "base-accuracy-circle-layer", baseCoordinates);
+    }
+
+    // console.log("robotCoordinates:", robotCoordinates);
+    // console.log("baseCoordinates:", baseCoordinates);
+    
     if(coordRef.current) {
       coordRef.current.update(
         robotCoordinates.lat.toFixed(6),
@@ -686,6 +784,8 @@ export default function Map() {
         baseCoordinates.lat.toFixed(6),
         baseCoordinates.long.toFixed(6),
         baseCoordinates.receive ? baseSignalDiff.current.toFixed(2) + "s ago" : "NO SIGNAL",
+        baseCoordinates.distanceMeters,
+        baseCoordinates.headingDegrees,
       );
     }
 
@@ -709,9 +809,6 @@ export default function Map() {
 
     if(controlRef.current) {
       controlRef.current.update(isLockedOn, isCentered);
-    }
-    return () => {
-
     }
   }, [robotCoordinates, baseCoordinates, isLockedOn, isCentered]);
 
