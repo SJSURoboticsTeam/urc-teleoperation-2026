@@ -591,7 +591,7 @@ export default function Map() {
         source: IMPORTED_TRAIL_SOURCE,
         filter: ["all", ["==", ["geometry-type"], "LineString"], ["!=", ["get", "gap"], true]],
         layout: { "line-join": "round", "line-cap": "round" },
-        paint: { "line-color": "#1565c0", "line-width": 4, "line-opacity": 0.9 },
+        paint: { "line-color": "#ce59f8", "line-width": 4, "line-opacity": 0.9 },
       });
       map.addLayer({
         id: `${IMPORTED_TRAIL_SOURCE}-gaps`,
@@ -599,7 +599,7 @@ export default function Map() {
         source: IMPORTED_TRAIL_SOURCE,
         filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "gap"], true]],
         layout: { "line-cap": "round" },
-        paint: { "line-color": "#1565c0", "line-width": 4, "line-opacity": 0.7, "line-dasharray": [0.5, 2] },
+        paint: { "line-color": "#ce59f8", "line-width": 4, "line-opacity": 0.7, "line-dasharray": [0.5, 2] },
       });
       map.addLayer({
         id: `${IMPORTED_TRAIL_SOURCE}-points`,
@@ -608,7 +608,7 @@ export default function Map() {
         filter: ["==", ["geometry-type"], "Point"],
         paint: {
           "circle-radius": ["case", ["any", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], 7, 4],
-          "circle-color": ["case", ["==", ["get", "start"], true], "#2e7d32", ["==", ["get", "end"], true], "#d32f2f", "#1565c0"],
+          "circle-color": ["case", ["==", ["get", "start"], true], "#2e7d32", ["==", ["get", "end"], true], "#d32f2f", "#ce59f8"],
           "circle-stroke-color": ["case", ["all", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], "#d32f2f", "#ffffff"],
           "circle-stroke-width": ["case", ["all", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], 3, 1.5],
         },
