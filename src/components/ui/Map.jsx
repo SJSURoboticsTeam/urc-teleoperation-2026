@@ -322,6 +322,19 @@ class ResetZoomControl {
   }
 }
 
+// MapLibre auto-expands the compact attribution whenever attributions load and
+// only collapses it on the first drag. Keep it collapsed until the user clicks.
+class CollapsedAttributionControl extends maplibregl.AttributionControl {
+  constructor() {
+    super({ compact: true });
+  }
+
+  _updateAttributions() {
+    super._updateAttributions();
+    this._container?.classList.remove("maplibregl-compact-show");
+  }
+}
+
 function createFallbackImage() {
   const size = 32;
   const canvas = document.createElement("canvas");
@@ -432,7 +445,8 @@ export default function Map() {
       zoom: 17,
       pitch: 60,
       bearing: -20,
-      maxPitch: 80
+      maxPitch: 80,
+      attributionControl: false
     });
     } catch(e) {
       console.error("MapLibre init failed:", e);
@@ -442,6 +456,8 @@ export default function Map() {
 
     mapRef.current = map;
 
+    // Added before the zoom controls so it stacks above them
+    map.addControl(new CollapsedAttributionControl(), "top-right");
     map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     robotMarker.current = new maplibregl.Marker({ color: "#ff0000" })
@@ -491,7 +507,7 @@ export default function Map() {
       resetZoomRef.current = resetZoomControl;
 
       const trailControl = new TrailControl();
-      map.addControl(trailControl, "bottom-left");
+      map.addControl(trailControl, "bottom-right");
       trailControlRef.current = trailControl;
       const currentTrailState = trailControlStateRef.current;
       trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail, currentTrailState.importedTrail, currentTrailState.importTrail, currentTrailState.clearImportedTrail);
