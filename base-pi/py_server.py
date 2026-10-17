@@ -97,7 +97,10 @@ app = socketio.ASGIApp(sio)
 
 # =================== Robot Client Setup ===================
 
-ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://192.168.1.49:4000")
+if offline:
+    ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://localhost:4000")
+else:
+    ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://192.168.1.49:4000")
 
 async def robot_server_loop():
     while not shutting_down:
