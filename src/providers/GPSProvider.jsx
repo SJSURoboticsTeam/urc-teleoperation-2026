@@ -3,6 +3,7 @@ import { useSnackbar } from "notistack";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
 import { loadTrailPoints, saveTrailPoints, clearStoredTrail } from "../lib/gpsTrailStorage";
+import { hasValidGPSCoordinates, isValidTrailPoint, startsNewTrailSegment } from "../lib/gpsTrail";
 
 export const GPSProvider = ({ children }) => {
     const { enqueueSnackbar } = useSnackbar();
@@ -45,7 +46,10 @@ export const GPSProvider = ({ children }) => {
         setTrailReady(true)
       
         const robotHandler = (data) => {
-            if (!data) return;
+            if (!isValidTrailPoint(data)) {
+                if (recordingRef.current) nextPointStartsSegmentRef.current = true;
+                return;
+            }
             if (robotSignalTimeout.current) {
                 clearTimeout(robotSignalTimeout.current);
             }
@@ -62,8 +66,9 @@ export const GPSProvider = ({ children }) => {
             });
 
             if (recordingRef.current) {
-                // Check if this new point is the start of a new segment, add the segmentStart flag to the point
-                const recordedPoint = nextPointStartsSegmentRef.current
+                const previous = trailRef.current[trailRef.current.length - 1];
+                const startsSegment = nextPointStartsSegmentRef.current || startsNewTrailSegment(previous, data);
+                const recordedPoint = startsSegment
                 ? { ...data, segmentStart: true }
                 : data;
 
@@ -86,6 +91,7 @@ export const GPSProvider = ({ children }) => {
         };
 
         const baseHandler = (data) => {
+            if (!hasValidGPSCoordinates(data)) return;
             if (baseSignalTimeout.current) {
                 clearTimeout(baseSignalTimeout.current);
             }

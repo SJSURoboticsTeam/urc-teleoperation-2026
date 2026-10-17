@@ -1,15 +1,35 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import ReactDOM from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { useGPS } from "../../contexts/GPSContext";
-import { createTrailUpdater, serializeTrailLog } from "../../lib/gpsTrail";
+import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON } from "../../lib/gpsTrail";
 
 const TRAIL_SOURCE = "rover-gps-trail";
+const IMPORTED_TRAIL_SOURCE = "imported-gps-trail";
 
-function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear }) {
+function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const importInputRef = useRef(null);
+
+  const importLog = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setImportError("");
+    setIsImporting(true);
+    try {
+      const points = parseTrailLog(await file.text());
+      onImport({ name: file.name, points });
+    } catch (error) {
+      setImportError(error.message || "Could not read this trail log.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const exportLog = () => {
     const blob = new Blob([serializeTrailLog(points)], { type: "application/x-ndjson;charset=utf-8" });
@@ -43,6 +63,14 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         <Button size="small" variant="outlined" disabled={!ready || points.length === 0} onClick={exportLog}>Export Log</Button>
         <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
       </Box>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
+        <Button size="small" variant="outlined" disabled={!ready || isImporting} onClick={() => importInputRef.current?.click()}>
+          {isImporting ? "Importing…" : "Import Log"}
+        </Button>
+        <Button size="small" variant="outlined" disabled={!importedTrail} onClick={onClearImport}>Clear Import</Button>
+      </Box>
+      <input ref={importInputRef} type="file" accept=".log" aria-label="Import GPS trail log" hidden onChange={importLog} />
+      {importError && <Typography role="alert" variant="body2" color="error.main">{importError}</Typography>}
       <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
         <DialogTitle>Clear GPS trail?</DialogTitle>
         <DialogContent>This removes all saved trail points from this browser. Export a log first if you want to keep them.</DialogContent>
@@ -62,8 +90,8 @@ class TrailControl {
     this._root = ReactDOM.createRoot(this._container);
     return this._container;
   }
-  update(points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear) {
-    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} />);
+  update(points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport) {
+    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} importedTrail={importedTrail} onImport={onImport} onClearImport={onClearImport} />);
   }
   onRemove() {
     this._root?.unmount();
@@ -120,9 +148,9 @@ class CoordControl {
     this._lastRead = lastRead;
     this._root.render(
       <CoordUI
-        lat = {lat}  
-        long = {long}  
-        lastRead = {lastRead}  
+        lat = {lat}
+        long = {long}
+        lastRead = {lastRead}
         color = {this.color}
       />
     );
@@ -219,7 +247,7 @@ class LockOnControl {
     this._isCentered = isCentered;
     this._root.render(
       <LockOnControlUI
-        isLockedOn = {isLockedOn}  
+        isLockedOn = {isLockedOn}
         isCentered = {isCentered}
         onToggleLock = {this._onToggleLock}
         onToggleCenter = {this._onToggleCenter}
@@ -349,10 +377,17 @@ export default function Map() {
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
+  const [importedTrail, setImportedTrail] = useState(null);
+
+  const importTrail = useCallback((trail) => {
+    setImportedTrail(trail);
+    // setIsLockedOn(false);
+  }, []);
+  const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
   trailPointsRef.current = trailPoints;
-  trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail };
+  trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
 
   function resetMapCam(easeOptions) {
     if (!mapRef.current) { return; }
@@ -373,7 +408,7 @@ export default function Map() {
     if (webglSupported === false) return;
 
     const target = [robotCoordinates.long, robotCoordinates.lat];
-    //const target = [-121.881194, 37.336847]; // San Jose area 
+    //const target = [-121.881194, 37.336847]; // San Jose area
     //const target = [-110.768401, 38.372207]; // Utah
     // https://www.gps-coordinates.net/ for coordinates
 
@@ -431,7 +466,7 @@ export default function Map() {
     map.on("styleimagemissing", onStyleImageMissing);
 
     const lockOnControl = new LockOnControl(() =>
-      setIsLockedOn((prev) => !prev), 
+      setIsLockedOn((prev) => !prev),
       ()  => setIsCentered((prev) => !prev)
     );
     const coordControl = new CoordControl("#ff0000");
@@ -459,7 +494,7 @@ export default function Map() {
       map.addControl(trailControl, "bottom-left");
       trailControlRef.current = trailControl;
       const currentTrailState = trailControlStateRef.current;
-      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail);
+      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail, currentTrailState.importedTrail, currentTrailState.importTrail, currentTrailState.clearImportedTrail);
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -499,9 +534,19 @@ export default function Map() {
         id: TRAIL_SOURCE,
         type: "line",
         source: TRAIL_SOURCE,
-        filter: ["==", ["geometry-type"], "LineString"],
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["!=", ["get", "gap"], true]],
         layout: { "line-join": "round", "line-cap": "round" },
         paint: { "line-color": "#e65100", "line-width": 4, "line-opacity": 0.9 },
+      });
+
+      // Draw dotted lines signifying recording pauses, gaps over 15 secs, and invalid GPS readings.
+      map.addLayer({
+        id: `${TRAIL_SOURCE}-gaps`,
+        type: "line",
+        source: TRAIL_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "gap"], true]],
+        layout: { "line-cap": "round" },
+        paint: { "line-color": "#e65100", "line-width": 4, "line-opacity": 0.7, "line-dasharray": [0.5, 2] },
       });
 
       // Draws circles at each point to represent a line segment
@@ -511,11 +556,45 @@ export default function Map() {
         source: TRAIL_SOURCE,
         filter: ["==", ["geometry-type"], "Point"],
         paint: {
-          "circle-radius": 4,
-          "circle-color": "#e65100",
+          "circle-radius": ["case", ["==", ["get", "start"], true], 7, 4],
+          "circle-color": ["case", ["==", ["get", "start"], true], "#2e7d32", "#e65100"],
           "circle-stroke-width": 1.5,
           "circle-stroke-color": "#ffffff",
           "circle-opacity": 0.95,
+        },
+      });
+
+      // Draw imported trails
+      map.addSource(IMPORTED_TRAIL_SOURCE, {
+        type: "geojson",
+        data: importedTrailGeoJSON(currentTrailState.importedTrail?.points ?? []),
+      });
+      map.addLayer({
+        id: IMPORTED_TRAIL_SOURCE,
+        type: "line",
+        source: IMPORTED_TRAIL_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["!=", ["get", "gap"], true]],
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: { "line-color": "#1565c0", "line-width": 4, "line-opacity": 0.9 },
+      });
+      map.addLayer({
+        id: `${IMPORTED_TRAIL_SOURCE}-gaps`,
+        type: "line",
+        source: IMPORTED_TRAIL_SOURCE,
+        filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "gap"], true]],
+        layout: { "line-cap": "round" },
+        paint: { "line-color": "#1565c0", "line-width": 4, "line-opacity": 0.7, "line-dasharray": [0.5, 2] },
+      });
+      map.addLayer({
+        id: `${IMPORTED_TRAIL_SOURCE}-points`,
+        type: "circle",
+        source: IMPORTED_TRAIL_SOURCE,
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: {
+          "circle-radius": ["case", ["any", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], 7, 4],
+          "circle-color": ["case", ["==", ["get", "start"], true], "#2e7d32", ["==", ["get", "end"], true], "#d32f2f", "#1565c0"],
+          "circle-stroke-color": ["case", ["all", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], "#d32f2f", "#ffffff"],
+          "circle-stroke-width": ["case", ["all", ["==", ["get", "start"], true], ["==", ["get", "end"], true]], 3, 1.5],
         },
       });
     };
@@ -550,8 +629,26 @@ export default function Map() {
   }, [trailPoints]);
 
   useEffect(() => {
-    trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail);
-  }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail]);
+    const map = mapRef.current;
+    const source = map?.getSource(IMPORTED_TRAIL_SOURCE);
+    if (!source) return;
+    source.setData(importedTrailGeoJSON(importedTrail?.points ?? []));
+    // if (importedTrail) {
+    //   const bounds = new maplibregl.LngLatBounds();
+    //   for (const point of importedTrail.points) bounds.extend([point.longitude, point.latitude]);
+    //   map.fitBounds(bounds, {
+    //     padding: 60,
+    //     maxZoom: 17,
+    //     duration: 500,
+    //     animate: true,
+    //     essential: true,
+    //   });
+    // }
+  }, [importedTrail]);
+
+  useEffect(() => {
+    trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail);
+  }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail]);
 
   useEffect(() => {
     if (webglSupported === false) return;
@@ -559,7 +656,7 @@ export default function Map() {
       robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
       baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
     }
-    
+
     if(coordRef.current) {
       coordRef.current.update(
         robotCoordinates.lat.toFixed(6),
