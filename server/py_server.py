@@ -30,6 +30,7 @@ from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 from drive_control import register_drive_control_events, release_drive_control
 from battery import send_fake_battery_data, get_battery_data
+from led import register_led_events, run_led_demo
 
 
 print("\033[0m----------------")
@@ -251,6 +252,7 @@ async def connectDrive(sid,data):
         else:
             serial_ports["drive"] = CanSerial(data)
             print("Drive CAN connected.")
+            sio.start_background_task(run_led_demo, serial_ports)
             
 
         serial_ports["driveId"] = data
@@ -494,6 +496,7 @@ register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
+register_led_events(sio, serial_ports)
 
 # =================== Start Server ===================
 
