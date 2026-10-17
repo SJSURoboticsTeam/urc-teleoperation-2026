@@ -2,8 +2,12 @@ import React, { useEffect, useRef, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { Button, Box, Typography, Switch, FormControlLabel } from "@mui/material";
 import { useGPS } from "../../contexts/GPSContext";
+
+// MapLibre v6 loads its worker from a URL Vite can't detect, so bundle it explicitly
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 function CoordUI({ lat, long, lastRead, color, distanceMeters, headingDegrees }) {
   return (
