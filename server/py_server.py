@@ -30,6 +30,7 @@ from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 from drive_control import register_drive_control_events, release_drive_control
 from battery import send_fake_battery_data, get_battery_data
+from soft_stop import is_soft_stopped, set_soft_stop
 
 
 print("\033[0m----------------")
@@ -563,9 +564,44 @@ async def connect(sid,environ):
     if not battery_started:
         battery_started = True
         if offline:
-            sio.start_background_task(send_fake_battery_data, sio) 
+            sio.start_background_task(send_fake_battery_data, sio)
         else:
             sio.start_background_task(get_battery_data, sio)
+
+    # Sync a newly-connecting client to the current Soft Stop state
+    await set_soft_stop(sio, is_soft_stopped(), sid=sid)
+
+@sio.event
+async def softStop(sid):  # function name  == event name (sid  = client session id)
+    """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
+    if serial_ports["drive"]:
+        async with drive_command_lock:
+            try:
+                if USE_UART_DRIVE:
+                    await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+                else:
+                    await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+                print(f'[{sid}] Soft Stop triggered - drive velocity zeroed.')
+            except Exception as e:
+                print(f'Failed to send Soft Stop drive command: {e}')
+    else:
+        print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
+
+    # Broadcast to every connected client so they all lock, not just the sender
+    await set_soft_stop(sio, True)
+
+    # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
+    # drive specifically being connected.
+    return "OK"
+
+
+@sio.event
+async def resumeControls(sid):
+    """Acknowledge the frontend unlocking controls after a Soft Stop"""
+    print(f'[{sid}] Controls resumed after Soft Stop.')
+    await set_soft_stop(sio, False)
+    return "OK"
+
 
 @sio.event
 async def disconnect(sid):

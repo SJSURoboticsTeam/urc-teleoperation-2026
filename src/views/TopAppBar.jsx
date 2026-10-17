@@ -30,6 +30,7 @@ import StateMachine from "../components/statemachine/statemachine";
 import BatteryDisplay from "../components/battery/batteryDisplay";
 import { robotsocket } from "../components/socket.io/socket";
 import { useConnectionStatus } from "../contexts/ConnectionContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 
 import { useNavigate } from "react-router-dom";
 
@@ -48,6 +49,27 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
 
 // Use shared robot connection state to control E-STOP availability
   const { robotConnected: isRobotConnected } = useConnectionStatus();
+
+  const { softStopActive } = useSoftStop();
+  const [softStopLoading, setSoftStopLoading] = useState(false);
+
+  // softStopActive itself updates from the server's "softStopChanged"
+  // broadcast (see SoftStopProvider), not from this client's own ack -
+  // that way every connected client stays in sync, not just the one
+  // that clicked the button.
+  function triggerSoftStop() {
+    setSoftStopLoading(true);
+    robotsocket.emit("softStop", () => {
+      setSoftStopLoading(false);
+    });
+  }
+
+  function resumeControls() {
+    setSoftStopLoading(true);
+    robotsocket.emit("resumeControls", () => {
+      setSoftStopLoading(false);
+    });
+  }
 
   function initiateEstop() {
     console.log("E-STOP!");
@@ -155,6 +177,20 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <Button
+            sx={{
+              mr: 2,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+            variant="contained"
+            color={softStopActive ? "success" : "warning"}
+            loading={softStopLoading}
+            disabled={!isRobotConnected}
+            onClick={softStopActive ? resumeControls : triggerSoftStop}
+          >
+            {softStopActive ? "RESUME" : "SOFT STOP"}
+          </Button>
           <Tooltip disableFocusListener title="USE CAPS LOCK TO ARM">
             <span>
               <Button

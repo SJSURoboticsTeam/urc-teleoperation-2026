@@ -14,6 +14,7 @@ import { useConnectionStatus } from "../contexts/ConnectionContext";
 import { useArmCommands } from "../contexts/ArmCommandContext";
 import { useConnectedGamepads } from "../contexts/GamepadContext";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import { usePeripherals } from "../contexts/PeripheralContext";
 
 import {
@@ -45,10 +46,11 @@ export default function ArmView() {
   const { robotConnected: serverConnected } = useConnectionStatus();
 
   const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
 
   const armConnectedOne = connectedGamepads.arm;
   const gamepadMode = armConnectedOne != null;
-  const controlsLocked = autonomyEnabled;
+  const controlsLocked = autonomyEnabled || softStopActive;
 
   const [txon, settxon] = useState(false);
   const [txPulse, setTxPulse] = useState(false);
@@ -334,7 +336,7 @@ export default function ArmView() {
             }}
             color="error"
           >
-            Arm controls are disabled while autonomy is active.
+            Arm controls are disabled while autonomy or Soft Stop is active.
           </Typography>
         )}
 
