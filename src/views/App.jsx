@@ -22,6 +22,7 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import DriveFeedbackProvider from "../providers/DriveFeedbackProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
 import DemoPopup from "../components/ui/DemoPane";
 
@@ -90,6 +91,7 @@ function App() {
                     <GamepadProvider>
                       <DriveControlProvider>
                         <DriveCommandProvider>
+                          <DriveFeedbackProvider>
                           <MastCommandProvider>
                             <CssBaseline />
                             {/* Normalizes styles */}
@@ -117,6 +119,7 @@ function App() {
                               </SplitView>
                             </Box>
                           </MastCommandProvider>
+                          </DriveFeedbackProvider>
                         </DriveCommandProvider>
                       </DriveControlProvider>
                     </GamepadProvider>
