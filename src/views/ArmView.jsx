@@ -8,7 +8,7 @@ import { FrameRateConstant } from "../components/gamepad/FrameRateConstant";
 
 import { robotsocket } from "../components/socket.io/socket";
 
-// Read shared robot connection status for arm controls. Edit by Sunny_100226
+// Read shared robot connection status for arm controls.
 import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 import { useArmCommands } from "../contexts/ArmCommandContext";
@@ -41,7 +41,7 @@ export default function ArmView() {
   const [armCommands, setArmCommands] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
 
-  // Use centralized connection state to control arm commands. Edit by Sunny_100226
+  // Use centralized connection state to control arm commands.
   const { robotConnected: serverConnected } = useConnectionStatus();
 
   const { autonomyEnabled } = useAutonomyMode();
