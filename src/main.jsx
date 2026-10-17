@@ -1,3 +1,5 @@
+import ConnectionProvider from "./providers/ConnectionProvider";
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -91,7 +93,9 @@ createRoot(document.getElementById("root")).render(
         
   <StrictMode>
     <SnackbarProvider maxSnack={5}>
-      <RouterProvider router={approuter} />
-      </SnackbarProvider>
+      <ConnectionProvider>
+        <RouterProvider router={approuter} />
+      </ConnectionProvider>
+    </SnackbarProvider>
   </StrictMode>,
 );
