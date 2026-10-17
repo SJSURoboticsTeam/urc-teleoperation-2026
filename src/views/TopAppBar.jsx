@@ -197,7 +197,11 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
           <Metrics openPane={openPane} setOpenPane={setOpenPane} />
-          <StateMachine openPane={openPane} setOpenPane={setOpenPane} />
+          <StateMachine
+            openPane={openPane}
+            setOpenPane={setOpenPane}
+            isRobotConnected={isRobotConnected}
+          />
           <BatteryDisplay/>
           <IconButton
             edge="end"

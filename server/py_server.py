@@ -28,6 +28,7 @@ from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
+from drive_control import register_drive_control_events, release_drive_control
 from battery import send_fake_battery_data, get_battery_data
 
 
@@ -448,8 +449,39 @@ async_ssh_started = False
 cpu_started = False
 # this lock ensures that only one function can be sending on the drive can/uart line at once
 drive_command_lock = asyncio.Lock()
-autonomy_started= False
+autonomy_started = False
 battery_started = False
+
+
+async def _send_drive_stop_command():
+    """Write a zero-velocity command to the drive line. Caller must hold drive_command_lock."""
+    if not serial_ports["drive"]:
+        print("No drive serial connected. Cannot send stop command.")
+        return
+    try:
+        if USE_UART_DRIVE:
+            await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+            print("UART: Sent stop command to drive motors.")
+        else:
+            await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+            print("CAN: Sent stop command to drive motors.")
+    except Exception as e:
+        print(f"Failed to send stop command: {e}")
+
+
+async def stop_drive_motors():
+    """Send stop command to drive motors for safety when no clients are connected"""
+    async with drive_command_lock:
+        # A client may have reconnected while this task was waiting for the lock.
+        if metrics.numClients != 0:
+            return
+        await _send_drive_stop_command()
+
+
+async def stop_drive_motors_for_handover():
+    """Send stop command during a drive-control handover, regardless of client count"""
+    async with drive_command_lock:
+        await _send_drive_stop_command()
 
 
 register_metric_events(sio)
@@ -461,6 +493,7 @@ register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
+register_drive_control_events(sio, stop_drive_motors_for_handover)
 
 # =================== Start Server ===================
 
@@ -534,34 +567,14 @@ async def connect(sid,environ):
         else:
             sio.start_background_task(get_battery_data, sio)
 
-async def stop_drive_motors():
-    """Send stop command to drive motors for safety when no clients are connected"""
-    async with drive_command_lock:
-        # A client may have reconnected while this task was waiting for the lock.
-        if metrics.numClients != 0:
-            return
-
-        if not serial_ports["drive"]:
-            print("No drive serial connected. Cannot send stop command.")
-            return
-
-        try:
-            if USE_UART_DRIVE:
-                await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
-                print("UART: 0 clients connected. Sent stop command to drive motors.")
-            else:
-                await send_can_drive_command(serial_ports, 0, 0, 0, 0)
-                print("CAN: 0 clients connected. Sent stop command to drive motors.")
-        except Exception as e:
-            print(f"Failed to send stop command: {e}")
-
-
 @sio.event
 async def disconnect(sid):
     """Event code when a client disconnects"""
     print(f'Client disconnected: {sid}')
 
     metrics.numClients = max(0, metrics.numClients - 1)
+
+    await release_drive_control(sio, stop_drive_motors_for_handover, sid)
 
     if metrics.numClients == 0:
         print("No clients, stopping motors now.")
