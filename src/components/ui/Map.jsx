@@ -757,7 +757,6 @@ export default function Map() {
 
   useEffect(() => {
     if (webglSupported === false) return;
-    if(robotMarker.current && baseMarker.current){
     if (robotMarker.current && baseMarker.current) {
       robotMarker.current.setLngLat([robotCoordinates.long, robotCoordinates.lat]);
       baseMarker.current.setLngLat([baseCoordinates.long, baseCoordinates.lat]);
