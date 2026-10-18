@@ -11,7 +11,7 @@ import { useAntennaData } from "./antennaData";
 
 
 
-export default function Metrics({ openPane, setOpenPane, openUp }) {
+export default function Metrics({ openPane, setOpenPane, openUp = false }) {
   // Use centralized connection state instead of registering duplicate status listeners
   const {
     robotConnected: isRobotConnected,

@@ -4,7 +4,7 @@ import {useState, useEffect} from "react"
 import {robotsocket } from "../socket.io/socket";
 import { useDriveControl } from "../../contexts/DriveControlContext";
 
-export default function StateMachine({ openPane, setOpenPane, missionMode, isRobotConnected, openUp }) {
+export default function StateMachine({ openPane, setOpenPane, missionMode, isRobotConnected, openUp = false }) {
   const [autonomyData, setautonomyData] = useState({
    isBooted: null,
    isTeleoperating: null

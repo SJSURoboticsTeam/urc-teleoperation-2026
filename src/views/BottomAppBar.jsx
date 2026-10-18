@@ -1,22 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   AppBar,
   Toolbar,
-  Button,
-  Drawer,
-  List,
-  ListItem,
-  Typography,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  Tooltip,
-  ListItemButton,
-  Box,
-  Tabs,
-  Tab,
-  ToggleButtonGroup,
-  ToggleButton,
 } from "@mui/material";
 import { orange } from "@mui/material/colors";
 import AntennaRotation from "../components/antenna/antennarotation";
@@ -49,8 +34,6 @@ export default function TopAppBar({showbottbar }) {
           <AntennaRotation openPane={openPane} setOpenPane={setOpenPane} openUp/> 
           <Metrics openPane={openPane} setOpenPane={setOpenPane} openUp />
           <StateMachine openPane={openPane} setOpenPane={setOpenPane} isRobotConnected={isRobotConnected} openUp />
-          
-
         </Toolbar>
       </AppBar>
     ):null
