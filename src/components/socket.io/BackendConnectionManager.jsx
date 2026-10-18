@@ -209,7 +209,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 20,
+          marginRight: 10,
         }}
       >
         SERVER{robotconnectedIcon}

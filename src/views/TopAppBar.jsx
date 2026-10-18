@@ -18,6 +18,7 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
+import ExpandIcon from "@mui/icons-material/Expand";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
@@ -33,7 +34,12 @@ import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 import { useNavigate } from "react-router-dom";
 
-export default function TopAppBar({ selectedElements, setSelectedElements }) {
+export default function TopAppBar({
+  selectedElements,
+  setSelectedElements,
+  showbottbar,
+  setshowbottbar,
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
 
@@ -122,7 +128,6 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
                   .split("/")
                   .filter(Boolean)[0] || "drive")
               }
-
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
@@ -149,6 +154,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
               <Tab label="Arm" value="/arm" />
               <Tab label="Science" value="/science" />
               <Tab label="Autonomy" value="/autonomy" />
+              <Tab label="Graphs" value="/graphs" />
               <Tab label="Extras" value="/extras" />
             </Tabs>
           </Box>
@@ -196,16 +202,21 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
             name="Drive"
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
-          <Metrics openPane={openPane} setOpenPane={setOpenPane} />
-          <StateMachine
-            openPane={openPane}
-            setOpenPane={setOpenPane}
-            isRobotConnected={isRobotConnected}
-          />
-          <BatteryDisplay/>
+
           <IconButton
             edge="end"
             color="inherit"
+            style={{ marginRight: 0 }}
+            onClick={() => {
+              setshowbottbar(!showbottbar);
+            }}
+          >
+            <ExpandIcon />
+          </IconButton>
+          <IconButton
+            edge="end"
+            color="inherit"
+            style={{ marginRight: 0, marginLeft:0 }}
             onClick={() => {
               if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen(); // enter fullscreen
@@ -277,6 +288,7 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
               <Tab label="Arm" value="/arm" />
               <Tab label="Science" value="/science" />
               <Tab label="Autonomy" value="/autonomy" />
+              <Tab label="Graphs" value="/graphs" />
               <Tab label="Extras" value="/extras" />
             </Tabs>
           </Box>
