@@ -206,6 +206,7 @@ export default function TopAppBar({
           <IconButton
             edge="end"
             color="inherit"
+            aria-label="Toggle bottom bar"
             style={{ marginRight: 0 }}
             onClick={() => {
               setshowbottbar(!showbottbar);
@@ -216,6 +217,7 @@ export default function TopAppBar({
           <IconButton
             edge="end"
             color="inherit"
+            aria-label="Fullscreen"
             style={{ marginRight: 0, marginLeft:0 }}
             onClick={() => {
               if (!document.fullscreenElement) {
