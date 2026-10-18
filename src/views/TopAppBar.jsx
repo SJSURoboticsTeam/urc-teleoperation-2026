@@ -34,6 +34,16 @@ import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 import { useNavigate } from "react-router-dom";
 
+// Views shown in both the top bar tabs and the side drawer tabs
+const VIEW_TABS = [
+  { label: "Drive", value: "/drive" },
+  { label: "Arm", value: "/arm" },
+  { label: "Science", value: "/science" },
+  { label: "Autonomy", value: "/autonomy" },
+  { label: "Graphs", value: "/graphs" },
+  { label: "Extras", value: "/extras" },
+];
+
 export default function TopAppBar({
   selectedElements,
   setSelectedElements,
@@ -150,12 +160,9 @@ export default function TopAppBar({
                 },
               }}
             >
-              <Tab label="Drive" value="/drive" />
-              <Tab label="Arm" value="/arm" />
-              <Tab label="Science" value="/science" />
-              <Tab label="Autonomy" value="/autonomy" />
-              <Tab label="Graphs" value="/graphs" />
-              <Tab label="Extras" value="/extras" />
+              {VIEW_TABS.map(({ label, value }) => (
+                <Tab key={value} label={label} value={value} />
+              ))}
             </Tabs>
           </Box>
 
@@ -232,87 +239,89 @@ export default function TopAppBar({
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={toggleDrawer(false)}
-        sx={{
-          "& .MuiDrawer-paper": {
-            width: 240,
-            borderRadius: "12px",
-          },
-        }}
-      >
-        <List>
-          <Box sx={{ display: { xs: "block", lg: "none" } }}>
-            <ListItem>
-              <Typography sx={{ color: "black" }} variant="h6">
-                VIEWS
-              </Typography>
-            </ListItem>
-            <Tabs
-              orientation="vertical"
-              // we only track the first path,
-              // so truncate /extras/graphs to /extras so it stays highlighted
-              value={
-                "/" +
-                (location.pathname
-                  .replace(import.meta.env.BASE_URL, "")
-                  .split("/")
-                  .filter(Boolean)[0] || "drive")
-              }
-              onChange={(e, value) => navigate(value)}
-              role="navigation"
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: "black",
-                },
-              }}
-              sx={{
-                borderRight: "3px solid rgba(0,0,0,0.12)",
-
-                "& .MuiTab-root": {
-                  color: "black",
-                  transition: "all 0.2s ease",
-                  minWidth: "unset",
-                  padding: "6px 12px",
-                  alignItems: "flex-start",
-                },
-
-                "& .MuiTab-root.Mui-selected": {
-                  color: "black",
-                  backgroundColor: "rgba(0,0,0,0.24)",
-                  borderRadius: "8px 0 0 8px",
-                },
-              }}
-            >
-              <Tab label="Drive" value="/drive" />
-              <Tab label="Arm" value="/arm" />
-              <Tab label="Science" value="/science" />
-              <Tab label="Autonomy" value="/autonomy" />
-              <Tab label="Graphs" value="/graphs" />
-              <Tab label="Extras" value="/extras" />
-            </Tabs>
-          </Box>
-          <ListItem>
-            <Typography sx={{ color: "black" }} variant="h6">
-              SPLIT SCREEN
-            </Typography>
-          </ListItem>
-          <ListItem>
-            <ToggleButtonGroup
-              color="primary"
-              value={selectedElements}
-              exclusive
-              onChange={changeElements}
-            >
-              <ToggleButton value="ui">UI</ToggleButton>
-              <ToggleButton value="both">BOTH</ToggleButton>
-              <ToggleButton value="cameras">CAMS</ToggleButton>
-            </ToggleButtonGroup>
-          </ListItem>
-        </List>
-      </Drawer>
+      {PopoutDrawer(drawerOpen, toggleDrawer, navigate, selectedElements, changeElements)}
     </>
   );
 }
+
+
+
+function PopoutDrawer(drawerOpen, toggleDrawer, navigate, selectedElements, changeElements) {
+  return <Drawer
+    anchor="left"
+    open={drawerOpen}
+    onClose={toggleDrawer(false)}
+    sx={{
+      "& .MuiDrawer-paper": {
+        width: 240,
+        borderRadius: "12px",
+      },
+    }}
+  >
+    <List>
+      <Box sx={{ display: { xs: "block", lg: "none" } }}>
+        <ListItem>
+          <Typography sx={{ color: "black" }} variant="h6">
+            VIEWS
+          </Typography>
+        </ListItem>
+        <Tabs
+          orientation="vertical"
+          // we only track the first path,
+          // so truncate /extras/graphs to /extras so it stays highlighted
+          value={"/" +
+            (location.pathname
+              .replace(import.meta.env.BASE_URL, "")
+              .split("/")
+              .filter(Boolean)[0] || "drive")}
+          onChange={(e, value) => navigate(value)}
+          role="navigation"
+          TabIndicatorProps={{
+            style: {
+              backgroundColor: "black",
+            },
+          }}
+          sx={{
+            borderRight: "3px solid rgba(0,0,0,0.12)",
+
+            "& .MuiTab-root": {
+              color: "black",
+              transition: "all 0.2s ease",
+              minWidth: "unset",
+              padding: "6px 12px",
+              alignItems: "flex-start",
+            },
+
+            "& .MuiTab-root.Mui-selected": {
+              color: "black",
+              backgroundColor: "rgba(0,0,0,0.24)",
+              borderRadius: "8px 0 0 8px",
+            },
+          }}
+        >
+          {VIEW_TABS.map(({ label, value }) => (
+            <Tab key={value} label={label} value={value} />
+          ))}
+        </Tabs>
+      </Box>
+      <ListItem>
+        <Typography sx={{ color: "black" }} variant="h6">
+          SPLIT SCREEN
+        </Typography>
+      </ListItem>
+      <ListItem>
+        <ToggleButtonGroup
+          color="primary"
+          value={selectedElements}
+          exclusive
+          onChange={changeElements}
+        >
+          <ToggleButton value="ui">UI</ToggleButton>
+          <ToggleButton value="both">BOTH</ToggleButton>
+          <ToggleButton value="cameras">CAMS</ToggleButton>
+        </ToggleButtonGroup>
+      </ListItem>
+    </List>
+  </Drawer>;
+}
+
