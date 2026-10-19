@@ -8,6 +8,7 @@ import { Outlet } from "react-router-dom";
 
 // Local imports
 import TopAppBar from "./TopAppBar";
+import BottomAppBar from "./BottomAppBar";
 import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
@@ -33,6 +34,8 @@ function App() {
 
   //snackbar
   const { enqueueSnackbar } = useSnackbar();
+
+  const [showbottbar, setshowbottbar] = useState(true);
 
   const addSnackbarMessage = (message, variant) => () => {
     // variant could be success, error, warning, info, or default
@@ -100,6 +103,16 @@ function App() {
                                 selectedElements={selectedElements}
                                 setSelectedElements={setSelectedElements}
                                 addSnackbarMessage={addSnackbarMessage}
+                                showbottbar={showbottbar}
+                                setshowbottbar={setshowbottbar}
+                              />
+
+                              <BottomAppBar
+                                selectedElements={selectedElements}
+                                setSelectedElements={setSelectedElements}
+                                addSnackbarMessage={addSnackbarMessage}
+                                showbottbar={showbottbar}
+                                setshowbottbar={setshowbottbar}
                               />
 
                               <Box
@@ -111,7 +124,8 @@ function App() {
                                   flexDirection: "column",
                                   overflow: "hidden",
                                   minHeight: 0,
-                                  marginTop: "60px",
+                                  marginTop: "55px",
+                                  marginBottom: showbottbar ? "50px" : "0px",
                                 }}
                               >
                                 <SoftStopBanner />

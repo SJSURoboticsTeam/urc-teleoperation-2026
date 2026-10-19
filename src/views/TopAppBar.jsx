@@ -3,38 +3,45 @@ import {
   AppBar,
   Toolbar,
   Button,
-  Drawer,
-  List,
-  ListItem,
   Typography,
   IconButton,
   Dialog,
   DialogTitle,
   Tooltip,
-  ListItemButton,
   Box,
   Tabs,
   Tab,
-  ToggleButtonGroup,
-  ToggleButton,
 } from "@mui/material";
+import ExpandIcon from "@mui/icons-material/Expand";
 import MenuIcon from "@mui/icons-material/Menu";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import { orange } from "@mui/material/colors";
 import NavConnectionStatus from "../components/socket.io/BackendConnectionManager";
 import GamepadPanel from "../components/gamepad/Gamepad";
-import Metrics from "../components/metrics/metricsPanel";
-import StateMachine from "../components/statemachine/statemachine";
+import MenuPane from "../components/ui/MenuPane";
 
-// Use the socket for E-STOP commands and shared context for connection status
-import BatteryDisplay from "../components/battery/batteryDisplay";
 import { robotsocket } from "../components/socket.io/socket";
 import { useConnectionStatus } from "../contexts/ConnectionContext";
 import { useSoftStop } from "../contexts/SoftStopContext";
 
 import { useNavigate } from "react-router-dom";
 
-export default function TopAppBar({ selectedElements, setSelectedElements }) {
+// Views shown in both the top bar tabs and the side drawer tabs
+const VIEW_TABS = [
+  { label: "Drive", value: "/drive" },
+  { label: "Arm", value: "/arm" },
+  { label: "Science", value: "/science" },
+  { label: "Autonomy", value: "/autonomy" },
+  { label: "Graphs", value: "/graphs" },
+  { label: "Extras", value: "/extras" },
+];
+
+export default function TopAppBar({
+  selectedElements,
+  setSelectedElements,
+  showbottbar,
+  setshowbottbar,
+}) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
 
@@ -144,7 +151,6 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
                   .split("/")
                   .filter(Boolean)[0] || "drive")
               }
-
               onChange={(e, value) => navigate(value)}
               role="navigation"
               TabIndicatorProps={{
@@ -167,11 +173,9 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
                 },
               }}
             >
-              <Tab label="Drive" value="/drive" />
-              <Tab label="Arm" value="/arm" />
-              <Tab label="Science" value="/science" />
-              <Tab label="Autonomy" value="/autonomy" />
-              <Tab label="Extras" value="/extras" />
+              {VIEW_TABS.map(({ label, value }) => (
+                <Tab key={value} label={label} value={value} />
+              ))}
             </Tabs>
           </Box>
 
@@ -232,16 +236,23 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
             name="Drive"
           />
           <NavConnectionStatus openPane={openPane} setOpenPane={setOpenPane} />
-          <Metrics openPane={openPane} setOpenPane={setOpenPane} />
-          <StateMachine
-            openPane={openPane}
-            setOpenPane={setOpenPane}
-            isRobotConnected={isRobotConnected}
-          />
-          <BatteryDisplay/>
+
           <IconButton
             edge="end"
             color="inherit"
+            aria-label="Toggle bottom bar"
+            style={{ marginRight: 0 }}
+            onClick={() => {
+              setshowbottbar(!showbottbar);
+            }}
+          >
+            <ExpandIcon />
+          </IconButton>
+          <IconButton
+            edge="end"
+            color="inherit"
+            aria-label="Fullscreen"
+            style={{ marginRight: 0, marginLeft:0 }}
             onClick={() => {
               if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen(); // enter fullscreen
@@ -255,86 +266,11 @@ export default function TopAppBar({ selectedElements, setSelectedElements }) {
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={toggleDrawer(false)}
-        sx={{
-          "& .MuiDrawer-paper": {
-            width: 240,
-            borderRadius: "12px",
-          },
-        }}
-      >
-        <List>
-          <Box sx={{ display: { xs: "block", lg: "none" } }}>
-            <ListItem>
-              <Typography sx={{ color: "black" }} variant="h6">
-                VIEWS
-              </Typography>
-            </ListItem>
-            <Tabs
-              orientation="vertical"
-              // we only track the first path,
-              // so truncate /extras/graphs to /extras so it stays highlighted
-              value={
-                "/" +
-                (location.pathname
-                  .replace(import.meta.env.BASE_URL, "")
-                  .split("/")
-                  .filter(Boolean)[0] || "drive")
-              }
-              onChange={(e, value) => navigate(value)}
-              role="navigation"
-              TabIndicatorProps={{
-                style: {
-                  backgroundColor: "black",
-                },
-              }}
-              sx={{
-                borderRight: "3px solid rgba(0,0,0,0.12)",
-
-                "& .MuiTab-root": {
-                  color: "black",
-                  transition: "all 0.2s ease",
-                  minWidth: "unset",
-                  padding: "6px 12px",
-                  alignItems: "flex-start",
-                },
-
-                "& .MuiTab-root.Mui-selected": {
-                  color: "black",
-                  backgroundColor: "rgba(0,0,0,0.24)",
-                  borderRadius: "8px 0 0 8px",
-                },
-              }}
-            >
-              <Tab label="Drive" value="/drive" />
-              <Tab label="Arm" value="/arm" />
-              <Tab label="Science" value="/science" />
-              <Tab label="Autonomy" value="/autonomy" />
-              <Tab label="Extras" value="/extras" />
-            </Tabs>
-          </Box>
-          <ListItem>
-            <Typography sx={{ color: "black" }} variant="h6">
-              SPLIT SCREEN
-            </Typography>
-          </ListItem>
-          <ListItem>
-            <ToggleButtonGroup
-              color="primary"
-              value={selectedElements}
-              exclusive
-              onChange={changeElements}
-            >
-              <ToggleButton value="ui">UI</ToggleButton>
-              <ToggleButton value="both">BOTH</ToggleButton>
-              <ToggleButton value="cameras">CAMS</ToggleButton>
-            </ToggleButtonGroup>
-          </ListItem>
-        </List>
-      </Drawer>
+      {MenuPane(drawerOpen, toggleDrawer, navigate, selectedElements, changeElements, VIEW_TABS)}
     </>
   );
 }
+
+
+
+

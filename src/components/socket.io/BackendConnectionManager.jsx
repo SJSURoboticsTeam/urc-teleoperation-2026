@@ -13,7 +13,7 @@ import Box from "@mui/material/Box";
 import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 
-export default function NavConnectionStatus({ openPane, setOpenPane }) {
+export default function NavConnectionStatus({ openPane, setOpenPane, openUp = false }) {
   // Use centralized status instead of registering separate socket listeners here
   const {
     robotConnected: isRobotConnected,
@@ -209,7 +209,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 20,
+          marginRight: 10,
         }}
       >
         SERVER{robotconnectedIcon}
@@ -220,7 +220,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            ...(openUp ? { bottom: "100%" } : { top: "100%" }),
             left: "50%",
             transform: "translateX(-50%)",
             background: "white",
