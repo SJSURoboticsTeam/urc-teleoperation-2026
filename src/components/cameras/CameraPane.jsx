@@ -198,6 +198,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
         >
           <Chip
             size="small"
+            aria-live="polite"
             label={currentVideoStat.status}
             color={
               currentVideoStat.status === "GOOD" ? "success" :
