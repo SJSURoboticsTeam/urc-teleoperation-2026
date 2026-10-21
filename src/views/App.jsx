@@ -24,6 +24,7 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
@@ -90,6 +91,7 @@ function App() {
           <PeripheralProvider>
             <GPSProvider>
               <MetricsProvider>
+                <VideoProvider>
                 <AutonomyModeProvider>
                   <SoftStopProvider>
                     <ArmCommandProvider>
@@ -141,6 +143,7 @@ function App() {
                     </ArmCommandProvider>
                   </SoftStopProvider>
                 </AutonomyModeProvider>
+                </VideoProvider>
               </MetricsProvider>
             </GPSProvider>
           </PeripheralProvider>
