@@ -28,7 +28,7 @@ export function useVideoData() {
 
     return () => {
       basesocket.off("videostats", handler);
-      basesocket.on("disconnect", handleDisconnect);
+      basesocket.off("disconnect", handleDisconnect);
     };
   }, []);
 
