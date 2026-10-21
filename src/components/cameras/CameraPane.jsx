@@ -212,6 +212,11 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
               height: 18,
               fontSize: "0.65rem",
               "& .MuiChip-label": { px: 0.75 },
+              ...(!["GOOD", "DEGRADED", "BAD"].includes(currentVideoStat.status) && {
+                bgcolor: "#e0e0e0",
+                color: "#000",
+                fontWeight: 600,
+    }),
             }}
           />
         </Tooltip>
