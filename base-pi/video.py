@@ -1,6 +1,7 @@
 import asyncio
 import random
 import aiohttp
+import time
 from collections import deque
 
 VideoPollingRate = 0.1
@@ -51,7 +52,8 @@ async def get_dropped_frames(session, camera_name):
         return None
 
 async def videoloop(sio):
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=0.5)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         while True:
             stats = {}
 
@@ -61,9 +63,13 @@ async def videoloop(sio):
 
                 if total is not None:
                     history = recent_counts[name]
-                    history.append(total)
-                    if len(history) > 1:
-                        dropped = max(history[-1] - history[0], 0)
+                    history.append((time.monotonic(), total))
+
+                    if len(history) == history.maxlen:
+                        oldest_time, oldest_total = history[0]
+                        elapsed = history[-1][0] - oldest_time
+                        new_errors = max(total - oldest_total, 0)
+                        dropped = round(new_errors / elapsed, 1)
                 else:
                     recent_counts[name].clear()
 
