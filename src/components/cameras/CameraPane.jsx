@@ -178,7 +178,17 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
         </Select>
       </FormControl>
 
-      {currentVideoStat && (
+      {/* image container grows to fill remaining space */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+          position: "relative",
+          backgroundColor: error ? "black" : "transparent",
+        }}
+      >
+        {currentVideoStat && (
         <Tooltip
           title={
             currentVideoStat.droppedPerSec != null
@@ -194,21 +204,18 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
               currentVideoStat.status === "DEGRADED" ? "warning" :
               currentVideoStat.status === "BAD" ? "error" : "default"
             }
-            sx={{ mb: 0.5 }}
+            sx={{
+              position: "absolute",
+              top: 6,
+              right: 6,
+              zIndex: 2,
+              height: 18,
+              fontSize: "0.65rem",
+              "& .MuiChip-label": { px: 0.75 },
+            }}
           />
         </Tooltip>
       )}
-
-      {/* image container grows to fill remaining space */}
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflow: "hidden",
-          position: "relative",
-          backgroundColor: error ? "black" : "transparent",
-        }}
-      >
         {selectedCamera && (
           (selectedCamera.mediatype === "image" ? (
             <img
