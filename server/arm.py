@@ -11,6 +11,7 @@ import datetime
 from collections import deque
 
 import can_serial
+from soft_stop import is_soft_stopped
 
 _session_log = deque(maxlen=5000)
 _last_wrist_motor = {"pitch": None, "roll": None}  
@@ -487,6 +488,9 @@ def register_arm_events(sio, serial_ports):
         """
         MANUAL TX: send all joints from one payload
         """
+        if is_soft_stopped():
+            print(f"[{sid}] armCommands ignored: soft stop active")
+            return "ERROR"
         if serial_ports.get("arm") is None:
             print(f"[{sid}] armCommands ignored: arm not connected")
             return "ERROR"
@@ -524,6 +528,9 @@ def register_arm_events(sio, serial_ports):
         AUTO TX: send only the updated joint
         For wrist joints, always sends both motors using last known values
         """
+        if is_soft_stopped():
+            print(f"[{sid}] armJointCommand ignored: soft stop active")
+            return "ERROR"
         if serial_ports.get("arm") is None:
             print(f"[{sid}] armJointCommand ignored: arm not connected")
             return "ERROR"

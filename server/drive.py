@@ -4,6 +4,7 @@ import can_serial
 import math
 from drive_control import is_drive_controller
 from drive_feedback import apply_parsed
+from soft_stop import is_soft_stopped
 
 
 drive_send_ID = {
@@ -69,6 +70,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
     @sio.event
     async def driveCommands(sid, data):
         """Socket handler: send one chassis velocity command."""
+        if is_soft_stopped():
+            print(f'[{sid}] Ignored drive command: soft stop active')
+            return
         try:
             async with drive_command_lock:
                 if not is_drive_controller(sid):
@@ -98,6 +102,9 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
     @sio.event
     async def driveHoming(sid):
         """Socket handler: start the drive homing sequence."""
+        if is_soft_stopped():
+            print(f'[{sid}] Ignored homing request: soft stop active')
+            return
         if not is_drive_controller(sid):
             print(f'[{sid}] Ignored homing request: not in control')
             return

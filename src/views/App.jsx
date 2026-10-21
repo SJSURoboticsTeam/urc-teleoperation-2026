@@ -8,6 +8,7 @@ import { Outlet } from "react-router-dom";
 
 // Local imports
 import TopAppBar from "./TopAppBar";
+import BottomAppBar from "./BottomAppBar";
 import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
@@ -18,6 +19,7 @@ import MastCommandProvider from "../providers/MastCommandProvider";
 import GamepadProvider from "../providers/GamepadProvider";
 import GPSProvider from "../providers/GPSProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
+import SoftStopProvider from "../providers/SoftStopProvider";
 import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
@@ -25,6 +27,7 @@ import MetricsProvider from "../providers/MetricsProvider";
 import DriveFeedbackProvider from "../providers/DriveFeedbackProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
 import DemoPopup from "../components/ui/DemoPane";
+import SoftStopBanner from "../components/ui/SoftStopBanner";
 
 function App() {
   // Global autonomy state so every view can react to it
@@ -32,6 +35,8 @@ function App() {
 
   //snackbar
   const { enqueueSnackbar } = useSnackbar();
+
+  const [showbottbar, setshowbottbar] = useState(true);
 
   const addSnackbarMessage = (message, variant) => () => {
     // variant could be success, error, warning, info, or default
@@ -87,43 +92,57 @@ function App() {
             <GPSProvider>
               <MetricsProvider>
                 <AutonomyModeProvider>
-                  <ArmCommandProvider>
-                    <GamepadProvider>
-                      <DriveControlProvider>
-                        <DriveCommandProvider>
-                          <DriveFeedbackProvider>
-                          <MastCommandProvider>
-                            <CssBaseline />
-                            {/* Normalizes styles */}
-                            <TopAppBar
-                              selectedElements={selectedElements}
-                              setSelectedElements={setSelectedElements}
-                              addSnackbarMessage={addSnackbarMessage}
-                            />
+                  <SoftStopProvider>
+                    <ArmCommandProvider>
+                      <GamepadProvider>
+                        <DriveControlProvider>
+                          <DriveCommandProvider>
+                            <DriveFeedbackProvider>
+                            <MastCommandProvider>
+                              <CssBaseline />
+                              {/* Normalizes styles */}
+                              <TopAppBar
+                                selectedElements={selectedElements}
+                                setSelectedElements={setSelectedElements}
+                                addSnackbarMessage={addSnackbarMessage}
+                                showbottbar={showbottbar}
+                                setshowbottbar={setshowbottbar}
+                              />
 
-                            <Box
-                              component="main"
-                              sx={{
-                                flexGrow: 1,
-                                p: 2,
-                                display: "flex",
-                                flexDirection: "column",
-                                overflow: "hidden",
-                                minHeight: 0,
-                                marginTop: "60px",
-                              }}
-                            >
-                              <SplitView selectedElements={selectedElements}>
-                                {/* we pass all these elements as "children" into SplitView */}
-                                <Outlet />
-                              </SplitView>
-                            </Box>
-                          </MastCommandProvider>
-                          </DriveFeedbackProvider>
-                        </DriveCommandProvider>
-                      </DriveControlProvider>
-                    </GamepadProvider>
-                  </ArmCommandProvider>
+                              <BottomAppBar
+                                selectedElements={selectedElements}
+                                setSelectedElements={setSelectedElements}
+                                addSnackbarMessage={addSnackbarMessage}
+                                showbottbar={showbottbar}
+                                setshowbottbar={setshowbottbar}
+                              />
+
+                              <Box
+                                component="main"
+                                sx={{
+                                  flexGrow: 1,
+                                  p: 2,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  overflow: "hidden",
+                                  minHeight: 0,
+                                  marginTop: "55px",
+                                  marginBottom: showbottbar ? "50px" : "0px",
+                                }}
+                              >
+                                <SoftStopBanner />
+                                <SplitView selectedElements={selectedElements}>
+                                  {/* we pass all these elements as "children" into SplitView */}
+                                  <Outlet />
+                                </SplitView>
+                              </Box>
+                            </MastCommandProvider>
+                            </DriveFeedbackProvider>
+                          </DriveCommandProvider>
+                        </DriveControlProvider>
+                      </GamepadProvider>
+                    </ArmCommandProvider>
+                  </SoftStopProvider>
                 </AutonomyModeProvider>
               </MetricsProvider>
             </GPSProvider>

@@ -69,7 +69,7 @@ function vectorPath(x, y, length) {
 }
 
 export default function Wheel() {
-    const { wheelAngles, measured, receive } = useDriveFeedback();
+    const { wheelAngles, measured, anglesFresh, velocitiesFresh } = useDriveFeedback();
   const reducedMotion = usePrefersReducedMotion();
   const sweep = reducedMotion ? NO_MOTION : SWEEP;
   const sweepD = reducedMotion ? NO_MOTION : SWEEP_D;
@@ -84,8 +84,10 @@ export default function Wheel() {
   const anyKnown = Object.values(known).some(Boolean);
 
   // Shared by all four vectors.
-  const vectorLength =
-    VECTOR_MIN + speedFactor(measured) * (VECTOR_MAX - VECTOR_MIN);
+  // A stale velocity must not keep inflating the speed gauge.
+  const vectorLength = velocitiesFresh
+    ? VECTOR_MIN + speedFactor(measured) * (VECTOR_MAX - VECTOR_MIN)
+    : VECTOR_MIN;
 
   return (
     <Box
@@ -100,7 +102,7 @@ export default function Wheel() {
       }}
       justifyContent="center"
     >
-      {(!receive || !anyKnown) && (
+      {(!anglesFresh || !anyKnown) && (
         <Typography
           variant="caption"
           color="error"

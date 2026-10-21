@@ -3,16 +3,22 @@ import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { green, red, yellow } from "@mui/material/colors";
-import { useRobotSocketStatus, useBaseSocketStatus } from "./socket";
+
+// Read shared connection state from the centralized context
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
 import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 
-export default function NavConnectionStatus({ openPane, setOpenPane }) {
-  const isRobotConnected = useRobotSocketStatus(); // get socket status from ui
-  const isBaseConnected = useBaseSocketStatus(); // get socket status from ui
+export default function NavConnectionStatus({ openPane, setOpenPane, openUp = false }) {
+  // Use centralized status instead of registering separate socket listeners here
+  const {
+    robotConnected: isRobotConnected,
+    baseConnected: isBaseConnected,
+  } = useConnectionStatus();
 
   // robot
   const [robotLatency, setRobotLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
@@ -203,7 +209,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 20,
+          marginRight: 10,
         }}
       >
         SERVER{robotconnectedIcon}
@@ -214,7 +220,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            ...(openUp ? { bottom: "100%" } : { top: "100%" }),
             left: "50%",
             transform: "translateX(-50%)",
             background: "white",

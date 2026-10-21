@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Union
 import time
 import asyncio
+from datetime import datetime, timezone
 import math
 
 @dataclass
@@ -138,10 +139,11 @@ async def read_gps_data(serial_ports, sio):
             if gps.has_gps_lock():
                 position = gps.get_position()
                 data = {
-                        'latitude': position.latitude,
-                        'longitude': position.longitude,
-                        'accuracy_m': position.accuracy.horizontal_m if position.accuracy else None,
-                        'accuracy_source': position.accuracy.source if position.accuracy else None
+                    'latitude': position.latitude,
+                    'longitude': position.longitude,
+                    'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    'accuracy_m': position.accuracy.horizontal_m if position.accuracy else None,
+                    'accuracy_source': position.accuracy.source if position.accuracy else None
                 }
                 await sio.emit("gpsData", data)
                 print(f"Latitude: {position.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}")
@@ -158,6 +160,7 @@ async def send_fake_gps_data(sio):
         data = {
             'latitude': round(random.uniform(37.334, 37.335), 5),
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
+            'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             'accuracy_m': round(random.uniform(1.5, 4.0), 2),          
             'accuracy_source': 'HDOP'                                  
         }

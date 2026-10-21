@@ -30,18 +30,23 @@ export const DriveFeedbackProvider = ({ children }) => {
   const [measured, setMeasured] = useState(NO_VELOCITIES);
   const [reportedCommand, setReportedCommand] = useState(NO_COMMANDED);
   // false until the rover actually tells us something
-  const [receive, setReceive] = useState(false);
+  // Tracked per event. The two arrive from different firmware replies, so one
+  // can dry up while the other keeps flowing - a shared flag would report the
+  // whole feed healthy on the strength of the half that still works.
+  const [anglesFresh, setAnglesFresh] = useState(false);
+  const [velocitiesFresh, setVelocitiesFresh] = useState(false);
 
-  const staleTimeout = useRef(null);
+  const anglesTimeout = useRef(null);
+  const velocitiesTimeout = useRef(null);
 
   useEffect(() => {
-    // One shared timer: any packet proves the rover is still talking.
-    const markAlive = () => {
-      setReceive(true);
-      if (staleTimeout.current) {
-        clearTimeout(staleTimeout.current);
+    // Restart that event's own countdown; it only fires if packets stop.
+    const keepAlive = (ref, setFresh) => {
+      setFresh(true);
+      if (ref.current) {
+        clearTimeout(ref.current);
       }
-      staleTimeout.current = setTimeout(() => setReceive(false), STALE_AFTER_MS);
+      ref.current = setTimeout(() => setFresh(false), STALE_AFTER_MS);
     };
 
     const handleWheelAngles = (data) => {
@@ -51,7 +56,7 @@ export const DriveFeedbackProvider = ({ children }) => {
         backLeft: data.bLAngle,
         backRight: data.bRAngle,
       });
-      markAlive();
+      keepAlive(anglesTimeout, setAnglesFresh);
     };
 
     const handleDriveFeedback = (data) => {
@@ -61,7 +66,7 @@ export const DriveFeedbackProvider = ({ children }) => {
         rotVel: data.rotVel,
       });
       if (data.commanded) setReportedCommand(data.commanded);
-      markAlive();
+      keepAlive(velocitiesTimeout, setVelocitiesFresh);
     };
 
     robotsocket.on("wheelAngles", handleWheelAngles);
@@ -71,8 +76,11 @@ export const DriveFeedbackProvider = ({ children }) => {
     return () => {
       robotsocket.off("wheelAngles", handleWheelAngles);
       robotsocket.off("driveFeedback", handleDriveFeedback);
-      if (staleTimeout.current) {
-        clearTimeout(staleTimeout.current);
+      if (anglesTimeout.current) {
+        clearTimeout(anglesTimeout.current);
+      }
+      if (velocitiesTimeout.current) {
+        clearTimeout(velocitiesTimeout.current);
       }
     };
   }, []);
@@ -81,7 +89,8 @@ export const DriveFeedbackProvider = ({ children }) => {
     wheelAngles,
     measured,
     reportedCommand,
-    receive,
+    anglesFresh,
+    velocitiesFresh,
   };
 
   return (

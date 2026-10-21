@@ -2,10 +2,13 @@ import "react-resizable/css/styles.css";
 import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+
+// Use the socket for drive commands and shared context for connection status
 import { robotsocket } from "../socket.io/socket";
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
-import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
@@ -81,17 +84,18 @@ export default function DriveManualInput({
   driveLocked = false,
 }) {
   // Server connection status
-  const serverConnected = useRobotSocketStatus();
+
+  // Use centralized robot connection state to control drive features
+  const { robotConnected: serverConnected } = useConnectionStatus();
+
   const [txon, settxon] = useState(false);
 
   // Drive
   const [connectedGamepads] = useConnectedGamepads();
   const driveConnectedOne = connectedGamepads.drive;
 
-  const { measured, reportedCommand } = useDriveFeedback();
+  const { measured, reportedCommand, velocitiesFresh } = useDriveFeedback();
   const [driveCommands, setDriveCommands] = useDriveCommands();
-  // No controller means nothing drives the local axes, so use the backend's.
-  const useLocalCommand = driveConnectedOne != null;
   const {
     sidewaysVelocity,
     forwardsVelocity,
@@ -296,20 +300,20 @@ export default function DriveManualInput({
             }}
           >
             <VelocityItem
-              commanded={useLocalCommand ? forwardsVelocity : reportedCommand.xVel}
-              actual={measured.xVel}
+              commanded={reportedCommand.xVel}
+              actual={velocitiesFresh ? measured.xVel : null}
               label="X Vel"
               dimmed={controlsLocked || driveLocked}
             />
             <VelocityItem
-              commanded={useLocalCommand ? sidewaysVelocity : reportedCommand.yVel}
-              actual={measured.yVel}
+              commanded={reportedCommand.yVel}
+              actual={velocitiesFresh ? measured.yVel : null}
               label="Y Vel"
               dimmed={controlsLocked || driveLocked}
             />
             <VelocityItem
-              commanded={useLocalCommand ? rotationalVelocity : reportedCommand.rotVel}
-              actual={measured.rotVel}
+              commanded={reportedCommand.rotVel}
+              actual={velocitiesFresh ? measured.rotVel : null}
               label="Rotational"
               dimmed={controlsLocked || driveLocked}
             />
