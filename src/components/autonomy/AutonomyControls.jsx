@@ -21,6 +21,8 @@ import {
 // Global autonomy mode context
 import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 
+import { useGPS } from "../../contexts/GPSContext";
+
 // Key used to store whether autonomy mode is enabled in localStorage
 const AUTONOMY_STORAGE_KEY = "rover_autonomy_enabled";
 
@@ -68,6 +70,7 @@ export default function AutonomyControls() {
   // Drive-related state
   const [driveData, setDriveData] = useState(initialDriveState);
   const [lastCoords, setLastCoords] = useState({ lat: "___", lon: "___" });
+  const { robotCoordinates } = useGPS();
   const [driveStatus, setDriveStatus] = useState("Waiting for route.");
 
   // confetti UI state
@@ -240,14 +243,6 @@ export default function AutonomyControls() {
     sendCommandToBackend({ type: "autonomy_stop" });
   };
 
-  // Opens the Arm tab and logs a USB task start
-  const startUsb = () => {
-    if (teleopLocked) return;
-    setActiveTab("arm");
-    addArmHistory("USB task started.");
-    sendCommandToBackend({ type: "usb_start" });
-  };
-
   // Resets mission state back to defaults
   const restartMission = () => {
     if (teleopLocked) return;
@@ -326,9 +321,13 @@ export default function AutonomyControls() {
     if (nextReached) {
       // When reached, store coords, update status, show celebration, notify backend
       setLastCoords({
-        lat: currentLocation.lat || "___",
-        lon: currentLocation.lon || "___",
+        lat: robotCoordinates.receive ? robotCoordinates.lat.toFixed(6) : currentLocation.lat || "___",
+        lon: robotCoordinates.receive ? robotCoordinates.long.toFixed(6) : currentLocation.lon || "___",
       });
+      // setLastCoords({
+      //   lat: currentLocation.lat || "___",
+      //   lon: currentLocation.lon || "___",
+      // });
       setDriveStatus(`${displayLabel} reached.`);
       triggerArrival(displayLabel);
       sendCommandToBackend({
@@ -516,13 +515,6 @@ export default function AutonomyControls() {
 
           {/* Header action buttons */}
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Button
-              variant="outlined"
-              onClick={startUsb}
-              disabled={teleopLocked}
-            >
-              Start USB
-            </Button>
 
             <Button
               variant="outlined"

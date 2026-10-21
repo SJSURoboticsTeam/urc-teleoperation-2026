@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 
 export default function CameraPane({ cameraValue, onCameraChange }) {
+  const isWebDemo = import.meta.env.MODE === "demo";
   const [camera, setCamera] = useState(cameraValue ?? "Standby");
 
   useEffect(() => {
@@ -31,6 +32,12 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       onCameraChange(nextValue);
     }
   };
+
+  const URL =
+  import.meta.env.MODE === "prod"
+    ? "192.168.1.2"
+    : window.location.hostname;
+
   const cameras = [
     {
       value: "Standby",
@@ -43,35 +50,35 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       value: "Mast Camera",
       mediatype: "iframe",
       name: "Mast",
-      url: "http://192.168.1.2:8889/mast/",
+      url: `http://${URL}:8889/mast/`,
       allowed: true,
     },
     {
       value: "wheels",
       mediatype: "iframe",
       name: "Wheels",
-      url: "http://192.168.1.2:8889/wheels/",
+      url: `http://${URL}:8889/wheels/`,
       allowed: true,
     },
     {
       value: "arm1",
       mediatype: "iframe",
       name: "Arm Cam 1",
-      url: "http://192.168.1.2:8889/arm1/",
+      url: `http://${URL}:8889/arm1/`,
       allowed: true,
     },
     {
       value: "arm2",
       mediatype: "iframe",
       name: "Arm Cam",
-      url: "http://192.168.1.2:8889/arm2/",
+      url: `http://${URL}:8889/arm2/`,
       allowed: false,
     },
     {
       value: "science",
       mediatype: "iframe",
       name: "Science Cam",
-      url: "http://192.168.1.2:8889/science/",
+      url: `http://${URL}:8889/science/`,
       allowed: false,
     },
   ];
@@ -102,6 +109,12 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
   const resetCameraState = () => {
     setLoading(true);
     setError(false);
+
+    if (isWebDemo) {
+      setLoading(false);
+      setError(selectedMediaType === "iframe");
+      return;
+    }
 
     if (iframeTimeoutRef.current) {
       clearTimeout(iframeTimeoutRef.current);
@@ -196,7 +209,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
           backgroundColor: error ? "black" : "transparent",
         }}
       >
-        {selectedCamera &&
+        {selectedCamera && (
           (selectedCamera.mediatype === "image" ? (
             <img
               key={selectedCamera.url}
@@ -245,10 +258,11 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
                 allow="fullscreen;"
               />
             )
-          ))}
+          ))
+        )}
 
         {/* loading / error overlays */}
-        {loading && (
+        {!isWebDemo && loading && (
           <Box
             sx={{
               position: "absolute",
@@ -294,16 +308,22 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
                 objectFit: "contain",
               }}
             />
-            <Typography color="error">Couldn't connect to video endpoint.</Typography>
-            <Button
-              sx={{ mt: 1 }}
-              variant="contained"
-              onClick={() => {
-                resetCameraState();
-              }}
-            >
-              Retry
-            </Button>
+            <Typography color="error">
+              {isWebDemo
+                ? "Cameras are unavailable in the web demo"
+                : "Couldn't connect to video endpoint."}
+            </Typography>
+            {!isWebDemo && (
+              <Button
+                sx={{ mt: 1 }}
+                variant="contained"
+                onClick={() => {
+                  resetCameraState();
+                }}
+              >
+                Retry
+              </Button>
+            )}
           </Box>
         )}
       </Box>

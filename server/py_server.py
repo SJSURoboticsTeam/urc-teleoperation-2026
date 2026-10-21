@@ -21,13 +21,16 @@ from drive_uart import (
     send_drive_command as send_uart_drive_command,
     send_drive_heartbeat,
 )
-from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events
+from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events, send_arm_status_request
 from camera_pt import register_camera_pt_events
 from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
+from drive_control import register_drive_control_events, release_drive_control
+from battery import send_fake_battery_data, get_battery_data
+from soft_stop import is_soft_stopped, set_soft_stop
 
 
 print("\033[0m----------------")
@@ -101,8 +104,10 @@ print("----------------")
 serial_ports = {
     "drive": None,
     "driveId" : "disconnect",
+    "drive_status_event": asyncio.Event(),
     "arm": None,
     "armId" : "disconnect",
+    "arm_status_event": asyncio.Event(),
     "gps": None,
     "gpsId" : "disconnect",
     "science": None,
@@ -434,7 +439,8 @@ async def E_STOP(sid):
 
 # =================== Initialization ===================
 # Background task guard
-can_error_message_started = False
+can_error_message_started_drive = False
+can_error_message_started_arm = False
 drive_task_started = False
 drive_heartbeat_started = False
 arm_task_started = False
@@ -444,7 +450,39 @@ async_ssh_started = False
 cpu_started = False
 # this lock ensures that only one function can be sending on the drive can/uart line at once
 drive_command_lock = asyncio.Lock()
-autonomy_started= False
+autonomy_started = False
+battery_started = False
+
+
+async def _send_drive_stop_command():
+    """Write a zero-velocity command to the drive line. Caller must hold drive_command_lock."""
+    if not serial_ports["drive"]:
+        print("No drive serial connected. Cannot send stop command.")
+        return
+    try:
+        if USE_UART_DRIVE:
+            await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+            print("UART: Sent stop command to drive motors.")
+        else:
+            await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+            print("CAN: Sent stop command to drive motors.")
+    except Exception as e:
+        print(f"Failed to send stop command: {e}")
+
+
+async def stop_drive_motors():
+    """Send stop command to drive motors for safety when no clients are connected"""
+    async with drive_command_lock:
+        # A client may have reconnected while this task was waiting for the lock.
+        if metrics.numClients != 0:
+            return
+        await _send_drive_stop_command()
+
+
+async def stop_drive_motors_for_handover():
+    """Send stop command during a drive-control handover, regardless of client count"""
+    async with drive_command_lock:
+        await _send_drive_stop_command()
 
 
 register_metric_events(sio)
@@ -456,13 +494,15 @@ register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
+register_drive_control_events(sio, stop_drive_motors_for_handover)
 
 # =================== Start Server ===================
 
 @sio.event
 async def connect(sid,environ):
     """Event code when a client connects, many startup functions trigger here"""
-    global can_error_message_started
+    global can_error_message_started_drive
+    global can_error_message_started_arm
     global drive_task_started
     global drive_heartbeat_started
     global arm_task_started
@@ -472,6 +512,7 @@ async def connect(sid,environ):
     global cpu_started
     global numClients
     global autonomy_started
+    global battery_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -505,9 +546,12 @@ async def connect(sid,environ):
             drive_heartbeat_started = True
             sio.start_background_task(send_drive_heartbeat, serial_ports)
     else:
-        if not can_error_message_started:
-            can_error_message_started = True
-            sio.start_background_task(send_drive_status_request, serial_ports)
+        if not can_error_message_started_drive:
+            can_error_message_started_drive = True
+            sio.start_background_task(send_drive_status_request, serial_ports,sio)
+    if not can_error_message_started_arm:
+        can_error_message_started_arm = True
+        sio.start_background_task(send_arm_status_request, serial_ports, sio)
     if not async_ssh_started:
        async_ssh_started = True
        #sio.start_background_task(asyncsshloop,sio)
@@ -517,27 +561,46 @@ async def connect(sid,environ):
     if (not autonomy_started) and autonomy:
         autonomy_started = True
         sio.start_background_task(get_autonomy_states,sio)
+    if not battery_started:
+        battery_started = True
+        if offline:
+            sio.start_background_task(send_fake_battery_data, sio)
+        else:
+            sio.start_background_task(get_battery_data, sio)
 
-async def stop_drive_motors():
-    """Send stop command to drive motors for safety when no clients are connected"""
-    async with drive_command_lock:
-        # A client may have reconnected while this task was waiting for the lock.
-        if metrics.numClients != 0:
-            return
+    # Sync a newly-connecting client to the current Soft Stop state
+    await set_soft_stop(sio, is_soft_stopped(), sid=sid)
 
-        if not serial_ports["drive"]:
-            print("No drive serial connected. Cannot send stop command.")
-            return
+@sio.event
+async def softStop(sid):  # function name  == event name (sid  = client session id)
+    """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
+    if serial_ports["drive"]:
+        async with drive_command_lock:
+            try:
+                if USE_UART_DRIVE:
+                    await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+                else:
+                    await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+                print(f'[{sid}] Soft Stop triggered - drive velocity zeroed.')
+            except Exception as e:
+                print(f'Failed to send Soft Stop drive command: {e}')
+    else:
+        print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
 
-        try:
-            if USE_UART_DRIVE:
-                await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
-                print("UART: 0 clients connected. Sent stop command to drive motors.")
-            else:
-                await send_can_drive_command(serial_ports, 0, 0, 0, 0)
-                print("CAN: 0 clients connected. Sent stop command to drive motors.")
-        except Exception as e:
-            print(f"Failed to send stop command: {e}")
+    # Broadcast to every connected client so they all lock, not just the sender
+    await set_soft_stop(sio, True)
+
+    # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
+    # drive specifically being connected.
+    return "OK"
+
+
+@sio.event
+async def resumeControls(sid):
+    """Acknowledge the frontend unlocking controls after a Soft Stop"""
+    print(f'[{sid}] Controls resumed after Soft Stop.')
+    await set_soft_stop(sio, False)
+    return "OK"
 
 
 @sio.event
@@ -546,6 +609,8 @@ async def disconnect(sid):
     print(f'Client disconnected: {sid}')
 
     metrics.numClients = max(0, metrics.numClients - 1)
+
+    await release_drive_control(sio, stop_drive_motors_for_handover, sid)
 
     if metrics.numClients == 0:
         print("No clients, stopping motors now.")

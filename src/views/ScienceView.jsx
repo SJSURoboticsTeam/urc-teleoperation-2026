@@ -3,25 +3,48 @@ import { Box, Button, Typography } from "@mui/material";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 import { usePeripherals } from "../contexts/PeripheralContext";
+import { useGPS } from "../contexts/GPSContext";
 
 export default function ScienceView() {
   const { canState } = usePeripherals();
 
   const [tabContent, setTabContent] = useState(0);
 
+  const { robotCoordinates } = useGPS();
+
+  const [siteReadings, setSiteReadings] = useState([null, null, null])
+
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
 
-  // Lock science controls whenever autonomy is enabled
-  const controlsLocked = autonomyEnabled;
+  // Lock science controls whenever autonomy is enabled or Soft Stop is active
+  const controlsLocked = autonomyEnabled || softStopActive;
 
   const tabNum = [0, 1, 2];
 
   const handleChange = (event, newTabContent) => {
     if (controlsLocked) return;
     setTabContent(newTabContent);
+  };
+
+  const handleGetGNSS = () => {
+    if (controlsLocked) return;
+    if (!robotCoordinates.receive) return;
+
+    setSiteReadings((prev) => {
+      const next = [...prev];
+      next[tabContent] = {
+        lat: robotCoordinates.lat,
+        long: robotCoordinates.long,
+        accuracy_m: robotCoordinates.accuracy_m,
+        capturedAt: Date.now(),
+      };
+      return next;
+    });
   };
 
 const exampleSteps = [
@@ -60,7 +83,7 @@ const exampleSteps = [
           fontWeight={700}
           sx={{ textAlign: "center", mb: 1 }}
         >
-          Science controls are disabled while autonomy is active.
+          Science controls are disabled while autonomy or Soft Stop is active.
         </Typography>
       )}
 
@@ -151,8 +174,9 @@ const exampleSteps = [
         </Box>
 
         <Box sx={{ p: 1 }}>
-          {tabNum.map((num) =>
-            tabContent === num ? (
+          {tabNum.map((num) => {
+            const reading = siteReadings[num];
+            return tabContent === num ? (
               <div key={num}>
                 <div className="flex flex-row">
                   <Box sx={{ width: "60%", overflowX: "auto", minWidth: 0 }}>
@@ -165,12 +189,15 @@ const exampleSteps = [
                     </div>
                   </Box>
                   <Box className="flex flex-row" sx={{ ml: 4 }}>
-                    Coordinates: (_,_) <br /> Accuracy: ___ <br /> Range: ___{" "}
+                    Coordinates: ({reading ? `${reading.lat.toFixed(6)}, ${reading.long.toFixed(6)}` : "Not yet captured"}) <br />
+                    Accuracy: {reading && reading.accuracy_m ? `${reading.accuracy_m}m` : "---"} <br />
+                    Range: ___{" "}
                     <br />
 
                     <Button
                       variant="contained"
-                      disabled={controlsLocked}
+                      disabled={controlsLocked || !robotCoordinates.receive}
+                      onClick={handleGetGNSS}
                       sx={{
                         border: 1,
                         borderColor: "black",
@@ -188,8 +215,8 @@ const exampleSteps = [
 
                 <ScienceGraphTable controlsLocked={controlsLocked} />
               </div>
-            ) : null,
-          )}
+            ) : null;  
+          })}
         </Box>
       </Box>
     </div>
