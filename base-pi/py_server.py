@@ -7,6 +7,7 @@ import os
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
+from video import send_fake_video_stats, videoloop
 import sys, subprocess
 
 
@@ -142,6 +143,7 @@ gps_task_started = False
 robot_gps_task_started = False
 async_ssh_started = False
 cpu_started = False
+video_task_started = False
 
 
 register_metric_events(sio)
@@ -155,6 +157,7 @@ async def connect(sid,environ):
     global gps_task_started
     global robot_gps_task_started
     global numClients
+    global video_task_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -184,6 +187,12 @@ async def connect(sid,environ):
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
+    if not video_task_started:
+        video_task_started = True
+        if offline:
+            sio.start_background_task(send_fake_video_stats, sio)
+        else:
+            sio.start_background_task(videoloop, sio)
 
 
 @sio.event
