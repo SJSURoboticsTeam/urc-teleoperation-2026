@@ -17,14 +17,14 @@ export default function MenuPane(props) {
       onClose={props.toggleDrawer(false)}
       sx={{
         "& .MuiDrawer-paper": {
-          width: 240,
+          width: activePane == "notes" ? "min(100vw, 420px)" : 240,
           borderRadius: "12px",
         },
       }}
     >
       <Tabs value={activePane} onChange={handleChange}>
         <Tab label="Settings" value="settings"></Tab>
-        <Tab label="Menu" value="notes"></Tab>
+        <Tab label="Notes" value="notes"></Tab>
       </Tabs>
       {activePane == "settings" && <SettingsPane {...props} />}
       {activePane == "notes" && <NotesPane />}
