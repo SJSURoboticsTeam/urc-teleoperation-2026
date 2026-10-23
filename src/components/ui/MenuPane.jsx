@@ -1,7 +1,15 @@
-import { Drawer } from "@mui/material";
+import { Drawer, Tabs, Tab } from "@mui/material";
+import { useState } from "react";
 import SettingsPane from "../ui/SettingsPane.jsx";
+import NotesPane from "../notes/NotesPane.jsx";
 
 export default function MenuPane(props) {
+  const [activePane, setActivePane] = useState("settings");
+
+  const handleChange = (event, newValue) => {
+    setActivePane(newValue);
+  };
+
   return (
     <Drawer
       anchor="left"
@@ -14,7 +22,12 @@ export default function MenuPane(props) {
         },
       }}
     >
-      <SettingsPane {...props} />
+      <Tabs value={activePane} onChange={handleChange}>
+        <Tab label="Settings" value="settings"></Tab>
+        <Tab label="Menu" value="notes"></Tab>
+      </Tabs>
+      {activePane == "settings" && <SettingsPane {...props} />}
+      {activePane == "notes" && <NotesPane />}
     </Drawer>
   );
 }
