@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 
 
-export default function MenuPane(drawerOpen, toggleDrawer, navigate, selectedElements, changeElements, VIEW_TABS) {
+export default function MenuPane({drawerOpen, toggleDrawer, navigate, selectedElements, changeElements, VIEW_TABS}) {
   return <Drawer
     anchor="left"
     open={drawerOpen}
