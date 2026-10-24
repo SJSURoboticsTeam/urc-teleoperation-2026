@@ -262,7 +262,26 @@ async def send_arm_joint(serial_ports, joint_name, value):
         invalidate_arm_connection(serial_ports, f"send failure on {joint_name}")
         return False
 
+async def send_arm_homing(serial_ports):
+    """Start the universal arm homing sequence over CAN."""
+    arm_serial = serial_ports.get("arm")
+    if arm_serial is None:
+        print("[ARM] Homing ignored: arm not connected")
+        return False
 
+    # ID 0x111, DLC 1, command byte 0x11
+    can_msg = f"t{arm_send_ID['HOMING_SEQUENCE']}111\r"
+
+    try:
+        arm_debug_log("homing", f"[ARM TX] homing: {can_msg.strip()}")
+        log_frame("TX", can_msg.strip())
+        await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        return True
+    except Exception as e:
+        print(f"[ARM] Homing send failed: {e}")
+        invalidate_arm_connection(serial_ports, "homing send failure")
+        return False
+    
 _wrist_lock = asyncio.Lock()
 
 async def send_wrist_joints(serial_ports, pitch, roll):
@@ -572,6 +591,16 @@ def register_arm_events(sio, serial_ports):
             return "ERROR"
 
         ok = await request_arm_joint_position(serial_ports, joint_name)
+        return "OK" if ok else "ERROR"
+
+    @sio.event
+    async def armHoming(sid):
+        """Start the arm homing sequence."""
+        if is_soft_stopped():
+            print(f"[{sid}] armHoming ignored: soft stop active")
+            return "ERROR"
+
+        ok = await send_arm_homing(serial_ports)
         return "OK" if ok else "ERROR"
 
 async def request_arm_position_loop(serial_ports):

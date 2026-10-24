@@ -255,6 +255,19 @@ export default function ArmView() {
     pulseTx();
   };
 
+  const handleHoming = () => {
+    if (
+      controlsLocked ||
+      !serverConnected ||
+      canState.armState === "idle" ||
+      txon
+    ) {
+      return;
+    }
+
+    robotsocket.emit("armHoming");
+  };
+
   // When sliders are used, update armCommands state.
   const handleSliderChange = (key, value) => {
     if (controlsLocked) return;
@@ -454,13 +467,26 @@ export default function ArmView() {
           />
 
           {!txon && (
-            <Button
-              variant="contained"
-              onClick={handleManualUpdate}
-              disabled={controlsLocked || !serverConnected}
-            >
-              MANUAL TX
-            </Button>
+            <>
+              <Button
+                variant="contained"
+                onClick={handleManualUpdate}
+                disabled={controlsLocked || !serverConnected}
+              >
+                MANUAL TX
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleHoming}
+                disabled={
+                  controlsLocked ||
+                  !serverConnected ||
+                  canState.armState === "idle"
+                }
+              >
+                Homing
+              </Button>
+            </>
           )}
         </Box>
 
