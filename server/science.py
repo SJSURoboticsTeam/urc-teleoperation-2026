@@ -361,3 +361,31 @@ class ScienceSession:
     def close(self):
         for site_id in list(self._timers):
             self._cancel_timer(site_id)
+
+
+def register_science_events(sio, session):
+    """Commands reply with {status, reason}; the new state arrives via the scienceSession broadcast."""
+
+    def reply(result):
+        status, reason = result
+        return {"status": status, "reason": reason}
+
+    @sio.event
+    async def getScienceSession(sid):
+        return session.to_dict()
+
+    @sio.event
+    async def scienceStartSite(sid, data=None):
+        return reply(await session.start_site(data))
+
+    @sio.event
+    async def scienceStep(sid, data=None):
+        return reply(await session.step(data))
+
+    @sio.event
+    async def scienceStop(sid, data=None):
+        return reply(await session.stop(data))
+
+    @sio.event
+    async def scienceReset(sid, data=None):
+        return reply(await session.reset(data))

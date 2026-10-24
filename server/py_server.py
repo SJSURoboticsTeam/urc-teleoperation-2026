@@ -30,6 +30,9 @@ from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
 from drive_control import register_drive_control_events, release_drive_control
 from battery import send_fake_battery_data, get_battery_data
+from science import ScienceSession, register_science_events
+from science_log import ScienceLogger
+from science_mock import MockScienceLink
 
 
 print("\033[0m----------------")
@@ -113,6 +116,7 @@ serial_ports = {
     "scienceId" : "disconnect"
 }
 serial_console = SerialConsole()
+science_logger = None
 
 
 
@@ -162,6 +166,12 @@ def shutdown():
     except Exception:
         print("SCIENCE WAS NOT DISCONNECTED!!!")
         pass
+    #science log (records are already fsynced, this just closes the file)
+    try:
+        if science_logger is not None:
+            science_logger.close()
+    except Exception:
+        print("SCIENCE LOG WAS NOT CLOSED CLEANLY!!!")
     #gps
     try:
         if serial_ports["gps"]:
@@ -494,6 +504,20 @@ register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
+
+# Science: the session owns all state, the link is the swappable firmware seam
+async def emit_science_session(snapshot):
+    await sio.emit("scienceSession", snapshot)
+
+science_logger = ScienceLogger(is_mock=offline)
+science_session = ScienceSession(logger=science_logger, on_change=emit_science_session)
+if offline:
+    science_session.link = MockScienceLink(science_session)
+    print("Science link: MOCK")
+else:
+    # TODO(firmware): CanScienceLink goes here (science_can.py); until then Step replies ERROR
+    print("Science link: NONE (CAN link not implemented yet)")
+register_science_events(sio, science_session)
 
 # =================== Start Server ===================
 
