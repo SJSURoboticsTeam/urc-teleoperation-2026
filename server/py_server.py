@@ -33,6 +33,7 @@ from battery import send_fake_battery_data, get_battery_data
 from science import ScienceSession, register_science_events
 from science_log import ScienceLogger
 from science_mock import MockScienceLink
+from science_can import CanScienceLink, read_science_can_loop
 
 
 print("\033[0m----------------")
@@ -453,6 +454,7 @@ can_error_message_started_arm = False
 drive_task_started = False
 drive_heartbeat_started = False
 arm_task_started = False
+science_task_started = False
 gps_task_started = False
 arm_position_task_started = False
 async_ssh_started = False
@@ -515,8 +517,9 @@ if offline:
     science_session.link = MockScienceLink(science_session)
     print("Science link: MOCK")
 else:
-    # TODO(firmware): CanScienceLink goes here (science_can.py); until then Step replies ERROR
-    print("Science link: NONE (CAN link not implemented yet)")
+    science_link = CanScienceLink(serial_ports, science_session)
+    science_session.link = science_link
+    print("Science link: CAN")
 register_science_events(sio, science_session)
 
 # =================== Start Server ===================
@@ -529,6 +532,7 @@ async def connect(sid,environ):
     global drive_task_started
     global drive_heartbeat_started
     global arm_task_started
+    global science_task_started
     global gps_task_started
     global async_ssh_started
     global arm_position_task_started
@@ -554,6 +558,9 @@ async def connect(sid,environ):
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not science_task_started and not offline:
+        science_task_started = True
+        sio.start_background_task(read_science_can_loop, serial_ports, science_link)
     if not arm_position_task_started:
         arm_position_task_started = True
         # sio.start_background_task(request_arm_position_loop, serial_ports)

@@ -143,6 +143,20 @@ class ScienceSession:
         except Exception as e:
             print(f"[SCIENCE] log failed ({type_}): {e}")
 
+    def log_event(self, type_, **fields):
+        """For the link: log through the session's logger (errors are caught and printed)."""
+        self._log(type_, **fields)
+
+    def active_site_id(self):
+        """Id of the site in_progress/stepping, or None. For attributing firmware events."""
+        active = self._active_site()
+        return active.id if active else None
+
+    def pending_step(self):
+        """Index of the step in flight, or None. For acks that carry no step number."""
+        site = self._pending_site()
+        return site.pending_step if site else None
+
     def _parse_site(self, data):
         if not isinstance(data, dict):
             return None, "Missing site"
@@ -371,7 +385,7 @@ def register_science_events(sio, session):
         return {"status": status, "reason": reason}
 
     @sio.event
-    async def getScienceSession(sid):
+    async def getScienceSession(sid, data=None):
         return session.to_dict()
 
     @sio.event
