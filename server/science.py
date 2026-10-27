@@ -230,14 +230,13 @@ class ScienceSession:
         return "OK", None
 
     async def stop(self, data=None):
-        """Cancel any pending step and refuse start/step until reset."""
-        for site_id in list(self._timers):
-            self._cancel_timer(site_id)
+        """Refuse start/step until reset. A step already in flight is NOT cancelled.
+
+        Firmware's semi e-stop finishes the step it is doing and refuses the next one, so
+        pending_step and its timer stay: the in-flight FINISHED_STEP still counts, and if it
+        never arrives the normal step timeout reports it.
+        """
         active = self._active_site()
-        for site in self.sites:
-            if site.pending_step is not None:
-                site.pending_step = None
-                site.status = "in_progress"
         self.stopped = True
         self._log("estop", site=active.id if active else None)
 
@@ -264,7 +263,7 @@ class ScienceSession:
                 if site is None:
                     return "DENIED", reason
                 if site.status == "stepping":
-                    return "DENIED", "Step in progress; stop first"
+                    return "DENIED", "Step in progress; wait for it to finish"
 
         self.stopped = False
         if site is not None:

@@ -43,7 +43,7 @@ class MockScienceLink:
         return True
 
     async def send_stop(self):
-        self.cancel_all()
+        # like firmware's semi e-stop: the step in flight still finishes, so nothing is cancelled
         return True
 
     def cancel_all(self):
