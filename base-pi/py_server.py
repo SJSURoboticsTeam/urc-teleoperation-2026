@@ -1,4 +1,5 @@
 from can_serial import CanSerial
+from serial.tools import list_ports
 import socketio
 import uvicorn
 import metrics
@@ -153,7 +154,7 @@ async def getCanInfo(sid):
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
-    'antennaId' : serial_ports["driveId"],
+    'antennaId' : serial_ports["antennaId"],
     'gpsId' : serial_ports["gpsId"],
     }
     return data

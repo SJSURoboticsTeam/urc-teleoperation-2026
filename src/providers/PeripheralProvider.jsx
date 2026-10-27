@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSnackbar } from "notistack";
-import { robotsocket } from "../components/socket.io/socket";
+import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 import Button from "@mui/material/Button";
 
@@ -72,10 +72,12 @@ export const PeripheralProvider = ({ children }) => {
   });
 
     const [basecanState, setbasecanState] = useState({
-    rotationState: "idle", // idle, connecting, active
+    antennaState: "idle", // idle, connecting, active
+    antennaId: "disconnect", // selected can id in dropdown or disconnect
+    gpsState: "idle", // idle, connecting, active
+    gpsId: "disconnect", // selected can id in dropdown or disconnect
     loading: true, // lock buttons, dropdowns when refreshing can data
     canIds: [], // array with every possible serial device
-    rotationId: "disconnect", // selected can id in dropdown or disconnect
   });
 
   const canWarningSnackbarIds = useRef(new Map());
@@ -119,6 +121,10 @@ export const PeripheralProvider = ({ children }) => {
       ...prev,
       loading: true,
     }));
+      setbasecanState((prev) => ({
+      ...prev,
+      loading: true,
+    }));
     robotsocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setservercanState((prev) => ({
@@ -133,6 +139,19 @@ export const PeripheralProvider = ({ children }) => {
         driveState: data["driveId"] !== "disconnect" ? "active" : "idle",
         armState: data["armId"] !== "disconnect" ? "active" : "idle",
         scienceState: data["scienceId"] !== "disconnect" ? "active" : "idle",
+        gpsState: data["gpsId"] !== "disconnect" ? "active" : "idle",
+        loading: false,
+      }));
+    });
+      basesocket.emit("getCanInfo", (data) => {
+      //console.log(data);
+      setbasecanState((prev) => ({
+        ...prev,
+        canIds: data["canIds"],
+        antennaId: data["antennaId"],
+        gpsId: data["gpsId"],
+        // assignment if connected or not by text
+        antennaState: data["antennaId"] !== "disconnect" ? "active" : "idle",
         gpsState: data["gpsId"] !== "disconnect" ? "active" : "idle",
         loading: false,
       }));
@@ -409,8 +428,10 @@ export const PeripheralProvider = ({ children }) => {
 
   const value = {
     servercanState,
+    basecanState,
     requestCanInfo,
     setservercanState,
+    setbasecanState,
     connectDrive,
     disconnectDrive,
     connectArm,

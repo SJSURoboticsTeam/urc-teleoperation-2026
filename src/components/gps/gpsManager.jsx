@@ -17,14 +17,10 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
 
   const {
     servercanState,
+    basecanState,
     requestCanInfo,
     setservercanState,
-    connectDrive,
-    disconnectDrive,
-    connectArm,
-    disconnectArm,
-    connectScience,
-    disconnectScience,
+    setbasecanState,
     connectGPS,
     disconnectGPS,
     disconnectAll,
@@ -117,7 +113,7 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
             labelId="gps-dropdown-peripheral-id"
             disabled={servercanState.loading || servercanState.gpsState != "idle"}
             onChange={(event) =>
-              setservercanState((prev) => ({
+              setbasecanState((prev) => ({
                 ...prev,
                 gpsId: event.target.value,
               }))
@@ -147,6 +143,52 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           loading={servercanState.gpsState == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
           onClick={servercanState.gpsState == "idle" ? connectGPS : disconnectGPS}
+          variant="contained"
+        >
+          {servercanState.gpsState == "idle" ? (
+            <ElectricalServicesIcon />
+          ) : (
+            <EjectIcon />
+          )}
+        </Button>
+      </Box>
+            {/* ANTENNA CONNECTION */}
+      <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
+        <FormControl sx={{ flex: 1 }} size="small">
+          <InputLabel id="gps-dropdown-peripheral-id">BASE</InputLabel>
+          <Select
+            value={basecanState.gpsId}
+            label="Antenna"
+            labelId="antenna-dropdown-peripheral-id"
+            disabled={basecanState.loading || basecanState.gpsState != "idle"}
+            onChange={(event) =>
+              setbasecanState((prev) => ({
+                ...prev,
+                gpsId: event.target.value,
+              }))
+            }
+            fullWidth
+          >
+            <MenuItem value={"disconnect"}>Disconnect</MenuItem>
+            {basecanState.canIds?.map((canId) => (
+              <MenuItem
+                disabled={
+                  canId === basecanState.gpsId
+                }
+                key={canId}
+                value={canId}
+              >
+                {canId}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Button
+          color={basecanState.gpsState === "idle" ? "success" : "error"}
+          disabled={basecanState.loading || basecanState.gpsId == "disconnect"}
+          loading={basecanState.gpsState == "connecting"}
+          sx={{ width: 50, minWidth: 0 }}
+          onClick={basecanState.gpsState == "idle" ? connectGPS : disconnectGPS}
           variant="contained"
         >
           {servercanState.gpsState == "idle" ? (

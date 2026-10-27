@@ -11,22 +11,30 @@ import EjectIcon from "@mui/icons-material/Eject";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 import { useSerial } from "../../contexts/SerialContext";
 
+// Read shared connection state from the centralized context
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 export default function PeripheralManager({ openPane }) {
   const {
     servercanState,
+    basecanState,
     requestCanInfo,
     setservercanState,
+    setbasecanState,
     connectDrive,
     disconnectDrive,
     connectArm,
     disconnectArm,
     connectScience,
     disconnectScience,
-    connectGPS,
-    disconnectGPS,
     disconnectAll,
   } = usePeripherals();
   const { serialState, refresh } = useSerial();
+
+    const {
+      robotConnected: isRobotConnected,
+      baseConnected: isBaseConnected,
+    } = useConnectionStatus();
 
   useEffect(() => {
     if (openPane == "Backend") {
@@ -71,7 +79,8 @@ export default function PeripheralManager({ openPane }) {
           STOP ALL
         </Button>
       </Box>
-
+         {(isRobotConnected) ? (
+          <div>
       {/* DRIVE CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
@@ -226,6 +235,58 @@ export default function PeripheralManager({ openPane }) {
           )}
         </Button>
       </Box>
+        </div>) : null }
+        { isBaseConnected ? (
+       <div>   
+      {/* ANTENNA CAN CONNECTION */}
+      <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
+        <FormControl sx={{ flex: 1 }} size="small">
+          <InputLabel id="antenna-dropdown-peripheral-id">ANTENNA</InputLabel>
+          <Select
+            value={basecanState.antennaId}
+            label="ANTENNA"
+            labelId="antenna-dropdown-peripheral-id"
+            disabled={basecanState.loading || basecanState.antennaState != "idle"}
+            onChange={(event) =>
+              setbasecanState((prev) => ({
+                ...prev,
+                antennaId: event.target.value,
+              }))
+            }
+            fullWidth
+          >
+            <MenuItem value={"disconnect"}>Disconnect</MenuItem>
+            {basecanState.canIds?.map((canId) => (
+              <MenuItem
+                disabled={
+                  canId === basecanState.GPSId
+                }
+                key={canId}
+                value={canId}
+              >
+                {canId}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Button
+          color={basecanState.antennaState === "idle" ? "success" : "error"}
+          disabled={basecanState.loading || basecanState.antennaId == "disconnect"}
+          loading={basecanState.antennaState == "connecting"}
+          sx={{ width: 50, minWidth: 0 }}
+          onClick={
+            basecanState.antennaState == "idle" ? connectScience : disconnectScience
+          }
+          variant="contained"
+        >
+          {servercanState.antennaState == "idle" ? (
+            <ElectricalServicesIcon />
+          ) : (
+            <EjectIcon />
+          )}
+        </Button>
+      </Box>
+        </div>) : null }
     </div>
   );
 }
