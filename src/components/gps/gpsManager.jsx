@@ -103,13 +103,13 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           STOP ALL
         </Button>
       </Box>
-      {/* GPS CONNECTION */}
+      {/* ROVER GPS CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="gps-dropdown-peripheral-id">ROVER</InputLabel>
           <Select
             value={servercanState.gpsId}
-            label="Rover"
+            label="ROVER"
             labelId="gps-dropdown-peripheral-id"
             disabled={servercanState.loading || servercanState.gpsState != "idle"}
             onChange={(event) =>
@@ -152,13 +152,13 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           )}
         </Button>
       </Box>
-            {/* ANTENNA CONNECTION */}
+            {/* BASE ANTENNA CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="gps-dropdown-peripheral-id">BASE</InputLabel>
           <Select
             value={basecanState.gpsId}
-            label="Antenna"
+            label="BASE"
             labelId="antenna-dropdown-peripheral-id"
             disabled={basecanState.loading || basecanState.gpsState != "idle"}
             onChange={(event) =>

@@ -6,10 +6,8 @@ import Button from "@mui/material/Button";
 
 function ReconnectAction({
   snackbarId,
-  disconnectDrive,
-  connectDrive,
-  disconnectArm,
-  connectArm,
+  disconnectRoverPeripheral, 
+  connectRoverPeripheral,
   clearCanWarning,
   canId,
 }) {
@@ -19,15 +17,8 @@ function ReconnectAction({
     setLoading(true);
 
     try {
-      if (canId === "drive") {
-        await disconnectDrive();
-        await connectDrive();
-      } else if (canId === "arm") {
-        await disconnectArm();
-        await connectArm();
-      } else {
-        throw new Error(`Unknown CAN target: ${canId}`);
-      }
+      disconnectRoverPeripheral(canId);
+      connectRoverPeripheral(canId);
       clearCanWarning(canId, snackbarId);
     } catch (error) {
       console.error(error);
@@ -58,20 +49,28 @@ export const PeripheralProvider = ({ children }) => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
   const [servercanState, setservercanState] = useState({
-    driveState: "idle", // idle, connecting, active
-    armState: "idle", // idle, connecting, active
-    scienceState: "idle", // idle, connecting, active
-    gpsState: "idle", // idle, connecting, active
+    drive: {
+      id: "disconnect", // selected can id in dropdown or disconnect
+      state: "idle", // idle, connecting, active
+    },
+    arm: {
+      id: "disconnect", // selected can id in dropdown or disconnect
+      state: "idle", // idle, connecting, active
+    },
+    science: {
+      id: "disconnect", // selected can id in dropdown or disconnect
+      state: "idle", // idle, connecting, active
+    },
+    gps: {
+      id: "disconnect", // selected can id in dropdown or disconnect
+      state: "idle", // idle, connecting, active
+    },
+    canIds: [], // array with every possible serial device
     uartMode: "CAN/UART", // CAN/UART (??? state), CAN, UART
     loading: true, // lock buttons, dropdowns when refreshing can data
-    canIds: [], // array with every possible serial device
-    driveId: "disconnect", // selected can id in dropdown or disconnect
-    armId: "disconnect", // selected can id in dropdown or disconnect
-    scienceId: "disconnect", // selected can id in dropdown or disconnect
-    gpsId: "disconnect", // selected can id in dropdown or disconnect
   });
 
-    const [basecanState, setbasecanState] = useState({
+  const [basecanState, setbasecanState] = useState({
     antennaState: "idle", // idle, connecting, active
     antennaId: "disconnect", // selected can id in dropdown or disconnect
     gpsState: "idle", // idle, connecting, active
@@ -121,7 +120,7 @@ export const PeripheralProvider = ({ children }) => {
       ...prev,
       loading: true,
     }));
-      setbasecanState((prev) => ({
+    setbasecanState((prev) => ({
       ...prev,
       loading: true,
     }));
@@ -143,7 +142,7 @@ export const PeripheralProvider = ({ children }) => {
         loading: false,
       }));
     });
-      basesocket.emit("getCanInfo", (data) => {
+    basesocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setbasecanState((prev) => ({
         ...prev,
@@ -175,212 +174,95 @@ export const PeripheralProvider = ({ children }) => {
     };
   }, [requestCanInfo, clearCanWarning]);
 
-  const connectDrive = useCallback(() => {
-    setservercanState((prev) => ({
-      ...prev,
-      driveState: "connecting",
-    }));
-    clearCanWarning("drive");
-    return new Promise((resolve, reject) => {
-      console.log("Connecting Drive, Sending id " + servercanState.driveId);
-      robotsocket.emit("connectDrive", servercanState.driveId, (response) => {
-        console.log("RESPONSE:" + response);
-        if (response === "OK") {
-          setservercanState((prev) => ({
-            ...prev,
-            driveState: "active",
-          }));
-          resolve();
-        } else {
-          enqueueSnackbar("Drive didn't connect. Refreshing...", {
-            variant: "error",
-          });
-          requestCanInfo();
-          reject(new Error("Drive connection failed"));
-        }
+  const connectRoverPeripheral = useCallback(
+    (id) => {
+      setservercanState((current) => ({
+        ...current,
+        id: {
+          ...current.id,
+          state: "connecting",
+        },
+      }));
+      clearCanWarning(id);
+      return new Promise((resolve, reject) => {
+        console.log(
+          "Connecting" + id + " , Sending id " + servercanState.drive.id,
+        );
+        robotsocket.emit(
+          "connectPeripheral",
+          id,
+          servercanState.drive.id,
+          (response) => {
+            console.log("RESPONSE:" + response);
+            if (response === "OK") {
+              setservercanState((current) => ({
+                ...current,
+                id: {
+                  ...current.drive,
+                  state: "active",
+                },
+              }));
+              resolve();
+            } else {
+              enqueueSnackbar(id + " didn't connect. Refreshing...", {
+                variant: "error",
+              });
+              requestCanInfo();
+              reject(new Error(id + "connection failed"));
+            }
+          },
+        );
       });
-    });
-  }, [servercanState.driveId, clearCanWarning, enqueueSnackbar, requestCanInfo]);
+    },
+    [servercanState, clearCanWarning, enqueueSnackbar, requestCanInfo],
+  );
 
-  const disconnectDrive = useCallback(() => {
-    setservercanState((prev) => ({
-      ...prev,
-      driveState: "connecting",
-    }));
-    clearCanWarning("drive");
+    const disconnectRoverPeripheral = useCallback((id) => {
+      setservercanState((current) => ({
+        ...current,
+        id: {
+          ...current.id,
+          state: "connecting",
+        },
+      }));
+    clearCanWarning(id);
     return new Promise((resolve, reject) => {
       console.log("Disconnecting drive");
       robotsocket.emit("disconnectDrive", (response) => {
         console.log("RESPONSE:" + response);
         if (response === "OK") {
-          setservercanState((prev) => ({
-            ...prev,
-            driveState: "idle",
-          }));
+      setservercanState((current) => ({
+        ...current,
+        id: {
+          ...current.id,
+          state: "idle",
+        },
+      }));
           resolve();
         } else {
-          enqueueSnackbar("Drive didn't disconnect. Refreshing...", {
+          enqueueSnackbar(id + " didn't disconnect. Refreshing...", {
             variant: "error",
           });
           requestCanInfo();
-          reject(new Error("Drive disconnection failed"));
+          reject(new Error(id + "disconnection failed"));
         }
       });
     });
   }, [enqueueSnackbar, clearCanWarning, requestCanInfo]);
 
-  const connectArm = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      setservercanState((prev) => ({
-        ...prev,
-        armState: "connecting",
-      }));
-      clearCanWarning("arm");
-      console.log("Connecting Arm, Sending id " + servercanState.armId);
-      robotsocket.emit("connectArm", servercanState.armId, (response) => {
-        console.log("RESPONSE:" + response);
-        if (response === "OK") {
-          setservercanState((prev) => ({
-            ...prev,
-            armState: "active",
-          }));
-          resolve();
-        } else {
-          enqueueSnackbar("Arm didn't connect. Refreshing...", {
-            variant: "error",
-          });
-          requestCanInfo();
-          reject(new Error("Arm connection failed"));
-        }
-      });
-    });
-  }, [servercanState.armId, clearCanWarning, enqueueSnackbar, requestCanInfo]);
-
-  const disconnectArm = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      setservercanState((prev) => ({
-        ...prev,
-        armState: "connecting",
-      }));
-      clearCanWarning("arm");
-      console.log("Disconnecting Arm");
-      robotsocket.emit("disconnectArm", (response) => {
-        console.log("RESPONSE:" + response);
-        if (response === "OK") {
-          setservercanState((prev) => ({
-            ...prev,
-            armState: "idle",
-          }));
-          resolve();
-        } else {
-          enqueueSnackbar("Arm didn't disconnect. Refreshing...", {
-            variant: "error",
-          });
-          requestCanInfo();
-          reject(new Error("Arm disconnection failed"));
-        }
-      });
-    });
-  }, [clearCanWarning, enqueueSnackbar, requestCanInfo]);
-
-  function connectScience() {
-    setservercanState((prev) => ({
-      ...prev,
-      scienceState: "connecting",
-    }));
-    console.log("Connecting Science, Sending id " + servercanState.scienceId);
-    robotsocket.emit("connectScience", servercanState.scienceId, (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setservercanState((prev) => ({
-          ...prev,
-          scienceState: "active",
-        }));
-      } else {
-        enqueueSnackbar("Science didn't connect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
-    });
-  }
-  function disconnectScience() {
-    setservercanState((prev) => ({
-      ...prev,
-      scienceState: "connecting",
-    }));
-    console.log("Disconnecting Science");
-    robotsocket.emit("disconnectScience", (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setservercanState((prev) => ({
-          ...prev,
-          scienceState: "idle",
-        }));
-      } else {
-        enqueueSnackbar("Science didn't disconnect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
-    });
-  }
-
-  function connectGPS() {
-    setservercanState((prev) => ({
-      ...prev,
-      gpsState: "connecting",
-    }));
-    console.log("Connecting GPS, Sending id " + servercanState.gpsId);
-    robotsocket.emit("connectGPS", servercanState.gpsId, (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setservercanState((prev) => ({
-          ...prev,
-          gpsState: "active",
-        }));
-      } else {
-        enqueueSnackbar("GPS didn't connect. Refreshing...", {
-          variant: "error",
-        });
-        requestCanInfo();
-      }
-    });
-  }
-  function disconnectGPS() {
-    setservercanState((prev) => ({
-      ...prev,
-      gpsState: "connecting",
-    }));
-    console.log("Disconnecting GPS");
-    robotsocket.emit("disconnectGPS", (response) => {
-      console.log("RESPONSE:" + response);
-      if (response === "OK") {
-        setservercanState((prev) => ({
-          ...prev,
-          gpsState: "idle",
-        }));
-      } else {
-        enqueueSnackbar(
-          "GPS didn't disconnect, auto-updating to current state",
-          { variant: "error" },
-        );
-        requestCanInfo();
-      }
-    });
-  }
+  
   function disconnectAll() {
-    if (servercanState.driveState != "idle") {
-      disconnectDrive();
+    if (servercanState.drive.state != "idle") {
+      disconnectRoverPeripheral("drive");
     }
-    if (servercanState.armState != "idle") {
-      disconnectArm();
+    if (servercanState.arm.state != "idle") {
+      disconnectRoverPeripheral("arm");
     }
-    if (servercanState.scienceState != "idle") {
-      disconnectScience();
+    if (servercanState.science.state != "idle") {
+      disconnectRoverPeripheral("science");
     }
-    if (servercanState.gpsState != "idle") {
-      disconnectGPS();
+    if (servercanState.gps.state != "idle") {
+      disconnectRoverPeripheral("gps");
     }
     console.log("ALL have been disconnected.");
   }
@@ -398,11 +280,8 @@ export const PeripheralProvider = ({ children }) => {
         action: (snackbarId) => (
           <ReconnectAction
             snackbarId={snackbarId}
-            disconnectDrive={disconnectDrive}
-            connectDrive={connectDrive}
-            clearCanWarning={clearCanWarning}
-            connectArm={connectArm}
-            disconnectArm={disconnectArm}
+            connectRoverPeripheral={connectRoverPeripheral}
+            disconnectRoverPeripheral={disconnectRoverPeripheral}
             canId={canId}
           />
         ),
@@ -419,10 +298,8 @@ export const PeripheralProvider = ({ children }) => {
     };
   }, [
     enqueueSnackbar,
-    disconnectDrive,
-    connectDrive,
-    disconnectArm,
-    connectArm,
+    connectRoverPeripheral, 
+    disconnectRoverPeripheral,
     clearCanWarning,
   ]);
 
@@ -432,14 +309,8 @@ export const PeripheralProvider = ({ children }) => {
     requestCanInfo,
     setservercanState,
     setbasecanState,
-    connectDrive,
-    disconnectDrive,
-    connectArm,
-    disconnectArm,
-    connectScience,
-    disconnectScience,
-    connectGPS,
-    disconnectGPS,
+    connectRoverPeripheral,
+    disconnectRoverPeripheral,
     disconnectAll,
   };
 
