@@ -9,7 +9,7 @@ import { useDriveControl } from "../contexts/DriveControlContext";
 const Map = lazy(() => import("../components/ui/Map"));
 
 export default function DriveComponents() {
-  const { canState } = usePeripherals();
+  const { servercanState } = usePeripherals();
   const containerRef = useRef(null);
 
   // Read global autonomy state
@@ -18,7 +18,7 @@ export default function DriveComponents() {
   const { hasControl } = useDriveControl();
   const controlsLocked = autonomyEnabled || softStopActive;
   const driveLocked = controlsLocked || !hasControl;
-  const showCanWarning = canState.driveState == "idle" && !controlsLocked;
+  const showCanWarning = servercanState.driveState == "idle" && !controlsLocked;
   const showControlWarning = !controlsLocked && !hasControl;
 
   return (
@@ -37,7 +37,7 @@ export default function DriveComponents() {
           >
             {showCanWarning && (
               <Box component="span" sx={{ color: "error.main" }}>
-                You don't have {canState.uartMode} connected!
+                You don't have {servercanState.uartMode} connected!
               </Box>
             )}
             {showCanWarning && showControlWarning && (

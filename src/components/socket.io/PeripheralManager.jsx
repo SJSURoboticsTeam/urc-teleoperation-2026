@@ -13,9 +13,9 @@ import { useSerial } from "../../contexts/SerialContext";
 
 export default function PeripheralManager({ openPane }) {
   const {
-    canState,
+    servercanState,
     requestCanInfo,
-    setcanState,
+    setservercanState,
     connectDrive,
     disconnectDrive,
     connectArm,
@@ -33,7 +33,7 @@ export default function PeripheralManager({ openPane }) {
       requestCanInfo(); // autoload can serialState
       refresh() // update serial
     } else {
-      setcanState((prev) => ({
+      setservercanState((prev) => ({
         ...prev,
         // lock so next time so reload has to happen first (and unlock)
         loading: true,
@@ -49,7 +49,7 @@ export default function PeripheralManager({ openPane }) {
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
         <Button
           variant="contained"
-          loading={canState.loading}
+          loading={servercanState.loading}
           onClick={requestCanInfo}
           sx={{ width: 140 }}
         >
@@ -57,14 +57,14 @@ export default function PeripheralManager({ openPane }) {
         </Button>
         <Button
           disabled={
-            canState.driveState != "active" &&
-            canState.armState != "active" &&
-            canState.scienceState != "active" &&
-            canState.gpsState != "active"
+            servercanState.driveState != "active" &&
+            servercanState.armState != "active" &&
+            servercanState.scienceState != "active" &&
+            servercanState.gpsState != "active"
           }
           color="error"
           variant="contained"
-          loading={canState.loading}
+          loading={servercanState.loading}
           onClick={disconnectAll}
           sx={{ width: 140 }}
         >
@@ -76,15 +76,15 @@ export default function PeripheralManager({ openPane }) {
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="drive-dropdown-peripheral-id">
-            DRIVE over {canState.uartMode}
+            DRIVE over {servercanState.uartMode}
           </InputLabel>
           <Select
-            value={canState.driveId}
-            label={"DRIVE over " + canState.uartMode}
+            value={servercanState.driveId}
+            label={"DRIVE over " + servercanState.uartMode}
             labelId="drive-dropdown-peripheral-id"
-            disabled={canState.loading || canState.driveState != "idle"}
+            disabled={servercanState.loading || servercanState.driveState != "idle"}
             onChange={(event) =>
-              setcanState((prev) => ({
+              setservercanState((prev) => ({
                 ...prev,
                 driveId: event.target.value,
               }))
@@ -92,12 +92,12 @@ export default function PeripheralManager({ openPane }) {
             fullWidth
           >
             <MenuItem value={"disconnect"}>Disconnect</MenuItem>
-            {canState.canIds?.map((canId) => (
+            {servercanState.canIds?.map((canId) => (
               <MenuItem
                 disabled={
-                  canId === canState.armId ||
-                  canId === canState.scienceId ||
-                  canId === canState.gpsId ||
+                  canId === servercanState.armId ||
+                  canId === servercanState.scienceId ||
+                  canId === servercanState.gpsId ||
                   canId === serialState.portId
                 }
                 key={canId}
@@ -109,16 +109,16 @@ export default function PeripheralManager({ openPane }) {
           </Select>
         </FormControl>
         <Button
-          color={canState.driveState === "idle" ? "success" : "error"}
-          disabled={canState.loading || canState.driveId == "disconnect"}
-          loading={canState.driveState == "connecting"}
+          color={servercanState.driveState === "idle" ? "success" : "error"}
+          disabled={servercanState.loading || servercanState.driveId == "disconnect"}
+          loading={servercanState.driveState == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
           onClick={
-            canState.driveState == "idle" ? connectDrive : disconnectDrive
+            servercanState.driveState == "idle" ? connectDrive : disconnectDrive
           }
           variant="contained"
         >
-          {canState.driveState == "idle" ? (
+          {servercanState.driveState == "idle" ? (
             <ElectricalServicesIcon />
           ) : (
             <EjectIcon />
@@ -131,12 +131,12 @@ export default function PeripheralManager({ openPane }) {
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="arm-dropdown-peripheral-id">ARM</InputLabel>
           <Select
-            value={canState.armId}
+            value={servercanState.armId}
             label="ARM"
             labelId="arm-dropdown-peripheral-id"
-            disabled={canState.loading || canState.armState != "idle"}
+            disabled={servercanState.loading || servercanState.armState != "idle"}
             onChange={(event) =>
-              setcanState((prev) => ({
+              setservercanState((prev) => ({
                 ...prev,
                 armId: event.target.value,
               }))
@@ -144,12 +144,12 @@ export default function PeripheralManager({ openPane }) {
             fullWidth
           >
             <MenuItem value={"disconnect"}>Disconnect</MenuItem>
-            {canState.canIds?.map((canId) => (
+            {servercanState.canIds?.map((canId) => (
               <MenuItem
                 disabled={
-                  canId === canState.driveId ||
-                  canId === canState.scienceId ||
-                  canId === canState.gpsId ||
+                  canId === servercanState.driveId ||
+                  canId === servercanState.scienceId ||
+                  canId === servercanState.gpsId ||
                   canId === serialState.portId
                 }
                 key={canId}
@@ -161,14 +161,14 @@ export default function PeripheralManager({ openPane }) {
           </Select>
         </FormControl>
         <Button
-          color={canState.armState === "idle" ? "success" : "error"}
-          disabled={canState.loading || canState.armId == "disconnect"}
-          loading={canState.armState == "connecting"}
+          color={servercanState.armState === "idle" ? "success" : "error"}
+          disabled={servercanState.loading || servercanState.armId == "disconnect"}
+          loading={servercanState.armState == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
-          onClick={canState.armState == "idle" ? connectArm : disconnectArm}
+          onClick={servercanState.armState == "idle" ? connectArm : disconnectArm}
           variant="contained"
         >
-          {canState.armState == "idle" ? (
+          {servercanState.armState == "idle" ? (
             <ElectricalServicesIcon />
           ) : (
             <EjectIcon />
@@ -180,12 +180,12 @@ export default function PeripheralManager({ openPane }) {
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="science-dropdown-peripheral-id">SCIENCE</InputLabel>
           <Select
-            value={canState.scienceId}
+            value={servercanState.scienceId}
             label="SCIENCE"
             labelId="science-dropdown-peripheral-id"
-            disabled={canState.loading || canState.scienceState != "idle"}
+            disabled={servercanState.loading || servercanState.scienceState != "idle"}
             onChange={(event) =>
-              setcanState((prev) => ({
+              setservercanState((prev) => ({
                 ...prev,
                 scienceId: event.target.value,
               }))
@@ -193,12 +193,12 @@ export default function PeripheralManager({ openPane }) {
             fullWidth
           >
             <MenuItem value={"disconnect"}>Disconnect</MenuItem>
-            {canState.canIds?.map((canId) => (
+            {servercanState.canIds?.map((canId) => (
               <MenuItem
                 disabled={
-                  canId === canState.driveId ||
-                  canId === canState.armId ||
-                  canId === canState.gpsId ||
+                  canId === servercanState.driveId ||
+                  canId === servercanState.armId ||
+                  canId === servercanState.gpsId ||
                   canId === serialState.portId
                 }
                 key={canId}
@@ -210,16 +210,16 @@ export default function PeripheralManager({ openPane }) {
           </Select>
         </FormControl>
         <Button
-          color={canState.scienceState === "idle" ? "success" : "error"}
-          disabled={canState.loading || canState.scienceId == "disconnect"}
-          loading={canState.scienceState == "connecting"}
+          color={servercanState.scienceState === "idle" ? "success" : "error"}
+          disabled={servercanState.loading || servercanState.scienceId == "disconnect"}
+          loading={servercanState.scienceState == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
           onClick={
-            canState.scienceState == "idle" ? connectScience : disconnectScience
+            servercanState.scienceState == "idle" ? connectScience : disconnectScience
           }
           variant="contained"
         >
-          {canState.scienceState == "idle" ? (
+          {servercanState.scienceState == "idle" ? (
             <ElectricalServicesIcon />
           ) : (
             <EjectIcon />
@@ -231,12 +231,12 @@ export default function PeripheralManager({ openPane }) {
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="gps-dropdown-peripheral-id">GPS</InputLabel>
           <Select
-            value={canState.gpsId}
+            value={servercanState.gpsId}
             label="GPS"
             labelId="gps-dropdown-peripheral-id"
-            disabled={canState.loading || canState.gpsState != "idle"}
+            disabled={servercanState.loading || servercanState.gpsState != "idle"}
             onChange={(event) =>
-              setcanState((prev) => ({
+              setservercanState((prev) => ({
                 ...prev,
                 gpsId: event.target.value,
               }))
@@ -244,12 +244,12 @@ export default function PeripheralManager({ openPane }) {
             fullWidth
           >
             <MenuItem value={"disconnect"}>Disconnect</MenuItem>
-            {canState.canIds?.map((canId) => (
+            {servercanState.canIds?.map((canId) => (
               <MenuItem
                 disabled={
-                  canId === canState.driveId ||
-                  canId === canState.armId ||
-                  canId === canState.scienceId ||
+                  canId === servercanState.driveId ||
+                  canId === servercanState.armId ||
+                  canId === servercanState.scienceId ||
                   canId === serialState.portId
                 }
                 key={canId}
@@ -261,14 +261,14 @@ export default function PeripheralManager({ openPane }) {
           </Select>
         </FormControl>
         <Button
-          color={canState.gpsState === "idle" ? "success" : "error"}
-          disabled={canState.loading || canState.gpsId == "disconnect"}
-          loading={canState.gpsState == "connecting"}
+          color={servercanState.gpsState === "idle" ? "success" : "error"}
+          disabled={servercanState.loading || servercanState.gpsId == "disconnect"}
+          loading={servercanState.gpsState == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
-          onClick={canState.gpsState == "idle" ? connectGPS : disconnectGPS}
+          onClick={servercanState.gpsState == "idle" ? connectGPS : disconnectGPS}
           variant="contained"
         >
-          {canState.gpsState == "idle" ? (
+          {servercanState.gpsState == "idle" ? (
             <ElectricalServicesIcon />
           ) : (
             <EjectIcon />
