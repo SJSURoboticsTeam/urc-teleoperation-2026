@@ -89,10 +89,10 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
         </Button>
         <Button
           disabled={
-            servercanState.driveState != "active" &&
-            servercanState.armState != "active" &&
-            servercanState.scienceState != "active" &&
-            servercanState.gpsState != "active"
+            servercanState.drive.state != "active" &&
+            servercanState.arm.state != "active" &&
+            servercanState.science.state != "active" &&
+            servercanState.gps.state != "active"
           }
           color="error"
           variant="contained"
@@ -108,26 +108,29 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="gps-dropdown-peripheral-id">ROVER</InputLabel>
           <Select
-            value={servercanState.gpsId}
+            value={servercanState.gps.id}
             label="ROVER"
             labelId="gps-dropdown-peripheral-id"
-            disabled={servercanState.loading || servercanState.gpsState != "idle"}
-            onChange={(event) =>
-              setbasecanState((prev) => ({
-                ...prev,
-                gpsId: event.target.value,
-              }))
-            }
+            disabled={servercanState.loading || servercanState.gps.state != "idle"}
+                  onChange={(event) =>
+                    setservercanState((current) => ({
+                      ...current,
+                      gps: {
+                        ...current.id,
+                        "id": event.target.value,
+                      },
+                    }))
+                  }
             fullWidth
           >
             <MenuItem value={"disconnect"}>Disconnect</MenuItem>
             {servercanState.canIds?.map((canId) => (
               <MenuItem
                 disabled={
-                  canId === servercanState.driveId ||
-                  canId === servercanState.armId ||
-                  canId === servercanState.scienceId ||
-                  canId === serialState.portId
+                  canId === servercanState.drive.id ||
+                  canId === servercanState.arm.id ||
+                  canId === servercanState.science.id ||
+                  canId === serialState.port.id
                 }
                 key={canId}
                 value={canId}
@@ -138,14 +141,14 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           </Select>
         </FormControl>
         <Button
-          color={servercanState.gpsState === "idle" ? "success" : "error"}
-          disabled={servercanState.loading || servercanState.gpsId == "disconnect"}
-          loading={servercanState.gpsState == "connecting"}
+          color={servercanState.gps.state === "idle" ? "success" : "error"}
+          disabled={servercanState.loading || servercanState.gps.id == "disconnect"}
+          loading={servercanState.gps.state == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
-          onClick={servercanState.gpsState == "idle" ? connectGPS : disconnectGPS}
+          onClick={servercanState.gps.state == "idle" ? connectGPS : disconnectGPS}
           variant="contained"
         >
-          {servercanState.gpsState == "idle" ? (
+          {servercanState.gps.state == "idle" ? (
             <ElectricalServicesIcon />
           ) : (
             <EjectIcon />
@@ -157,23 +160,26 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
         <FormControl sx={{ flex: 1 }} size="small">
           <InputLabel id="gps-dropdown-peripheral-id">BASE</InputLabel>
           <Select
-            value={basecanState.gpsId}
+            value={basecanState.gps.id}
             label="BASE"
             labelId="antenna-dropdown-peripheral-id"
-            disabled={basecanState.loading || basecanState.gpsState != "idle"}
-            onChange={(event) =>
-              setbasecanState((prev) => ({
-                ...prev,
-                gpsId: event.target.value,
-              }))
-            }
+            disabled={basecanState.loading || basecanState.gps.state != "idle"}
+                  onChange={(event) =>
+                    setbasecanState((current) => ({
+                      ...current,
+                      gps: {
+                        ...current.id,
+                        "id": event.target.value,
+                      },
+                    }))
+                  }
             fullWidth
           >
             <MenuItem value={"disconnect"}>Disconnect</MenuItem>
             {basecanState.canIds?.map((canId) => (
               <MenuItem
                 disabled={
-                  canId === basecanState.gpsId
+                  canId === basecanState.gps.Id
                 }
                 key={canId}
                 value={canId}
@@ -184,14 +190,14 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           </Select>
         </FormControl>
         <Button
-          color={basecanState.gpsState === "idle" ? "success" : "error"}
-          disabled={basecanState.loading || basecanState.gpsId == "disconnect"}
-          loading={basecanState.gpsState == "connecting"}
+          color={basecanState.gps.state === "idle" ? "success" : "error"}
+          disabled={basecanState.loading || basecanState.gps.id == "disconnect"}
+          loading={basecanState.gps.state == "connecting"}
           sx={{ width: 50, minWidth: 0 }}
-          onClick={basecanState.gpsState == "idle" ? connectGPS : disconnectGPS}
+          onClick={basecanState.gps.state == "idle" ? connectGPS : disconnectGPS}
           variant="contained"
         >
-          {servercanState.gpsState == "idle" ? (
+          {servercanState.gps.state == "idle" ? (
             <ElectricalServicesIcon />
           ) : (
             <EjectIcon />
