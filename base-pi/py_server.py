@@ -1,9 +1,12 @@
+from can_serial import CanSerial
 import socketio
 import uvicorn
 import metrics
 import asyncio
 import signal
 import os
+import sys
+
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
@@ -12,6 +15,15 @@ import sys, subprocess
 
 
 print("\033[0m----------------")
+serial_ports = {
+    "antenna": None,
+    "antennaId" : "disconnect",
+    "gps": None,
+    "gpsId" : "disconnect",
+}
+gps_state = {"robot": None}
+
+GPS_AUTO_ID = "1546:01A9"
 
 
 short_hash = "unknown"
@@ -53,13 +65,7 @@ else:
 print("\033[0m----------------")
 
 
-serial_ports = {
-    "gps": None,
-    "gpsId" : "disconnect",
-}
-gps_state = {"robot": None}
 
-GPS_AUTO_ID = "1546:01A9"
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -131,7 +137,26 @@ async def robot_server_loop():
             await asyncio.sleep(5)
 
 # =================== GPS connections ===================
+@sio.event
+async def getCanInfo(sid):
+    """Returns all the CAN ids to the frontend after filtering"""
 
+    # can ids for web ui
+    canIds_arr = []
+    for port in list_ports.comports():
+        print(f"{port.device} ")
+
+        if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) or (port.device.find("modem") != -1) ):
+            # loose check to remove system serial interfaces
+            canIds_arr.append(port.device)
+
+    data = {
+    'status': "OK",
+    'canIds' : canIds_arr,
+    'antennaId' : serial_ports["driveId"],
+    'gpsId' : serial_ports["gpsId"],
+    }
+    return data
 
 
 # =================== Initialization ===================

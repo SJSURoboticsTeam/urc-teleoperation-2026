@@ -110,10 +110,10 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
       {/* GPS CONNECTION */}
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
         <FormControl sx={{ flex: 1 }} size="small">
-          <InputLabel id="gps-dropdown-peripheral-id">GPS</InputLabel>
+          <InputLabel id="gps-dropdown-peripheral-id">ROVER</InputLabel>
           <Select
             value={servercanState.gpsId}
-            label="GPS"
+            label="Rover"
             labelId="gps-dropdown-peripheral-id"
             disabled={servercanState.loading || servercanState.gpsState != "idle"}
             onChange={(event) =>
