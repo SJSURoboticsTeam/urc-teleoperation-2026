@@ -101,17 +101,12 @@ except BadPinFactory:
 
 
 print("----------------")
+
 serial_ports = {
-    "drive": None,
-    "driveId" : "disconnect",
-    "drive_status_event": asyncio.Event(),
-    "arm": None,
-    "armId" : "disconnect",
-    "arm_status_event": asyncio.Event(),
-    "gps": None,
-    "gpsId" : "disconnect",
-    "science": None,
-    "scienceId" : "disconnect"
+    "drive": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
+    "arm": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
+    "science": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
+    "gps": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
 }
 serial_console = SerialConsole()
 
@@ -133,46 +128,18 @@ def shutdown():
     shutting_down = True
     serial_console.close()
     print("Shutting down... ")
-    #drive
-    try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
-            print("Drive serial closed.")
-        else:
-            print("Drive was never connected.")
-    except Exception:
-        print("DRIVE WAS NOT DISCONNECTED!!!")
-        pass
-    #arm
-    try:
-        if serial_ports["arm"]:
-            serial_ports["arm"].close()
-            print("Arm serial closed.")
-        else:
-            print("Arm was never connected.")
-    except Exception:
-        print("ARM WAS NOT DISCONNECTED!!!")
-        pass
-    #science
-    try:
-        if serial_ports["science"]:
-            serial_ports["science"].close()
-            print("Science serial closed.")
-        else:
-            print("Science was never connected.")
-    except Exception:
-        print("SCIENCE WAS NOT DISCONNECTED!!!")
-        pass
-    #gps
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            print("GPS serial closed.")
-        else:
-            print("GPS was never connected.")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        pass
+    # shut down all the ids
+    ids = ["drive", "arm", "science", "gps"]
+    for id in ids:
+        try:
+            if serial_ports[id]["port"]:
+                serial_ports[id]["port"].close()
+                print(id.capitalize() + " serial closed.")
+            else:
+                print(id.capitalize() + " was never connected.")
+        except Exception:
+            print(id.upper() + " WAS NOT DISCONNECTED!!!")
+            pass
     # e-stop
     try:
         estop_pin.close()
@@ -226,52 +193,52 @@ async def getCanInfo(sid):
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
-    'driveId' : serial_ports["driveId"],
-    'armId' : serial_ports["armId"],
-    'scienceId' : serial_ports["scienceId"],
-    'gpsId' : serial_ports["gpsId"],
+    'driveId' : serial_ports["drive"]["id"],
+    'armId' : serial_ports["arm"]["id"],
+    'scienceId' : serial_ports["science"]["id"],
+    'gpsId' : serial_ports["gps"]["id"],
     "uartMode" : uart_str,
     }
     return data
 
 @sio.event
-async def connectDrive(sid,data):
+async def connectDrive(sid,line, id):
     """PeripheralManager backend code to connect Drive"""
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
-    if serial_ports["driveId"] != "disconnect":
+    if serial_ports[line][id] != "disconnect":
         print("DRIVE WAS ALREADY CONNECTED!")
         return("ERROR")
-    print("Connecting to " + str(data))
+    print("Connecting " + line + " to " + str(id))
     try:
         # Use UART as a backup / alternative to CAN for drive communication
-        if USE_UART_DRIVE:
-            serial_ports["drive"] = UartDriveSerial(data)
+        if (USE_UART_DRIVE and line == "drive"):
+            serial_ports[line]["port"] = UartDriveSerial(id)
             print("Drive UART connected.")
         else:
-            serial_ports["drive"] = CanSerial(data)
-            print("Drive CAN connected.")
+            serial_ports[line] = CanSerial(id)
+            print(line + "CAN connected.")
             
 
-        serial_ports["driveId"] = data
+        serial_ports[line]["id"] = id
         await sio.emit('forcecanrefresh', skip_sid=sid)
         return("OK")
     except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
+        print("FAILURE TO CONNECT " + line.upper()+ ": " + str(e))
         await sio.emit('forcecanrefresh', skip_sid=sid)
         return("ERROR")
 
 @sio.event
-async def disconnectDrive(sid):
+async def disconnectDrive(sid, line):
     """PeripheralManager backend code to disconnect Drive"""
     # disconnects can and returns OK or ERROR
     global serial_ports
     try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
-            serial_ports["drive"] = None
-            serial_ports["driveId"] = "disconnect"
+        if serial_ports[line]:
+            serial_ports[line]["port"].close()
+            serial_ports[line]["port"] = None
+            serial_ports[line]["id"] = "disconnect"
             print("Drive serial closed.")
             await sio.emit('forcecanrefresh', skip_sid=sid)
             return("OK")
@@ -284,140 +251,6 @@ async def disconnectDrive(sid):
         return("ERROR")
         pass
 
-@sio.event
-async def connectArm(sid,data):
-    """PeripheralManager backend code to connect Arm"""
-    # connects to can and returns OK or ERROR
-    global serial_ports
-    # prevent double connection
-    try:
-        if serial_ports["arm"] is not None:
-            try:
-                serial_ports["arm"].close()
-            except Exception:
-                pass
-
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-
-        print("Connecting to " + str(data))
-        serial_ports["arm"] = CanSerial(data)
-        serial_ports["armId"] = data
-        print("Arm connected.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return "OK"
-    except Exception as e:
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-        print("FAILURE TO CONNECT ARM: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return "ERROR"
-
-@sio.event
-async def disconnectArm(sid):
-    """PeripheralManager backend code to disconnect Arm"""
-    # disconnects can and returns OK or ERROR
-    global serial_ports
-    try:
-        if serial_ports["arm"]:
-            serial_ports["arm"].close()
-
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-        print("Arm serial closed.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return "OK"
-    except Exception:
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-        print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return "ERROR"
-
-@sio.event
-async def connectScience(sid,data):
-    """PeripheralManager backend code to connect Science"""
-    # connects to can and returns OK or ERROR
-    global serial_ports
-    # prevent double connection
-    if serial_ports["scienceId"]!= "disconnect":
-        print("SCIENCE WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
-    try:
-        serial_ports["science"] = CanSerial(data)
-        serial_ports["scienceId"] = data
-        print("Science connected.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT SCIENCE: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-
-@sio.event
-async def disconnectScience(sid):
-    """PeripheralManager backend code to disconnect Science"""
-    # disconnects can and returns OK or ERROR
-    global serial_ports
-    try:
-        if serial_ports["science"]:
-            serial_ports["science"].close()
-            serial_ports["science"] = None
-            serial_ports["scienceId"] = "disconnect"
-            print("Science serial closed.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
-            return("OK")
-        else:
-            print("Science was never connected.")
-            return("ERROR")
-    except Exception:
-        print("SCIENCE WAS NOT DISCONNECTED!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-        pass
-
-# =================== GPS connections ===================
-@sio.event
-async def connectGPS(sid, data):
-    """PeripheralManager backend code to connect GPS"""
-    # connect to gps serial port
-    global serial_ports
-    if serial_ports["gpsId"] != "disconnect":
-        print("GPS WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
-    try:
-        serial_ports["gps"] = ZEDF9P(data, 57600) 
-        serial_ports["gpsId"] = data
-        print("GPS connected.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT GPS: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-
-@sio.event
-async def disconnectGPS(sid):
-    """PeripheralManager backend code to disconnect GPS"""
-    global serial_ports
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            serial_ports["gps"] = None
-            serial_ports["gpsId"] = "disconnect"
-            print("GPS serial closed.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
-            return("OK")
-        else:
-            print("GPS was never connected.")
-            return("ERROR")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-        pass
 
 @sio.event
 async def E_STOP(sid):

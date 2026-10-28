@@ -116,14 +116,14 @@ def invalidate_arm_connection(serial_ports, reason="unknown"):
     Close and clear backend arm connection state after serial failure
     """
     try:
-        arm_serial = serial_ports.get("arm")
+        arm_serial = serial_ports["arm"]["port"]
         if arm_serial is not None:
             arm_serial.close()
     except Exception:
         pass
 
-    serial_ports["arm"] = None
-    serial_ports["armId"] = "disconnect"
+    serial_ports["arm"]["port"] = None
+    serial_ports["arm"]["id"] = "disconnect"
     print(f"[ARM] Connection invalidated: {reason}")
 
 # ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ async def send_arm_joint(serial_ports, joint_name, value):
       This function handles one motor at a time; call send_wrist_joints()
       instead when you have both pitch and roll values available.
     """
-    arm_serial = serial_ports.get("arm")
+    arm_serial = serial_ports["arm"]["port"]
     if arm_serial is None:
         print(f"[ARM] {joint_name} ignored: arm not connected")
         return False
@@ -299,7 +299,7 @@ async def request_arm_joint_position(serial_ports, joint_name):
       Len/DLC = 1
       Data[0] = 0x23   (actual encoder value; 0x22 would read target position)
     """
-    arm_serial = serial_ports.get("arm")
+    arm_serial = serial_ports["arm"]["port"]
     if arm_serial is None:
         return False
 
@@ -427,7 +427,7 @@ def parse_arm_data(data, serial_ports):
     # decode_canusb_frame(), which intentionally accepts only `t...` frames.
     if data.startswith(b"\x07"):
         print("Arm CAN error: command rejected; possible transmit FIFO full")
-        status_event = serial_ports.get("arm_status_event")
+        status_event = serial_ports["arm"]["status_event"]
         if status_event:
             status_event.set()
         return None
@@ -448,7 +448,7 @@ def parse_arm_data(data, serial_ports):
                 if flags & (1 << bit_number):
                     print(f"Arm CAN error bit {bit_number}: {description}")
 
-        status_event = serial_ports.get("arm_status_event")
+        status_event = serial_ports["arm"]["status_event"]
         if status_event:
             status_event.set()
         return None
@@ -491,7 +491,7 @@ def register_arm_events(sio, serial_ports):
         if is_soft_stopped():
             print(f"[{sid}] armCommands ignored: soft stop active")
             return "ERROR"
-        if serial_ports.get("arm") is None:
+        if serial_ports["arm"]["port"] is None:
             print(f"[{sid}] armCommands ignored: arm not connected")
             return "ERROR"
 
@@ -531,7 +531,7 @@ def register_arm_events(sio, serial_ports):
         if is_soft_stopped():
             print(f"[{sid}] armJointCommand ignored: soft stop active")
             return "ERROR"
-        if serial_ports.get("arm") is None:
+        if serial_ports["arm"]["port"] is None:
             print(f"[{sid}] armJointCommand ignored: arm not connected")
             return "ERROR"
 
@@ -563,7 +563,7 @@ def register_arm_events(sio, serial_ports):
         Optional explicit read-position request from frontend or test tools
         Expects: { "joint": "elbow" }
         """
-        if serial_ports.get("arm") is None:
+        if serial_ports["arm"]["port"] is None:
             print(f"[{sid}] armReadPosition ignored: arm not connected")
             return "ERROR"
 
@@ -586,7 +586,7 @@ async def request_arm_position_loop(serial_ports):
 
     while True:
         try:
-            arm_serial = serial_ports.get("arm")
+            arm_serial = serial_ports["arm"]["port"]
 
             if arm_serial is None:
                 await asyncio.sleep(0.1)
@@ -613,7 +613,7 @@ async def read_arm_can_loop(serial_ports, sio):
     """
     while True:
         try:
-            arm_serial = serial_ports.get("arm")
+            arm_serial = serial_ports["arm"]["port"]
 
             # Keep the read loop alive even when the arm is disconnected
             if arm_serial is None:
@@ -643,8 +643,8 @@ async def send_arm_status_request(serial_ports, sio):
     overload_reported = False
 
     while True:
-        arm = serial_ports.get("arm")
-        if arm is None or serial_ports.get("armId") == "disconnect":
+        arm = serial_ports["arm"]["port"]
+        if arm is None or serial_ports["arm"]["id"] == "disconnect":
             active_arm = None
             overload_reported = False
             # The arm may be connected later, so keep the monitor alive.
@@ -656,7 +656,7 @@ async def send_arm_status_request(serial_ports, sio):
                 active_arm = arm
                 overload_reported = False
 
-            status_event = serial_ports["arm_status_event"]
+            status_event = serial_ports["arm"]["status_event"]
             status_event.clear()
             await asyncio.to_thread(arm.write, b"F\r")
 
