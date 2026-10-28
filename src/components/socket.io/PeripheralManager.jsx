@@ -24,13 +24,15 @@ export default function PeripheralManager({ openPane }) {
     connectRoverPeripheral,
     disconnectRoverPeripheral,
     disconnectAll,
+    isDuplicateRover
   } = usePeripherals();
-  const { serialState, refresh } = useSerial();
+  const { refresh } = useSerial();
 
   const MappedValues = ["drive", "arm", "science"];
 
   const { robotConnected: isRobotConnected, baseConnected: isBaseConnected } =
     useConnectionStatus();
+
 
   useEffect(() => {
     if (openPane == "Backend") {
@@ -101,7 +103,7 @@ export default function PeripheralManager({ openPane }) {
                     setservercanState((current) => ({
                       ...current,
                       [id]: {
-                        ...current.id,
+                        ...current[id],
                         id: event.target.value,
                       },
                     }))
@@ -111,12 +113,7 @@ export default function PeripheralManager({ openPane }) {
                   <MenuItem value={"disconnect"}>Disconnect</MenuItem>
                   {servercanState.canIds?.map((canId) => (
                     <MenuItem
-                      disabled={
-                        canId === servercanState.arm.id ||
-                        canId === servercanState.science.id ||
-                        canId === servercanState.gps.id ||
-                        canId === serialState.portId
-                      }
+                      disabled={isDuplicateRover(id, canId)}
                       key={canId}
                       value={canId}
                     >
@@ -171,7 +168,7 @@ export default function PeripheralManager({ openPane }) {
                     setbasecanState((current) => ({
                       ...current,
                       antenna: {
-                        ...current.id,
+                        ...current.antenna,
                         "id": event.target.value,
                       },
                     }))
@@ -201,8 +198,8 @@ export default function PeripheralManager({ openPane }) {
               sx={{ width: 50, minWidth: 0 }}
               // onClick={
               //   basecanState.antennaState == "idle"
-              //     ? connectScience
-              //     : disconnectScience
+              //     ? connectBasePeripheral("antenna")
+              //     : disconnectBasePeripheral("antenna")
               // }
               variant="contained"
             >

@@ -202,13 +202,13 @@ async def getCanInfo(sid):
     return data
 
 @sio.event
-async def connectDrive(sid,line, id):
+async def connectRoverPeripheral(sid,line, id):
     """PeripheralManager backend code to connect Drive"""
     # connects to can and returns OK or ERROR
     global serial_ports
     # prevent double connection
-    if serial_ports[line][id] != "disconnect":
-        print("DRIVE WAS ALREADY CONNECTED!")
+    if serial_ports[line]["id"] != "disconnect":
+        print(line.upper() + " WAS ALREADY CONNECTED!")
         return("ERROR")
     print("Connecting " + line + " to " + str(id))
     try:
@@ -216,9 +216,14 @@ async def connectDrive(sid,line, id):
         if (USE_UART_DRIVE and line == "drive"):
             serial_ports[line]["port"] = UartDriveSerial(id)
             print("Drive UART connected.")
+        if (line == "gps"):
+            serial_ports[line]["port"] = ZEDF9P(id, 57600) 
+            serial_ports[line]["id"] = id
+            print("GPS connected.")
         else:
-            serial_ports[line] = CanSerial(id)
-            print(line + "CAN connected.")
+            ## CAN
+            serial_ports[line]["port"] = CanSerial(id)
+            print(line.capitalize() + " CAN connected.")
             
 
         serial_ports[line]["id"] = id
@@ -230,12 +235,12 @@ async def connectDrive(sid,line, id):
         return("ERROR")
 
 @sio.event
-async def disconnectDrive(sid, line):
+async def disconnectRoverPeripheral(sid, line):
     """PeripheralManager backend code to disconnect Drive"""
     # disconnects can and returns OK or ERROR
     global serial_ports
     try:
-        if serial_ports[line]:
+        if serial_ports[line]["port"]:
             serial_ports[line]["port"].close()
             serial_ports[line]["port"] = None
             serial_ports[line]["id"] = "disconnect"

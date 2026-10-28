@@ -3,6 +3,8 @@ import { useSnackbar } from "notistack";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 import Button from "@mui/material/Button";
+import { useSerial } from "../contexts/SerialContext";
+
 
 function ReconnectAction({
   snackbarId,
@@ -70,6 +72,15 @@ export const PeripheralProvider = ({ children }) => {
     loading: true, // lock buttons, dropdowns when refreshing can data
   });
 
+  const { serialState } = useSerial();
+
+    // true if canId is already taken by another rover line or the serial port
+  const isDuplicateRover = (line, canId) =>
+    ["drive", "arm", "science", "gps"].some(
+      (other) => other !== line && servercanState[other].id === canId,
+    ) || canId === serialState.portId;
+
+
   const [basecanState, setbasecanState] = useState({
     antenna: {
       id: "disconnect", // selected can id in dropdown or disconnect
@@ -85,8 +96,8 @@ export const PeripheralProvider = ({ children }) => {
 
   const canWarningSnackbarIds = useRef(new Map());
   const previousCanIds = useRef({
-    drive: servercanState.driveId,
-    arm: servercanState.armId,
+    drive: servercanState.drive.id,
+    arm: servercanState.arm.id,
   });
   const clearCanWarning = useCallback(
     (canId, fallbackSnackbarId) => {
@@ -104,8 +115,8 @@ export const PeripheralProvider = ({ children }) => {
 
   useEffect(() => {
     const currentCanIds = {
-      drive: servercanState.driveId,
-      arm: servercanState.armId,
+      drive: servercanState.drive.id,
+      arm: servercanState.arm.id,
     };
 
     // Centralize warning cleanup so every source of a CAN ID change is covered.
@@ -115,7 +126,7 @@ export const PeripheralProvider = ({ children }) => {
       }
     }
     previousCanIds.current = currentCanIds;
-  }, [servercanState.armId, servercanState.driveId, clearCanWarning]);
+  }, [servercanState.arm.id, servercanState.drive.id, clearCanWarning]);
 
   const requestCanInfo = useCallback(() => {
     // lock the ui so user can't do anything while loading
@@ -192,8 +203,8 @@ export const PeripheralProvider = ({ children }) => {
     (id) => {
       setservercanState((current) => ({
         ...current,
-        id: {
-          ...current.id,
+        [id]: {
+          ...current[id],
           state: "connecting",
         },
       }));
@@ -203,7 +214,7 @@ export const PeripheralProvider = ({ children }) => {
           "Connecting" + id + " , Sending id " + servercanState.drive.id,
         );
         robotsocket.emit(
-          "connectPeripheral",
+          "connectRoverPeripheral",
           id,
           servercanState[id].id,
           (response) => {
@@ -211,8 +222,8 @@ export const PeripheralProvider = ({ children }) => {
             if (response === "OK") {
               setservercanState((current) => ({
                 ...current,
-                id: {
-                  ...current.drive,
+                [id]: {
+                  ...current[id],
                   state: "active",
                 },
               }));
@@ -235,21 +246,21 @@ export const PeripheralProvider = ({ children }) => {
     (id) => {
       setservercanState((current) => ({
         ...current,
-        id: {
-          ...current.id,
+        [id]: {
+          ...current[id],
           state: "connecting",
         },
       }));
       clearCanWarning(id);
       return new Promise((resolve, reject) => {
         console.log("Disconnecting drive");
-        robotsocket.emit("disconnectPeripheral", id, (response) => {
+        robotsocket.emit("disconnectRoverPeripheral", id, (response) => {
           console.log("RESPONSE:" + response);
           if (response === "OK") {
             setservercanState((current) => ({
               ...current,
-              id: {
-                ...current.id,
+              [id]: {
+                ...current[id],
                 state: "idle",
               },
             }));
@@ -328,6 +339,7 @@ export const PeripheralProvider = ({ children }) => {
     connectRoverPeripheral,
     disconnectRoverPeripheral,
     disconnectAll,
+    isDuplicateRover
   };
 
   return (
