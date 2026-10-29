@@ -2,27 +2,17 @@ import { Typography } from "@mui/material";
 import GpsFixedIcon from "@mui/icons-material/GpsFixed";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-import ElectricalServicesIcon from "@mui/icons-material/ElectricalServices";
-import EjectIcon from "@mui/icons-material/Eject";
 import { useEffect } from "react";
 
 import { usePeripherals } from "../../contexts/PeripheralContext";
 import { useSerial } from "../../contexts/SerialContext";
+import PeripheralDropdown from "../socket.io/PeripheralDropdown";
 export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
   const {
     servercanState,
-    basecanState,
     requestCanInfo,
     setservercanState,
-    setbasecanState,
     disconnectAll,
-    isDuplicateRover,
-    connectRoverPeripheral,
-    disconnectRoverPeripheral,
   } = usePeripherals();
 
   const { refresh } = useSerial();
@@ -105,116 +95,10 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           </Box>
 
           {/* ROVER GPS CONNECTION */}
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
-            <FormControl sx={{ flex: 1 }} size="small">
-              <InputLabel id="gps-dropdown-peripheral-id">ROVER</InputLabel>
-              <Select
-                value={servercanState.gps.id}
-                label="ROVER"
-                labelId="gps-dropdown-peripheral-id"
-                disabled={
-                  servercanState.loading || servercanState.gps.state != "idle"
-                }
-                onChange={(event) =>
-                  setservercanState((current) => ({
-                    ...current,
-                    gps: {
-                      ...current.gps,
-                      id: event.target.value,
-                    },
-                  }))
-                }
-                fullWidth
-              >
-                <MenuItem value={"disconnect"}>Disconnect</MenuItem>
-                {servercanState.canIds?.map((canId) => (
-                  <MenuItem
-                    disabled={isDuplicateRover("gps", canId)}
-                    key={canId}
-                    value={canId}
-                  >
-                    {canId}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Button
-              color={servercanState.gps.state === "idle" ? "success" : "error"}
-              disabled={
-                servercanState.loading || servercanState.gps.id == "disconnect"
-              }
-              loading={servercanState.gps.state == "connecting"}
-              sx={{ width: 50, minWidth: 0 }}
-              onClick={() =>
-                servercanState.gps.state == "idle"
-                  ? connectRoverPeripheral("gps")
-                  : disconnectRoverPeripheral("gps")
-              }
-              variant="contained"
-            >
-              {servercanState.gps.state == "idle" ? (
-                <ElectricalServicesIcon />
-              ) : (
-                <EjectIcon />
-              )}
-            </Button>
-          </Box>
+          <PeripheralDropdown id="gps" isRover />
 
           {/* BASE GPS CONNECTION */}
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
-            <FormControl sx={{ flex: 1 }} size="small">
-              <InputLabel id="gps-dropdown-peripheral-id">BASE</InputLabel>
-              <Select
-                value={basecanState.gps.id}
-                label="BASE"
-                labelId="antenna-dropdown-peripheral-id"
-                disabled={
-                  basecanState.loading || basecanState.gps.state != "idle"
-                }
-                onChange={(event) =>
-                  setbasecanState((current) => ({
-                    ...current,
-                    gps: {
-                      ...current.gps,
-                      id: event.target.value,
-                    },
-                  }))
-                }
-                fullWidth
-              >
-                <MenuItem value={"disconnect"}>Disconnect</MenuItem>
-                {basecanState.canIds?.map((canId) => (
-                  <MenuItem
-                    disabled={canId === basecanState.gps.Id}
-                    key={canId}
-                    value={canId}
-                  >
-                    {canId}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Button
-              color={basecanState.gps.state === "idle" ? "success" : "error"}
-              disabled={
-                basecanState.loading || basecanState.gps.id == "disconnect"
-              }
-              loading={basecanState.gps.state == "connecting"}
-              sx={{ width: 50, minWidth: 0 }}
-              // onClick={() =>
-              //   servercanState.gps.state == "idle"
-              //     ? connectRoverPeripheral("gps")
-              //     : disconnectRoverPeripheral("gps")
-              // }
-              variant="contained"
-            >
-              {servercanState.gps.state == "idle" ? (
-                <ElectricalServicesIcon />
-              ) : (
-                <EjectIcon />
-              )}
-            </Button>
-          </Box>
+          <PeripheralDropdown id="gps" />
         </div>
       )}
     </div>

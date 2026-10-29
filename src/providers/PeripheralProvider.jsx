@@ -278,6 +278,67 @@ export const PeripheralProvider = ({ children }) => {
     [enqueueSnackbar, clearCanWarning, requestCanInfo],
   );
 
+  const connectBasePeripheral = useCallback(
+    (id) => {
+      setbasecanState((current) => ({
+        ...current,
+        [id]: { ...current[id], state: "connecting" },
+      }));
+
+      return new Promise((resolve, reject) => {
+        basesocket.emit(
+          "connectBasePeripheral",
+          id,
+          basecanState[id].id,
+          (response) => {
+            if (response === "OK") {
+              setbasecanState((current) => ({
+                ...current,
+                [id]: { ...current[id], state: "active" },
+              }));
+              resolve();
+            } else {
+              enqueueSnackbar(id + " didn't connect. Refreshing...", {
+                variant: "error",
+              });
+              requestCanInfo();
+              reject(new Error(id + " connection failed"));
+            }
+          },
+        );
+      });
+    },
+    [basecanState, enqueueSnackbar, requestCanInfo],
+  );
+
+  const disconnectBasePeripheral = useCallback(
+    (id) => {
+      setbasecanState((current) => ({
+        ...current,
+        [id]: { ...current[id], state: "connecting" },
+      }));
+
+      return new Promise((resolve, reject) => {
+        basesocket.emit("disconnectBasePeripheral", id, (response) => {
+          if (response === "OK") {
+            setbasecanState((current) => ({
+              ...current,
+              [id]: { ...current[id], state: "idle" },
+            }));
+            resolve();
+          } else {
+            enqueueSnackbar(id + " didn't disconnect. Refreshing...", {
+              variant: "error",
+            });
+            requestCanInfo();
+            reject(new Error(id + " disconnection failed"));
+          }
+        });
+      });
+    },
+    [enqueueSnackbar, requestCanInfo],
+  );
+
   function disconnectAll() {
     if (servercanState.drive.state != "idle") {
       disconnectRoverPeripheral("drive");
@@ -338,6 +399,8 @@ export const PeripheralProvider = ({ children }) => {
     setbasecanState,
     connectRoverPeripheral,
     disconnectRoverPeripheral,
+    connectBasePeripheral,
+    disconnectBasePeripheral,
     disconnectAll,
     isDuplicateRover
   };
