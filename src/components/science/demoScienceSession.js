@@ -19,6 +19,7 @@ export const demoScienceSession = {
     "Step 10",
   ],
   wavelengths: [415, 455, 480, 515, 555, 590, 630, 680],
+  vials: ["purple", "blue", "red"],
   logFile: null,
   sites: [
     {

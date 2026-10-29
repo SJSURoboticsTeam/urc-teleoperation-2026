@@ -1,6 +1,5 @@
 import "react-resizable/css/styles.css";
-import { useState, useEffect } from "react";
-import { Box, Button, Paper } from "@mui/material";
+import { Box, Paper, Tooltip, Typography } from "@mui/material";
 import {
   Table,
   TableBody,
@@ -11,168 +10,128 @@ import {
 } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 
-function createData(vials, wavelength, absorbance) {
-  return { vials, wavelength, absorbance };
-}
+// Presentation only. A vial without an entry uses the chart's default colour.
+const VIAL_COLORS = { purple: "#9c27b0", blue: "#1976d2", red: "#d32f2f" };
 
-function calculateAbsorbance(dataSet, clearVialData, index) {
-  const absorbance = -Math.log10(dataSet[index] / clearVialData[index]);
-  return absorbance.toFixed(3);
-}
+const SATURATED_STYLE = { backgroundColor: "#bdbdbd", color: "#212121" };
+const IN_RANGE_STYLE = { backgroundColor: "#4caf50" };
+const OUT_OF_RANGE_STYLE = { backgroundColor: "#f44336" };
 
-export default function ScienceGraphTable({ controlsLocked = false }) {
-  const frequencies = [415, 455, 480, 515, 555, 590, 630, 680];
-  const clearVialData = [65535, 1364, 696, 568, 1466, 4655, 1140, 338];
-  const purpleVialData = [9875, 136, 78, 68, 166, 494, 117, 37];
-  const blueVialData = [17042, 231, 148, 104, 302, 817, 211, 68];
-  const redVialData = [15923, 281, 271, 171, 276, 1156, 269, 92];
+const vialLabel = (name) => `${name.charAt(0).toUpperCase()}${name.slice(1)} Vial`;
 
-  const [rows, setRows] = useState([
-    createData("clear", 0, 0),
-    createData("purple", 0, 0),
-    createData("blue", 0, 0),
-    createData("red", 0, 0),
-  ]);
-  const [purpleAbsorbance, setPurpleAbsorbance] = useState([]);
-  const [blueAbsorbance, setBlueAbsorbance] = useState([]);
-  const [redAbsorbance, setRedAbsorbance] = useState([]);
-  const [frequency, setFrequency] = useState([]);
-  const [running, setRunning] = useState(false);
-  const [finished, setFinished] = useState(false);
+// null (not NaN, not a string) for anything that isn't a usable number, so the chart skips it
+const toNumberOrNull = (value) =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
 
-  useEffect(() => {
-    if (!running) return;
+// Presentational only: the backend computes absorbance and flags saturation, and owns
+// the wavelength and vial lists. Renders an empty chart and table when `site` is undefined.
+export default function ScienceGraphTable({ site, wavelengths = [], vials = [] }) {
+  const vialData = site?.spectro?.vials ?? {};
+  const clearSaturated = site?.spectro?.clear?.saturated ?? [];
 
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index >= frequencies.length) {
-        setRunning(false);
-        setFinished(true);
-        clearInterval(interval);
-        return;
-      }
+  const absorbanceAt = (name, index) =>
+    toNumberOrNull(vialData[name]?.absorbance?.[index]);
 
-      const purple = calculateAbsorbance(
-        purpleVialData,
-        clearVialData,
-        index,
-      );
-      const blue = calculateAbsorbance(blueVialData, clearVialData, index);
-      const red = calculateAbsorbance(redVialData, clearVialData, index);
-      const wavelength = frequencies[index];
+  // a reading is unreliable if the clear reference or the vial itself is saturated
+  const isSaturated = (name, index) =>
+    clearSaturated.includes(index) || !!vialData[name]?.saturated?.includes(index);
 
-      setFrequency((prev) => [...prev, wavelength]);
-      setPurpleAbsorbance((prev) => [...prev, purple]);
-      setBlueAbsorbance((prev) => [...prev, blue]);
-      setRedAbsorbance((prev) => [...prev, red]);
-
-      setRows([
-        createData("clear", wavelength, 0),
-        createData("purple", wavelength, purple),
-        createData("blue", wavelength, blue),
-        createData("red", wavelength, red),
-      ]);
-
-      index += 1;
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [running]);
-
-  const start = () => {
-    if (finished) return;
-    setRunning(true);
-  };
-
-  const stop = () => {
-    setRunning(false);
-    setFinished(false);
-    setFrequency([]);
-    setPurpleAbsorbance([]);
-    setBlueAbsorbance([]);
-    setRedAbsorbance([]);
-    setRows([
-      createData("clear", 0, 0),
-      createData("purple", 0, 0),
-      createData("blue", 0, 0),
-      createData("red", 0, 0),
-    ]);
+  // grey takes precedence over green/red; a null absorbance gets no colour
+  const cellStyle = (value, saturated) => {
+    if (saturated) return SATURATED_STYLE;
+    if (value === null) return {};
+    return value >= 0.1 && value <= 1 ? IN_RANGE_STYLE : OUT_OF_RANGE_STYLE;
   };
 
   return (
     <div className="flex flex-row gap-4 mb-4" style={{ flex: 1, minWidth: 0 }}>
       <Box sx={{ width: "65%", height: 450 }}>
         <LineChart
-          series={[
-            { data: purpleAbsorbance, label: "Purple Vial" },
-            { data: blueAbsorbance, label: "Blue Vial" },
-            { data: redAbsorbance, label: "Red Vial" },
-          ]}
+          series={vials.map((name) => ({
+            id: name,
+            label: vialLabel(name),
+            color: VIAL_COLORS[name],
+            // saturated points are unreliable, so they leave a gap instead of being plotted
+            data: wavelengths.map((_, index) =>
+              isSaturated(name, index) ? null : absorbanceAt(name, index),
+            ),
+          }))}
           xAxis={[
             {
               scaleType: "point",
-              data: frequency,
+              data: wavelengths,
               label: "Wavelength (nm)",
             },
           ]}
           yAxis={[{ label: "Absorbance", width: 45 }]}
           margin={{ left: 60, bottom: 40 }}
         />
-        <Button
-          variant="contained"
-          onClick={finished || running ? stop : start}
-          disabled={controlsLocked}
-          sx={{ width: "80px", fontSize: 16 }}
-        >
-          {finished || running ? "Stop" : "Start"}
-        </Button>
       </Box>
 
       <Box sx={{ width: "35%", minHeight: 300, mt: 5, ml: 3 }}>
         <TableContainer component={Paper}>
-          <Table aria-label="science absorbance table">
+          <Table size="small" aria-label="science absorbance table">
             <TableHead>
               <TableRow>
-                <TableCell>vials</TableCell>
-                <TableCell align="right">wavelength</TableCell>
-                <TableCell align="right">absorbance</TableCell>
+                <TableCell>wavelength (nm)</TableCell>
+                {vials.map((name) => (
+                  <TableCell key={name} align="right">
+                    {name}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row) => (
-                <TableRow
-                  key={row.vials}
-                  sx={{
-                    "&:last-child td, &:last-child th": {
-                      border: 0,
-                    },
-                  }}
-                >
-                  <TableCell component="th" scope="row">
-                    {row.vials}
-                  </TableCell>
-                  <TableCell align="right">{row.wavelength}</TableCell>
-                  <TableCell
-                    align="right"
-                    sx={
-                      row.vials === "clear"
-                        ? {}
-                        : {
-                            backgroundColor:
-                              Number(row.absorbance) >= 0.1 &&
-                              Number(row.absorbance) <= 1
-                                ? "#4caf50"
-                                : "#f44336",
-                          }
-                    }
-                  >
-                    {row.absorbance}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {wavelengths.map((wavelength, index) => {
+                const clearIsSaturated = clearSaturated.includes(index);
+                return (
+                  <TableRow key={wavelength}>
+                    <TableCell
+                      component="th"
+                      scope="row"
+                      sx={clearIsSaturated ? SATURATED_STYLE : {}}
+                    >
+                      {wavelength}
+                    </TableCell>
+                    {vials.map((name) => {
+                      const value = absorbanceAt(name, index);
+                      const saturated = isSaturated(name, index);
+                      // "---" is only for a missing (null) value; greyed cells still show theirs
+                      const text = value === null ? "---" : value.toFixed(3);
+                      return (
+                        <TableCell
+                          key={name}
+                          align="right"
+                          sx={cellStyle(value, saturated)}
+                        >
+                          {saturated ? (
+                            <Tooltip
+                              title={
+                                clearIsSaturated
+                                  ? "Saturated: clear reference is at its maximum, so absorbance is unreliable"
+                                  : "Saturated: sensor is at its maximum, so absorbance is unreliable"
+                              }
+                            >
+                              <span>{text}</span>
+                            </Tooltip>
+                          ) : (
+                            text
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+          <Box sx={{ width: 14, height: 14, flexShrink: 0, ...SATURATED_STYLE }} />
+          <Typography variant="caption">
+            Saturated: value shown but unreliable (not plotted)
+          </Typography>
+        </Box>
       </Box>
     </div>
   );
