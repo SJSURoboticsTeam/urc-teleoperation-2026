@@ -19,8 +19,8 @@ function ReconnectAction({
     setLoading(true);
 
     try {
-      disconnectRoverPeripheral(canId);
-      connectRoverPeripheral(canId);
+      await disconnectRoverPeripheral(canId);
+      await connectRoverPeripheral(canId);
       clearCanWarning(canId, snackbarId);
     } catch (error) {
       console.error(error);
@@ -192,10 +192,14 @@ export const PeripheralProvider = ({ children }) => {
     };
     robotsocket.on("forcecanrefresh", updateCan);
     robotsocket.on("connect", updateCan);
+    basesocket.on("forcecanrefresh", requestCanInfo);
+    basesocket.on("connect", requestCanInfo);
 
     return () => {
       robotsocket.off("forcecanrefresh", updateCan);
       robotsocket.off("connect", updateCan);
+      basesocket.off("forcecanrefresh", requestCanInfo);
+      basesocket.off("connect", requestCanInfo);
     };
   }, [requestCanInfo, clearCanWarning]);
 
@@ -339,20 +343,21 @@ export const PeripheralProvider = ({ children }) => {
     [enqueueSnackbar, requestCanInfo],
   );
 
-  function disconnectAll() {
-    if (servercanState.drive.state != "idle") {
-      disconnectRoverPeripheral("drive");
+  async function disconnectAll() {
+    const pending = [];
+    // Check live sockets so commands are never queued for an offline backend.
+    if (robotsocket.connected) {
+      for (const id of ["drive", "arm", "science", "gps"]) {
+        pending.push(disconnectRoverPeripheral(id));
+      }
     }
-    if (servercanState.arm.state != "idle") {
-      disconnectRoverPeripheral("arm");
+    if (basesocket.connected) {
+      for (const id of ["antenna", "gps"]) {
+        pending.push(disconnectBasePeripheral(id));
+      }
     }
-    if (servercanState.science.state != "idle") {
-      disconnectRoverPeripheral("science");
-    }
-    if (servercanState.gps.state != "idle") {
-      disconnectRoverPeripheral("gps");
-    }
-    console.log("ALL have been disconnected.");
+    // Each operation reports its own failure; still attempt every peripheral.
+    await Promise.allSettled(pending);
   }
 
   useEffect(() => {
@@ -370,6 +375,7 @@ export const PeripheralProvider = ({ children }) => {
             snackbarId={snackbarId}
             connectRoverPeripheral={connectRoverPeripheral}
             disconnectRoverPeripheral={disconnectRoverPeripheral}
+            clearCanWarning={clearCanWarning}
             canId={canId}
           />
         ),

@@ -103,10 +103,10 @@ except BadPinFactory:
 print("----------------")
 
 serial_ports = {
-    "drive": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
-    "arm": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
-    "science": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
-    "gps": {"port": None, "id": "disconnect", "status_event": asyncio.Event()},
+    "drive": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "arm": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "science": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "gps": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
 }
 serial_console = SerialConsole()
 
@@ -202,59 +202,55 @@ async def getCanInfo(sid):
     return data
 
 @sio.event
-async def connectRoverPeripheral(sid,line, id):
-    """PeripheralManager backend code to connect Drive"""
-    # connects to can and returns OK or ERROR
-    global serial_ports
-    # prevent double connection
-    if serial_ports[line]["id"] != "disconnect":
-        print(line.upper() + " WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting " + line + " to " + str(id))
-    try:
-        # Use UART as a backup / alternative to CAN for drive communication
-        if (USE_UART_DRIVE and line == "drive"):
-            serial_ports[line]["port"] = UartDriveSerial(id)
-            print("Drive UART connected.")
-        if (line == "gps"):
-            serial_ports[line]["port"] = ZEDF9P(id, 57600) 
-            serial_ports[line]["id"] = id
-            print("GPS connected.")
-        else:
-            ## CAN
-            serial_ports[line]["port"] = CanSerial(id)
-            print(line.capitalize() + " CAN connected.")
-            
+async def connectRoverPeripheral(sid, line, id):
+    """Initialize serial hardware off the event loop, then publish the connection."""
+    if line not in serial_ports:
+        return "ERROR"
 
-        serial_ports[line]["id"] = id
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT " + line.upper()+ ": " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
+    # Setup yields to other handlers; serialize changes to this peripheral.
+    async with serial_ports[line]["lock"]:
+        if serial_ports[line]["id"] != "disconnect":
+            print(line.upper() + " WAS ALREADY CONNECTED!")
+            return "ERROR"
+        print("Connecting " + line + " to " + str(id))
+        try:
+            if USE_UART_DRIVE and line == "drive":
+                port = await asyncio.to_thread(UartDriveSerial, id)
+            elif line == "gps":
+                port = await asyncio.to_thread(ZEDF9P, id, 57600)
+            else:
+                port = await asyncio.to_thread(CanSerial, id)
+
+            serial_ports[line]["port"] = port
+            serial_ports[line]["id"] = id
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO CONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
+
 
 @sio.event
 async def disconnectRoverPeripheral(sid, line):
-    """PeripheralManager backend code to disconnect Drive"""
-    # disconnects can and returns OK or ERROR
-    global serial_ports
-    try:
-        if serial_ports[line]["port"]:
-            serial_ports[line]["port"].close()
-            serial_ports[line]["port"] = None
-            serial_ports[line]["id"] = "disconnect"
-            print("Drive serial closed.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
-            return("OK")
-        else:
-            print("Drive was never connected.")
-            return("ERROR")
-    except Exception:
-        print("DRIVE WAS NOT DISCONNECTED!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-        pass
+    """Wait for pending setup before disconnecting the peripheral."""
+    if line not in serial_ports:
+        return "ERROR"
+
+    async with serial_ports[line]["lock"]:
+        port = serial_ports[line]["port"]
+        # Detach before yielding so background tasks stop using the old port.
+        serial_ports[line]["port"] = None
+        serial_ports[line]["id"] = "disconnect"
+        try:
+            if port is not None:
+                await asyncio.to_thread(port.close)
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO DISCONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
 
 
 @sio.event

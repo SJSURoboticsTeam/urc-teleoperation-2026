@@ -20,8 +20,10 @@ export default function PeripheralDropdown({ id, isRover = false }) {
     disconnectBasePeripheral,
     isDuplicateRover,
   } = usePeripherals();
+
   const canState = isRover ? servercanState : basecanState;
   const setCanState = isRover ? setservercanState : setbasecanState;
+
   const connectPeripheral = isRover
     ? connectRoverPeripheral
     : connectBasePeripheral;
@@ -33,16 +35,28 @@ export default function PeripheralDropdown({ id, isRover = false }) {
     <Box key={id} sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
       <FormControl sx={{ flex: 1 }} size="small">
         <InputLabel id={`${id}-dropdown-peripheral-id`}>
+          {/* If drive define CAN or UART, if GPS say which backend*/}
+          {/* Note duplication with below for label and InputLabel*/}
           {id === "drive" && isRover
             ? `${id.toUpperCase()} over ${servercanState.uartMode}`
-            : id.toUpperCase()}
+            : id === "gps"
+              ? isRover
+                ? "ROVER"
+                : "BASE"
+              : id.toUpperCase()}
         </InputLabel>
         <Select
           value={canState[id].id}
           disabled={canState.loading || canState[id].state !== "idle"}
-          label={id === "drive" && isRover
-            ? `${id.toUpperCase()} over ${servercanState.uartMode}`
-            : id.toUpperCase()}
+          label={
+            id === "drive" && isRover
+              ? `${id.toUpperCase()} over ${servercanState.uartMode}`
+              : id === "gps"
+                ? isRover
+                  ? "ROVER"
+                  : "BASE"
+                : id.toUpperCase()
+          }
           labelId={`${id}-dropdown-peripheral-id`}
           onChange={(event) =>
             setCanState((current) => ({
@@ -67,6 +81,7 @@ export default function PeripheralDropdown({ id, isRover = false }) {
           ))}
         </Select>
       </FormControl>
+      {/* Button to connect/disconnect cpde*/}
       <Button
         color={canState[id].state === "idle" ? "success" : "error"}
         disabled={canState.loading || canState[id].id === "disconnect"}

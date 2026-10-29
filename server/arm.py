@@ -111,10 +111,13 @@ ARM_TEST_JOINTS = {"track", "shoulder", "elbow", "pitch", "roll", "clamp"}
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
 
-def invalidate_arm_connection(serial_ports, reason="unknown"):
+def invalidate_arm_connection(serial_ports, reason, failed_port):
     """
-    Close and clear backend arm connection state after serial failure
+    Clear a failed connection only if it is still the current arm port.
     """
+    # An outstanding read/write on an old port may fail after a reconnect.
+    if serial_ports["arm"]["port"] is not failed_port:
+        return
     try:
         arm_serial = serial_ports["arm"]["port"]
         if arm_serial is not None:
@@ -259,7 +262,7 @@ async def send_arm_joint(serial_ports, joint_name, value):
         return True
     except Exception as e:
         print(f"[ARM] {joint_name} send failed: {e}")
-        invalidate_arm_connection(serial_ports, f"send failure on {joint_name}")
+        invalidate_arm_connection(serial_ports, f"send failure on {joint_name}", arm_serial)
         return False
 
 
@@ -316,7 +319,7 @@ async def request_arm_joint_position(serial_ports, joint_name):
         return True
     except Exception as e:
         print(f"[ARM] {joint_name} read request failed: {e}")
-        invalidate_arm_connection(serial_ports, f"read request failure on {joint_name}")
+        invalidate_arm_connection(serial_ports, f"read request failure on {joint_name}", arm_serial)
         return False
 
 def parse_receive_stop():
@@ -603,7 +606,7 @@ async def request_arm_position_loop(serial_ports):
 
         except Exception as e:
             print(f"[ARM] position request loop error: {e}")
-            invalidate_arm_connection(serial_ports, "position request loop failure")
+            invalidate_arm_connection(serial_ports, "position request loop failure", arm_serial)
             await asyncio.sleep(0.25)
 
 async def read_arm_can_loop(serial_ports, sio):
@@ -623,6 +626,8 @@ async def read_arm_can_loop(serial_ports, sio):
             # A finite timeout prevents an incomplete/stale response from
             # blocking all later CAN and status responses forever.
             data = await asyncio.to_thread(arm_serial.read_can, 0.5)
+            if serial_ports["arm"]["port"] is not arm_serial:
+                continue
             if data:
                 parsed = parse_arm_data(data, serial_ports)
                 if isinstance(parsed, dict) and parsed.get("type") == "position":
@@ -633,7 +638,7 @@ async def read_arm_can_loop(serial_ports, sio):
 
         except Exception as e:
             print(f"Arm CAN thread error: {e}")
-            invalidate_arm_connection(serial_ports, "read loop failure")
+            invalidate_arm_connection(serial_ports, "read loop failure", arm_serial)
             await asyncio.sleep(0.25)
 
 

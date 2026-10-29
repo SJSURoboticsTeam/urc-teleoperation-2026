@@ -54,14 +54,21 @@ export default function PeripheralManager({ openPane }) {
         </Button>
         <Button
           disabled={
-            servercanState.drive.state != "active" &&
-            servercanState.arm.state != "active" &&
-            servercanState.science.state != "active" &&
-            basecanState.antenna.state != "active"
+            !(
+              (isRobotConnected && ["drive", "arm", "science", "gps"].some(
+                (id) => servercanState[id].state !== "idle",
+              )) ||
+              (isBaseConnected && ["antenna", "gps"].some(
+                (id) => basecanState[id].state !== "idle",
+              ))
+            )
           }
           color="error"
           variant="contained"
-          loading={servercanState.loading}
+          loading={
+            (isRobotConnected && servercanState.loading) ||
+            (isBaseConnected && basecanState.loading)
+          }
           onClick={disconnectAll}
           sx={{ width: 140 }}
         >

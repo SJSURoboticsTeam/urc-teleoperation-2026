@@ -17,10 +17,8 @@ import sys, subprocess
 
 print("\033[0m----------------")
 serial_ports = {
-    "antenna": None,
-    "antennaId" : "disconnect",
-    "gps": None,
-    "gpsId" : "disconnect",
+    "antenna": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
+    "gps": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
 }
 gps_state = {"robot": None}
 
@@ -84,8 +82,8 @@ def shutdown():
     print("\nShutting down... ")
     #gps
     try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
+        if serial_ports["gps"]["port"]:
+            serial_ports["gps"]["port"].close()
             print("GPS serial closed.")
         else:
             print("GPS was never connected.")
@@ -154,10 +152,30 @@ async def getCanInfo(sid):
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
-    'antennaId' : serial_ports["antennaId"],
-    'gpsId' : serial_ports["gpsId"],
+    'antennaId' : serial_ports["antenna"]["id"],
+    'gpsId' : serial_ports["gps"]["id"],
     }
     return data
+
+
+@sio.event
+async def disconnectBasePeripheral(sid, line):
+    """Disconnect even if the frontend has stale state or startup is still connecting."""
+    if line not in serial_ports:
+        return "ERROR"
+    async with serial_ports[line]["lock"]:
+        port = serial_ports[line]["port"]
+        serial_ports[line]["port"] = None
+        serial_ports[line]["id"] = "disconnect"
+        try:
+            if port is not None:
+                await asyncio.to_thread(port.close)
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as exc:
+            print(f"Failed to disconnect base {line}: {exc}")
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
 
 
 # =================== Initialization ===================
