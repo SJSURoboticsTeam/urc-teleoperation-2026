@@ -123,6 +123,7 @@ class ScienceSession:
             "activeSite": active.id if active else None,
             "steps": list(self.steps),
             "wavelengths": list(WAVELENGTHS_NM),
+            "vials": list(VIAL_NAMES),
             "logFile": getattr(self.logger, "filename", None),
             "sites": [site.to_dict() for site in self.sites],
         }
