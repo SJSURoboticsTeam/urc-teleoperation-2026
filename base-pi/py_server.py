@@ -17,7 +17,7 @@ import sys, subprocess
 
 print("\033[0m----------------")
 serial_ports = {
-    "antenna": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
+    "antenna": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
     "gps": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
 }
 gps_state = {"robot": None}
@@ -159,12 +159,43 @@ async def getCanInfo(sid):
 
 
 @sio.event
-async def disconnectBasePeripheral(sid, line):
-    """Disconnect even if the frontend has stale state or startup is still connecting."""
+async def connectBasePeripheral(sid, line, id):
+    """Initialize serial hardware off the event loop, then publish the connection."""
     if line not in serial_ports:
         return "ERROR"
+
+    # Setup yields to other handlers; serialize changes to this peripheral.
+    async with serial_ports[line]["lock"]:
+        if serial_ports[line]["id"] != "disconnect":
+            print(line.upper() + " WAS ALREADY CONNECTED!")
+            return "ERROR"
+        print("Connecting " + line + " to " + str(id))
+        try:
+            if line == "gps":
+                port = await asyncio.to_thread(ZEDF9P, id, 57600)
+            else:
+                port = await asyncio.to_thread(CanSerial, id)
+
+            serial_ports[line]["port"] = port
+            serial_ports[line]["id"] = id
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO CONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
+
+
+@sio.event
+async def disconnectBasePeripheral(sid, line):
+    """Wait for pending setup before disconnecting the peripheral."""
+    if line not in serial_ports:
+        return "ERROR"
+    print("Disconnecting " + line )
+
     async with serial_ports[line]["lock"]:
         port = serial_ports[line]["port"]
+        # Detach before yielding so background tasks stop using the old port.
         serial_ports[line]["port"] = None
         serial_ports[line]["id"] = "disconnect"
         try:
@@ -172,8 +203,8 @@ async def disconnectBasePeripheral(sid, line):
                 await asyncio.to_thread(port.close)
             await sio.emit("forcecanrefresh", skip_sid=sid)
             return "OK"
-        except Exception as exc:
-            print(f"Failed to disconnect base {line}: {exc}")
+        except Exception as e:
+            print("FAILURE TO DISCONNECT " + line.upper() + ": " + str(e))
             await sio.emit("forcecanrefresh", skip_sid=sid)
             return "ERROR"
 

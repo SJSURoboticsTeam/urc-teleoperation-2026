@@ -218,7 +218,7 @@ export const PeripheralProvider = ({ children }) => {
           "Connecting" + id + " , Sending id " + servercanState.drive.id,
         );
         robotsocket.emit(
-          "connectRoverPeripheral",
+          "connectPeripheral",
           id,
           servercanState[id].id,
           (response) => {

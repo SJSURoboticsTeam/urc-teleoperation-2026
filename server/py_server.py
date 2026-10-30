@@ -236,6 +236,7 @@ async def disconnectRoverPeripheral(sid, line):
     """Wait for pending setup before disconnecting the peripheral."""
     if line not in serial_ports:
         return "ERROR"
+    print("Disconnecting " + line)
 
     async with serial_ports[line]["lock"]:
         port = serial_ports[line]["port"]
