@@ -24,6 +24,13 @@ async def release_drive_control(sio, stop_drive_motors, sid):
     return True
 
 
+async def revoke_drive_control(sio, stop_drive_motors):
+    """Take control away from whoever holds it (used when autonomy starts)."""
+    if controller_sid is None:
+        return False
+    return await release_drive_control(sio, stop_drive_motors, controller_sid)
+
+
 def register_drive_control_events(sio, stop_drive_motors):
     @sio.event
     async def getDriveControl(sid):

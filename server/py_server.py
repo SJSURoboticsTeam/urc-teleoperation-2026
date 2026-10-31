@@ -28,9 +28,11 @@ from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
-from drive_control import register_drive_control_events, release_drive_control
+from drive_control import register_drive_control_events, release_drive_control, revoke_drive_control
 from battery import send_fake_battery_data, get_battery_data
 from soft_stop import is_soft_stopped, set_soft_stop
+import rover_mode
+from rover_mode import register_rover_mode_events
 
 
 print("\033[0m----------------")
@@ -82,6 +84,12 @@ if (autonomy):
     print("Autonomy integration enabled")
 else:
     print("Autonomy integration disabled")
+
+# run with --mock-autonomy to simulate autonomous navigation and typing
+mock_autonomy = "--mock-autonomy" in sys.argv
+if (mock_autonomy):
+    rover_mode.state["source"] = "mock"
+    print("Mock autonomy enabled")
 
 # initialize e-stop
 estop_pin = None
@@ -495,6 +503,11 @@ register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
+register_rover_mode_events(
+    sio,
+    lambda: revoke_drive_control(sio, stop_drive_motors_for_handover),
+    stop_drive_motors_for_handover,
+)
 
 # =================== Start Server ===================
 
@@ -570,6 +583,8 @@ async def connect(sid,environ):
 
     # Sync a newly-connecting client to the current Soft Stop state
     await set_soft_stop(sio, is_soft_stopped(), sid=sid)
+    # and to the current rover mode
+    await rover_mode.broadcast(sio, sid=sid)
 
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
