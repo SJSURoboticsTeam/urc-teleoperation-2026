@@ -1,4 +1,4 @@
-"""Mock autonomy: simulates navigation so the frontend can be built before the real stack exists."""
+"""Mock autonomy: simulates navigation and launch-key typing so the frontend can be built before the real stack exists."""
 import asyncio
 import math
 import time
@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import gps
 import rover_mode
-from rover_mode import AUTONOMY, READY, NAVIGATING, ARRIVED, RETURNING, state, reply, broadcast, log
+from rover_mode import AUTONOMY, READY, NAVIGATING, ARRIVED, RETURNING, TYPING, state, reply, broadcast, log
 
 MOCK_AUTONOMY_DEBUG = False
 MOCK_AUTONOMY_DEBUG_RATE_LIMIT_SEC = 1.0
@@ -15,6 +15,7 @@ SPEED_M_S = 1.5
 TICK_S = 0.5
 ARRIVAL_RADIUS_M = 3.0  # GNSS-only locations (1.f.ii)
 RETURN_RADIUS_M = 5.0   # abort return to a visited location (1.f.viii)
+TYPE_INTERVAL_S = 0.7   # time between typed launch-key characters (1.e)
 # used when there is no GPS fix yet; inside the area the fake GPS data uses
 START_POSITION = {"latitude": 37.3345, "longitude": -121.8825}
 
@@ -111,6 +112,29 @@ async def arrive(sio, target, returning):
     await broadcast(sio)
 
 
+async def type_sequence(sio, run):
+    """Type the launch key one character at a time until done or the run is replaced."""
+    sequence = state["typing"]["sequence"]
+    try:
+        for char in sequence:
+            await asyncio.sleep(TYPE_INTERVAL_S)
+            if rover_mode.run_id != run:
+                return
+            state["typing"]["typed"] += char
+            await log(sio, f"typed {char}", tag="AUTONOMY TYPING")
+            await broadcast(sio)
+        if rover_mode.run_id == run:
+            rover_mode.set_mode(AUTONOMY, READY, f"Finished typing {sequence}")
+            await log(sio, state["message"])
+            await broadcast(sio)
+    except Exception as e:
+        print(f"[MOCK AUTONOMY] typing failed: {e}")
+        if rover_mode.run_id == run:
+            rover_mode.set_mode(AUTONOMY, READY, f"Typing failed: {e}")
+            await log(sio, state["message"])
+            await broadcast(sio)
+
+
 def register_mock_autonomy_events(sio, emit_gps):
     def start_drive(target, phase, message, radius):
         rover_mode.set_mode(AUTONOMY, phase, message)
@@ -162,6 +186,33 @@ def register_mock_autonomy_events(sio, emit_gps):
         else:
             rover_mode.set_mode(AUTONOMY, READY, "Navigation aborted")
             state["activeTargetId"] = None
+        await log(sio, state["message"])
+        await broadcast(sio)
+        return reply("OK")
+
+    @sio.event
+    async def startTyping(sid, data=None):
+        """Type a launch key with the arm (1.e). The expected key is shared so every client can check it."""
+        data = data or {}
+        sequence = str(data.get("sequence") or "").strip().upper()
+        if state["mode"] != AUTONOMY:
+            return reply("DENIED", "Start autonomy first")
+        if state["phase"] not in (READY, ARRIVED):
+            return reply("DENIED", f"Can't start typing while {state['phase']}")
+        if not sequence:
+            return reply("ERROR", "Nothing to type")
+        rover_mode.set_mode(AUTONOMY, TYPING, f"Typing {sequence}")
+        state["typing"] = {"expected": str(data.get("expected") or "").strip().upper(), "sequence": sequence, "typed": ""}
+        sio.start_background_task(type_sequence, sio, rover_mode.run_id)
+        await log(sio, state["message"])
+        await broadcast(sio)
+        return reply("OK")
+
+    @sio.event
+    async def stopTyping(sid):
+        if state["phase"] != TYPING:
+            return reply("DENIED", "The rover isn't typing")
+        rover_mode.set_mode(AUTONOMY, READY, "Typing stopped")
         await log(sio, state["message"])
         await broadcast(sio)
         return reply("OK")
