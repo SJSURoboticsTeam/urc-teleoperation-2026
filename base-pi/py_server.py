@@ -9,7 +9,7 @@ from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
 from video import send_fake_video_stats, videoloop
 import sys, subprocess
-
+from notes import register_notes_events
 
 print("\033[0m----------------")
 
@@ -147,6 +147,7 @@ video_task_started = False
 
 
 register_metric_events(sio)
+register_notes_events(sio)
 register_shutdown_commands(sio)
 # =================== Start Server ===================
 
