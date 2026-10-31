@@ -18,6 +18,7 @@ import DriveCommandProvider from "../providers/DriveCommandProvider";
 import MastCommandProvider from "../providers/MastCommandProvider";
 import GamepadProvider from "../providers/GamepadProvider";
 import GPSProvider from "../providers/GPSProvider";
+import WaypointsProvider from "../providers/WaypointsProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import SoftStopProvider from "../providers/SoftStopProvider";
 import PeripheralProvider from "../providers/PeripheralProvider";
@@ -90,6 +91,7 @@ function App() {
         <SerialProvider>
           <PeripheralProvider>
             <GPSProvider>
+              <WaypointsProvider>
               <MetricsProvider>
                 <VideoProvider>
                 <AutonomyModeProvider>
@@ -145,6 +147,7 @@ function App() {
                 </AutonomyModeProvider>
                 </VideoProvider>
               </MetricsProvider>
+              </WaypointsProvider>
             </GPSProvider>
           </PeripheralProvider>
         </SerialProvider>

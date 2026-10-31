@@ -4,7 +4,11 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import ScienceIcon from "@mui/icons-material/Science";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
+import { useWaypoints } from "../../contexts/WaypointsContext";
 import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON } from "../../lib/gpsTrail";
 
 const TRAIL_SOURCE = "rover-gps-trail";
@@ -413,6 +417,67 @@ function updateAccuracyCircle(map, sourceId, layerId, coords) {
   updateAccuracyRadius(map, layerId, coords);
 }
 
+const WAYPOINT_STYLES = {
+  science: { color: "#00897b", Icon: ScienceIcon },
+  autonomy: { color: "#3949ab", Icon: SmartToyIcon },
+  poi: { color: "#455a64", Icon: PlaceIcon },
+};
+
+// Science pins are larger and ringed in yellow so they stand out from other waypoints
+function WaypointPin({ waypoint }) {
+  const { color, Icon } = WAYPOINT_STYLES[waypoint.type] ?? WAYPOINT_STYLES.poi;
+  const highlighted = waypoint.type === "science";
+  const size = highlighted ? 34 : 26;
+  const label = waypoint.scienceSite ? `Site ${waypoint.scienceSite}` : waypoint.name;
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        bgcolor: color,
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: highlighted ? "3px solid #ffd600" : "2px solid #fff",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.5)",
+        cursor: "pointer",
+      }}
+    >
+      <Icon sx={{ fontSize: size * 0.6 }} />
+      {/* Label hangs below the icon so the icon's center stays on the coordinate */}
+      <Typography
+        variant="caption"
+        sx={{
+          position: "absolute",
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          mt: 0.25,
+          px: 0.5,
+          bgcolor: "rgba(255,255,255,0.9)",
+          color: "#000",
+          borderRadius: 0.5,
+          fontWeight: highlighted ? 700 : 400,
+          lineHeight: 1.4,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
+function removeWaypointMarker({ marker, root }) {
+  marker.remove();
+  // Unmounting a root while React is committing logs a warning, so wait a tick
+  setTimeout(() => root.unmount());
+}
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -428,6 +493,8 @@ export default function Map() {
   const trailPointsRef = useRef([]);
   const trailControlStateRef = useRef(null);
   const trailUpdaterRef = useRef(null);
+  // Waypoint id -> { marker, root }. A plain object because this component's name hides the built-in Map
+  const waypointMarkersRef = useRef({});
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
@@ -441,6 +508,7 @@ export default function Map() {
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
+  const { waypoints } = useWaypoints();
   trailPointsRef.current = trailPoints;
   trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
 
@@ -728,6 +796,8 @@ export default function Map() {
       window.removeEventListener("resize", onWindowResize);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
+      Object.values(waypointMarkersRef.current).forEach(removeWaypointMarker);
+      waypointMarkersRef.current = {};
       // Clean up map instance
       if (map && typeof map.remove === "function") {
         map.remove();
@@ -736,6 +806,39 @@ export default function Map() {
       trailUpdaterRef.current = null;
     };
   }, []);
+
+  // Keep one marker per waypoint: add new ones, move or restyle changed ones, remove deleted ones.
+  // Must stay after the map setup effect so mapRef is ready on the first run.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const markers = waypointMarkersRef.current;
+    const currentIds = new Set(waypoints.map((wp) => wp.id));
+
+    for (const id of Object.keys(markers)) {
+      if (!currentIds.has(id)) {
+        removeWaypointMarker(markers[id]);
+        delete markers[id];
+      }
+    }
+
+    for (const wp of waypoints) {
+      if (!markers[wp.id]) {
+        const element = document.createElement("div");
+        markers[wp.id] = {
+          // MapLibre needs a position before addTo
+          marker: new maplibregl.Marker({ element }).setLngLat([wp.long, wp.lat]).addTo(map),
+          root: ReactDOM.createRoot(element),
+        };
+      }
+      const { marker, root } = markers[wp.id];
+      marker.setLngLat([wp.long, wp.lat]);
+      marker.getElement().title = `${wp.name}\n${wp.lat.toFixed(6)}, ${wp.long.toFixed(6)}`;
+      // Keep highlighted science pins on top of overlapping waypoints
+      marker.getElement().style.zIndex = wp.type === "science" ? 1 : "";
+      root.render(<WaypointPin waypoint={wp} />);
+    }
+  }, [waypoints]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource(TRAIL_SOURCE);
