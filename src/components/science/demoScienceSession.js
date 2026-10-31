@@ -3,7 +3,6 @@
 
 export const demoScienceSession = {
   mock: true,
-  stopped: false,
   activeSite: null,
   steps: [
     "Start",
@@ -88,4 +87,23 @@ export const demoScienceSession = {
       environment: [],
     },
   ],
+};
+
+// Layout-only snapshot used while no backend is connected: same steps, sites, wavelengths
+// and vials as the demo, but no progress and no readings. Never shown as real data.
+export const emptyScienceSession = {
+  ...demoScienceSession,
+  mock: false,
+  activeSite: null,
+  sites: demoScienceSession.sites.map((site) => ({
+    ...site,
+    status: "not_started",
+    currentStep: -1,
+    pendingStep: null,
+    lastError: null,
+    startedAt: null,
+    completedAt: null,
+    spectro: { clear: null, vials: {} },
+    environment: [],
+  })),
 };

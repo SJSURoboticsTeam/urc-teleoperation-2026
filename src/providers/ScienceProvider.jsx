@@ -32,7 +32,7 @@ export const ScienceProvider = ({ children }) => {
       pullScienceSession();
     };
 
-    // keep the last snapshot on screen; the view marks it stale
+    // keep the last snapshot on screen; the view shows "not connected" and disables commands
     const onDisconnect = () => {
       setConnected(false);
       setPending(false);
@@ -55,11 +55,15 @@ export const ScienceProvider = ({ children }) => {
   }, []);
 
   const canCommand = !offlineMode && connected;
-  const stale = !offlineMode && !connected && session !== null;
 
   // The reply only says whether the command was accepted; the new state arrives
   // via the scienceSession broadcast, never from here
-  const sendCommand = (event, payload, label, { bypassPending = false } = {}) => {
+  const sendCommand = (
+    event,
+    payload,
+    label,
+    { bypassPending = false, okMessage } = {},
+  ) => {
     if (!canCommand) {
       enqueueSnackbar("Science backend not connected.", { variant: "error" });
       return;
@@ -78,6 +82,8 @@ export const ScienceProvider = ({ children }) => {
         enqueueSnackbar(res.reason || `${label} denied.`, { variant: "warning" });
       } else if (res?.status === "ERROR") {
         enqueueSnackbar(res.reason || `${label} failed.`, { variant: "error" });
+      } else if (res?.status === "OK" && okMessage) {
+        enqueueSnackbar(okMessage, { variant: "info" });
       }
     });
   };
@@ -87,24 +93,27 @@ export const ScienceProvider = ({ children }) => {
 
   const step = (site) => sendCommand("scienceStep", { site }, "Step");
 
-  // E-stop must never wait behind another command, so it skips the pending guard
+  // A stop must never wait behind another command, so it skips the pending guard.
+  // The backend only prints and logs it for now (no firmware stop command yet)
   const stop = () =>
-    sendCommand("scienceStop", {}, "Science E-Stop", { bypassPending: true });
+    sendCommand("scienceStop", {}, "STOP", {
+      bypassPending: true,
+      okMessage: "STOP sent (placeholder: nothing physically stops yet)",
+    });
 
-  // clears the stop latch only; the UI never wipes a single site
-  const reset = () => sendCommand("scienceReset", {}, "Clear Science E-Stop");
+  const resetSite = (siteId) =>
+    sendCommand("scienceReset", { site: siteId }, "Reset site");
 
   const value = {
     session,
     offlineMode,
     connected,
     canCommand,
-    stale,
     pending,
     startSite,
     step,
     stop,
-    reset,
+    resetSite,
   };
 
   return (
