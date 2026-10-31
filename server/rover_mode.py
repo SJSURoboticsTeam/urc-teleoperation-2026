@@ -89,6 +89,7 @@ async def stop_autonomy(sio, message):
     if state["mode"] != AUTONOMY:
         return False
     set_mode(IDLE, message=message)
+    state["activeTargetId"] = None
     await log(sio, message)
     await broadcast(sio)
     return True
@@ -131,7 +132,7 @@ def register_rover_mode_events(sio, revoke_drive_control, stop_drive_motors):
         return await stop_autonomy_and_motors()
 
     @sio.event
-    async def setRoverMode(sid, data):
+    async def setRoverMode(sid, data=None):
         """Manual mode change from the Status pane."""
         mode = (data or {}).get("mode")
         if mode == AUTONOMY:

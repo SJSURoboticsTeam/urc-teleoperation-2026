@@ -33,6 +33,7 @@ from battery import send_fake_battery_data, get_battery_data
 from soft_stop import is_soft_stopped, set_soft_stop
 import rover_mode
 from rover_mode import register_rover_mode_events
+from mock_autonomy import register_mock_autonomy_events
 
 
 print("\033[0m----------------")
@@ -509,6 +510,9 @@ register_rover_mode_events(
     lambda: revoke_drive_control(sio, stop_drive_motors_for_handover),
     stop_drive_motors_for_handover,
 )
+if mock_autonomy:
+    # in offline mode the mock also sends the simulated position as gpsData for the map
+    register_mock_autonomy_events(sio, emit_gps=offline)
 
 # =================== Start Server ===================
 
