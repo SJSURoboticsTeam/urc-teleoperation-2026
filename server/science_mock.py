@@ -17,7 +17,7 @@ MOCK_DROP_ACKS = False  # set True by hand to never send FINISHED_STEP and exerc
 NOISE_FRACTION = 0.03   # gaussian sigma as a fraction of each count
 
 # Calibration readings (415, 455, 480, 515, 555, 590, 630, 680 nm) from the old hardcoded UI data.
-# The clear 415 nm channel sits at the 16-bit max, so noise on it shows the saturation path.
+# The clear 415 nm channel sits at the 16-bit max and stays there, so the saturation path always shows.
 MOCK_CLEAR = [65535, 1364, 696, 568, 1466, 4655, 1140, 338]
 MOCK_VIALS = {
     "purple": [9875, 136, 78, 68, 166, 494, 117, 37],
@@ -47,8 +47,11 @@ class MockScienceLink:
             task.cancel()
 
     def _noisy(self, counts):
+        # a channel already at the 16-bit max is saturated, and noise must not hide that
         return [
-            min(SATURATION_COUNT, max(0, round(c * self.rng.gauss(1, NOISE_FRACTION))))
+            c
+            if c >= SATURATION_COUNT
+            else min(SATURATION_COUNT, max(0, round(c * self.rng.gauss(1, NOISE_FRACTION))))
             for c in counts
         ]
 
