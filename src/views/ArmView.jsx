@@ -81,6 +81,23 @@ export default function ArmView() {
   const controlModeLabel = gamepadMode ? "Gamepad Control" : "Slider Control";
   const sendModeLabel = controlsLocked ? "Locked" : txon ? "Auto" : "Manual";
 
+  const visualCommands = {
+    track: safeArmCommands.track ?? ARM_JOINT_META.track.initial,
+    shoulder: safeArmCommands.shoulder ?? ARM_JOINT_META.shoulder.initial,
+    elbow: safeArmCommands.elbow ?? ARM_JOINT_META.elbow.initial,
+    pitch: safeArmCommands.pitch ?? ARM_JOINT_META.pitch.initial,
+    roll: safeArmCommands.roll ?? ARM_JOINT_META.roll.initial,
+    clamp: safeArmCommands.clamp ?? ARM_JOINT_META.clamp.initial,
+  };
+  const trackOffset = (visualCommands.track / ARM_JOINT_META.track.max) * 30;
+  const shoulderRotation =
+    visualCommands.shoulder - ARM_JOINT_META.shoulder.initial;
+  const elbowRotation = visualCommands.elbow - ARM_JOINT_META.elbow.initial;
+  const pitchRotation = visualCommands.pitch - ARM_JOINT_META.pitch.initial;
+  const rollRotation = visualCommands.roll - ARM_JOINT_META.roll.initial;
+  const clampRotation =
+    (visualCommands.clamp - ARM_JOINT_META.clamp.initial) * 0.25;
+
   useEffect(() => {
     armCommandsRef.current = safeArmCommands;
   }, [safeArmCommands]);
@@ -487,6 +504,80 @@ export default function ArmView() {
             TX Activity
           </Typography>
         </Box>
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+          width: "100%",
+          mt: 4,
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 250 200"
+          role="img"
+          aria-label="Arm pose visualization"
+          style={{ width: "100%", maxWidth: 500, height: "auto" }}
+        >
+          <g id="body">
+              <rect x="50" y="95" width="104" height="31" fill="#80cdd6" />
+            </g>
+          <g transform={`translate(${trackOffset} 0)`}>
+            <g transform={`rotate(${shoulderRotation} 122 108)`}>
+              <g id="neck" strokeLinecap="round">
+                <line x1="122" y1="108" x2="148" y2="52" stroke="#4aa3ae" strokeWidth="25.5" />
+                <line x1="122" y1="108" x2="148" y2="52" stroke="#80cdd6" strokeWidth="24" />
+              </g>
+              <g transform={`rotate(${elbowRotation} 148 52)`}>
+                <g id="head" strokeLinecap="round">
+                  <line x1="146" y1="46" x2="185" y2="80" stroke="#4aa3ae" strokeWidth="25.5" />
+                  <line x1="146" y1="46" x2="185" y2="80" stroke="#80cdd6" strokeWidth="24" />
+                </g>
+                <g transform={`rotate(${pitchRotation} 185 80)`}>
+                  <g
+                    id="clamp1"
+                    transform={`rotate(${-clampRotation} 185 90)`}
+                    strokeLinecap="round"
+                  >
+                    <line x1="185" y1="90" x2="195" y2="110" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="185" y1="90" x2="195" y2="110" stroke="#80cdd6" strokeWidth="10" />
+                    <line x1="195" y1="110" x2="201" y2="105" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="195" y1="110" x2="201" y2="105" stroke="#80cdd6" strokeWidth="10" />
+                  </g>
+                  <g
+                    id="clamp2"
+                    transform={`rotate(${clampRotation} 195 80)`}
+                    strokeLinecap="round"
+                  >
+                    <line x1="195" y1="80" x2="215" y2="90" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="195" y1="80" x2="215" y2="90" stroke="#80cdd6" strokeWidth="10" />
+                    <line x1="215" y1="90" x2="209" y2="98" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="215" y1="90" x2="209" y2="98" stroke="#80cdd6" strokeWidth="10" />
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 250 200"
+          role="img"
+          aria-label={`Front view of clamp at ${round2(visualCommands.roll)} degrees wrist roll`}
+          style={{ width: "100%", maxWidth: 200, height: "auto" }}
+        >
+          <circle cx="125" cy="100" r="58" fill="#80cdd6" stroke="#4aa3ae" strokeWidth="2" />
+          <g transform={`rotate(${rollRotation} 125 100)`} strokeLinecap="round">
+            <line x1="125" y1="50" x2="125" y2="80" stroke="#4aa3ae" strokeWidth="30" />
+            <line x1="125" y1="50" x2="125" y2="80" stroke="#80cdd6" strokeWidth="26" />
+            <line x1="125" y1="120" x2="125" y2="150" stroke="#4aa3ae" strokeWidth="30" />
+            <line x1="125" y1="120" x2="125" y2="150" stroke="#80cdd6" strokeWidth="26" />
+          </g>
+        </svg>
       </Box>
     </Box>
   );
