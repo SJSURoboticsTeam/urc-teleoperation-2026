@@ -87,11 +87,6 @@ class CanScienceLink:
         self.session.log_event("can_tx", site=site, step=step, data={"frame": frame.decode().strip()})
         return True
 
-    async def send_stop(self):
-        # TODO(firmware): the doc puts the semi e-stop on 0x00, which is also the heartbeat ID
-        print("\033[91m[SCIENCE CAN] no STOP frame defined: firmware was NOT told to stop\033[0m")
-        return False
-
     def _invalidate_connection(self, reason):
         try:
             serial = self.serial_ports.get("science")

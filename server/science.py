@@ -1,7 +1,7 @@
 """Science mission state: sites, stepping and sensor readings.
 
-ScienceSession talks to firmware through an injected link (send_step, send_stop,
-is_mock) and reports changes through an async on_change callback. The link
+ScienceSession talks to firmware through an injected link (send_step, is_mock)
+and reports changes through an async on_change callback. The link
 reports firmware events back through the handle_* methods.
 """
 
@@ -105,7 +105,6 @@ class ScienceSession:
         self.step_timeout_s = step_timeout_s
         self.steps = list(steps) if steps is not None else list(SCIENCE_STEPS)
         self.sites = [_Site(i) for i in range(site_count)]
-        self.stopped = False
         self._timers = {}  # site id -> timeout task; held so it isn't garbage collected
         self._last_site = None  # sensor readings that arrive after the last step go here
 
@@ -119,7 +118,6 @@ class ScienceSession:
         active = self._active_site()
         return {
             "mock": bool(getattr(self.link, "is_mock", False)),
-            "stopped": self.stopped,
             "activeSite": active.id if active else None,
             "steps": list(self.steps),
             "wavelengths": list(WAVELENGTHS_NM),
@@ -170,8 +168,6 @@ class ScienceSession:
         site, reason = self._parse_site(data)
         if site is None:
             return "DENIED", reason
-        if self.stopped:
-            return "DENIED", "Science is stopped; reset first"
         if site.status != "not_started":
             return "DENIED", f"{site.name} is {site.status.replace('_', ' ')}"
         active = self._active_site()
@@ -191,8 +187,6 @@ class ScienceSession:
         site, reason = self._parse_site(data)
         if site is None:
             return "DENIED", reason
-        if self.stopped:
-            return "DENIED", "Science is stopped; reset first"
         if site.status == "stepping":
             return "DENIED", "Step already in progress"
         if site.status == "not_started":
@@ -231,47 +225,30 @@ class ScienceSession:
         return "OK", None
 
     async def stop(self, data=None):
-        """Refuse start/step until reset. A step already in flight is NOT cancelled.
+        """Placeholder: print and log the request, change nothing.
 
-        Firmware's semi e-stop finishes the step it is doing and refuses the next one, so
-        pending_step and its timer stay: the in-flight FINISHED_STEP still counts, and if it
-        never arrives the normal step timeout reports it.
+        No state change, so no broadcast. A step in flight and its timer are untouched,
+        and firmware is not contacted.
         """
-        active = self._active_site()
-        self.stopped = True
-        self._log("estop", site=active.id if active else None)
-
-        sent = True
-        error = None
-        if self.link is not None:
-            try:
-                sent = await self.link.send_stop()
-            except Exception as e:
-                sent, error = False, f"Science link error: {e}"
-        await self._changed()
-        if not sent:
-            return "ERROR", error or "Science stopped in software, but firmware was not told to stop"
+        # TODO(firmware / power board): send the real stop here once firmware defines a STOP ID
+        # or the power distribution board exposes one. The CAN doc puts the semi
+        # e-stop on 0x00, which is also the heartbeat ID, so check that before reusing it.
+        print("[SCIENCE] STOP requested (placeholder: no firmware stop command yet)")
+        self._log("stop_requested", site=self.active_site_id())
         return "OK", None
 
     async def reset(self, data=None):
-        """Clear the stop latch. With {"site": n}, also wipe that site back to not_started."""
-        site = None
-        if data is not None:
-            if not isinstance(data, dict):
-                return "DENIED", "Invalid payload"
-            if data.get("site") is not None:
-                site, reason = self._parse_site(data)
-                if site is None:
-                    return "DENIED", reason
-                if site.status == "stepping":
-                    return "DENIED", "Step in progress; wait for it to finish"
+        """Wipe one site back to not_started. Denied while its step is in flight."""
+        site, _ = self._parse_site(data)
+        if site is None:
+            return "DENIED", "Pick a site to reset"
+        if site.status == "stepping":
+            return "DENIED", "Step in progress; wait for it to finish"
 
-        self.stopped = False
-        if site is not None:
-            site.wipe()
-            if self._last_site == site.id:
-                self._last_site = None
-        self._log("reset", site=site.id if site else None)
+        site.wipe()
+        if self._last_site == site.id:
+            self._last_site = None
+        self._log("reset", site=site.id)
         await self._changed()
         return "OK", None
 

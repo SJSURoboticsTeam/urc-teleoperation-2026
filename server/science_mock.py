@@ -1,8 +1,8 @@
 """Fake science firmware for --offline runs.
 
-MockScienceLink has the same interface as the real CAN link (send_step, send_stop,
-is_mock) and reports back through the same ScienceSession.handle_* methods, so the
-state machine, timeouts, logging and frontend behave identically with or without
+MockScienceLink has the same interface as the real CAN link (send_step, is_mock)
+and reports back through the same ScienceSession.handle_* methods, so the state
+machine, timeouts, logging and frontend behave identically with or without
 hardware. It mocks the parsed events, not raw CAN bytes, because firmware hasn't
 defined the sensor frame layouts yet.
 """
@@ -40,10 +40,6 @@ class MockScienceLink:
         task = asyncio.get_running_loop().create_task(self._run_step(site, step))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
-        return True
-
-    async def send_stop(self):
-        # like firmware's semi e-stop: the step in flight still finishes, so nothing is cancelled
         return True
 
     def cancel_all(self):
