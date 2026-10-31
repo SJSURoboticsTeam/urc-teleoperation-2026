@@ -442,6 +442,7 @@ async def E_STOP(sid):
         print(f"\033[91mPhysical e-stop activation failed: {exc}\033[0m")
         # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(1, shutdown)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by E-Stop")
     return("OK")
     
 
@@ -604,6 +605,7 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
 
     # Broadcast to every connected client so they all lock, not just the sender
     await set_soft_stop(sio, True)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by Soft Stop")
 
     # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
     # drive specifically being connected.
@@ -629,6 +631,7 @@ async def disconnect(sid):
 
     if metrics.numClients == 0:
         print("No clients, stopping motors now.")
+        await rover_mode.stop_autonomy(sio, "Autonomy stopped: no clients connected")
         await stop_drive_motors()
 
 config = uvicorn.Config(
