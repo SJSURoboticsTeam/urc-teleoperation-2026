@@ -24,7 +24,6 @@ export default function PeripheralManager({ openPane }) {
   const { robotConnected: isRobotConnected, baseConnected: isBaseConnected } =
     useConnectionStatus();
 
-
   useEffect(() => {
     if (openPane == "Backend") {
       requestCanInfo(); // autoload can serialState
@@ -46,7 +45,10 @@ export default function PeripheralManager({ openPane }) {
       <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
         <Button
           variant="contained"
-          loading={servercanState.loading}
+          loading={
+            (isRobotConnected && servercanState.loading) ||
+            (isBaseConnected && basecanState.loading)
+          }
           onClick={requestCanInfo}
           sx={{ width: 140 }}
         >
@@ -55,12 +57,14 @@ export default function PeripheralManager({ openPane }) {
         <Button
           disabled={
             !(
-              (isRobotConnected && ["drive", "arm", "science", "gps"].some(
-                (id) => servercanState[id].state !== "idle",
-              )) ||
-              (isBaseConnected && ["antenna", "gps"].some(
-                (id) => basecanState[id].state !== "idle",
-              ))
+              (isRobotConnected &&
+                ["drive", "arm", "science", "gps"].some(
+                  (id) => servercanState[id].state !== "idle",
+                )) ||
+              (isBaseConnected &&
+                ["antenna", "gps"].some(
+                  (id) => basecanState[id].state !== "idle",
+                ))
             )
           }
           color="error"
@@ -82,13 +86,15 @@ export default function PeripheralManager({ openPane }) {
             <PeripheralDropdown key={id} id={id} isRover />
           ))}
         </div>
-      ) : null}
+      ) : (
+        <Typography sx={{ color: "black" }}>Robot is offline</Typography>
+      )}
       {isBaseConnected ? (
         <div>
           {/* ANTENNA CAN CONNECTION */}
           <PeripheralDropdown id="antenna" />
         </div>
-      ) : null}
+      ) : <Typography sx={{ color: "black" }}>Base is offline</Typography>}
     </div>
   );
 }

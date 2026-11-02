@@ -7,15 +7,21 @@ import { useEffect } from "react";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 import { useSerial } from "../../contexts/SerialContext";
 import PeripheralDropdown from "../socket.io/PeripheralDropdown";
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
   const {
     servercanState,
     requestCanInfo,
     setservercanState,
+    basecanState,
     disconnectAll,
   } = usePeripherals();
 
   const { refresh } = useSerial();
+
+  const { robotConnected: isRobotConnected, baseConnected: isBaseConnected } =
+    useConnectionStatus();
 
   useEffect(() => {
     if (openPane == "GPSManager") {
@@ -71,7 +77,10 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           <Box sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
             <Button
               variant="contained"
-              loading={servercanState.loading}
+              loading={
+                (isRobotConnected && servercanState.loading) ||
+                (isBaseConnected && basecanState.loading)
+              }
               onClick={requestCanInfo}
               sx={{ width: 140 }}
             >
@@ -84,9 +93,12 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
                 servercanState.science.state != "active" &&
                 servercanState.gps.state != "active"
               }
+              loading={
+                (isRobotConnected && servercanState.loading) ||
+                (isBaseConnected && basecanState.loading)
+              }
               color="error"
               variant="contained"
-              loading={servercanState.loading}
               onClick={disconnectAll}
               sx={{ width: 140 }}
             >
@@ -95,10 +107,17 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           </Box>
 
           {/* ROVER GPS CONNECTION */}
-          <PeripheralDropdown id="gps" isRover />
-
+          {isRobotConnected ? (
+            <PeripheralDropdown id="gps" isRover />
+          ) : (
+            <Typography sx={{ color: "black" }}>Robot is offline</Typography>
+          )}
           {/* BASE GPS CONNECTION */}
-          <PeripheralDropdown id="gps" />
+          {isBaseConnected ? (
+            <PeripheralDropdown id="gps" />
+          ) : (
+            <Typography sx={{ color: "black" }}>Base is offline</Typography>
+          )}
         </div>
       )}
     </div>
