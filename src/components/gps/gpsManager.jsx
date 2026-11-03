@@ -15,7 +15,8 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
     requestCanInfo,
     setservercanState,
     basecanState,
-    disconnectAll,
+    setbasecanState,
+    disconnectAllGPS,
   } = usePeripherals();
 
   const { refresh } = useSerial();
@@ -29,6 +30,11 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
       refresh(); // update serial
     } else {
       setservercanState((prev) => ({
+        ...prev,
+        // lock so next time so reload has to happen first (and unlock)
+        loading: true,
+      }));
+      setbasecanState((prev) => ({
         ...prev,
         // lock so next time so reload has to happen first (and unlock)
         loading: true,
@@ -88,10 +94,8 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
             </Button>
             <Button
               disabled={
-                servercanState.drive.state != "active" &&
-                servercanState.arm.state != "active" &&
-                servercanState.science.state != "active" &&
-                servercanState.gps.state != "active"
+                basecanState.antenna.state != "active" &&
+                basecanState.gps.state != "active"
               }
               loading={
                 (isRobotConnected && servercanState.loading) ||
@@ -99,7 +103,7 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
               }
               color="error"
               variant="contained"
-              onClick={disconnectAll}
+              onClick={disconnectAllGPS}
               sx={{ width: 140 }}
             >
               STOP ALL

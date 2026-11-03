@@ -19,6 +19,7 @@ export default function PeripheralDropdown({ id, isRover = false }) {
     connectBasePeripheral,
     disconnectBasePeripheral,
     isDuplicateRover,
+    isDuplicateBase
   } = usePeripherals();
 
   const canState = isRover ? servercanState : basecanState;
@@ -72,7 +73,7 @@ export default function PeripheralDropdown({ id, isRover = false }) {
           <MenuItem value={"disconnect"}>Disconnect</MenuItem>
           {canState.canIds?.map((canId) => (
             <MenuItem
-              disabled={isRover && isDuplicateRover(id, canId)}
+              disabled={isRover && isDuplicateRover(id, canId) || !isRover && isDuplicateBase(id, canId)}
               key={canId}
               value={canId}
             >

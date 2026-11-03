@@ -15,7 +15,8 @@ export default function PeripheralManager({ openPane }) {
     basecanState,
     requestCanInfo,
     setservercanState,
-    disconnectAll,
+    setbasecanState,
+    disconnectAllPeripherals,
   } = usePeripherals();
   const { refresh } = useSerial();
 
@@ -30,6 +31,11 @@ export default function PeripheralManager({ openPane }) {
       refresh(); // update serial
     } else {
       setservercanState((prev) => ({
+        ...prev,
+        // lock so next time so reload has to happen first (and unlock)
+        loading: true,
+      }));
+      setbasecanState((prev) => ({
         ...prev,
         // lock so next time so reload has to happen first (and unlock)
         loading: true,
@@ -73,7 +79,7 @@ export default function PeripheralManager({ openPane }) {
             (isRobotConnected && servercanState.loading) ||
             (isBaseConnected && basecanState.loading)
           }
-          onClick={disconnectAll}
+          onClick={disconnectAllPeripherals}
           sx={{ width: 140 }}
         >
           STOP ALL
@@ -94,7 +100,9 @@ export default function PeripheralManager({ openPane }) {
           {/* ANTENNA CAN CONNECTION */}
           <PeripheralDropdown id="antenna" />
         </div>
-      ) : <Typography sx={{ color: "black" }}>Base is offline</Typography>}
+      ) : (
+        <Typography sx={{ color: "black" }}>Base is offline</Typography>
+      )}
     </div>
   );
 }

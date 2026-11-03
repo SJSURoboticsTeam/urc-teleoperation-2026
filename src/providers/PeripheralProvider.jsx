@@ -5,7 +5,6 @@ import { PeripheralContext } from "../contexts/PeripheralContext";
 import Button from "@mui/material/Button";
 import { useSerial } from "../contexts/SerialContext";
 
-
 function ReconnectAction({
   snackbarId,
   disconnectRoverPeripheral,
@@ -17,6 +16,7 @@ function ReconnectAction({
 
   const handleReconnect = async () => {
     setLoading(true);
+    
 
     try {
       await disconnectRoverPeripheral(canId);
@@ -74,12 +74,16 @@ export const PeripheralProvider = ({ children }) => {
 
   const { serialState } = useSerial();
 
-    // true if canId is already taken by another rover line or the serial port
+  // true if canId is already taken by another rover line or the serial port
   const isDuplicateRover = (line, canId) =>
     ["drive", "arm", "science", "gps"].some(
       (other) => other !== line && servercanState[other].id === canId,
     ) || canId === serialState.portId;
 
+  const isDuplicateBase = (line, canId) =>
+    ["antenna", "gps"].some(
+      (other) => other !== line && basecanState[other].id === canId,
+    );
 
   const [basecanState, setbasecanState] = useState({
     antenna: {
@@ -215,7 +219,7 @@ export const PeripheralProvider = ({ children }) => {
       clearCanWarning(id);
       return new Promise((resolve, reject) => {
         console.log(
-          "Connecting" + id + " , Sending id " + servercanState.drive.id,
+          "Connecting " + id + " , Sending id " + servercanState[id].id,
         );
         robotsocket.emit(
           "connectRoverPeripheral",
@@ -343,18 +347,28 @@ export const PeripheralProvider = ({ children }) => {
     [enqueueSnackbar, requestCanInfo],
   );
 
-  async function disconnectAll() {
+  async function disconnectAllPeripherals() {
     const pending = [];
     // Check live sockets so commands are never queued for an offline backend.
     if (robotsocket.connected) {
-      for (const id of ["drive", "arm", "science", "gps"]) {
+      for (const id of ["drive", "arm", "science"]) {
         pending.push(disconnectRoverPeripheral(id));
       }
     }
     if (basesocket.connected) {
-      for (const id of ["antenna", "gps"]) {
-        pending.push(disconnectBasePeripheral(id));
-      }
+      pending.push(disconnectBasePeripheral("antenna"));
+    }
+    // Each operation reports its own failure; still attempt every peripheral.
+    await Promise.allSettled(pending);
+  }
+
+  async function disconnectAllGPS() {
+    const pending = [];
+    if (basesocket.connected) {
+      pending.push(disconnectBasePeripheral("gps"));
+    }
+    if (robotsocket.connected) {
+      pending.push(disconnectRoverPeripheral("gps"));
     }
     // Each operation reports its own failure; still attempt every peripheral.
     await Promise.allSettled(pending);
@@ -407,8 +421,10 @@ export const PeripheralProvider = ({ children }) => {
     disconnectRoverPeripheral,
     connectBasePeripheral,
     disconnectBasePeripheral,
-    disconnectAll,
-    isDuplicateRover
+    disconnectAllPeripherals,
+    disconnectAllGPS,
+    isDuplicateRover,
+    isDuplicateBase
   };
 
   return (

@@ -80,17 +80,17 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
-    #gps
-    try:
-        if serial_ports["gps"]["port"]:
-            serial_ports["gps"]["port"].close()
-            print("GPS serial closed.")
-        else:
-            print("GPS was never connected.")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        pass
-    sys.exit(0)
+    ids = ["antenna", "gps"]
+    for id in ids:
+        try:
+            if serial_ports[id]["port"]:
+                serial_ports[id]["port"].close()
+                print(id.capitalize() + " serial closed.")
+            else:
+                print(id.capitalize() + " was never connected.")
+        except Exception:
+            print(id.upper() + " WAS NOT DISCONNECTED!!!")
+            pass
 # =================== Server Setup ===================
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)

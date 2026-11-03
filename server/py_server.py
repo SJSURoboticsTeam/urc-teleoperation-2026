@@ -291,7 +291,7 @@ battery_started = False
 
 async def _send_drive_stop_command():
     """Write a zero-velocity command to the drive line. Caller must hold drive_command_lock."""
-    if not serial_ports["drive"]:
+    if not serial_ports["drive"]["port"]:
         print("No drive serial connected. Cannot send stop command.")
         return
     try:
@@ -409,7 +409,7 @@ async def connect(sid,environ):
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
     """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
-    if serial_ports["drive"]:
+    if serial_ports["drive"]["port"]:
         async with drive_command_lock:
             try:
                 if USE_UART_DRIVE:
