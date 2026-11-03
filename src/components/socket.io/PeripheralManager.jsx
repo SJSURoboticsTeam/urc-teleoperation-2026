@@ -41,7 +41,7 @@ export default function PeripheralManager({ openPane }) {
         loading: true,
       }));
     }
-  }, [openPane]);
+  }, [openPane, requestCanInfo, refresh, setbasecanState, setservercanState]);
 
   return (
     <div>
@@ -57,6 +57,7 @@ export default function PeripheralManager({ openPane }) {
           }
           onClick={requestCanInfo}
           sx={{ width: 140 }}
+          disabled = { !isRobotConnected && !isBaseConnected}
         >
           REFRESH
         </Button>
@@ -93,7 +94,7 @@ export default function PeripheralManager({ openPane }) {
           ))}
         </div>
       ) : (
-        <Typography sx={{ color: "black" }}>Robot is offline</Typography>
+        <Typography sx={{ color: "black" }}>Robot is offline.</Typography>
       )}
       {isBaseConnected ? (
         <div>
@@ -101,7 +102,7 @@ export default function PeripheralManager({ openPane }) {
           <PeripheralDropdown id="antenna" />
         </div>
       ) : (
-        <Typography sx={{ color: "black" }}>Base is offline</Typography>
+        <Typography sx={{ color: "black" }}>Base is offline.</Typography>
       )}
     </div>
   );

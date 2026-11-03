@@ -40,7 +40,7 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
         loading: true,
       }));
     }
-  }, [openPane]);
+  }, [openPane, refresh, requestCanInfo, setbasecanState, setservercanState]);
 
   return (
     <div
@@ -88,6 +88,7 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
                 (isBaseConnected && basecanState.loading)
               }
               onClick={requestCanInfo}
+              disabled = { !isRobotConnected && !isBaseConnected}
               sx={{ width: 140 }}
             >
               REFRESH
@@ -114,13 +115,13 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
           {isRobotConnected ? (
             <PeripheralDropdown id="gps" isRover />
           ) : (
-            <Typography sx={{ color: "black" }}>Robot is offline</Typography>
+            <Typography sx={{ color: "black" }}>Robot is offline.</Typography>
           )}
           {/* BASE GPS CONNECTION */}
           {isBaseConnected ? (
             <PeripheralDropdown id="gps" />
           ) : (
-            <Typography sx={{ color: "black" }}>Base is offline</Typography>
+            <Typography sx={{ color: "black" }}>Base is offline.</Typography>
           )}
         </div>
       )}

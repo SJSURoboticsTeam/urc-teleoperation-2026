@@ -4,6 +4,7 @@ import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 import Button from "@mui/material/Button";
 import { useSerial } from "../contexts/SerialContext";
+import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 function ReconnectAction({
   snackbarId,
@@ -49,6 +50,8 @@ function ReconnectAction({
 
 export const PeripheralProvider = ({ children }) => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+
+  const { robotConnected: isRobotConnected, baseConnected: isBaseConnected } = useConnectionStatus();
 
   const [servercanState, setservercanState] = useState({
     drive: {
@@ -143,6 +146,7 @@ export const PeripheralProvider = ({ children }) => {
       ...prev,
       loading: true,
     }));
+    if(isRobotConnected) {
     robotsocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setservercanState((prev) => ({
@@ -167,7 +171,8 @@ export const PeripheralProvider = ({ children }) => {
         loading: false,
         canIds: data["canIds"],
       }));
-    });
+    })};
+    if(isBaseConnected) {
     basesocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setbasecanState((prev) => ({
@@ -183,8 +188,8 @@ export const PeripheralProvider = ({ children }) => {
         loading: false,
         canIds: data["canIds"],
       }));
-    });
-  }, []);
+    })};
+  }, [isBaseConnected, isRobotConnected]);
 
   useEffect(() => {
     // when one client updates data, other clients get asked to refresh data
