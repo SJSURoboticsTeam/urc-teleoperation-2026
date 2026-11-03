@@ -65,11 +65,11 @@ export default function PeripheralManager({ openPane }) {
           disabled={
             !(
               (isRobotConnected &&
-                ["drive", "arm", "science", "gps"].some(
+                ["drive", "arm", "science"].some(
                   (id) => servercanState[id].state !== "idle",
                 )) ||
               (isBaseConnected &&
-                ["antenna", "gps"].some(
+                ["antenna"].some(
                   (id) => basecanState[id].state !== "idle",
                 ))
             )

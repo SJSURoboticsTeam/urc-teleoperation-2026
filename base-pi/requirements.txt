@@ -7,4 +7,3 @@ asyncssh
 dotenv
 pathlib
 pyserial
-gpiozero

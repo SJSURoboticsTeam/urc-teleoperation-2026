@@ -73,7 +73,7 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
             background: "white",
             border: "1px solid gray",
             padding: "10px",
-            minWidth: "250px",
+            width: "300px",
             borderRadius: "12px",
           }}
         >
@@ -88,15 +88,17 @@ export default function GPSManager({ openPane, setOpenPane, openUp = false }) {
                 (isBaseConnected && basecanState.loading)
               }
               onClick={requestCanInfo}
-              disabled = { !isRobotConnected && !isBaseConnected}
+              disabled={!isRobotConnected && !isBaseConnected}
               sx={{ width: 140 }}
             >
               REFRESH
             </Button>
             <Button
               disabled={
-                basecanState.antenna.state != "active" &&
-                basecanState.gps.state != "active"
+                !(
+                  (isRobotConnected && servercanState.gps.state !== "idle") ||
+                  (isBaseConnected && basecanState.gps.state !== "idle")
+                )
               }
               loading={
                 (isRobotConnected && servercanState.loading) ||

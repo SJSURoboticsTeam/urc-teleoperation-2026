@@ -91,6 +91,7 @@ def shutdown():
         except Exception:
             print(id.upper() + " WAS NOT DISCONNECTED!!!")
             pass
+    sys.exit(0)
 # =================== Server Setup ===================
 
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upgrades=True)

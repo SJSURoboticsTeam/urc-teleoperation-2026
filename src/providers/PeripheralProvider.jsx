@@ -4,7 +4,6 @@ import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { PeripheralContext } from "../contexts/PeripheralContext";
 import Button from "@mui/material/Button";
 import { useSerial } from "../contexts/SerialContext";
-import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 function ReconnectAction({
   snackbarId,
@@ -17,7 +16,7 @@ function ReconnectAction({
 
   const handleReconnect = async () => {
     setLoading(true);
-    
+
 
     try {
       await disconnectRoverPeripheral(canId);
@@ -51,7 +50,6 @@ function ReconnectAction({
 export const PeripheralProvider = ({ children }) => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
 
-  const { robotConnected: isRobotConnected, baseConnected: isBaseConnected } = useConnectionStatus();
 
   const [servercanState, setservercanState] = useState({
     drive: {
@@ -146,7 +144,7 @@ export const PeripheralProvider = ({ children }) => {
       ...prev,
       loading: true,
     }));
-    if(isRobotConnected) {
+    if(robotsocket.connected) {
     robotsocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setservercanState((prev) => ({
@@ -172,7 +170,7 @@ export const PeripheralProvider = ({ children }) => {
         canIds: data["canIds"],
       }));
     })};
-    if(isBaseConnected) {
+    if(basesocket.connected) {
     basesocket.emit("getCanInfo", (data) => {
       //console.log(data);
       setbasecanState((prev) => ({
@@ -189,7 +187,7 @@ export const PeripheralProvider = ({ children }) => {
         canIds: data["canIds"],
       }));
     })};
-  }, [isBaseConnected, isRobotConnected]);
+  }, []);
 
   useEffect(() => {
     // when one client updates data, other clients get asked to refresh data
@@ -246,7 +244,7 @@ export const PeripheralProvider = ({ children }) => {
                 variant: "error",
               });
               requestCanInfo();
-              reject(new Error(id + "connection failed"));
+              reject(new Error(id + " connection failed"));
             }
           },
         );
@@ -266,7 +264,7 @@ export const PeripheralProvider = ({ children }) => {
       }));
       clearCanWarning(id);
       return new Promise((resolve, reject) => {
-        console.log("Disconnecting drive");
+        console.log("Disconnecting " + id);
         robotsocket.emit("disconnectRoverPeripheral", id, (response) => {
           console.log("RESPONSE:" + response);
           if (response === "OK") {
@@ -283,7 +281,7 @@ export const PeripheralProvider = ({ children }) => {
               variant: "error",
             });
             requestCanInfo();
-            reject(new Error(id + "disconnection failed"));
+            reject(new Error(id + " disconnection failed"));
           }
         });
       });
