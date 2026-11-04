@@ -24,6 +24,8 @@ gps_state = {"robot": None}
 
 GPS_AUTO_ID = "1546:01A9"
 
+canIds_arr = []
+
 
 short_hash = "unknown"
 message = ""
@@ -141,8 +143,8 @@ async def robot_server_loop():
 async def getCanInfo(sid):
     """Returns all the CAN ids to the frontend after filtering"""
 
-    # can ids for web ui
-    canIds_arr = []
+    # global array for peripheral ids, wiped before a scan appending new ids to list
+    canIds_arr.clear()
     for port in list_ports.comports():
         print(f"{port.device} ")
 
@@ -162,7 +164,8 @@ async def getCanInfo(sid):
 @sio.event
 async def connectBasePeripheral(sid, line, id):
     """Initialize serial hardware off the event loop, then publish the connection."""
-    if line not in serial_ports:
+    # ensure port exists, and id is in list of discovered ids
+    if (line not in serial_ports) or (id not in canIds_arr):
         return "ERROR"
 
     # Setup yields to other handlers; serialize changes to this peripheral.

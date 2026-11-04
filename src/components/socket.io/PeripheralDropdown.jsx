@@ -32,10 +32,11 @@ export default function PeripheralDropdown({ id, isRover = false }) {
     ? disconnectRoverPeripheral
     : disconnectBasePeripheral;
 
+    const labelId = `${isRover ? "rover" : "base"}-${id}-dropdown-peripheral-id`;
   return (
     <Box key={id} sx={{ display: "flex", flexDirection: "row", gap: 1, mt: 1 }}>
       <FormControl sx={{ flex: 1 }} size="small">
-        <InputLabel id={`${id}-dropdown-peripheral-id`}>
+        <InputLabel id={labelId}>
           {/* If drive define CAN or UART, if GPS say which backend*/}
           {/* Note duplication with below for label and InputLabel*/}
           {id === "drive" && isRover
@@ -58,7 +59,7 @@ export default function PeripheralDropdown({ id, isRover = false }) {
                   : "BASE"
                 : id.toUpperCase()
           }
-          labelId={`${id}-dropdown-peripheral-id`}
+          labelId={labelId}
           onChange={(event) =>
             setCanState((current) => ({
               ...current,

@@ -108,6 +108,7 @@ serial_ports = {
     "science": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
     "gps": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
 }
+canIds_arr = []
 serial_console = SerialConsole()
 
 
@@ -181,8 +182,8 @@ async def getCanInfo(sid):
     if USE_UART_DRIVE:
         uart_str = "UART"
 
-    # can ids for web ui
-    canIds_arr = []
+    # global array for peripheral ids, wiped before a scan appending new ids to list
+    canIds_arr.clear()
     for port in list_ports.comports():
         print(f"{port.device} ")
 
@@ -204,7 +205,8 @@ async def getCanInfo(sid):
 @sio.event
 async def connectRoverPeripheral(sid, line, id):
     """Initialize serial hardware off the event loop, then publish the connection."""
-    if line not in serial_ports:
+    # ensure port exists, and id is in list of discovered ids
+    if (line not in serial_ports) or (id not in canIds_arr):
         return "ERROR"
 
     # Setup yields to other handlers; serialize changes to this peripheral.
