@@ -1,5 +1,7 @@
 const EARTH_RADIUS_M = 6_371_000;
 
+const COMPASS_POINTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
 const toRadians = (degrees) => degrees * Math.PI / 180;
 const toDegrees = (radians) => radians * 180 / Math.PI;
 
@@ -25,4 +27,9 @@ export function distanceAndHeading(start, end) {
     const headingDegrees = (toDegrees(Math.atan2(y, x)) + 360) % 360;
 
     return { distanceMeters, headingDegrees };
+}
+
+// Nearest of the 8 compass points for a heading in degrees, e.g. 210 -> "SW"
+export function compassDirection(headingDegrees) {
+    return COMPASS_POINTS[Math.round(headingDegrees / 45) % 8];
 }

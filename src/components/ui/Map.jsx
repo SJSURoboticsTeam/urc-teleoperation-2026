@@ -1,5 +1,7 @@
 import React, {useEffect, useRef, useState, useCallback, useLayoutEffect, useMemo} from "react";
 import ReactDOM from "react-dom/client";
+import { createPortal } from "react-dom";
+import { useSnackbar } from "notistack";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
@@ -10,6 +12,9 @@ import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
 import { useScience } from "../../contexts/ScienceContext";
 import { useAutonomyLocations } from "../../contexts/AutonomyLocationsContext";
+import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
+import { useSoftStop } from "../../contexts/SoftStopContext";
+import WaypointPopup from "./WaypointPopup";
 import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
 
 const TRAIL_SOURCE = "rover-gps-trail";
@@ -484,7 +489,7 @@ function buildWaypoints(siteReadings, driveData) {
 
   siteReadings.forEach((reading, index) => {
     if (!reading) return;
-    waypoints.push({ id: `science-${index + 1}`, type: "science", name: `Site ${index + 1}`, lat: reading.lat, long: reading.long });
+    waypoints.push({ id: `science-${index + 1}`, type: "science", name: `Site ${index + 1}`, scienceSite: index + 1, lat: reading.lat, long: reading.long });
   });
 
   ["location1", "location2"].forEach((key, index) => {
@@ -535,10 +540,37 @@ export default function Map() {
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
-  const { siteReadings } = useScience();
+  const { siteReadings, setSiteReadings } = useScience();
   const { driveData } = useAutonomyLocations();
   // Memoized so GPS updates re-rendering the map don't redraw every pin
   const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData), [siteReadings, driveData]);
+
+  // The pin whose popup is open: { id, node } where node is the popup's DOM content
+  const [openPopup, setOpenPopup] = useState(null);
+  const openWaypoint = waypoints.find((wp) => wp.id === openPopup?.id);
+  const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
+  const { enqueueSnackbar } = useSnackbar();
+  // Same lock as the science pane's GET GNSS button
+  const scienceLocked = autonomyEnabled || softStopActive;
+
+  // The popup opens empty and its content renders right after, so re-place it once the content is in.
+  // MapLibre picks above/below the pin from the popup's size; without this it measures an empty popup and gets clipped.
+  useLayoutEffect(() => {
+    if (!openPopup) return;
+    const marker = waypointMarkersRef.current[openPopup.id]?.marker;
+    marker?.getPopup()?.setLngLat(marker.getLngLat());
+  }, [openPopup, openWaypoint]);
+
+  const setScienceSiteFromWaypoint = (site) => {
+    if (scienceLocked || !openWaypoint) return;
+    setSiteReadings((prev) => {
+      const next = [...prev];
+      next[site - 1] = { lat: openWaypoint.lat, long: openWaypoint.long, accuracy_m: null, capturedAt: Date.now() };
+      return next;
+    });
+    enqueueSnackbar(`Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
+  };
   trailPointsRef.current = trailPoints;
   trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
 
@@ -855,9 +887,19 @@ export default function Map() {
     for (const wp of waypoints) {
       if (!markers[wp.id]) {
         const element = document.createElement("div");
+        // The popup's content is rendered into popupNode with a portal below, so it stays in this React tree
+        const popupNode = document.createElement("div");
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px" }).setDOMContent(popupNode);
+        popup.on("open", () => {
+          // Map controls (GPS trail, coordinates) sit at z-index 2; keep the open popup above them
+          popup.getElement().style.zIndex = 3;
+          setOpenPopup({ id: wp.id, node: popupNode });
+        });
+        // Opening another pin can close this one after the new one opens, so only clear if this pin is still the open one
+        popup.on("close", () => setOpenPopup((prev) => (prev?.id === wp.id ? null : prev)));
         markers[wp.id] = {
           // MapLibre needs a position before addTo
-          marker: new maplibregl.Marker({ element }).setLngLat([wp.long, wp.lat]).addTo(map),
+          marker: new maplibregl.Marker({ element }).setLngLat([wp.long, wp.lat]).setPopup(popup).addTo(map),
           root: ReactDOM.createRoot(element),
         };
       }
@@ -951,6 +993,22 @@ export default function Map() {
       <div>This map requires WebGL to work, which wasn't detected.</div>
     </div>
   )} else {
-  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  return (
+    <>
+      <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />
+      {openWaypoint && createPortal(
+        <WaypointPopup
+          key={openWaypoint.id}
+          waypoint={openWaypoint}
+          waypoints={waypoints}
+          robotCoordinates={robotCoordinates}
+          baseCoordinates={baseCoordinates}
+          scienceLocked={scienceLocked}
+          onSetScienceSite={setScienceSiteFromWaypoint}
+        />,
+        openPopup.node,
+      )}
+    </>
+  );
   }
 }
