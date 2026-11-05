@@ -7,7 +7,7 @@ import { useSoftStop } from "../contexts/SoftStopContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 import { usePeripherals } from "../contexts/PeripheralContext";
 import { useGPS } from "../contexts/GPSContext";
-import { useWaypoints } from "../contexts/WaypointsContext";
+import { useScience } from "../contexts/ScienceContext";
 
 export default function ScienceView() {
   const { servercanState } = usePeripherals();
@@ -16,8 +16,8 @@ export default function ScienceView() {
 
   const { robotCoordinates } = useGPS();
 
-  // Science sites are stored as shared waypoints so the map can show them too
-  const { waypoints, setScienceSite } = useWaypoints();
+  // Science sites live in ScienceProvider so they survive switching panes and show on the map
+  const { siteReadings, setSiteReadings } = useScience();
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
@@ -37,11 +37,15 @@ export default function ScienceView() {
     if (controlsLocked) return;
     if (!robotCoordinates.receive) return;
 
-    // Tabs are numbered from 0, science sites from 1
-    setScienceSite(tabContent + 1, {
-      lat: robotCoordinates.lat,
-      long: robotCoordinates.long,
-      accuracy_m: robotCoordinates.accuracy_m,
+    setSiteReadings((prev) => {
+      const next = [...prev];
+      next[tabContent] = {
+        lat: robotCoordinates.lat,
+        long: robotCoordinates.long,
+        accuracy_m: robotCoordinates.accuracy_m,
+        capturedAt: Date.now(),
+      };
+      return next;
     });
   };
 
@@ -173,7 +177,7 @@ const exampleSteps = [
 
         <Box sx={{ p: 1 }}>
           {tabNum.map((num) => {
-            const reading = waypoints.find((wp) => wp.scienceSite === num + 1);
+            const reading = siteReadings[num];
             return tabContent === num ? (
               <div key={num}>
                 <div className="flex flex-row">

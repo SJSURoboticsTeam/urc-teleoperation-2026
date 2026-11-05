@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState, useCallback, useLayoutEffect} from "react";
+import React, {useEffect, useRef, useState, useCallback, useLayoutEffect, useMemo} from "react";
 import ReactDOM from "react-dom/client";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -8,8 +8,9 @@ import ScienceIcon from "@mui/icons-material/Science";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
-import { useWaypoints } from "../../contexts/WaypointsContext";
-import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON } from "../../lib/gpsTrail";
+import { useScience } from "../../contexts/ScienceContext";
+import { useAutonomyLocations } from "../../contexts/AutonomyLocationsContext";
+import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 const IMPORTED_TRAIL_SOURCE = "imported-gps-trail";
@@ -428,7 +429,7 @@ function WaypointPin({ waypoint }) {
   const { color, Icon } = WAYPOINT_STYLES[waypoint.type] ?? WAYPOINT_STYLES.poi;
   const highlighted = waypoint.type === "science";
   const size = highlighted ? 34 : 26;
-  const label = waypoint.scienceSite ? `Site ${waypoint.scienceSite}` : waypoint.name;
+  const label = waypoint.name;
 
   return (
     <Box
@@ -472,6 +473,32 @@ function WaypointPin({ waypoint }) {
   );
 }
 
+// Autonomy coordinates are typed text, so skip blank or half-typed values instead of pinning 0,0
+function parseCoordinate(text) {
+  return text.trim() === "" ? NaN : Number(text);
+}
+
+// Each pane owns its locations; the map only gathers them into one list of pins
+function buildWaypoints(siteReadings, driveData) {
+  const waypoints = [];
+
+  siteReadings.forEach((reading, index) => {
+    if (!reading) return;
+    waypoints.push({ id: `science-${index + 1}`, type: "science", name: `Site ${index + 1}`, lat: reading.lat, long: reading.long });
+  });
+
+  ["location1", "location2"].forEach((key, index) => {
+    const location = driveData[key];
+    const lat = parseCoordinate(location.lat);
+    const long = parseCoordinate(location.lon);
+    if (!hasValidGPSCoordinates({ latitude: lat, longitude: long })) return;
+    const name = location.label.trim() || `Location ${index + 1}`;
+    waypoints.push({ id: `autonomy-${key}`, type: "autonomy", name, lat, long });
+  });
+
+  return waypoints;
+}
+
 function removeWaypointMarker({ marker, root }) {
   marker.remove();
   // Unmounting a root while React is committing logs a warning, so wait a tick
@@ -508,7 +535,10 @@ export default function Map() {
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
-  const { waypoints } = useWaypoints();
+  const { siteReadings } = useScience();
+  const { driveData } = useAutonomyLocations();
+  // Memoized so GPS updates re-rendering the map don't redraw every pin
+  const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData), [siteReadings, driveData]);
   trailPointsRef.current = trailPoints;
   trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
 
