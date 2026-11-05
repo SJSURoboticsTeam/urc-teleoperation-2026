@@ -10,7 +10,7 @@ import { useGPS } from "../contexts/GPSContext";
 import { useWaypoints } from "../contexts/WaypointsContext";
 
 export default function ScienceView() {
-  const { canState } = usePeripherals();
+  const { servercanState } = usePeripherals();
 
   const [tabContent, setTabContent] = useState(0);
 
@@ -64,7 +64,7 @@ const exampleSteps = [
       className="flex flex-1 flex-col overflow-auto h-full min-h-0"
       style={{ userSelect: "none" }}
     >
-    {(canState.scienceState == "idle"&& !controlsLocked) && (
+    {(servercanState.science.state == "idle"&& !controlsLocked) && (
           <Typography
             sx={{
               textAlign: "center",
