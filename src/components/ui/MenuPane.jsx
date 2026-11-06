@@ -5,6 +5,8 @@ import NotesPane from "../notes/NotesPane.jsx";
 import { basesocket } from "../socket.io/socket";
 import { useConnectionStatus } from "../../contexts/ConnectionContext.jsx";
 
+const AUTOSAVE_DEBOUNCE_MS = 500;
+
 export default function MenuPane(props) {
   const [activePane, setActivePane] = useState("settings");
   const handlePaneChange = (event, newValue) => {
@@ -13,9 +15,10 @@ export default function MenuPane(props) {
 
   const { baseConnected } = useConnectionStatus();
   const pendingNotes = useRef(null);
+  const latestSave = useRef(0);
+  const saveTimer = useRef(null);
   const [markdown, setMarkdown] = useState(null);
   const [saveStatus, setSaveStatus] = useState("Saved");
-  const latestSave = useRef(0);
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   useEffect(() => {
@@ -72,15 +75,36 @@ export default function MenuPane(props) {
 
   function handleNotesChange(markdown, markdownInitialize) {
     if (markdownInitialize) return;
+
+    ++latestSave.current;
     setMarkdown(markdown);
     pendingNotes.current = markdown;
-    savePendingNotes();
+    clearTimeout(saveTimer.current);
+
+    if (!basesocket.connected) {
+      setSaveStatus("Unsaved: base-pi disconnected");
+      return;
+    }
+
+    setSaveStatus("Unsaved");
+
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      savePendingNotes();
+    }, AUTOSAVE_DEBOUNCE_MS);
   }
 
   useEffect(() => {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+
     if (baseConnected) {
       savePendingNotes();
     }
+
+    return () => {
+      clearTimeout(saveTimer.current);
+    };
   }, [baseConnected, savePendingNotes]);
 
   return (
