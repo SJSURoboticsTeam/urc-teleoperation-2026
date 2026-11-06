@@ -4,6 +4,17 @@ import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
 import { loadTrailPoints, saveTrailPoints, clearStoredTrail } from "../lib/gpsTrailStorage";
 import { hasValidGPSCoordinates, isValidTrailPoint, startsNewTrailSegment } from "../lib/gpsTrail";
+import { usePersistentState } from "../lib/usePersistentState";
+
+const POIS_KEY = "missionControl.pois";
+const NEXT_POI_NUMBER_KEY = "missionControl.nextPoiNumber";
+
+// Ignore saved POIs that are missing fields or have invalid coordinates, e.g. from an older version
+const isValidPois = (value) =>
+    Array.isArray(value) &&
+    value.every((poi) => typeof poi?.id === "string" && typeof poi.name === "string" &&
+        hasValidGPSCoordinates({ latitude: poi.lat, longitude: poi.long }));
+const isValidPoiNumber = (value) => Number.isInteger(value) && value >= 1;
 
 export const GPSProvider = ({ children }) => {
     const { enqueueSnackbar } = useSnackbar();
@@ -21,6 +32,10 @@ export const GPSProvider = ({ children }) => {
     const [trailReady, setTrailReady] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [hasUnsavedTrail, setHasUnsavedTrail] = useState(false);
+    // Points of interest dropped on the map: { id, name, lat, long }. Saved so they survive reloads.
+    const [pois, setPois] = usePersistentState(POIS_KEY, isValidPois, []);
+    // Saved too, so numbers keep counting up across reloads instead of reusing a deleted POI's number
+    const [nextPoiNumber, setNextPoiNumber] = usePersistentState(NEXT_POI_NUMBER_KEY, isValidPoiNumber, 1);
 
     const [robotCoordinates, setRobotCoordinates] = useState({
         long: -121.881194,
@@ -170,6 +185,32 @@ export const GPSProvider = ({ children }) => {
         setHasUnsavedTrail(false);
     }, [enqueueSnackbar]);
 
+    // Numbers keep counting up after deletes so a new POI never reuses an old name
+    const addPoi = useCallback(({ lat, long }) => {
+        const number = nextPoiNumber;
+        setNextPoiNumber(number + 1);
+        const poi = { id: `poi-${Date.now()}-${number}`, name: `POI ${number}`, lat, long };
+        setPois((prev) => [...prev, poi]);
+        return poi;
+    }, [nextPoiNumber, setNextPoiNumber, setPois]);
+
+    const renamePoi = useCallback((id, name) => {
+        setPois((prev) => prev.map((poi) => (poi.id === id ? { ...poi, name } : poi)));
+    }, [setPois]);
+
+    const removePoi = useCallback((id) => {
+        setPois((prev) => prev.filter((poi) => poi.id !== id));
+    }, [setPois]);
+
+    // Swap in a whole set of POIs ({ name, lat, long }), e.g. from an imported map file or Clear Map.
+    // The counter skips past imported "POI N" names so new pins don't duplicate them.
+    const replacePois = useCallback((list) => {
+        const importedNumbers = list.map((poi) => Number(/^POI (\d+)$/.exec(poi.name)?.[1] ?? 0));
+        setNextPoiNumber((prev) => Math.max(prev, ...importedNumbers.map((number) => number + 1)));
+        const now = Date.now();
+        setPois(list.map((poi, index) => ({ id: `poi-${now}-import-${index}`, name: poi.name, lat: poi.lat, long: poi.long })));
+    }, [setPois, setNextPoiNumber]);
+
     const value = {
         robotCoordinates,
         baseCoordinates,
@@ -182,6 +223,11 @@ export const GPSProvider = ({ children }) => {
         startRecording,
         stopRecording,
         clearTrail,
+        pois,
+        addPoi,
+        renamePoi,
+        removePoi,
+        replacePois,
     };
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;

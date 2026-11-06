@@ -1,44 +1,73 @@
-import React, {useEffect, useRef, useState, useCallback, useLayoutEffect} from "react";
+import React, {useEffect, useRef, useState, useCallback, useLayoutEffect, useMemo} from "react";
 import ReactDOM from "react-dom/client";
+import { createPortal } from "react-dom";
+import { useSnackbar } from "notistack";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import ScienceIcon from "@mui/icons-material/Science";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
-import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON } from "../../lib/gpsTrail";
+import { useScience } from "../../contexts/ScienceContext";
+import { useAutonomyLocations, initialDriveState } from "../../contexts/AutonomyLocationsContext";
+import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
+import { useSoftStop } from "../../contexts/SoftStopContext";
+import WaypointPopup from "./WaypointPopup";
+import { createTrailUpdater, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
+import { serializeMapFile, parseMapFile } from "../../lib/mapFile";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 const IMPORTED_TRAIL_SOURCE = "imported-gps-trail";
 
-function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport }) {
+const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
+// Works for the map's locations and for an imported file's (whose driveData may only have some locations)
+function countLocations({ siteReadings, driveData, pois }) {
+  return {
+    sites: siteReadings.filter(Boolean).length,
+    targets: Object.values(driveData).filter((location) => location.label || location.lat || location.lon || location.reached).length,
+    pois: pois.length,
+  };
+}
+
+const describeCounts = ({ sites, targets, pois }) =>
+  `${plural(sites, "science site")}, ${plural(targets, "autonomy target")}, and ${plural(pois, "POI")}`;
+
+function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onClearImport, mapData, locationsLocked, onImportMap, onClearMap }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmClearMap, setConfirmClearMap] = useState(false);
+  // A parsed file waiting for the operator to confirm the import
+  const [pendingImport, setPendingImport] = useState(null);
   const [importError, setImportError] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef(null);
+  const mapCounts = countLocations(mapData);
+  const hasLocations = mapCounts.sites + mapCounts.targets + mapCounts.pois > 0;
 
-  const importLog = async (event) => {
+  const importMapFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     setImportError("");
     setIsImporting(true);
     try {
-      const points = parseTrailLog(await file.text());
-      onImport({ name: file.name, points });
+      setPendingImport({ name: file.name, ...parseMapFile(await file.text()) });
     } catch (error) {
-      setImportError(error.message || "Could not read this trail log.");
+      setImportError(error.message || "Could not read this map file.");
     } finally {
       setIsImporting(false);
     }
   };
 
-  const exportLog = () => {
-    const blob = new Blob([serializeTrailLog(points)], { type: "application/x-ndjson;charset=utf-8" });
+  const exportMap = () => {
+    const blob = new Blob([serializeMapFile({ trailPoints: points, ...mapData })], { type: "application/x-ndjson;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    // File name of the log is a timestamp of when it was downloaded
-    link.download = `rover-gps-trail-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
+    // File name of the map file is a timestamp of when it was downloaded
+    link.download = `rover-map-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -53,7 +82,7 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
       </Typography>
       {hasUnsavedTrail && (
         <Typography role="alert" variant="body2" color="error.main">
-          Trail changes could not be saved. Export Log before reloading or closing this page.
+          Trail changes could not be saved. Export Map before reloading or closing this page.
         </Typography>
       )}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
@@ -61,17 +90,49 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         <Button size="small" variant="outlined" disabled={!recording} onClick={onStop}>Stop Recording</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={!ready || points.length === 0} onClick={exportLog}>Export Log</Button>
+        <Button size="small" variant="outlined" disabled={!ready || (points.length === 0 && !hasLocations)} onClick={exportMap}>Export Map</Button>
         <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={!ready || isImporting} onClick={() => importInputRef.current?.click()}>
-          {isImporting ? "Importing…" : "Import Log"}
+        <Button size="small" variant="outlined" disabled={!ready || isImporting || locationsLocked} onClick={() => importInputRef.current?.click()}>
+          {isImporting ? "Importing…" : "Import Map"}
         </Button>
         <Button size="small" variant="outlined" disabled={!importedTrail} onClick={onClearImport}>Clear Import</Button>
       </Box>
-      <input ref={importInputRef} type="file" accept=".log" aria-label="Import GPS trail log" hidden onChange={importLog} />
+      <Button size="small" color="error" variant="outlined" fullWidth sx={{ mt: 0.5 }} disabled={!hasLocations || locationsLocked} onClick={() => setConfirmClearMap(true)}>
+        Clear Map
+      </Button>
+      {locationsLocked && (
+        <Typography variant="caption" color="error.main">Import and Clear Map are locked while autonomy or Soft Stop is active.</Typography>
+      )}
+      <input ref={importInputRef} type="file" accept=".log" aria-label="Import map file" hidden onChange={importMapFile} />
       {importError && <Typography role="alert" variant="body2" color="error.main">{importError}</Typography>}
+      <Dialog open={!!pendingImport} onClose={() => setPendingImport(null)}>
+        <DialogTitle>Import {pendingImport?.name}?</DialogTitle>
+        <DialogContent>
+          {pendingImport?.locations
+            ? `This replaces the map's ${describeCounts(mapCounts)} with the file's ${describeCounts(countLocations(pendingImport.locations))}.`
+            : "This is an older trail-only log, so the map's locations stay as they are."}
+          {pendingImport?.trailPoints.length > 0 &&
+            ` Its trail (${plural(pendingImport.trailPoints.length, "point")}) is shown as an imported trail; your recorded trail is not changed.`}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingImport(null)}>Cancel</Button>
+          <Button onClick={() => { onImportMap(pendingImport); setPendingImport(null); }}>
+            {pendingImport?.locations ? "Replace" : "Import"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={confirmClearMap} onClose={() => setConfirmClearMap(false)}>
+        <DialogTitle>Clear map locations?</DialogTitle>
+        <DialogContent>
+          This removes {describeCounts(mapCounts)} from the map and this browser. The GPS trail is not affected. Export the map first if you want to keep them.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmClearMap(false)}>Cancel</Button>
+          <Button color="error" onClick={() => { onClearMap(); setConfirmClearMap(false); }}>Clear Map</Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
         <DialogTitle>Clear GPS trail?</DialogTitle>
         <DialogContent>This removes all saved trail points from this browser. Export a log first if you want to keep them.</DialogContent>
@@ -91,8 +152,9 @@ class TrailControl {
     this._root = ReactDOM.createRoot(this._container);
     return this._container;
   }
-  update(points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport) {
-    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} importedTrail={importedTrail} onImport={onImport} onClearImport={onClearImport} />);
+  // Takes the TrailControlUI props as one object; there are too many to pass by position
+  update(props) {
+    this._root?.render(<TrailControlUI {...props} />);
   }
   onRemove() {
     this._root?.unmount();
@@ -338,6 +400,67 @@ class ResetZoomControl {
   }
 }
 
+function PoiControlUI({ isPlacing, canPinRover, onTogglePlacing, onPinRover }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 100,
+      }}
+    >
+      <Button size="small" variant={isPlacing ? "contained" : "outlined"} onClick={onTogglePlacing}>
+        {isPlacing ? "Cancel" : "+ Add POI"}
+      </Button>
+      {isPlacing && <Typography variant="caption">Click the map to drop a pin</Typography>}
+      <Button size="small" variant="outlined" disabled={!canPinRover} onClick={onPinRover}>Pin Rover</Button>
+    </Box>
+  );
+}
+
+class PoiControl {
+  constructor(onTogglePlacing, onPinRover) {
+    this._onTogglePlacing = onTogglePlacing;
+    this._onPinRover = onPinRover;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update(false, false);
+    return this._container;
+  }
+  update(isPlacing, canPinRover) {
+    if(!this._root) {
+      return;
+    }
+    this._root.render(
+      <PoiControlUI
+        isPlacing = {isPlacing}
+        canPinRover = {canPinRover}
+        onTogglePlacing = {this._onTogglePlacing}
+        onPinRover = {this._onPinRover}
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
+
 // MapLibre auto-expands the compact attribution whenever attributions load and
 // only collapses it on the first drag. Keep it collapsed until the user clicks.
 class CollapsedAttributionControl extends maplibregl.AttributionControl {
@@ -413,6 +536,97 @@ function updateAccuracyCircle(map, sourceId, layerId, coords) {
   updateAccuracyRadius(map, layerId, coords);
 }
 
+const WAYPOINT_STYLES = {
+  science: { color: "#00897b", Icon: ScienceIcon },
+  autonomy: { color: "#3949ab", Icon: SmartToyIcon },
+  poi: { color: "#455a64", Icon: PlaceIcon },
+};
+
+// Science pins are larger and ringed in yellow so they stand out from other waypoints
+function WaypointPin({ waypoint }) {
+  const { color, Icon } = WAYPOINT_STYLES[waypoint.type] ?? WAYPOINT_STYLES.poi;
+  const highlighted = waypoint.type === "science";
+  const size = highlighted ? 34 : 26;
+  const label = waypoint.name;
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        bgcolor: color,
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: highlighted ? "3px solid #ffd600" : "2px solid #fff",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.5)",
+        cursor: "pointer",
+      }}
+    >
+      <Icon sx={{ fontSize: size * 0.6 }} />
+      {/* Label hangs below the icon so the icon's center stays on the coordinate */}
+      <Typography
+        variant="caption"
+        sx={{
+          position: "absolute",
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          mt: 0.25,
+          px: 0.5,
+          bgcolor: "rgba(255,255,255,0.9)",
+          color: "#000",
+          borderRadius: 0.5,
+          fontWeight: highlighted ? 700 : 400,
+          lineHeight: 1.4,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
+// Autonomy coordinates are typed text, so skip blank or half-typed values instead of pinning 0,0
+function parseCoordinate(text) {
+  return text.trim() === "" ? NaN : Number(text);
+}
+
+// Each pane owns its locations; the map only gathers them into one list of pins
+function buildWaypoints(siteReadings, driveData, pois) {
+  const waypoints = [];
+
+  siteReadings.forEach((reading, index) => {
+    if (!reading) return;
+    waypoints.push({ id: `science-${index + 1}`, type: "science", name: `Site ${index + 1}`, scienceSite: index + 1, lat: reading.lat, long: reading.long });
+  });
+
+  ["location1", "location2"].forEach((key, index) => {
+    const location = driveData[key];
+    const lat = parseCoordinate(location.lat);
+    const long = parseCoordinate(location.lon);
+    if (!hasValidGPSCoordinates({ latitude: lat, longitude: long })) return;
+    const name = location.label.trim() || `Location ${index + 1}`;
+    waypoints.push({ id: `autonomy-${key}`, type: "autonomy", name, lat, long });
+  });
+
+  pois.forEach((poi) => {
+    waypoints.push({ id: poi.id, type: "poi", name: poi.name, lat: poi.lat, long: poi.long });
+  });
+
+  return waypoints;
+}
+
+function removeWaypointMarker({ marker, root }) {
+  marker.remove();
+  // Unmounting a root while React is committing logs a warning, so wait a tick
+  setTimeout(() => root.unmount());
+}
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -422,27 +636,98 @@ export default function Map() {
   const coordRef = useRef(null);
   const coordRef2 = useRef(null);
   const resetZoomRef = useRef(null);
+  const poiControlRef = useRef(null);
+  const poiStateRef = useRef(null);
   const suppressTrackRef = useRef(false);
 
   const trailControlRef = useRef(null);
   const trailPointsRef = useRef([]);
-  const trailControlStateRef = useRef(null);
+  const trailControlPropsRef = useRef(null);
   const trailUpdaterRef = useRef(null);
+  // Waypoint id -> { marker, root }. A plain object because this component's name hides the built-in Map
+  const waypointMarkersRef = useRef({});
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
   const [importedTrail, setImportedTrail] = useState(null);
-
-  const importTrail = useCallback((trail) => {
-    setImportedTrail(trail);
-    // setIsLockedOn(false);
-  }, []);
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
-  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, pois, addPoi, renamePoi, removePoi, replacePois } = useGPS();
+  const { siteReadings, setSiteReadings } = useScience();
+  const { driveData, setDriveData } = useAutonomyLocations();
+  // Memoized so GPS updates re-rendering the map don't redraw every pin
+  const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData, pois), [siteReadings, driveData, pois]);
+  // While true, the next click on the map drops a POI there
+  const [isPlacingPoi, setIsPlacingPoi] = useState(false);
+
+  // The pin whose popup is open: { id, node } where node is the popup's DOM content
+  const [openPopup, setOpenPopup] = useState(null);
+  const openWaypoint = waypoints.find((wp) => wp.id === openPopup?.id);
+  const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
+  const { enqueueSnackbar } = useSnackbar();
+  // Same lock as the science pane's GET GNSS button
+  const scienceLocked = autonomyEnabled || softStopActive;
+
+  // The popup opens empty and its content renders right after, so re-place it once the content is in.
+  // MapLibre picks above/below the pin from the popup's size; without this it measures an empty popup and gets clipped.
+  useLayoutEffect(() => {
+    if (!openPopup) return;
+    const marker = waypointMarkersRef.current[openPopup.id]?.marker;
+    marker?.getPopup()?.setLngLat(marker.getLngLat());
+  }, [openPopup, openWaypoint]);
+
+  const setScienceSiteFromWaypoint = (site) => {
+    if (scienceLocked || !openWaypoint) return;
+    setSiteReadings((prev) => {
+      const next = [...prev];
+      next[site - 1] = { lat: openWaypoint.lat, long: openWaypoint.long, accuracy_m: null, capturedAt: Date.now() };
+      return next;
+    });
+    enqueueSnackbar(`Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
+  };
+  // Replace the map's locations with an imported file's. The file's trail is shown as the imported trail;
+  // the recorded trail is never touched.
+  const importMap = useCallback(({ name, trailPoints: importedPoints, locations }) => {
+    setImportedTrail(importedPoints.length > 0 ? { name, points: importedPoints } : null);
+    // Older trail-only logs have no locations, so the map's stay as they are
+    if (locations) {
+      setSiteReadings(locations.siteReadings);
+      setDriveData({ ...initialDriveState, ...locations.driveData });
+      replacePois(locations.pois);
+    }
+    enqueueSnackbar(`Imported ${name}`, { variant: "success" });
+  }, [setSiteReadings, setDriveData, replacePois, enqueueSnackbar]);
+
+  // Remove all science sites, autonomy targets, and POIs, e.g. before a new mission. The trail has its own Clear Trail.
+  const clearMap = useCallback(() => {
+    setSiteReadings([null, null, null]);
+    setDriveData(initialDriveState);
+    replacePois([]);
+  }, [setSiteReadings, setDriveData, replacePois]);
+
+  const trailControlProps = useMemo(() => ({
+    points: trailPoints,
+    ready: trailReady,
+    recording: isRecording,
+    hasUnsavedTrail,
+    onStart: startRecording,
+    onStop: stopRecording,
+    onClear: clearTrail,
+    importedTrail,
+    onClearImport: clearImportedTrail,
+    mapData: { siteReadings, driveData, pois },
+    // Import and Clear Map change science sites, so they follow the same lock
+    locationsLocked: scienceLocked,
+    onImportMap: importMap,
+    onClearMap: clearMap,
+  }), [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, clearImportedTrail, siteReadings, driveData, pois, scienceLocked, importMap, clearMap]);
+
   trailPointsRef.current = trailPoints;
-  trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
+  trailControlPropsRef.current = trailControlProps;
+  // Read by the map click handler and POI control, which are created once when the map loads
+  poiStateRef.current = { isPlacingPoi, addPoi, enqueueSnackbar };
 
   const robotCoordsRef = useRef(robotCoordinates);
   const baseCoordsRef = useRef(baseCoordinates);
@@ -537,6 +822,26 @@ export default function Map() {
       () => resetMapCam({ pitch: 60, bearing: -20 })
     );
 
+    const poiControl = new PoiControl(
+      () => setIsPlacingPoi((prev) => !prev),
+      () => {
+        const robot = robotCoordsRef.current;
+        if (!robot.receive) return;
+        const poi = poiStateRef.current.addPoi({ lat: robot.lat, long: robot.long });
+        poiStateRef.current.enqueueSnackbar(`${poi.name} pinned at the rover`, { variant: "success" });
+      }
+    );
+
+    const onMapClick = (e) => {
+      if (!poiStateRef.current.isPlacingPoi) return;
+      // Clicks on a pin or popup open/use that popup instead of dropping a new pin
+      if (e.originalEvent.target.closest?.(".maplibregl-marker, .maplibregl-popup")) return;
+      const poi = poiStateRef.current.addPoi({ lat: e.lngLat.lat, long: e.lngLat.lng });
+      setIsPlacingPoi(false);
+      poiStateRef.current.enqueueSnackbar(`${poi.name} added`, { variant: "success" });
+    };
+    map.on("click", onMapClick);
+
     const onZoom = () => {
       updateAccuracyRadius(map, "robot-accuracy-circle-layer", robotCoordsRef.current);
       updateAccuracyRadius(map, "base-accuracy-circle-layer", baseCoordsRef.current);
@@ -555,11 +860,14 @@ export default function Map() {
       map.addControl(resetZoomControl, "top-left");
       resetZoomRef.current = resetZoomControl;
 
+      map.addControl(poiControl, "top-left");
+      poiControlRef.current = poiControl;
+      poiControl.update(poiStateRef.current.isPlacingPoi, robotCoordsRef.current.receive);
+
       const trailControl = new TrailControl();
       map.addControl(trailControl, "bottom-right");
       trailControlRef.current = trailControl;
-      const currentTrailState = trailControlStateRef.current;
-      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail, currentTrailState.importedTrail, currentTrailState.importTrail, currentTrailState.clearImportedTrail);
+      trailControl.update(trailControlPropsRef.current);
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -632,7 +940,7 @@ export default function Map() {
       // Draw imported trails
       map.addSource(IMPORTED_TRAIL_SOURCE, {
         type: "geojson",
-        data: importedTrailGeoJSON(currentTrailState.importedTrail?.points ?? []),
+        data: importedTrailGeoJSON(trailControlPropsRef.current.importedTrail?.points ?? []),
       });
       map.addLayer({
         id: IMPORTED_TRAIL_SOURCE,
@@ -728,6 +1036,9 @@ export default function Map() {
       window.removeEventListener("resize", onWindowResize);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
+      map.off("click", onMapClick);
+      Object.values(waypointMarkersRef.current).forEach(removeWaypointMarker);
+      waypointMarkersRef.current = {};
       // Clean up map instance
       if (map && typeof map.remove === "function") {
         map.remove();
@@ -736,6 +1047,56 @@ export default function Map() {
       trailUpdaterRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    poiControlRef.current?.update(isPlacingPoi, robotCoordinates.receive);
+    // Crosshair cursor shows the next map click will drop a pin
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = isPlacingPoi ? "crosshair" : "";
+  }, [isPlacingPoi, robotCoordinates.receive]);
+
+  // Keep one marker per waypoint: add new ones, move or restyle changed ones, remove deleted ones.
+  // Must stay after the map setup effect so mapRef is ready on the first run.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const markers = waypointMarkersRef.current;
+    const currentIds = new Set(waypoints.map((wp) => wp.id));
+
+    for (const id of Object.keys(markers)) {
+      if (!currentIds.has(id)) {
+        removeWaypointMarker(markers[id]);
+        delete markers[id];
+      }
+    }
+
+    for (const wp of waypoints) {
+      if (!markers[wp.id]) {
+        const element = document.createElement("div");
+        // The popup's content is rendered into popupNode with a portal below, so it stays in this React tree
+        const popupNode = document.createElement("div");
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px" }).setDOMContent(popupNode);
+        popup.on("open", () => {
+          // Map controls (GPS trail, coordinates) sit at z-index 2; keep the open popup above them
+          popup.getElement().style.zIndex = 3;
+          setOpenPopup({ id: wp.id, node: popupNode });
+        });
+        // Opening another pin can close this one after the new one opens, so only clear if this pin is still the open one
+        popup.on("close", () => setOpenPopup((prev) => (prev?.id === wp.id ? null : prev)));
+        markers[wp.id] = {
+          // MapLibre needs a position before addTo
+          marker: new maplibregl.Marker({ element }).setLngLat([wp.long, wp.lat]).setPopup(popup).addTo(map),
+          root: ReactDOM.createRoot(element),
+        };
+      }
+      const { marker, root } = markers[wp.id];
+      marker.setLngLat([wp.long, wp.lat]);
+      marker.getElement().title = `${wp.name}\n${wp.lat.toFixed(6)}, ${wp.long.toFixed(6)}`;
+      // Keep highlighted science pins on top of overlapping waypoints
+      marker.getElement().style.zIndex = wp.type === "science" ? 1 : "";
+      root.render(<WaypointPin waypoint={wp} />);
+    }
+  }, [waypoints]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource(TRAIL_SOURCE);
@@ -752,8 +1113,8 @@ export default function Map() {
   }, [importedTrail]);
 
   useEffect(() => {
-    trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail);
-  }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail]);
+    trailControlRef.current?.update(trailControlProps);
+  }, [trailControlProps]);
 
   useEffect(() => {
     if (webglSupported === false) return;
@@ -818,6 +1179,24 @@ export default function Map() {
       <div>This map requires WebGL to work, which wasn't detected.</div>
     </div>
   )} else {
-  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  return (
+    <>
+      <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />
+      {openWaypoint && createPortal(
+        <WaypointPopup
+          key={openWaypoint.id}
+          waypoint={openWaypoint}
+          waypoints={waypoints}
+          robotCoordinates={robotCoordinates}
+          baseCoordinates={baseCoordinates}
+          scienceLocked={scienceLocked}
+          onSetScienceSite={setScienceSiteFromWaypoint}
+          onRenamePoi={(name) => renamePoi(openWaypoint.id, name)}
+          onDeletePoi={() => removePoi(openWaypoint.id)}
+        />,
+        openPopup.node,
+      )}
+    </>
+  );
   }
 }

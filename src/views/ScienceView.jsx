@@ -7,6 +7,7 @@ import { useSoftStop } from "../contexts/SoftStopContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 import { usePeripherals } from "../contexts/PeripheralContext";
 import { useGPS } from "../contexts/GPSContext";
+import { useScience } from "../contexts/ScienceContext";
 
 export default function ScienceView() {
   const { servercanState } = usePeripherals();
@@ -15,7 +16,8 @@ export default function ScienceView() {
 
   const { robotCoordinates } = useGPS();
 
-  const [siteReadings, setSiteReadings] = useState([null, null, null])
+  // Science sites live in ScienceProvider so they survive switching panes and show on the map
+  const { siteReadings, setSiteReadings } = useScience();
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();

@@ -86,24 +86,30 @@ export function createTrailUpdater() {
     };
 }
 
-// Convert an array of GPS points to trail log for exporting.
-export function serializeTrailLog(points) {
-    const rows = [
-        { type: "metadata", format: "urc-gps-trail", version: 1 },
-        ...points.map((point, index) => ({
-            type: "point",
-            sequence: index + 1,
-            timestamp: point.timestamp,
-            latitude: point.latitude,
-            longitude: point.longitude,
-            ...(point.segmentStart ? { segmentStart: true } : {}),
-        })),
-    ];
-    return `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
+// One trail point as a row in an exported trail log or map file.
+export function trailPointRow(point, index) {
+    return {
+        type: "point",
+        sequence: index + 1,
+        timestamp: point.timestamp,
+        latitude: point.latitude,
+        longitude: point.longitude,
+        ...(point.segmentStart ? { segmentStart: true } : {}),
+    };
 }
 
-// Read an exported new line-delimited log, validating its format and GPS points.
-export function parseTrailLog(text) {
+// Read a validated point row back, keeping only the fields the trail uses.
+export function readTrailPointRow(row) {
+    return {
+        latitude: row.latitude,
+        longitude: row.longitude,
+        timestamp: row.timestamp,
+        ...(row.segmentStart === true ? { segmentStart: true } : {}),
+    };
+}
+
+// Parse newline-delimited JSON, skipping blank lines.
+export function parseJsonLines(text) {
     const rows = [];
 
     // Split the text into lines using either macOS or Windows lines endings.
@@ -115,6 +121,21 @@ export function parseTrailLog(text) {
             throw new Error(`Invalid JSON on line ${index + 1}.`);
         }
     }
+    return rows;
+}
+
+// Convert an array of GPS points to trail log for exporting.
+export function serializeTrailLog(points) {
+    const rows = [
+        { type: "metadata", format: "urc-gps-trail", version: 1 },
+        ...points.map(trailPointRow),
+    ];
+    return `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
+}
+
+// Read an exported new line-delimited log, validating its format and GPS points.
+export function parseTrailLog(text) {
+    const rows = parseJsonLines(text);
 
     const metadata = rows[0];
     if (metadata?.type !== "metadata" || metadata.format !== "urc-gps-trail" || metadata.version !== 1) {
@@ -128,12 +149,7 @@ export function parseTrailLog(text) {
         if (point?.type !== "point" || !isValidTrailPoint(point)) {
             throw new Error(`Invalid GPS data in point ${index + 1}.`);
         }
-        return {
-            latitude: point.latitude,
-            longitude: point.longitude,
-            timestamp: point.timestamp,
-            ...(point.segmentStart === true ? { segmentStart: true } : {}),
-        };
+        return readTrailPointRow(point);
     });
 }
 
