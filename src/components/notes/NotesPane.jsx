@@ -9,68 +9,16 @@ import {
   BoldItalicUnderlineToggles,
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
-import { basesocket } from "../socket.io/socket";
-import { useState, useEffect, useRef } from "react";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 
-export default function NotesPane() {
-  const [markdown, setMarkdown] = useState(null);
-  const [saveStatus, setSaveStatus] = useState("Saved");
-  const latestSave = useRef(0);
-  const [loadError, setLoadError] = useState("");
-  const [loadAttempt, setLoadAttempt] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-
-    basesocket.timeout(3000).emit("getNotes", (err, response) => {
-      if (!active) return; // prevent late load
-
-      if (err || response?.status != "OK") {
-        setLoadError(
-          err
-            ? "Loading notes timed out"
-            : (response?.message ?? "Could not load notes"),
-        );
-        return;
-      }
-
-      setMarkdown(response.markdown);
-    });
-    return () => {
-      active = false;
-    };
-  }, [loadAttempt]);
-
-  function handleChange(markdown, markdownInitialize) {
-    if (markdownInitialize) return;
-
-    const requestId = ++latestSave.current;
-
-    if (!basesocket.connected) {
-      setSaveStatus("Unsaved: base-pi disconnected");
-      return;
-    }
-
-    setSaveStatus("Saving...");
-
-    basesocket
-      .timeout(3000)
-      .emit("saveNotes", { markdown }, (err, response) => {
-        if (requestId != latestSave.current) return;
-
-        if (err) {
-          setSaveStatus("Save unconfirmed: request timed out");
-        } else if (response?.status == "OK") {
-          setSaveStatus("Saved");
-        } else {
-          setSaveStatus("Save failed");
-          console.log(response?.message);
-        }
-      });
-  }
-
+export default function NotesPane({
+  markdown,
+  saveStatus,
+  loadError,
+  onChange,
+  onRetry,
+}) {
   if (loadError) {
     return (
       <Box
@@ -84,13 +32,7 @@ export default function NotesPane() {
         }}
       >
         <p role="alert">{loadError}</p>
-        <Button
-          variant="contained"
-          onClick={() => {
-            setLoadError("");
-            setLoadAttempt((attempt) => attempt + 1);
-          }}
-        >
+        <Button variant="contained" onClick={onRetry}>
           Retry
         </Button>
       </Box>
@@ -131,7 +73,7 @@ export default function NotesPane() {
             ),
           }),
         ]}
-        onChange={handleChange}
+        onChange={onChange}
       />
     </>
   );
