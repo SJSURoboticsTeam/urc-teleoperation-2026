@@ -21,6 +21,9 @@ export const GPSProvider = ({ children }) => {
     const [trailReady, setTrailReady] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [hasUnsavedTrail, setHasUnsavedTrail] = useState(false);
+    // Points of interest dropped on the map: { id, name, lat, long }
+    const [pois, setPois] = useState([]);
+    const nextPoiNumberRef = useRef(1);
 
     const [robotCoordinates, setRobotCoordinates] = useState({
         long: -121.881194,
@@ -170,6 +173,22 @@ export const GPSProvider = ({ children }) => {
         setHasUnsavedTrail(false);
     }, [enqueueSnackbar]);
 
+    // Numbers keep counting up after deletes so a new POI never reuses an old name
+    const addPoi = useCallback(({ lat, long }) => {
+        const number = nextPoiNumberRef.current++;
+        const poi = { id: `poi-${Date.now()}-${number}`, name: `POI ${number}`, lat, long };
+        setPois((prev) => [...prev, poi]);
+        return poi;
+    }, []);
+
+    const renamePoi = useCallback((id, name) => {
+        setPois((prev) => prev.map((poi) => (poi.id === id ? { ...poi, name } : poi)));
+    }, []);
+
+    const removePoi = useCallback((id) => {
+        setPois((prev) => prev.filter((poi) => poi.id !== id));
+    }, []);
+
     const value = {
         robotCoordinates,
         baseCoordinates,
@@ -182,6 +201,10 @@ export const GPSProvider = ({ children }) => {
         startRecording,
         stopRecording,
         clearTrail,
+        pois,
+        addPoi,
+        renamePoi,
+        removePoi,
     };
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;

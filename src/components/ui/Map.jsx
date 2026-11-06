@@ -348,6 +348,67 @@ class ResetZoomControl {
   }
 }
 
+function PoiControlUI({ isPlacing, canPinRover, onTogglePlacing, onPinRover }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 100,
+      }}
+    >
+      <Button size="small" variant={isPlacing ? "contained" : "outlined"} onClick={onTogglePlacing}>
+        {isPlacing ? "Cancel" : "+ Add POI"}
+      </Button>
+      {isPlacing && <Typography variant="caption">Click the map to drop a pin</Typography>}
+      <Button size="small" variant="outlined" disabled={!canPinRover} onClick={onPinRover}>Pin Rover</Button>
+    </Box>
+  );
+}
+
+class PoiControl {
+  constructor(onTogglePlacing, onPinRover) {
+    this._onTogglePlacing = onTogglePlacing;
+    this._onPinRover = onPinRover;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update(false, false);
+    return this._container;
+  }
+  update(isPlacing, canPinRover) {
+    if(!this._root) {
+      return;
+    }
+    this._root.render(
+      <PoiControlUI
+        isPlacing = {isPlacing}
+        canPinRover = {canPinRover}
+        onTogglePlacing = {this._onTogglePlacing}
+        onPinRover = {this._onPinRover}
+      />
+    );
+  }
+  onRemove() {
+    if (this._root) {
+      this._root.unmount();
+    }
+    if(this._container && this._container.parentNode) {
+      this._container.parentNode.removeChild(this._container);
+    }
+    this._root = null;
+    this._container = null;
+  }
+}
+
 // MapLibre auto-expands the compact attribution whenever attributions load and
 // only collapses it on the first drag. Keep it collapsed until the user clicks.
 class CollapsedAttributionControl extends maplibregl.AttributionControl {
@@ -484,7 +545,7 @@ function parseCoordinate(text) {
 }
 
 // Each pane owns its locations; the map only gathers them into one list of pins
-function buildWaypoints(siteReadings, driveData) {
+function buildWaypoints(siteReadings, driveData, pois) {
   const waypoints = [];
 
   siteReadings.forEach((reading, index) => {
@@ -499,6 +560,10 @@ function buildWaypoints(siteReadings, driveData) {
     if (!hasValidGPSCoordinates({ latitude: lat, longitude: long })) return;
     const name = location.label.trim() || `Location ${index + 1}`;
     waypoints.push({ id: `autonomy-${key}`, type: "autonomy", name, lat, long });
+  });
+
+  pois.forEach((poi) => {
+    waypoints.push({ id: poi.id, type: "poi", name: poi.name, lat: poi.lat, long: poi.long });
   });
 
   return waypoints;
@@ -519,6 +584,8 @@ export default function Map() {
   const coordRef = useRef(null);
   const coordRef2 = useRef(null);
   const resetZoomRef = useRef(null);
+  const poiControlRef = useRef(null);
+  const poiStateRef = useRef(null);
   const suppressTrackRef = useRef(false);
 
   const trailControlRef = useRef(null);
@@ -539,11 +606,13 @@ export default function Map() {
   }, []);
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
-  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, pois, addPoi, renamePoi, removePoi } = useGPS();
   const { siteReadings, setSiteReadings } = useScience();
   const { driveData } = useAutonomyLocations();
   // Memoized so GPS updates re-rendering the map don't redraw every pin
-  const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData), [siteReadings, driveData]);
+  const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData, pois), [siteReadings, driveData, pois]);
+  // While true, the next click on the map drops a POI there
+  const [isPlacingPoi, setIsPlacingPoi] = useState(false);
 
   // The pin whose popup is open: { id, node } where node is the popup's DOM content
   const [openPopup, setOpenPopup] = useState(null);
@@ -573,6 +642,8 @@ export default function Map() {
   };
   trailPointsRef.current = trailPoints;
   trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
+  // Read by the map click handler and POI control, which are created once when the map loads
+  poiStateRef.current = { isPlacingPoi, addPoi, enqueueSnackbar };
 
   const robotCoordsRef = useRef(robotCoordinates);
   const baseCoordsRef = useRef(baseCoordinates);
@@ -667,6 +738,26 @@ export default function Map() {
       () => resetMapCam({ pitch: 60, bearing: -20 })
     );
 
+    const poiControl = new PoiControl(
+      () => setIsPlacingPoi((prev) => !prev),
+      () => {
+        const robot = robotCoordsRef.current;
+        if (!robot.receive) return;
+        const poi = poiStateRef.current.addPoi({ lat: robot.lat, long: robot.long });
+        poiStateRef.current.enqueueSnackbar(`${poi.name} pinned at the rover`, { variant: "success" });
+      }
+    );
+
+    const onMapClick = (e) => {
+      if (!poiStateRef.current.isPlacingPoi) return;
+      // Clicks on a pin or popup open/use that popup instead of dropping a new pin
+      if (e.originalEvent.target.closest?.(".maplibregl-marker, .maplibregl-popup")) return;
+      const poi = poiStateRef.current.addPoi({ lat: e.lngLat.lat, long: e.lngLat.lng });
+      setIsPlacingPoi(false);
+      poiStateRef.current.enqueueSnackbar(`${poi.name} added`, { variant: "success" });
+    };
+    map.on("click", onMapClick);
+
     const onZoom = () => {
       updateAccuracyRadius(map, "robot-accuracy-circle-layer", robotCoordsRef.current);
       updateAccuracyRadius(map, "base-accuracy-circle-layer", baseCoordsRef.current);
@@ -684,6 +775,10 @@ export default function Map() {
 
       map.addControl(resetZoomControl, "top-left");
       resetZoomRef.current = resetZoomControl;
+
+      map.addControl(poiControl, "top-left");
+      poiControlRef.current = poiControl;
+      poiControl.update(poiStateRef.current.isPlacingPoi, robotCoordsRef.current.receive);
 
       const trailControl = new TrailControl();
       map.addControl(trailControl, "bottom-right");
@@ -858,6 +953,7 @@ export default function Map() {
       window.removeEventListener("resize", onWindowResize);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
+      map.off("click", onMapClick);
       Object.values(waypointMarkersRef.current).forEach(removeWaypointMarker);
       waypointMarkersRef.current = {};
       // Clean up map instance
@@ -868,6 +964,13 @@ export default function Map() {
       trailUpdaterRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    poiControlRef.current?.update(isPlacingPoi, robotCoordinates.receive);
+    // Crosshair cursor shows the next map click will drop a pin
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = isPlacingPoi ? "crosshair" : "";
+  }, [isPlacingPoi, robotCoordinates.receive]);
 
   // Keep one marker per waypoint: add new ones, move or restyle changed ones, remove deleted ones.
   // Must stay after the map setup effect so mapRef is ready on the first run.
@@ -1005,6 +1108,8 @@ export default function Map() {
           baseCoordinates={baseCoordinates}
           scienceLocked={scienceLocked}
           onSetScienceSite={setScienceSiteFromWaypoint}
+          onRenamePoi={(name) => renamePoi(openWaypoint.id, name)}
+          onDeletePoi={() => removePoi(openWaypoint.id)}
         />,
         openPopup.node,
       )}

@@ -1,10 +1,39 @@
 import { useState } from "react";
-import { Box, Button, Divider, NativeSelect, Typography } from "@mui/material";
+import { Box, Button, Divider, NativeSelect, TextField, Typography } from "@mui/material";
 import { distanceAndHeading, compassDirection } from "../../lib/geo";
 
+// Editable POI name. Saves on Enter or when focus leaves; a blank name reverts instead of saving.
+function PoiNameField({ name, onRename }) {
+  const [draft, setDraft] = useState(name);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== name) onRename(trimmed);
+    else setDraft(name);
+  };
+
+  return (
+    <TextField
+      variant="standard"
+      size="small"
+      fullWidth
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        // Keep typing out of the map's keyboard shortcuts (e.g. +/- zoom)
+        event.stopPropagation();
+        if (event.key === "Enter") event.target.blur();
+      }}
+      slotProps={{ htmlInput: { "aria-label": "POI name", style: { fontWeight: 700, fontSize: "0.875rem" } } }}
+    />
+  );
+}
+
 // Popup shown when a waypoint pin is clicked: compare it with the rover, base, or another pin,
-// and copy its location into a science site.
-export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, baseCoordinates, scienceLocked, onSetScienceSite }) {
+// and copy its location into a science site. POIs can also be renamed and deleted here.
+export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, baseCoordinates, scienceLocked, onSetScienceSite, onRenamePoi, onDeletePoi }) {
+  const isPoi = waypoint.type === "poi";
   const [compareId, setCompareId] = useState("rover");
 
   // Rover and base only count while their GPS is live, so stale positions aren't compared
@@ -23,7 +52,9 @@ export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, b
   return (
     <Box sx={{ minWidth: 220, display: "flex", flexDirection: "column", gap: 0.75 }}>
       <Box>
-        <Typography variant="body2" fontWeight="bold">{waypoint.name}</Typography>
+        {isPoi
+          ? <PoiNameField name={waypoint.name} onRename={onRenamePoi} />
+          : <Typography variant="body2" fontWeight="bold">{waypoint.name}</Typography>}
         <Typography variant="caption" color="text.secondary">
           {waypoint.lat.toFixed(6)}, {waypoint.long.toFixed(6)}
         </Typography>
@@ -75,6 +106,13 @@ export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, b
           </Typography>
         )}
       </Box>
+
+      {isPoi && (
+        <>
+          <Divider />
+          <Button size="small" color="error" onClick={onDeletePoi}>Delete POI</Button>
+        </>
+      )}
     </Box>
   );
 }
