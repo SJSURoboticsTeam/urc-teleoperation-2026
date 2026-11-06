@@ -6,6 +6,7 @@ import { basesocket } from "../socket.io/socket";
 import { useConnectionStatus } from "../../contexts/ConnectionContext.jsx";
 
 const AUTOSAVE_DEBOUNCE_MS = 500;
+const RETRY_DELAY_MS = [1000, 2000];
 
 export default function MenuPane(props) {
   const [activePane, setActivePane] = useState("settings");
@@ -18,6 +19,7 @@ export default function MenuPane(props) {
   const latestSave = useRef(0);
   const saveTimer = useRef(null);
   const currentlySaving = useRef(false);
+  const retryCount = useRef(0);
   const [markdown, setMarkdown] = useState(null);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [loadError, setLoadError] = useState("");
@@ -73,8 +75,28 @@ export default function MenuPane(props) {
         }
 
         if (err) {
-          setSaveStatus("Save unconfirmed: request timed out");
+          if (!basesocket.connected) {
+            setSaveStatus("Unsaved: base-pi disconnected");
+            return;
+          }
+
+          const retryDelay = RETRY_DELAY_MS[retryCount.current];
+          if (retryDelay === undefined) {
+            setSaveStatus("Save unconfirmed: automatic retries exhausted");
+            return;
+          }
+
+          retryCount.current += 1;
+          setSaveStatus(
+            `Save unconfirmed: retry ${retryCount.current} scheduled`,
+          );
+
+          saveTimer.current = setTimeout(() => {
+            saveTimer.current = null;
+            flushPendingNotes();
+          }, retryDelay);
         } else if (response?.status == "OK") {
+          retryCount.current = 0;
           pendingNotes.current = null;
           setSaveStatus("Saved");
         } else {
@@ -86,6 +108,7 @@ export default function MenuPane(props) {
 
   function handleNotesChange(markdown, markdownInitialize) {
     if (markdownInitialize) return;
+    retryCount.current = 0;
 
     ++latestSave.current;
     setMarkdown(markdown);
@@ -108,6 +131,7 @@ export default function MenuPane(props) {
   useEffect(() => {
     clearTimeout(saveTimer.current);
     saveTimer.current = null;
+    retryCount.current = 0;
 
     if (baseConnected) {
       savePendingNotes();
