@@ -1,9 +1,13 @@
+from can_serial import CanSerial
+from serial.tools import list_ports
 import socketio
 import uvicorn
 import metrics
 import asyncio
 import signal
 import os
+import sys
+
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
@@ -12,6 +16,15 @@ import sys, subprocess
 from notes import register_notes_events
 
 print("\033[0m----------------")
+serial_ports = {
+    "antenna": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "gps": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
+}
+gps_state = {"robot": None}
+
+GPS_AUTO_ID = "1546:01A9"
+
+canIds_arr = []
 
 
 short_hash = "unknown"
@@ -53,13 +66,7 @@ else:
 print("\033[0m----------------")
 
 
-serial_ports = {
-    "gps": None,
-    "gpsId" : "disconnect",
-}
-gps_state = {"robot": None}
 
-GPS_AUTO_ID = "1546:01A9"
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -75,16 +82,17 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
-    #gps
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            print("GPS serial closed.")
-        else:
-            print("GPS was never connected.")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        pass
+    ids = ["antenna", "gps"]
+    for id in ids:
+        try:
+            if serial_ports[id]["port"]:
+                serial_ports[id]["port"].close()
+                print(id.capitalize() + " serial closed.")
+            else:
+                print(id.capitalize() + " was never connected.")
+        except Exception:
+            print(id.upper() + " WAS NOT DISCONNECTED!!!")
+            pass
     sys.exit(0)
 # =================== Server Setup ===================
 
@@ -131,7 +139,78 @@ async def robot_server_loop():
             await asyncio.sleep(5)
 
 # =================== GPS connections ===================
+@sio.event
+async def getCanInfo(sid):
+    """Returns all the CAN ids to the frontend after filtering"""
 
+    # global array for peripheral ids, wiped before a scan appending new ids to list
+    canIds_arr.clear()
+    for port in list_ports.comports():
+        print(f"{port.device} ")
+
+        if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) or (port.device.find("modem") != -1) ):
+            # loose check to remove system serial interfaces
+            canIds_arr.append(port.device)
+
+    data = {
+    'status': "OK",
+    'canIds' : canIds_arr,
+    'antennaId' : serial_ports["antenna"]["id"],
+    'gpsId' : serial_ports["gps"]["id"],
+    }
+    return data
+
+
+@sio.event
+async def connectBasePeripheral(sid, line, id):
+    """Initialize serial hardware off the event loop, then publish the connection."""
+    # ensure port exists, and id is in list of discovered ids
+    if (line not in serial_ports) or (id not in canIds_arr):
+        return "ERROR"
+
+    # Setup yields to other handlers; serialize changes to this peripheral.
+    async with serial_ports[line]["lock"]:
+        if serial_ports[line]["id"] != "disconnect":
+            print(line.upper() + " WAS ALREADY CONNECTED!")
+            return "ERROR"
+        print("Connecting " + line + " to " + str(id))
+        try:
+            if line == "gps":
+                port = await asyncio.to_thread(ZEDF9P, id, 57600)
+            else:
+                port = await asyncio.to_thread(CanSerial, id)
+
+            serial_ports[line]["port"] = port
+            serial_ports[line]["id"] = id
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO CONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
+
+
+@sio.event
+async def disconnectBasePeripheral(sid, line):
+    """Wait for pending setup before disconnecting the peripheral."""
+    if line not in serial_ports:
+        return "ERROR"
+    print("Disconnecting " + line )
+
+    async with serial_ports[line]["lock"]:
+        port = serial_ports[line]["port"]
+        # Detach before yielding so background tasks stop using the old port.
+        serial_ports[line]["port"] = None
+        serial_ports[line]["id"] = "disconnect"
+        try:
+            if port is not None:
+                await asyncio.to_thread(port.close)
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO DISCONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
 
 
 # =================== Initialization ===================
