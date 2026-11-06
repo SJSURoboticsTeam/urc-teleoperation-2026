@@ -20,6 +20,7 @@ export default function MenuPane(props) {
   const saveTimer = useRef(null);
   const currentlySaving = useRef(false);
   const retryCount = useRef(0);
+  const serverRevision = useRef(-1);
   const [markdown, setMarkdown] = useState(null);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [loadError, setLoadError] = useState("");
@@ -39,6 +40,14 @@ export default function MenuPane(props) {
         return;
       }
 
+      if (!Number.isSafeInteger(response.revision) || response.revision < 0) {
+        setLoadError("Invalid notes revision");
+        return;
+      }
+
+      if (response.revision < serverRevision.current) return;
+
+      serverRevision.current = response.revision;
       setMarkdown(response.markdown);
     });
     return () => {
@@ -67,6 +76,16 @@ export default function MenuPane(props) {
       .timeout(3000)
       .emit("saveNotes", { markdown }, (err, response) => {
         currentlySaving.current = false;
+
+        const validRevision =
+          Number.isSafeInteger(response?.revision) && response.revision >= 0;
+        if (!err && response?.status == "OK" && validRevision) {
+          serverRevision.current = Math.max(
+            serverRevision.current,
+            response.revision,
+          );
+        }
+
         if (requestId != latestSave.current) {
           if (saveTimer.current == null && basesocket.connected) {
             flushPendingNotes();
@@ -95,7 +114,7 @@ export default function MenuPane(props) {
             saveTimer.current = null;
             flushPendingNotes();
           }, retryDelay);
-        } else if (response?.status == "OK") {
+        } else if (response?.status == "OK" && validRevision) {
           retryCount.current = 0;
           pendingNotes.current = null;
           setSaveStatus("Saved");

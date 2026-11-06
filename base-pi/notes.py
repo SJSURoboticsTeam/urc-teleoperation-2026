@@ -1,24 +1,37 @@
 import asyncio
 from pathlib import Path
+import json
 
 BASE_PI_DIRECTORY = Path(__file__).parent
-NOTES_FILE = BASE_PI_DIRECTORY / "data" / "notes.md"
-TEMP_NOTES_FILE = BASE_PI_DIRECTORY / "data" / "temp_notes.md"
+NOTES_FILE = BASE_PI_DIRECTORY / "data" / "notes.json"
+TEMP_NOTES_FILE = BASE_PI_DIRECTORY / "data" / "temp_notes.json"
+
+
+def read_notes():
+    try:
+        text = NOTES_FILE.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {"markdown": "", "revision": 0}
+    notes = json.loads(text)
+
+    if (
+        not isinstance(notes, dict)
+        or not isinstance(notes.get("markdown"), str)
+        or type(notes.get("revision")) is not int
+        or notes["revision"] < 0
+    ):
+        raise ValueError("Invalid notes document")
+    return notes
 
 
 def register_notes_events(sio):
     @sio.event
     async def getNotes(sid):
-        status = "OK"
         try:
-            markdown = await asyncio.to_thread(NOTES_FILE.read_text, encoding="utf-8")
-        except FileNotFoundError:
-            # No file yet
-            status = "OK"
-            markdown = ""
-        except OSError as e:
+            notes = await asyncio.to_thread(read_notes)
+        except (OSError, ValueError) as e:
             return {"status": "ERROR", "message": str(e)}
-        return {"status": status, "markdown": markdown}
+        return {"status": "OK", **notes}
 
     write_mutex = asyncio.Lock()
 
@@ -29,14 +42,21 @@ def register_notes_events(sio):
 
         async with write_mutex:
             try:
+                current = await asyncio.to_thread(read_notes)
+                updated = {
+                    "markdown": data["markdown"],
+                    "revision": current["revision"] + 1,
+                }
                 await asyncio.to_thread(
                     TEMP_NOTES_FILE.parent.mkdir, parents=True, exist_ok=True
                 )
                 await asyncio.to_thread(
-                    TEMP_NOTES_FILE.write_text, data["markdown"], encoding="utf-8"
+                    TEMP_NOTES_FILE.write_text,
+                    json.dumps(updated, ensure_ascii=False),
+                    encoding="utf-8",
                 )
                 await asyncio.to_thread(TEMP_NOTES_FILE.replace, NOTES_FILE)
-            except OSError as e:
+            except (OSError, ValueError) as e:
                 return {"status": "ERROR", "message": str(e)}
 
-        return {"status": "OK"}
+        return {"status": "OK", **updated}
