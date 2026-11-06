@@ -202,6 +202,15 @@ export const GPSProvider = ({ children }) => {
         setPois((prev) => prev.filter((poi) => poi.id !== id));
     }, [setPois]);
 
+    // Swap in a whole set of POIs ({ name, lat, long }), e.g. from an imported map file or Clear Map.
+    // The counter skips past imported "POI N" names so new pins don't duplicate them.
+    const replacePois = useCallback((list) => {
+        const importedNumbers = list.map((poi) => Number(/^POI (\d+)$/.exec(poi.name)?.[1] ?? 0));
+        setNextPoiNumber((prev) => Math.max(prev, ...importedNumbers.map((number) => number + 1)));
+        const now = Date.now();
+        setPois(list.map((poi, index) => ({ id: `poi-${now}-import-${index}`, name: poi.name, lat: poi.lat, long: poi.long })));
+    }, [setPois, setNextPoiNumber]);
+
     const value = {
         robotCoordinates,
         baseCoordinates,
@@ -218,6 +227,7 @@ export const GPSProvider = ({ children }) => {
         addPoi,
         renamePoi,
         removePoi,
+        replacePois,
     };
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;

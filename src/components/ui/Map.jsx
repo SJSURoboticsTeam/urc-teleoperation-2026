@@ -11,44 +11,63 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
 import { useScience } from "../../contexts/ScienceContext";
-import { useAutonomyLocations } from "../../contexts/AutonomyLocationsContext";
+import { useAutonomyLocations, initialDriveState } from "../../contexts/AutonomyLocationsContext";
 import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 import { useSoftStop } from "../../contexts/SoftStopContext";
 import WaypointPopup from "./WaypointPopup";
-import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
+import { createTrailUpdater, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
+import { serializeMapFile, parseMapFile } from "../../lib/mapFile";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 const IMPORTED_TRAIL_SOURCE = "imported-gps-trail";
 
-function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport }) {
+const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
+// Works for the map's locations and for an imported file's (whose driveData may only have some locations)
+function countLocations({ siteReadings, driveData, pois }) {
+  return {
+    sites: siteReadings.filter(Boolean).length,
+    targets: Object.values(driveData).filter((location) => location.label || location.lat || location.lon || location.reached).length,
+    pois: pois.length,
+  };
+}
+
+const describeCounts = ({ sites, targets, pois }) =>
+  `${plural(sites, "science site")}, ${plural(targets, "autonomy target")}, and ${plural(pois, "POI")}`;
+
+function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onClearImport, mapData, locationsLocked, onImportMap, onClearMap }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmClearMap, setConfirmClearMap] = useState(false);
+  // A parsed file waiting for the operator to confirm the import
+  const [pendingImport, setPendingImport] = useState(null);
   const [importError, setImportError] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef(null);
+  const mapCounts = countLocations(mapData);
+  const hasLocations = mapCounts.sites + mapCounts.targets + mapCounts.pois > 0;
 
-  const importLog = async (event) => {
+  const importMapFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     setImportError("");
     setIsImporting(true);
     try {
-      const points = parseTrailLog(await file.text());
-      onImport({ name: file.name, points });
+      setPendingImport({ name: file.name, ...parseMapFile(await file.text()) });
     } catch (error) {
-      setImportError(error.message || "Could not read this trail log.");
+      setImportError(error.message || "Could not read this map file.");
     } finally {
       setIsImporting(false);
     }
   };
 
-  const exportLog = () => {
-    const blob = new Blob([serializeTrailLog(points)], { type: "application/x-ndjson;charset=utf-8" });
+  const exportMap = () => {
+    const blob = new Blob([serializeMapFile({ trailPoints: points, ...mapData })], { type: "application/x-ndjson;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    // File name of the log is a timestamp of when it was downloaded
-    link.download = `rover-gps-trail-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
+    // File name of the map file is a timestamp of when it was downloaded
+    link.download = `rover-map-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -63,7 +82,7 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
       </Typography>
       {hasUnsavedTrail && (
         <Typography role="alert" variant="body2" color="error.main">
-          Trail changes could not be saved. Export Log before reloading or closing this page.
+          Trail changes could not be saved. Export Map before reloading or closing this page.
         </Typography>
       )}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
@@ -71,17 +90,49 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         <Button size="small" variant="outlined" disabled={!recording} onClick={onStop}>Stop Recording</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={!ready || points.length === 0} onClick={exportLog}>Export Log</Button>
+        <Button size="small" variant="outlined" disabled={!ready || (points.length === 0 && !hasLocations)} onClick={exportMap}>Export Map</Button>
         <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={!ready || isImporting} onClick={() => importInputRef.current?.click()}>
-          {isImporting ? "Importing…" : "Import Log"}
+        <Button size="small" variant="outlined" disabled={!ready || isImporting || locationsLocked} onClick={() => importInputRef.current?.click()}>
+          {isImporting ? "Importing…" : "Import Map"}
         </Button>
         <Button size="small" variant="outlined" disabled={!importedTrail} onClick={onClearImport}>Clear Import</Button>
       </Box>
-      <input ref={importInputRef} type="file" accept=".log" aria-label="Import GPS trail log" hidden onChange={importLog} />
+      <Button size="small" color="error" variant="outlined" fullWidth sx={{ mt: 0.5 }} disabled={!hasLocations || locationsLocked} onClick={() => setConfirmClearMap(true)}>
+        Clear Map
+      </Button>
+      {locationsLocked && (
+        <Typography variant="caption" color="error.main">Import and Clear Map are locked while autonomy or Soft Stop is active.</Typography>
+      )}
+      <input ref={importInputRef} type="file" accept=".log" aria-label="Import map file" hidden onChange={importMapFile} />
       {importError && <Typography role="alert" variant="body2" color="error.main">{importError}</Typography>}
+      <Dialog open={!!pendingImport} onClose={() => setPendingImport(null)}>
+        <DialogTitle>Import {pendingImport?.name}?</DialogTitle>
+        <DialogContent>
+          {pendingImport?.locations
+            ? `This replaces the map's ${describeCounts(mapCounts)} with the file's ${describeCounts(countLocations(pendingImport.locations))}.`
+            : "This is an older trail-only log, so the map's locations stay as they are."}
+          {pendingImport?.trailPoints.length > 0 &&
+            ` Its trail (${plural(pendingImport.trailPoints.length, "point")}) is shown as an imported trail; your recorded trail is not changed.`}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingImport(null)}>Cancel</Button>
+          <Button onClick={() => { onImportMap(pendingImport); setPendingImport(null); }}>
+            {pendingImport?.locations ? "Replace" : "Import"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={confirmClearMap} onClose={() => setConfirmClearMap(false)}>
+        <DialogTitle>Clear map locations?</DialogTitle>
+        <DialogContent>
+          This removes {describeCounts(mapCounts)} from the map and this browser. The GPS trail is not affected. Export the map first if you want to keep them.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmClearMap(false)}>Cancel</Button>
+          <Button color="error" onClick={() => { onClearMap(); setConfirmClearMap(false); }}>Clear Map</Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
         <DialogTitle>Clear GPS trail?</DialogTitle>
         <DialogContent>This removes all saved trail points from this browser. Export a log first if you want to keep them.</DialogContent>
@@ -101,8 +152,9 @@ class TrailControl {
     this._root = ReactDOM.createRoot(this._container);
     return this._container;
   }
-  update(points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport) {
-    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} importedTrail={importedTrail} onImport={onImport} onClearImport={onClearImport} />);
+  // Takes the TrailControlUI props as one object; there are too many to pass by position
+  update(props) {
+    this._root?.render(<TrailControlUI {...props} />);
   }
   onRemove() {
     this._root?.unmount();
@@ -590,7 +642,7 @@ export default function Map() {
 
   const trailControlRef = useRef(null);
   const trailPointsRef = useRef([]);
-  const trailControlStateRef = useRef(null);
+  const trailControlPropsRef = useRef(null);
   const trailUpdaterRef = useRef(null);
   // Waypoint id -> { marker, root }. A plain object because this component's name hides the built-in Map
   const waypointMarkersRef = useRef({});
@@ -599,16 +651,11 @@ export default function Map() {
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
   const [importedTrail, setImportedTrail] = useState(null);
-
-  const importTrail = useCallback((trail) => {
-    setImportedTrail(trail);
-    // setIsLockedOn(false);
-  }, []);
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
-  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, pois, addPoi, renamePoi, removePoi } = useGPS();
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, pois, addPoi, renamePoi, removePoi, replacePois } = useGPS();
   const { siteReadings, setSiteReadings } = useScience();
-  const { driveData } = useAutonomyLocations();
+  const { driveData, setDriveData } = useAutonomyLocations();
   // Memoized so GPS updates re-rendering the map don't redraw every pin
   const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData, pois), [siteReadings, driveData, pois]);
   // While true, the next click on the map drops a POI there
@@ -640,8 +687,45 @@ export default function Map() {
     });
     enqueueSnackbar(`Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
   };
+  // Replace the map's locations with an imported file's. The file's trail is shown as the imported trail;
+  // the recorded trail is never touched.
+  const importMap = useCallback(({ name, trailPoints: importedPoints, locations }) => {
+    setImportedTrail(importedPoints.length > 0 ? { name, points: importedPoints } : null);
+    // Older trail-only logs have no locations, so the map's stay as they are
+    if (locations) {
+      setSiteReadings(locations.siteReadings);
+      setDriveData({ ...initialDriveState, ...locations.driveData });
+      replacePois(locations.pois);
+    }
+    enqueueSnackbar(`Imported ${name}`, { variant: "success" });
+  }, [setSiteReadings, setDriveData, replacePois, enqueueSnackbar]);
+
+  // Remove all science sites, autonomy targets, and POIs, e.g. before a new mission. The trail has its own Clear Trail.
+  const clearMap = useCallback(() => {
+    setSiteReadings([null, null, null]);
+    setDriveData(initialDriveState);
+    replacePois([]);
+  }, [setSiteReadings, setDriveData, replacePois]);
+
+  const trailControlProps = useMemo(() => ({
+    points: trailPoints,
+    ready: trailReady,
+    recording: isRecording,
+    hasUnsavedTrail,
+    onStart: startRecording,
+    onStop: stopRecording,
+    onClear: clearTrail,
+    importedTrail,
+    onClearImport: clearImportedTrail,
+    mapData: { siteReadings, driveData, pois },
+    // Import and Clear Map change science sites, so they follow the same lock
+    locationsLocked: scienceLocked,
+    onImportMap: importMap,
+    onClearMap: clearMap,
+  }), [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, clearImportedTrail, siteReadings, driveData, pois, scienceLocked, importMap, clearMap]);
+
   trailPointsRef.current = trailPoints;
-  trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
+  trailControlPropsRef.current = trailControlProps;
   // Read by the map click handler and POI control, which are created once when the map loads
   poiStateRef.current = { isPlacingPoi, addPoi, enqueueSnackbar };
 
@@ -783,8 +867,7 @@ export default function Map() {
       const trailControl = new TrailControl();
       map.addControl(trailControl, "bottom-right");
       trailControlRef.current = trailControl;
-      const currentTrailState = trailControlStateRef.current;
-      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail, currentTrailState.importedTrail, currentTrailState.importTrail, currentTrailState.clearImportedTrail);
+      trailControl.update(trailControlPropsRef.current);
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -857,7 +940,7 @@ export default function Map() {
       // Draw imported trails
       map.addSource(IMPORTED_TRAIL_SOURCE, {
         type: "geojson",
-        data: importedTrailGeoJSON(currentTrailState.importedTrail?.points ?? []),
+        data: importedTrailGeoJSON(trailControlPropsRef.current.importedTrail?.points ?? []),
       });
       map.addLayer({
         id: IMPORTED_TRAIL_SOURCE,
@@ -1030,8 +1113,8 @@ export default function Map() {
   }, [importedTrail]);
 
   useEffect(() => {
-    trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail);
-  }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail]);
+    trailControlRef.current?.update(trailControlProps);
+  }, [trailControlProps]);
 
   useEffect(() => {
     if (webglSupported === false) return;
