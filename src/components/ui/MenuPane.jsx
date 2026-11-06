@@ -17,6 +17,7 @@ export default function MenuPane(props) {
   const pendingNotes = useRef(null);
   const latestSave = useRef(0);
   const saveTimer = useRef(null);
+  const currentlySaving = useRef(false);
   const [markdown, setMarkdown] = useState(null);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [loadError, setLoadError] = useState("");
@@ -43,7 +44,9 @@ export default function MenuPane(props) {
     };
   }, [loadAttempt]);
 
-  const savePendingNotes = useCallback(() => {
+  const savePendingNotes = useCallback(function flushPendingNotes() {
+    if (currentlySaving.current) return;
+
     const markdown = pendingNotes.current;
     if (markdown == null) return;
 
@@ -54,12 +57,20 @@ export default function MenuPane(props) {
       return;
     }
 
+    currentlySaving.current = true;
+
     setSaveStatus("Saving...");
 
     basesocket
       .timeout(3000)
       .emit("saveNotes", { markdown }, (err, response) => {
-        if (requestId != latestSave.current) return;
+        currentlySaving.current = false;
+        if (requestId != latestSave.current) {
+          if (saveTimer.current == null && basesocket.connected) {
+            flushPendingNotes();
+          }
+          return;
+        }
 
         if (err) {
           setSaveStatus("Save unconfirmed: request timed out");
