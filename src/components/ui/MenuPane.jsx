@@ -236,7 +236,7 @@ export default function MenuPane(props) {
       onClose={props.toggleDrawer(false)}
       sx={{
         "& .MuiDrawer-paper": {
-          width: activePane == "notes" ? "min(100vw, 420px)" : 240,
+          width: activePane == "notes" ? "min(100vw, 1000px)" : 240,
           borderRadius: "12px",
         },
       }}

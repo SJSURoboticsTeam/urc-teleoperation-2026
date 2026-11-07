@@ -5,13 +5,31 @@ import {
   toolbarPlugin,
   listsPlugin,
   thematicBreakPlugin,
+  linkPlugin,
+  linkDialogPlugin,
+  imagePlugin,
+  tablePlugin,
+  directivesPlugin,
+  diffSourcePlugin,
+  AdmonitionDirectiveDescriptor,
   UndoRedo,
   BoldItalicUnderlineToggles,
+  Separator,
+  StrikeThroughSupSubToggles,
+  ListsToggle,
+  BlockTypeSelect,
+  CreateLink,
+  InsertImage,
+  InsertTable,
+  InsertThematicBreak,
+  InsertAdmonition,
+  CodeToggle,
+  DiffSourceToggleWrapper,
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
-import { useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 
 export default function NotesPane({
   markdown,
@@ -41,6 +59,7 @@ export default function NotesPane({
         ? "Saved · offline"
         : "Unsaved · offline"
       : saveStatus;
+  const [overlayContainer, setOverlayContainer] = useState(null);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -89,7 +108,18 @@ export default function NotesPane({
   }
 
   return (
-    <>
+    <Box
+      ref={setOverlayContainer}
+      sx={{
+        '& [data-editor-block-type="image"]': {
+          maxWidth: "100%",
+        },
+        '& [data-editor-block-type="image"] img': {
+          maxWidth: "100%",
+          height: "auto",
+        },
+      }}
+    >
       {refreshError && <p role="alert">{refreshError}</p>}
       <Box
         role="status"
@@ -119,22 +149,49 @@ export default function NotesPane({
       <MDXEditor
         markdown={markdown}
         ref={editorRef}
+        overlayContainer={overlayContainer}
         plugins={[
           headingsPlugin(),
           listsPlugin(),
           thematicBreakPlugin(),
+          linkPlugin(),
+          linkDialogPlugin(),
+          imagePlugin(),
+          tablePlugin(),
+          directivesPlugin({
+            directiveDescriptors: [AdmonitionDirectiveDescriptor],
+          }),
+          diffSourcePlugin(),
           markdownShortcutPlugin(),
           toolbarPlugin({
             toolbarContents: () => (
-              <>
+              <DiffSourceToggleWrapper options={["rich-text", "source"]}>
+                <BlockTypeSelect />
+                <Separator />
                 <UndoRedo />
+                <Separator />
                 <BoldItalicUnderlineToggles />
-              </>
+                <Separator />
+                <StrikeThroughSupSubToggles />
+                <Separator />
+                <ListsToggle />
+                <Separator />
+                <CreateLink />
+                <InsertImage />
+                <Separator />
+                <InsertTable />
+                <InsertThematicBreak />
+                <Separator />
+                <CodeToggle />
+                <Separator />
+                <InsertAdmonition />
+                <Separator />
+              </DiffSourceToggleWrapper>
             ),
           }),
         ]}
         onChange={onChange}
       />
-    </>
+    </Box>
   );
 }
