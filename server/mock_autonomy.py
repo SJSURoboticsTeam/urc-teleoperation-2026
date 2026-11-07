@@ -1,6 +1,5 @@
 import asyncio
 import math
-import time
 from datetime import datetime, timezone
 
 import gps
@@ -17,8 +16,6 @@ START_POSITION = {"latitude": 37.3345, "longitude": -121.8825}
 
 # simulated rover position, set on the first navigation run
 position = None
-
-_last_debug_log = 0
 
 def distance_m(a, b):
     """Return distance in meters between two GPS points."""
@@ -66,7 +63,6 @@ async def drive_to(sio, target, run, radius, returning, emit_gps):
             step = min(SPEED_M_S * TICK_S, dist) / dist
             position["latitude"] += (target["latitude"] - position["latitude"]) * step
             position["longitude"] += (target["longitude"] - position["longitude"]) * step
-            debug_log(f"[MOCK AUTONOMY] {dist:.1f} m to {target_name(target)}")
             if emit_gps:
                 await emit_position(sio)
             await asyncio.sleep(TICK_S)
