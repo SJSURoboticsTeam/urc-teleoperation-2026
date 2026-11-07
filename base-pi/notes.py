@@ -1,6 +1,6 @@
 import asyncio
-from pathlib import Path
 import json
+from pathlib import Path
 
 BASE_PI_DIRECTORY = Path(__file__).parent
 NOTES_FILE = BASE_PI_DIRECTORY / "data" / "notes.json"
@@ -58,5 +58,10 @@ def register_notes_events(sio):
                 await asyncio.to_thread(TEMP_NOTES_FILE.replace, NOTES_FILE)
             except (OSError, ValueError) as e:
                 return {"status": "ERROR", "message": str(e)}
+
+            try:
+                await sio.emit("notesUpdated", updated)
+            except Exception as e:
+                print(f"Notes saved, but broadcast failed: {e}")
 
         return {"status": "OK", **updated}
