@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+import socketio
 
 BASE_PI_DIRECTORY = Path(__file__).parent
 NOTES_FILE = BASE_PI_DIRECTORY / "data" / "notes.json"
@@ -61,7 +62,7 @@ def register_notes_events(sio):
 
             try:
                 await sio.emit("notesUpdated", updated)
-            except Exception as e:
+            except socketio.connections.ConnectionError as e:
                 print(f"Notes saved, but broadcast failed: {e}")
 
         return {"status": "OK", **updated}
