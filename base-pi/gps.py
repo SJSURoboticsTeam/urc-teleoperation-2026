@@ -177,22 +177,25 @@ def find_gps_port(vid_pid=GPS_AUTO_ID):
 async def read_gps_data(serial_ports, sio, gps_state):
     disconnect_delay = 2
     connect_delay = 0.5
-    while True:
-        if serial_ports["gpsId"] == "disconnect":
+    # Auto-connect once at task startup; a later STOP ALL must stay disconnected.
+    async with serial_ports["gps"]["lock"]:
+        if serial_ports["gps"]["id"] == "disconnect":
             port = find_gps_port()
-            if port is None:
-                await asyncio.sleep(disconnect_delay)
-                continue
-            try:
-                serial_ports["gps"] = await asyncio.to_thread(ZEDF9P, port, 57600)
-                serial_ports["gpsId"] = port
-                print(f"GPS auto-connected on {port}.")
-            except Exception as e:
-                print(f"Failed to connect to GPS on {port}: {e}")
-                await asyncio.sleep(disconnect_delay)
+            if port is not None:
+                try:
+                    serial_ports["gps"]["port"] = await asyncio.to_thread(ZEDF9P, port, 57600)
+                    serial_ports["gps"]["id"] = port
+                    print(f"GPS auto-connected on {port}.")
+                except Exception as e:
+                    print(f"Failed to connect to GPS on {port}: {e}")
+    await sio.emit("forcecanrefresh")
+
+    while True:
+        if serial_ports["gps"]["id"] == "disconnect":
+            await asyncio.sleep(disconnect_delay)
             continue
 
-        gps = serial_ports['gps']
+        gps = serial_ports["gps"]["port"]
 
         try:
             if gps.has_gps_lock():
@@ -224,8 +227,8 @@ async def read_gps_data(serial_ports, sio, gps_state):
             print(f'GPS thread error: {e}')
             try: gps.close()
             except Exception: pass
-            serial_ports["gps"] = None
-            serial_ports["gpsId"] = "disconnect"
+            serial_ports["gps"]["port"] = None
+            serial_ports["gps"]["id"] = "disconnect"
         finally:
             await asyncio.sleep(connect_delay)  # Sleep briefly to prevent tight loop on error
 
