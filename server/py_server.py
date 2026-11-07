@@ -28,9 +28,12 @@ from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
-from drive_control import register_drive_control_events, release_drive_control
+from drive_control import register_drive_control_events, release_drive_control, revoke_drive_control
 from battery import send_fake_battery_data, get_battery_data
 from soft_stop import is_soft_stopped, set_soft_stop
+import rover_mode
+from rover_mode import register_rover_mode_events
+from mock_autonomy import register_mock_autonomy_events
 
 
 print("\033[0m----------------")
@@ -82,6 +85,10 @@ if (autonomy):
     print("Autonomy integration enabled")
 else:
     print("Autonomy integration disabled")
+
+# mock autonomy simulates navigation and typing until the real autonomy stack is wired in
+rover_mode.state["source"] = "mock"
+print("Mock autonomy enabled")
 
 # initialize e-stop
 estop_pin = None
@@ -271,6 +278,7 @@ async def E_STOP(sid):
         print(f"\033[91mPhysical e-stop activation failed: {exc}\033[0m")
         # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(1, shutdown)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by E-Stop")
     return("OK")
     
 
@@ -332,6 +340,13 @@ register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
+register_rover_mode_events(
+    sio,
+    lambda: revoke_drive_control(sio, stop_drive_motors_for_handover),
+    stop_drive_motors_for_handover,
+)
+# in offline mode the mock also sends the simulated position as gpsData for the map
+register_mock_autonomy_events(sio, emit_gps=offline)
 
 # =================== Start Server ===================
 
@@ -407,6 +422,8 @@ async def connect(sid,environ):
 
     # Sync a newly-connecting client to the current Soft Stop state
     await set_soft_stop(sio, is_soft_stopped(), sid=sid)
+    # and to the current rover mode
+    await rover_mode.broadcast(sio, sid=sid)
 
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
@@ -426,6 +443,7 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
 
     # Broadcast to every connected client so they all lock, not just the sender
     await set_soft_stop(sio, True)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by Soft Stop")
 
     # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
     # drive specifically being connected.
@@ -451,6 +469,7 @@ async def disconnect(sid):
 
     if metrics.numClients == 0:
         print("No clients, stopping motors now.")
+        await rover_mode.stop_autonomy(sio, "Autonomy stopped: no clients connected")
         await stop_drive_motors()
 
 config = uvicorn.Config(

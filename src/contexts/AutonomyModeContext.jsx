@@ -1,9 +1,10 @@
 import { createContext, useContext } from "react";
 
-// Global context used to share whether autonomy mode is enabled
+// Global context used to share the rover mode state sent by the rover backend
 export const AutonomyModeContext = createContext({
+  autonomyState: null,
   autonomyEnabled: false,
-  setAutonomyEnabled: () => {},
+  sendAutonomyCommand: () => {},
 });
 
 // Hook/function for consuming autonomy mode state

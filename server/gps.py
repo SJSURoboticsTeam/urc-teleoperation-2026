@@ -7,6 +7,11 @@ import asyncio
 from datetime import datetime, timezone
 import math
 
+# last position sent as gpsData, used as the mock autonomy start point
+latest_fix = None
+# set by mock autonomy once it drives, so the random fake data stops jumping the rover around
+fake_gps_paused = False
+
 @dataclass
 class GNRMC:
     longitude: Union[float, None]  # current longitude
@@ -130,6 +135,7 @@ class ZEDF9P:
         self.gps_port.close()
 
 async def read_gps_data(serial_ports, sio):
+    global latest_fix
     while True:
         gps = serial_ports['gps']["port"]
         if gps is None:
@@ -146,6 +152,7 @@ async def read_gps_data(serial_ports, sio):
                     'accuracy_source': position.accuracy.source if position.accuracy else None
                 }
                 await sio.emit("gpsData", data)
+                latest_fix = {"latitude": position.latitude, "longitude": position.longitude}
                 print(f"Latitude: {position.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}")
             else:
                 print("No GPS lock")
@@ -156,7 +163,11 @@ async def read_gps_data(serial_ports, sio):
             await asyncio.sleep(0.5)  # Sleep briefly to prevent tight loop on error
 
 async def send_fake_gps_data(sio):
+    global latest_fix
     while True:
+        if fake_gps_paused:
+            await asyncio.sleep(1)
+            continue
         data = {
             'latitude': round(random.uniform(37.334, 37.335), 5),
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
@@ -166,4 +177,5 @@ async def send_fake_gps_data(sio):
         }
 
         await sio.emit('gpsData', data)
+        latest_fix = {"latitude": data["latitude"], "longitude": data["longitude"]}
         await asyncio.sleep(random.uniform(2,7))
