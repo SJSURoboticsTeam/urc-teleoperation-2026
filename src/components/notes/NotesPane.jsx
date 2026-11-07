@@ -104,7 +104,8 @@ export default function NotesPane({
         }}
       >
         <Box
-          compoenent="span"
+          component="span"
+          aria-hidden="true"
           sx={{
             width: 8,
             height: 8,
