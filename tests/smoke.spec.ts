@@ -6,11 +6,11 @@ const routes = [
   "/arm",
   "/science",
   "/autonomy",
+  "/graphs",
   "/extras",
-  "/extras/graphs",
   "/extras/files",
   "/extras/speedtest",
-  "/extras/serial"
+  "/extras/serial",
 ];
 
 for (const route of routes) {
@@ -28,7 +28,9 @@ for (const route of routes) {
 
     expect(response?.ok()).toBeTruthy();
     await expect(page.locator("#root")).not.toBeEmpty();
-await expect(page.getByText('Teleoperations', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Teleoperations", { exact: true }),
+    ).toBeVisible();
 
     expect(consoleErrors).toEqual([]);
   });

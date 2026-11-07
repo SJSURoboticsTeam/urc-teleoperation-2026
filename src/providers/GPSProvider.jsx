@@ -1,14 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useSnackbar } from "notistack";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
+import { loadTrailPoints, saveTrailPoints, clearStoredTrail } from "../lib/gpsTrailStorage";
+import { hasValidGPSCoordinates, isValidTrailPoint, startsNewTrailSegment } from "../lib/gpsTrail";
 
 export const GPSProvider = ({ children }) => {
+    const { enqueueSnackbar } = useSnackbar();
     const robotLastSignalTime = useRef(Date.now()); 
     const baseLastSignalTime = useRef(Date.now()); 
     const robotSignalDiff = useRef();
     const baseSignalDiff = useRef();
     const robotSignalTimeout = useRef(null);
     const baseSignalTimeout = useRef(null);
+    const trailRef = useRef([]);
+    const trailReadyRef = useRef(false);
+    const recordingRef = useRef(false);
+    const nextPointStartsSegmentRef = useRef(true);
+    const [trailPoints, setTrailPoints] = useState([]);
+    const [trailReady, setTrailReady] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [hasUnsavedTrail, setHasUnsavedTrail] = useState(false);
 
     const [robotCoordinates, setRobotCoordinates] = useState({
         long: -121.881194,
@@ -21,12 +33,27 @@ export const GPSProvider = ({ children }) => {
         long: -121.881194,
         lat: 37.336847,
         receive: false,
+        distanceMeters: null,
+        headingDegrees: null,
         accuracy_m: null,
     });
 
-
     useEffect(() => {
+        trailReadyRef.current = false;
+        try {
+            trailRef.current = loadTrailPoints();
+            setTrailPoints(trailRef.current);  
+        } catch {
+            // Ignore storage errors, use empty trail
+        }
+        trailReadyRef.current = true;
+        setTrailReady(true)
+      
         const robotHandler = (data) => {
+            if (!isValidTrailPoint(data)) {
+                if (recordingRef.current) nextPointStartsSegmentRef.current = true;
+                return;
+            }
             if (robotSignalTimeout.current) {
                 clearTimeout(robotSignalTimeout.current);
             }
@@ -43,12 +70,33 @@ export const GPSProvider = ({ children }) => {
                 accuracy_m: data.accuracy_m ?? null,
             });
 
+            if (recordingRef.current) {
+                const previous = trailRef.current[trailRef.current.length - 1];
+                const startsSegment = nextPointStartsSegmentRef.current || startsNewTrailSegment(previous, data);
+                const recordedPoint = startsSegment
+                ? { ...data, segmentStart: true }
+                : data;
+
+                nextPointStartsSegmentRef.current = false;
+                trailRef.current = [...trailRef.current, recordedPoint];
+                setTrailPoints(trailRef.current);
+
+                try {
+                    saveTrailPoints(trailRef.current);
+                    setHasUnsavedTrail(false);
+                } catch {
+                    // If localStorage fails, set unsaved trail state to warn the operator
+                    setHasUnsavedTrail(true);
+                }
+            }
+
             robotSignalTimeout.current = setTimeout(() => {
                 setRobotCoordinates((prev) => ({ ...prev, receive: false }));
             }, 3000);
         };
 
         const baseHandler = (data) => {
+            if (!hasValidGPSCoordinates(data)) return;
             if (baseSignalTimeout.current) {
                 clearTimeout(baseSignalTimeout.current);
             }
@@ -62,6 +110,8 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
+                distanceMeters: data.distanceMeters ?? null,
+                headingDegrees: data.headingDegrees ?? null,
                 accuracy_m: data.accuracy_m ?? null,
             });
 
@@ -91,11 +141,47 @@ export const GPSProvider = ({ children }) => {
         }
     }, []);
 
+    const startRecording = useCallback(() => {
+        if (!trailReadyRef.current || recordingRef.current) return;
+        nextPointStartsSegmentRef.current = true;
+        recordingRef.current = true;
+        setIsRecording(true);
+    }, []);
+
+    const stopRecording = useCallback(() => {
+        recordingRef.current = false;
+        setIsRecording(false);
+    }, []);
+
+    const clearTrail = useCallback(() => {
+        if (!trailReadyRef.current) return;
+        try {
+            clearStoredTrail();
+        } catch {
+            enqueueSnackbar("Could not clear the saved GPS trail. Your points are still available, export a log or try again.", {
+                variant: "error",
+                preventDuplicate: true,
+            });
+            return;
+        }
+        trailRef.current = [];
+        nextPointStartsSegmentRef.current = true;
+        setTrailPoints([]);
+        setHasUnsavedTrail(false);
+    }, [enqueueSnackbar]);
+
     const value = {
-    robotCoordinates,
-    baseCoordinates,
-    robotSignalDiff,
-    baseSignalDiff,
+        robotCoordinates,
+        baseCoordinates,
+        robotSignalDiff,
+        baseSignalDiff,
+        trailPoints,
+        trailReady,
+        isRecording,
+        hasUnsavedTrail,
+        startRecording,
+        stopRecording,
+        clearTrail,
     };
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;

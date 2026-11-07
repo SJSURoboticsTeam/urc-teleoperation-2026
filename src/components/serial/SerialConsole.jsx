@@ -13,12 +13,17 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRobotSocketStatus } from "../socket.io/socket";
+
+// Read shared robot connection status for the serial console
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import { useSerial } from "../../contexts/SerialContext";
 import { usePeripherals } from "../../contexts/PeripheralContext";
 
 export default function SerialConsole() {
-  const serverConnected = useRobotSocketStatus();
+  // Use centralized connection state to control serial console actions
+  const { robotConnected: serverConnected } = useConnectionStatus();
+
   const {
     pulseDtr,
     updateDtr,
@@ -51,8 +56,8 @@ export default function SerialConsole() {
     dtr,
     rts,
   } = useSerial();
-  const { canState } = usePeripherals();
-  
+  const { servercanState } = usePeripherals();
+
   return (
     <Paper
       sx={{
@@ -93,10 +98,10 @@ export default function SerialConsole() {
                 <MenuItem
                   key={portId}
                   disabled={
-                    portId === canState.driveId ||
-                    portId === canState.armId ||
-                    portId === canState.scienceId ||
-                    portId === canState.gpsId
+                    portId === servercanState.drive.id ||
+                    portId === servercanState.arm.id ||
+                    portId === servercanState.science.id ||
+                    portId === servercanState.gps.id
                   }
                   value={portId}
                 >

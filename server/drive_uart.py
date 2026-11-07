@@ -1,5 +1,6 @@
 import asyncio
 from drive_control import is_drive_controller
+from soft_stop import is_soft_stopped
 
 DRIVE_MSG_ID = {
     "SET_CHASSIS_VELOCITIES": 0x40,
@@ -42,7 +43,7 @@ def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts
 
 async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflicts):
     """Encode and send a chassis velocity command over UART."""
-    if serial_ports["drive"] is None:
+    if serial_ports["drive"]["port"] is None:
         raise RuntimeError("Drive UART not connected")
 
     payload = build_set_chassis_velocities_payload(
@@ -54,7 +55,7 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
     # send_packet is blocking, run it in a thread
     await asyncio.to_thread(
-        serial_ports["drive"].send_packet,
+        serial_ports["drive"]["port"].send_packet,
         DRIVE_MSG_ID["SET_CHASSIS_VELOCITIES"],
         payload,
     )
@@ -65,6 +66,9 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 def register_drive_events(sio, serial_ports, drive_command_lock):
     @sio.event
     async def driveCommands(sid, data):
+        if is_soft_stopped():
+            print(f'[{sid}] Ignored drive command: soft stop active')
+            return
         try:
             async with drive_command_lock:
                 if not is_drive_controller(sid):
@@ -83,17 +87,20 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
 
     @sio.event
     async def driveHoming(sid):
+        if is_soft_stopped():
+            print(f'[{sid}] Ignored homing request: soft stop active')
+            return
         if not is_drive_controller(sid):
             print(f'[{sid}] Ignored homing request: not in control')
             return
         try:
             # make sure drive UART is connected first
-            if serial_ports["drive"] is None:
+            if serial_ports["drive"]["port"] is None:
                 print("Drive UART not connected")
                 return
 
             await asyncio.to_thread(
-                serial_ports["drive"].send_packet,
+                serial_ports["drive"]["port"].send_packet,
                 DRIVE_MSG_ID["HOMING_SEQUENCE"],
                 b""
             )
@@ -158,7 +165,7 @@ async def read_drive_uart_loop(serial_ports):
     try:
         while True:
             # read_packet is blocking so run it in a thread
-            drive = serial_ports["drive"]
+            drive = serial_ports["drive"]["port"]
             if drive is not None:
                 packet = await asyncio.to_thread(drive.read_packet)
                 if packet:
@@ -172,7 +179,7 @@ async def read_drive_uart_loop(serial_ports):
 async def send_drive_heartbeat(serial_ports):
     try:
         while True:
-            drive = serial_ports["drive"]
+            drive = serial_ports["drive"]["port"]
             if drive is not None:
                 await asyncio.to_thread(
                     drive.send_packet,

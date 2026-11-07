@@ -1,5 +1,6 @@
 import "react-resizable/css/styles.css";
 import Box from "@mui/material/Box";
+import { useVideo } from "../../contexts/VideoContext";
 import { useState, useEffect, useRef } from "react";
 import {
   Select,
@@ -9,6 +10,8 @@ import {
   CircularProgress,
   Typography,
   Button,
+  Chip,
+  Tooltip,
 } from "@mui/material";
 
 export default function CameraPane({ cameraValue, onCameraChange }) {
@@ -80,7 +83,20 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
     },
   ];
 
+  const cameraToVideoMap = {
+    "Mast Camera": "mast",
+    wheels: "wheels",
+    arm1: "arm1",
+    arm2: "arm2",
+    science: "science",
+  };
+
   const selectedCamera = cameras.find((cam) => cam.value == camera);
+  
+  const videoStats = useVideo();
+  const videoKey = cameraToVideoMap[camera];
+  const currentVideoStat = videoKey ? videoStats[videoKey] : null;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const iframeTimeoutRef = useRef(null);
@@ -172,6 +188,40 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
           backgroundColor: error ? "black" : "transparent",
         }}
       >
+        {currentVideoStat && (
+        <Tooltip
+          title={
+            currentVideoStat.droppedPerSec != null
+              ? `Dropped frames: ${currentVideoStat.droppedPerSec}/sec`
+              : "Stats unavailable"
+          }
+        >
+          <Chip
+            size="small"
+            aria-live="polite"
+            label={currentVideoStat.status}
+            color={
+              currentVideoStat.status === "GOOD" ? "success" :
+              currentVideoStat.status === "DEGRADED" ? "warning" :
+              currentVideoStat.status === "BAD" ? "error" : "default"
+            }
+            sx={{
+              position: "absolute",
+              top: 6,
+              right: 6,
+              zIndex: 2,
+              height: 18,
+              fontSize: "0.65rem",
+              "& .MuiChip-label": { px: 0.75 },
+              ...(!["GOOD", "DEGRADED", "BAD"].includes(currentVideoStat.status) && {
+                bgcolor: "#e0e0e0",
+                color: "#000",
+                fontWeight: 600,
+    }),
+            }}
+          />
+        </Tooltip>
+      )}
         {selectedCamera && (
           (selectedCamera.mediatype === "image" ? (
             <img

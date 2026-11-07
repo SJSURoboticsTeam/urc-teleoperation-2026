@@ -73,7 +73,8 @@ class CanScienceLink:
         self._unknown_seen = set()
 
     async def send_step(self, site, step):
-        serial = self.serial_ports.get("science")
+        # Read the port once: a failure must only clear THIS connection, not a newer one
+        serial = self.serial_ports["science"]["port"]
         if serial is None:
             return False
 
@@ -82,20 +83,26 @@ class CanScienceLink:
             await asyncio.to_thread(serial.write, frame)
         except Exception as e:
             print(f"[SCIENCE CAN] step send failed: {e}")
-            self._invalidate_connection("send failure")
+            self._invalidate_connection("send failure", serial)
             return False
         self.session.log_event("can_tx", site=site, step=step, data={"frame": frame.decode().strip()})
         return True
 
-    def _invalidate_connection(self, reason):
+    def _invalidate_connection(self, reason, failed_port):
+        """Clear a failed connection only if it is still the current science port.
+
+        A write or read on an old port can fail after a reconnect (#234, same rule as
+        invalidate_arm_connection). The "science" dict itself must stay: other code reads it.
+        """
+        if self.serial_ports["science"]["port"] is not failed_port:
+            return
         try:
-            serial = self.serial_ports.get("science")
-            if serial is not None:
-                serial.close()
+            if failed_port is not None:
+                failed_port.close()
         except Exception:
             pass
-        self.serial_ports["science"] = None
-        self.serial_ports["scienceId"] = "disconnect"
+        self.serial_ports["science"]["port"] = None
+        self.serial_ports["science"]["id"] = "disconnect"
         print(f"[SCIENCE CAN] connection invalidated: {reason}")
 
     async def handle_data(self, data):
@@ -148,19 +155,22 @@ class CanScienceLink:
 
 
 async def read_science_can_loop(serial_ports, link):
-    """Like read_arm_can_loop: idles until connectScience sets serial_ports["science"]."""
+    """Like read_arm_can_loop: idles until connectRoverPeripheral sets serial_ports["science"]["port"]."""
     while True:
+        serial = None
         try:
-            serial = serial_ports.get("science")
+            serial = serial_ports["science"]["port"]
             if serial is None:
                 await asyncio.sleep(0.1)
                 continue
 
             data = await asyncio.to_thread(serial.read_can, 0.5)
+            if serial_ports["science"]["port"] is not serial:
+                continue  # disconnected or replaced while reading: drop the stale data
             if data:
                 await link.handle_data(data)
             await asyncio.sleep(0.01)
         except Exception as e:
             print(f"Science CAN thread error: {e}")
-            link._invalidate_connection("read loop failure")
+            link._invalidate_connection("read loop failure", serial)
             await asyncio.sleep(0.25)

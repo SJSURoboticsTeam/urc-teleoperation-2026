@@ -8,6 +8,7 @@ import { Outlet } from "react-router-dom";
 
 // Local imports
 import TopAppBar from "./TopAppBar";
+import BottomAppBar from "./BottomAppBar";
 import SplitView from "./SplitView";
 // PANE IMPORTS, ROUTES HAS MOVED TO MAIN.JSX
 
@@ -18,13 +19,16 @@ import MastCommandProvider from "../providers/MastCommandProvider";
 import GamepadProvider from "../providers/GamepadProvider";
 import GPSProvider from "../providers/GPSProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
+import SoftStopProvider from "../providers/SoftStopProvider";
 import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
 import ScienceProvider from "../providers/ScienceProvider";
 import DemoPopup from "../components/ui/DemoPane";
+import SoftStopBanner from "../components/ui/SoftStopBanner";
 
 function App() {
   // Global autonomy state so every view can react to it
@@ -32,6 +36,8 @@ function App() {
 
   //snackbar
   const { enqueueSnackbar } = useSnackbar();
+
+  const [showbottbar, setshowbottbar] = useState(true);
 
   const addSnackbarMessage = (message, variant) => () => {
     // variant could be success, error, warning, info, or default
@@ -86,10 +92,12 @@ function App() {
           <PeripheralProvider>
             <GPSProvider>
               <MetricsProvider>
+                <VideoProvider>
                 <AutonomyModeProvider>
-                  <ArmCommandProvider>
-                    <GamepadProvider>
-                      <DriveControlProvider>
+                  <SoftStopProvider>
+                    <ArmCommandProvider>
+                      <GamepadProvider>
+                        <DriveControlProvider>
                         <ScienceProvider>
                           <DriveCommandProvider>
                             <MastCommandProvider>
@@ -99,6 +107,16 @@ function App() {
                                 selectedElements={selectedElements}
                                 setSelectedElements={setSelectedElements}
                                 addSnackbarMessage={addSnackbarMessage}
+                                showbottbar={showbottbar}
+                                setshowbottbar={setshowbottbar}
+                              />
+
+                              <BottomAppBar
+                                selectedElements={selectedElements}
+                                setSelectedElements={setSelectedElements}
+                                addSnackbarMessage={addSnackbarMessage}
+                                showbottbar={showbottbar}
+                                setshowbottbar={setshowbottbar}
                               />
 
                               <Box
@@ -110,9 +128,11 @@ function App() {
                                   flexDirection: "column",
                                   overflow: "hidden",
                                   minHeight: 0,
-                                  marginTop: "60px",
+                                  marginTop: "55px",
+                                  marginBottom: showbottbar ? "50px" : "0px",
                                 }}
                               >
+                                <SoftStopBanner />
                                 <SplitView selectedElements={selectedElements}>
                                   {/* we pass all these elements as "children" into SplitView */}
                                   <Outlet />
@@ -121,10 +141,12 @@ function App() {
                             </MastCommandProvider>
                           </DriveCommandProvider>
                         </ScienceProvider>
-                      </DriveControlProvider>
-                    </GamepadProvider>
-                  </ArmCommandProvider>
+                        </DriveControlProvider>
+                      </GamepadProvider>
+                    </ArmCommandProvider>
+                  </SoftStopProvider>
                 </AutonomyModeProvider>
+                </VideoProvider>
               </MetricsProvider>
             </GPSProvider>
           </PeripheralProvider>

@@ -40,7 +40,7 @@ export default function BatteryDisplay() {
 
 	return (
 		<Tooltip title={toolTipTitle} arrow>
-			<Box sx={{ display: "flex", alignItems: "center" }}>
+			<Box sx={{ display: "flex", alignItems: "center" }} style={{marginRight: 15}}>
 				{/* battery body */}
 				<Box
 					sx={{

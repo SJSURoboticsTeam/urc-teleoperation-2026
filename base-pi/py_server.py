@@ -1,15 +1,30 @@
+from can_serial import CanSerial
+from serial.tools import list_ports
 import socketio
 import uvicorn
 import metrics
 import asyncio
 import signal
+import os
+import sys
+
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
+from video import send_fake_video_stats, videoloop
 import sys, subprocess
 
 
 print("\033[0m----------------")
+serial_ports = {
+    "antenna": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "gps": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
+}
+gps_state = {"robot": None}
+
+GPS_AUTO_ID = "1546:01A9"
+
+canIds_arr = []
 
 
 short_hash = "unknown"
@@ -51,12 +66,7 @@ else:
 print("\033[0m----------------")
 
 
-serial_ports = {
-    "gps": None,
-    "gpsId" : "disconnect",
-}
 
-GPS_AUTO_ID = "1546:01A9"
 
 # =================== Clean Shutdown ===================
 # tell python how to shutdown the program cleanly
@@ -72,16 +82,17 @@ def shutdown():
         return
     shutting_down = True
     print("\nShutting down... ")
-    #gps
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            print("GPS serial closed.")
-        else:
-            print("GPS was never connected.")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        pass
+    ids = ["antenna", "gps"]
+    for id in ids:
+        try:
+            if serial_ports[id]["port"]:
+                serial_ports[id]["port"].close()
+                print(id.capitalize() + " serial closed.")
+            else:
+                print(id.capitalize() + " was never connected.")
+        except Exception:
+            print(id.upper() + " WAS NOT DISCONNECTED!!!")
+            pass
     sys.exit(0)
 # =================== Server Setup ===================
 
@@ -95,18 +106,111 @@ app = socketio.ASGIApp(sio)
 
 # =================== Robot Client Setup ===================
 
-# async def main():
-#     async with socketio.AsyncSimpleClient() as rsio:
-#         try:
-#             await rsio.connect('http://localhost:4000')
-#             print('Connected, my sid is', rsio.sid)
-#         except:
-#             print("Failed to connect.")
+if offline:
+    ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://localhost:4000")
+else:
+    ROBOT_SERVER_URL = os.environ.get("ROBOT_SERVER_URL", "http://192.168.1.49:4000")
 
-# asyncio.run(main())
+async def robot_server_loop():
+    while not shutting_down:
+        robot = socketio.AsyncClient()
+
+        @robot.on("gpsData")
+        async def receive_robot_gps(data):
+            if data.get("latitude") is not None and data.get("longitude") is not None:
+                gps_state["robot"] = {
+                    "latitude": data["latitude"],
+                    "longitude": data["longitude"],
+                }
+
+        try:
+            await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
+            print(f"Connected to robot server at {ROBOT_SERVER_URL}")
+            await robot.wait()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            print(f"Robot server connection failed: {exc}")
+        finally:
+            gps_state["robot"] = None
+            if robot.connected:
+                await robot.disconnect()
+        if not shutting_down:
+            await asyncio.sleep(5)
 
 # =================== GPS connections ===================
+@sio.event
+async def getCanInfo(sid):
+    """Returns all the CAN ids to the frontend after filtering"""
 
+    # global array for peripheral ids, wiped before a scan appending new ids to list
+    canIds_arr.clear()
+    for port in list_ports.comports():
+        print(f"{port.device} ")
+
+        if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) or (port.device.find("modem") != -1) ):
+            # loose check to remove system serial interfaces
+            canIds_arr.append(port.device)
+
+    data = {
+    'status': "OK",
+    'canIds' : canIds_arr,
+    'antennaId' : serial_ports["antenna"]["id"],
+    'gpsId' : serial_ports["gps"]["id"],
+    }
+    return data
+
+
+@sio.event
+async def connectBasePeripheral(sid, line, id):
+    """Initialize serial hardware off the event loop, then publish the connection."""
+    # ensure port exists, and id is in list of discovered ids
+    if (line not in serial_ports) or (id not in canIds_arr):
+        return "ERROR"
+
+    # Setup yields to other handlers; serialize changes to this peripheral.
+    async with serial_ports[line]["lock"]:
+        if serial_ports[line]["id"] != "disconnect":
+            print(line.upper() + " WAS ALREADY CONNECTED!")
+            return "ERROR"
+        print("Connecting " + line + " to " + str(id))
+        try:
+            if line == "gps":
+                port = await asyncio.to_thread(ZEDF9P, id, 57600)
+            else:
+                port = await asyncio.to_thread(CanSerial, id)
+
+            serial_ports[line]["port"] = port
+            serial_ports[line]["id"] = id
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO CONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
+
+
+@sio.event
+async def disconnectBasePeripheral(sid, line):
+    """Wait for pending setup before disconnecting the peripheral."""
+    if line not in serial_ports:
+        return "ERROR"
+    print("Disconnecting " + line )
+
+    async with serial_ports[line]["lock"]:
+        port = serial_ports[line]["port"]
+        # Detach before yielding so background tasks stop using the old port.
+        serial_ports[line]["port"] = None
+        serial_ports[line]["id"] = "disconnect"
+        try:
+            if port is not None:
+                await asyncio.to_thread(port.close)
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO DISCONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
 
 
 # =================== Initialization ===================
@@ -115,8 +219,10 @@ can_error_message_started = False
 drive_task_started = False
 arm_task_started = False
 gps_task_started = False
+robot_gps_task_started = False
 async_ssh_started = False
 cpu_started = False
+video_task_started = False
 
 
 register_metric_events(sio)
@@ -128,7 +234,9 @@ async def connect(sid,environ):
     global async_ssh_started
     global cpu_started
     global gps_task_started
+    global robot_gps_task_started
     global numClients
+    global video_task_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -137,6 +245,10 @@ async def connect(sid,environ):
         pass
 
     # Start background loop once
+    if not robot_gps_task_started:
+        robot_gps_task_started = True
+        sio.start_background_task(robot_server_loop)
+
     if not async_ssh_started:
         async_ssh_started = True
         if offline:
@@ -148,12 +260,18 @@ async def connect(sid,environ):
     if not gps_task_started:
         gps_task_started = True
         if offline:
-            sio.start_background_task(send_fake_gps_data, sio)
+            sio.start_background_task(send_fake_gps_data, sio, gps_state)
         else:
-            sio.start_background_task(read_gps_data, serial_ports, sio)
+            sio.start_background_task(read_gps_data, serial_ports, sio, gps_state)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
+    if not video_task_started:
+        video_task_started = True
+        if offline:
+            sio.start_background_task(send_fake_video_stats, sio)
+        else:
+            sio.start_background_task(videoloop, sio)
 
 
 @sio.event

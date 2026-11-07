@@ -16,6 +16,7 @@ import {
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
 import { usePeripherals } from "../contexts/PeripheralContext";
 import { useGPS } from "../contexts/GPSContext";
@@ -23,7 +24,7 @@ import { useScience } from "../contexts/ScienceContext";
 import { emptyScienceSession } from "../components/science/demoScienceSession";
 
 export default function ScienceView() {
-  const { canState } = usePeripherals();
+  const { servercanState } = usePeripherals();
 
   const [tabContent, setTabContent] = useState(0);
 
@@ -33,9 +34,10 @@ export default function ScienceView() {
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
 
-  // Lock science controls whenever autonomy is enabled
-  const controlsLocked = autonomyEnabled;
+  // Lock science controls whenever autonomy is enabled or Soft Stop is active
+  const controlsLocked = autonomyEnabled || softStopActive;
 
   const {
     session,
@@ -111,7 +113,7 @@ export default function ScienceView() {
       className="flex flex-1 flex-col overflow-auto h-full min-h-0"
       style={{ userSelect: "none" }}
     >
-    {(connected && session && !session.mock && canState.scienceState == "idle" && !controlsLocked) && (
+    {(connected && session && !session.mock && servercanState.science.state == "idle" && !controlsLocked) && (
           <Typography
             sx={{
               textAlign: "center",
@@ -128,7 +130,7 @@ export default function ScienceView() {
           fontWeight={700}
           sx={{ textAlign: "center", mb: 1 }}
         >
-          Science controls are disabled while autonomy is active.
+          Science controls are disabled while autonomy or Soft Stop is active.
         </Typography>
       )}
       {!canCommand && (
