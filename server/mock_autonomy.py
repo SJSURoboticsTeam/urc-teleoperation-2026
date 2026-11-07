@@ -11,7 +11,7 @@ from rover_mode import AUTONOMY, READY, NAVIGATING, ARRIVED, RETURNING, TYPING, 
 MOCK_AUTONOMY_DEBUG = False
 MOCK_AUTONOMY_DEBUG_RATE_LIMIT_SEC = 1.0
 
-SPEED_M_S = 1.5
+SPEED_M_S = 5.0
 TICK_S = 0.5
 ARRIVAL_RADIUS_M = 3.0  # GNSS-only locations (1.f.ii)
 RETURN_RADIUS_M = 5.0   # abort return to a visited location (1.f.viii)

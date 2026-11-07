@@ -86,11 +86,9 @@ if (autonomy):
 else:
     print("Autonomy integration disabled")
 
-# run with --mock-autonomy to simulate autonomous navigation and typing
-mock_autonomy = "--mock-autonomy" in sys.argv
-if (mock_autonomy):
-    rover_mode.state["source"] = "mock"
-    print("Mock autonomy enabled")
+# mock autonomy simulates navigation and typing until the real autonomy stack is wired in
+rover_mode.state["source"] = "mock"
+print("Mock autonomy enabled")
 
 # initialize e-stop
 estop_pin = None
@@ -510,9 +508,8 @@ register_rover_mode_events(
     lambda: revoke_drive_control(sio, stop_drive_motors_for_handover),
     stop_drive_motors_for_handover,
 )
-if mock_autonomy:
-    # in offline mode the mock also sends the simulated position as gpsData for the map
-    register_mock_autonomy_events(sio, emit_gps=offline)
+# in offline mode the mock also sends the simulated position as gpsData for the map
+register_mock_autonomy_events(sio, emit_gps=offline)
 
 # =================== Start Server ===================
 
