@@ -11,6 +11,7 @@ import {
 import "@mdxeditor/editor/style.css";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
+import { useRef, useEffect } from "react";
 
 export default function NotesPane({
   markdown,
@@ -19,6 +20,19 @@ export default function NotesPane({
   onChange,
   onRetry,
 }) {
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (
+      typeof markdown == "string" &&
+      editor &&
+      editor.getMarkdown() !== markdown
+    ) {
+      editor.setMarkdown(markdown);
+    }
+  }, [markdown]);
+
   if (loadError) {
     return (
       <Box
@@ -59,6 +73,7 @@ export default function NotesPane({
       <p role="status">{saveStatus}</p>
       <MDXEditor
         markdown={markdown}
+        ref={editorRef}
         plugins={[
           headingsPlugin(),
           listsPlugin(),

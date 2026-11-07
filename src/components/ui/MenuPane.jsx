@@ -21,10 +21,51 @@ export default function MenuPane(props) {
   const currentlySaving = useRef(false);
   const retryCount = useRef(0);
   const serverRevision = useRef(-1);
+  const latestServerNotes = useRef(null);
   const [markdown, setMarkdown] = useState(null);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
+
+  const receiveNotes = useCallback((notes) => {
+    if (
+      typeof notes?.markdown !== "string" ||
+      !Number.isSafeInteger(notes?.revision) ||
+      notes.revision < 0
+    ) {
+      return false;
+    }
+
+    if (notes.revision > serverRevision.current) {
+      serverRevision.current = notes.revision;
+      latestServerNotes.current = notes;
+    }
+
+    const latest = latestServerNotes.current;
+
+    if (latest && pendingNotes.current == null && !currentlySaving.current) {
+      setMarkdown(latest.markdown);
+      setLoadError("");
+      setSaveStatus("Saved");
+    }
+
+    return true;
+  }, []);
+
+  useEffect(() => {
+    function handleNotesUpdated(notes) {
+      if (!receiveNotes(notes)) {
+        console.log("Invalid notes update");
+      }
+    }
+
+    basesocket.on("notesUpdated", handleNotesUpdated);
+
+    return () => {
+      basesocket.off("notesUpdated", handleNotesUpdated);
+    };
+  }, [receiveNotes]);
+
   useEffect(() => {
     let active = true;
 
@@ -32,6 +73,7 @@ export default function MenuPane(props) {
       if (!active) return; // prevent late load
 
       if (err || response?.status != "OK") {
+        if (latestServerNotes.current !== null) return;
         setLoadError(
           err
             ? "Loading notes timed out"
@@ -40,90 +82,81 @@ export default function MenuPane(props) {
         return;
       }
 
-      if (!Number.isSafeInteger(response.revision) || response.revision < 0) {
-        setLoadError("Invalid notes revision");
-        return;
+      if (!receiveNotes(response)) {
+        setLoadError("Invalid notes snapshot");
       }
-
-      if (response.revision < serverRevision.current) return;
-
-      serverRevision.current = response.revision;
-      setMarkdown(response.markdown);
     });
     return () => {
       active = false;
     };
-  }, [loadAttempt]);
+  }, [loadAttempt, receiveNotes]);
 
-  const savePendingNotes = useCallback(function flushPendingNotes() {
-    if (currentlySaving.current) return;
+  const savePendingNotes = useCallback(
+    function flushPendingNotes() {
+      if (currentlySaving.current) return;
 
-    const markdown = pendingNotes.current;
-    if (markdown == null) return;
+      const markdown = pendingNotes.current;
+      if (markdown == null) return;
 
-    const requestId = ++latestSave.current;
+      const requestId = ++latestSave.current;
 
-    if (!basesocket.connected) {
-      setSaveStatus("Unsaved: base-pi disconnected");
-      return;
-    }
+      if (!basesocket.connected) {
+        setSaveStatus("Unsaved: base-pi disconnected");
+        return;
+      }
 
-    currentlySaving.current = true;
+      currentlySaving.current = true;
 
-    setSaveStatus("Saving...");
+      setSaveStatus("Saving...");
 
-    basesocket
-      .timeout(3000)
-      .emit("saveNotes", { markdown }, (err, response) => {
-        currentlySaving.current = false;
+      basesocket
+        .timeout(3000)
+        .emit("saveNotes", { markdown }, (err, response) => {
+          currentlySaving.current = false;
 
-        const validRevision =
-          Number.isSafeInteger(response?.revision) && response.revision >= 0;
-        if (!err && response?.status == "OK" && validRevision) {
-          serverRevision.current = Math.max(
-            serverRevision.current,
-            response.revision,
-          );
-        }
+          const validSnapshot =
+            !err && response?.status == "OK" && receiveNotes(response);
 
-        if (requestId != latestSave.current) {
-          if (saveTimer.current == null && basesocket.connected) {
-            flushPendingNotes();
-          }
-          return;
-        }
-
-        if (err) {
-          if (!basesocket.connected) {
-            setSaveStatus("Unsaved: base-pi disconnected");
+          if (requestId != latestSave.current) {
+            if (saveTimer.current == null && basesocket.connected) {
+              flushPendingNotes();
+            }
             return;
           }
 
-          const retryDelay = RETRY_DELAY_MS[retryCount.current];
-          if (retryDelay === undefined) {
-            setSaveStatus("Save unconfirmed: automatic retries exhausted");
-            return;
+          if (err) {
+            if (!basesocket.connected) {
+              setSaveStatus("Unsaved: base-pi disconnected");
+              return;
+            }
+
+            const retryDelay = RETRY_DELAY_MS[retryCount.current];
+            if (retryDelay === undefined) {
+              setSaveStatus("Save unconfirmed: automatic retries exhausted");
+              return;
+            }
+
+            retryCount.current += 1;
+            setSaveStatus(
+              `Save unconfirmed: retry ${retryCount.current} scheduled`,
+            );
+
+            saveTimer.current = setTimeout(() => {
+              saveTimer.current = null;
+              flushPendingNotes();
+            }, retryDelay);
+          } else if (validSnapshot) {
+            retryCount.current = 0;
+            pendingNotes.current = null;
+            receiveNotes(response);
+          } else {
+            setSaveStatus("Save failed");
+            console.log(response?.message);
           }
-
-          retryCount.current += 1;
-          setSaveStatus(
-            `Save unconfirmed: retry ${retryCount.current} scheduled`,
-          );
-
-          saveTimer.current = setTimeout(() => {
-            saveTimer.current = null;
-            flushPendingNotes();
-          }, retryDelay);
-        } else if (response?.status == "OK" && validRevision) {
-          retryCount.current = 0;
-          pendingNotes.current = null;
-          setSaveStatus("Saved");
-        } else {
-          setSaveStatus("Save failed");
-          console.log(response?.message);
-        }
-      });
-  }, []);
+        });
+    },
+    [receiveNotes],
+  );
 
   function handleNotesChange(markdown, markdownInitialize) {
     if (markdownInitialize) return;
