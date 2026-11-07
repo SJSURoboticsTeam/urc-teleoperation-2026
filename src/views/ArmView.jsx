@@ -303,22 +303,22 @@ export default function ArmView() {
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        flexDirection: "column",
+        alignItems: { xs: "center", lg: "flex-start" },
+        flexDirection: { xs: "column", lg: "row" },
+        justifyContent: "center",
         overflowY: "auto",
         width: "100%",
         height: "100%",
-        px: { xs: 1, sm: 2 },
-        boxSizing: "border-box",
       }}
     >
       <Box
         sx={{
           mt: 2,
-          width: "100%",
+          width: { xs: "100%", lg: "55%" },
           maxWidth: 980,
+          minWidth: 0,
           mx: "auto",
+          flexShrink: { xs: 0, lg: 1 },
         }}
       >
         <Typography
@@ -449,13 +449,28 @@ export default function ArmView() {
           ))}
         </Box>
 
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+          width: { xs: "100%", lg: "45%" },
+          maxWidth: 720,
+          minWidth: 0,
+          mx: "auto",
+          mt: { xs: 4, lg: 2 },
+          flexShrink: { xs: 0, lg: 1 },
+        }}
+      >
         <Box
           sx={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             gap: 2,
-            mt: 3,
             flexWrap: "wrap",
           }}
         >
@@ -479,54 +494,57 @@ export default function ArmView() {
               MANUAL TX
             </Button>
           )}
-        </Box>
 
-        <Box
-          sx={{
-            mt: 2,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
           <Box
             sx={{
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              backgroundColor: txPulse ? "success.main" : "grey.400",
-              transition: "background-color 0.15s ease",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 1,
             }}
-          />
+          >
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: txPulse ? "success.main" : "grey.400",
+                transition: "background-color 0.15s ease",
+              }}
+            />
 
-          <Typography variant="body2" color="text.secondary">
-            TX Activity
-          </Typography>
+            <Typography variant="body2" color="text.secondary">
+              TX Activity
+            </Typography>
+          </Box>
         </Box>
-      </Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          width: "100%",
-          mt: 4,
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 250 200"
-          role="img"
-          aria-label="Arm pose visualization"
-          style={{ width: "100%", maxWidth: 500, height: "auto" }}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: 2,
+            width: "100%",
+          }}
         >
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              ARM VISUAL
+            </Typography>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 -100 300 350"
+            role="img"
+            aria-label="Arm pose visualization"
+            style={{ width: "100%", maxWidth: 500, height: "auto" }}
+          >
+          <g transform="translate(-15 0) translate(150 100) scale(1.4) translate(-150 -100)">
           <g id="body">
-              <rect x="50" y="95" width="104" height="31" fill="#80cdd6" />
-            </g>
-          <g transform={`translate(${trackOffset} 0)`}>
+            <rect x="107" y="50" width="30" height="90" fill="#80cdd6" />
+          </g>
+          <g transform={`translate(0 ${-trackOffset})`}>
+            <rect x="109" y="98" width="26" height="20" rx="3" fill="#4aa3ae" />
             <g transform={`rotate(${shoulderRotation} 122 108)`}>
               <g id="neck" strokeLinecap="round">
                 <line x1="122" y1="108" x2="148" y2="52" stroke="#4aa3ae" strokeWidth="25.5" />
@@ -562,23 +580,32 @@ export default function ArmView() {
               </g>
             </g>
           </g>
-        </svg>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 250 200"
-          role="img"
-          aria-label={`Front view of clamp at ${round2(visualCommands.roll)} degrees wrist roll`}
-          style={{ width: "100%", maxWidth: 200, height: "auto" }}
-        >
+          </g>
+          </svg>
+          </Box>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              WRIST ROLL
+            </Typography>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 -250 300 450"
+            role="img"
+            aria-label={`Front view of clamp at ${round2(visualCommands.roll)} degrees wrist roll`}
+            style={{ width: "100%", maxWidth: 150, height: "auto" }}
+          >
           <circle cx="125" cy="100" r="58" fill="#80cdd6" stroke="#4aa3ae" strokeWidth="2" />
           <g transform={`rotate(${rollRotation} 125 100)`} strokeLinecap="round">
             <line x1="125" y1="50" x2="125" y2="80" stroke="#4aa3ae" strokeWidth="30" />
             <line x1="125" y1="50" x2="125" y2="80" stroke="#80cdd6" strokeWidth="26" />
             <line x1="125" y1="120" x2="125" y2="150" stroke="#4aa3ae" strokeWidth="30" />
             <line x1="125" y1="120" x2="125" y2="150" stroke="#80cdd6" strokeWidth="26" />
+            <line x1="125" y1="100" x2="250" y2="100" stroke="#4aa3ae" strokeWidth="2" />
           </g>
-        </svg>
+          </svg>
+        </Box>
       </Box>
+    </Box>
     </Box>
   );
 }
