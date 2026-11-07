@@ -19,6 +19,7 @@ export default function NotesPane({
   loadError,
   onChange,
   onRetry,
+  refreshError,
 }) {
   const editorRef = useRef(null);
 
@@ -70,6 +71,7 @@ export default function NotesPane({
 
   return (
     <>
+      {refreshError && <p role="alert">{refreshError}</p>}
       <p role="status">{saveStatus}</p>
       <MDXEditor
         markdown={markdown}

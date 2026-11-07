@@ -26,6 +26,7 @@ export default function MenuPane(props) {
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [refreshError, setRefreshError] = useState("");
 
   const receiveNotes = useCallback((notes) => {
     if (
@@ -35,6 +36,8 @@ export default function MenuPane(props) {
     ) {
       return false;
     }
+
+    setRefreshError("");
 
     if (notes.revision > serverRevision.current) {
       serverRevision.current = notes.revision;
@@ -67,29 +70,57 @@ export default function MenuPane(props) {
   }, [receiveNotes]);
 
   useEffect(() => {
+    if (!baseConnected || !basesocket.connected) return;
+
     let active = true;
+    let retryTimer = null;
+    let loadRetries = 0;
 
-    basesocket.timeout(3000).emit("getNotes", (err, response) => {
-      if (!active) return; // prevent late load
-
-      if (err || response?.status != "OK") {
-        if (latestServerNotes.current !== null) return;
-        setLoadError(
-          err
-            ? "Loading notes timed out"
-            : (response?.message ?? "Could not load notes"),
-        );
-        return;
+    function reportError(message) {
+      if (latestServerNotes.current === null) {
+        setLoadError(message);
+      } else {
+        setRefreshError(`Refresh failed: ${message}`);
       }
+    }
 
-      if (!receiveNotes(response)) {
-        setLoadError("Invalid notes snapshot");
-      }
-    });
+    function loadNotes() {
+      if (!active || !basesocket.connected) return;
+
+      basesocket.timeout(3000).emit("getNotes", (err, response) => {
+        if (!active || !basesocket.connected) return;
+
+        if (err) {
+          const delay = RETRY_DELAY_MS[loadRetries];
+
+          if (delay !== undefined) {
+            loadRetries += 1;
+            retryTimer = setTimeout(loadNotes, delay);
+            return;
+          }
+
+          reportError("Notes request timed out after 3 attempts");
+          return;
+        }
+
+        if (response?.status !== "OK") {
+          reportError(response?.message ?? "Could not load notes");
+          return;
+        }
+
+        if (!receiveNotes(response)) {
+          reportError("Invalid notes snapshot");
+        }
+      });
+    }
+
+    loadNotes();
+
     return () => {
       active = false;
+      clearTimeout(retryTimer);
     };
-  }, [loadAttempt, receiveNotes]);
+  }, [loadAttempt, receiveNotes, baseConnected]);
 
   const savePendingNotes = useCallback(
     function flushPendingNotes() {
@@ -221,6 +252,7 @@ export default function MenuPane(props) {
             setLoadError("");
             setLoadAttempt((attempt) => attempt + 1);
           }}
+          refreshError={refreshError}
         />
       )}
     </Drawer>
