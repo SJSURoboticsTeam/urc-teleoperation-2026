@@ -9,6 +9,8 @@ import asyncio
 import math
 from datetime import datetime
 
+from soft_stop import is_soft_stopped
+
 SITE_COUNT = 3
 SCIENCE_STEPS = ["Start"] + [f"Step {i}" for i in range(1, 11)]  # placeholder until the real procedure is defined
 WAVELENGTHS_NM = [415, 455, 480, 515, 555, 590, 630, 680]
@@ -16,6 +18,7 @@ VIAL_NAMES = ("purple", "blue", "red")
 STEP_TIMEOUT_S = 60.0
 SATURATION_COUNT = 65535  # 16-bit ADC max, the true value is unknown
 MAX_ENVIRONMENT_READINGS = 200
+SOFT_STOP_REASON = "Soft Stop is active"
 
 
 def find_saturated(counts):
@@ -361,17 +364,23 @@ def register_science_events(sio, session):
         status, reason = result
         return {"status": status, "reason": reason}
 
+    def soft_stopped(sid, command):
+        if is_soft_stopped():
+            print(f"[{sid}] Ignored {command}: soft stop active")
+            return {"status": "DENIED", "reason": SOFT_STOP_REASON}
+        return None
+
     @sio.event
     async def getScienceSession(sid, data=None):
         return session.to_dict()
 
     @sio.event
     async def scienceStartSite(sid, data=None):
-        return reply(await session.start_site(data))
+        return soft_stopped(sid, "scienceStartSite") or reply(await session.start_site(data))
 
     @sio.event
     async def scienceStep(sid, data=None):
-        return reply(await session.step(data))
+        return soft_stopped(sid, "scienceStep") or reply(await session.step(data))
 
     @sio.event
     async def scienceStop(sid, data=None):
@@ -379,4 +388,4 @@ def register_science_events(sio, session):
 
     @sio.event
     async def scienceReset(sid, data=None):
-        return reply(await session.reset(data))
+        return soft_stopped(sid, "scienceReset") or reply(await session.reset(data))
