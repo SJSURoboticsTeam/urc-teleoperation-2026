@@ -96,10 +96,8 @@ export default function StateMachine({ openPane, setOpenPane, isRobotConnected, 
           <div
             style={{
               position: "absolute",
-              // open above the anchor when the bar is at the bottom of the screen
               ...(openUp ? { bottom: "100%" } : { top: "100%" }),
-              left: "0%",
-              transform: "translateX(-50%)",
+              right: 0,
               background: "white",
               border: "1px solid gray",
               padding: "10px",
