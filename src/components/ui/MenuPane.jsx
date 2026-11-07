@@ -5,6 +5,8 @@ import NotesPane from "../notes/NotesPane.jsx";
 import { basesocket } from "../socket.io/socket";
 import { useConnectionStatus } from "../../contexts/ConnectionContext.jsx";
 
+const GET_NOTES_TIMEOUT_MS = 3000;
+const SAVE_NOTES_TIMEOUT_MS = 3000;
 const AUTOSAVE_DEBOUNCE_MS = 500;
 const RETRY_DELAY_MS = [1000, 2000];
 
@@ -87,31 +89,33 @@ export default function MenuPane(props) {
     function loadNotes() {
       if (!active || !basesocket.connected) return;
 
-      basesocket.timeout(3000).emit("getNotes", (err, response) => {
-        if (!active || !basesocket.connected) return;
+      basesocket
+        .timeout(GET_NOTES_TIMEOUT_MS)
+        .emit("getNotes", (err, response) => {
+          if (!active || !basesocket.connected) return;
 
-        if (err) {
-          const delay = RETRY_DELAY_MS[loadRetries];
+          if (err) {
+            const delay = RETRY_DELAY_MS[loadRetries];
 
-          if (delay !== undefined) {
-            loadRetries += 1;
-            retryTimer = setTimeout(loadNotes, delay);
+            if (delay !== undefined) {
+              loadRetries += 1;
+              retryTimer = setTimeout(loadNotes, delay);
+              return;
+            }
+
+            reportError("Notes request timed out after 3 attempts");
             return;
           }
 
-          reportError("Notes request timed out after 3 attempts");
-          return;
-        }
+          if (response?.status !== "OK") {
+            reportError(response?.message ?? "Could not load notes");
+            return;
+          }
 
-        if (response?.status !== "OK") {
-          reportError(response?.message ?? "Could not load notes");
-          return;
-        }
-
-        if (!receiveNotes(response)) {
-          reportError("Invalid notes snapshot");
-        }
-      });
+          if (!receiveNotes(response)) {
+            reportError("Invalid notes snapshot");
+          }
+        });
     }
 
     loadNotes();
@@ -141,7 +145,7 @@ export default function MenuPane(props) {
       setSaveStatus("Saving...");
 
       basesocket
-        .timeout(3000)
+        .timeout(SAVE_NOTES_TIMEOUT_MS)
         .emit("saveNotes", { markdown }, (err, response) => {
           currentlySaving.current = false;
 
