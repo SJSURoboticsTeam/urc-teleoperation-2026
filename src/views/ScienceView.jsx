@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -137,11 +136,6 @@ export default function ScienceView() {
         <Typography sx={{ textAlign: "center", mb: 1 }}>
           Science backend not connected
         </Typography>
-      )}
-      {session?.mock && (
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-          <Chip label="MOCK DATA" color="warning" size="small" />
-        </Box>
       )}
 
       <div className="flex flex-row justify-center">
