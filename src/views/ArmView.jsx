@@ -303,22 +303,25 @@ export default function ArmView() {
     <Box
       sx={{
         display: "flex",
-        alignItems: { xs: "center", lg: "flex-start" },
-        flexDirection: { xs: "column", lg: "row" },
-        justifyContent: "center",
+        alignItems: "flex-start",
+        flexDirection: "row",
+        justifyContent: "flex-start",
         overflowY: "auto",
+        overflowX: "auto",
         width: "100%",
         height: "100%",
+        minWidth: 0,
       }}
     >
       <Box
         sx={{
           mt: 2,
-          width: { xs: "100%", lg: "55%" },
+          flex: "1 1 0",
+          width: "auto",
           maxWidth: 980,
-          minWidth: 0,
-          mx: "auto",
-          flexShrink: { xs: 0, lg: 1 },
+          minWidth: 320,
+          mx: 0,
+          flexShrink: 1,
         }}
       >
         <Typography
@@ -457,12 +460,9 @@ export default function ArmView() {
           justifyContent: "center",
           alignItems: "center",
           gap: 2,
-          width: { xs: "100%", lg: "45%" },
-          maxWidth: 720,
-          minWidth: 0,
-          mx: "auto",
-          mt: { xs: 4, lg: 2 },
-          flexShrink: { xs: 0, lg: 1 },
+          width: 500,
+          minWidth: 500,
+          mt: 2,
         }}
       >
         <Box
@@ -523,25 +523,24 @@ export default function ArmView() {
             display: "flex",
             justifyContent: "center",
             alignItems: "flex-start",
-            flexWrap: "wrap",
             gap: 2,
             width: "100%",
           }}
         >
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Box sx={{ display: "flex", flex: "0 0 320px", width: 320, flexDirection: "column", alignItems: "center" }}>
             <Typography variant="body2" sx={{ mb: 1 }}>
               ARM VISUAL
             </Typography>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 -100 300 350"
+            viewBox="0 -130 300 400"
             role="img"
             aria-label="Arm pose visualization"
-            style={{ width: "100%", maxWidth: 500, height: "auto" }}
+            style={{ width: "100%", maxWidth: 320, height: "auto" }}
           >
           <g transform="translate(-15 0) translate(150 100) scale(1.4) translate(-150 -100)">
           <g id="body">
-            <rect x="107" y="50" width="30" height="90" fill="#80cdd6" />
+            <rect x="107" y="30" width="30" height="110" fill="#80cdd6" />
           </g>
           <g transform={`translate(0 ${-trackOffset})`}>
             <rect x="109" y="98" width="26" height="20" rx="3" fill="#4aa3ae" />
@@ -583,7 +582,7 @@ export default function ArmView() {
           </g>
           </svg>
           </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Box sx={{ display: "flex", flex: "0 0 150px", width: 150, flexDirection: "column", alignItems: "center" }}>
             <Typography variant="body2" sx={{ mb: 1 }}>
               WRIST ROLL
             </Typography>
@@ -600,7 +599,7 @@ export default function ArmView() {
             <line x1="125" y1="50" x2="125" y2="80" stroke="#80cdd6" strokeWidth="26" />
             <line x1="125" y1="120" x2="125" y2="150" stroke="#4aa3ae" strokeWidth="30" />
             <line x1="125" y1="120" x2="125" y2="150" stroke="#80cdd6" strokeWidth="26" />
-            <line x1="125" y1="100" x2="250" y2="100" stroke="#4aa3ae" strokeWidth="2" />
+            <line x1="125" y1="100" x2="225" y2="100" stroke="#4aa3ae" strokeWidth="2" />
           </g>
           </svg>
         </Box>
