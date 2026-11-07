@@ -176,13 +176,10 @@ async def parse_drive_packet(packet):
                 f"\ntransition type: {transition_type}"
             )
 
-            # Acked on every command we send, so no polling needed.
-            return {
-                "type": "velocities",
-                "xVel": x_vel,
-                "yVel": y_vel,
-                "rotVel": rot_vel,
-            }
+            # This ack echoes the command we sent; it does not measure the
+            # rover, so it must not be shown as the actual velocity. Measured
+            # velocity comes from RETURN_ESTIMATED_CHASSIS_VELOCITIES.
+            return
 
         elif msg_id == DRIVE_REPLY_ID["RETURN_OFFSET"]:
             if len(payload) != 3:

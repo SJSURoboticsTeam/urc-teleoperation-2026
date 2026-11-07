@@ -6,7 +6,9 @@ Emits two socket events:
 
 Parsing stays in drive.py / drive_uart.py; this module owns state and emitting.
 Firmware reports one module per RETURN_OFFSET frame, so angles accumulate here
-and publish together on a timer.
+and publish together on a timer. Each angle and the measured velocities expire
+on their own, so a reading that stops arriving is shown as unknown (None)
+instead of being repeated as if it were current.
 """
 
 import asyncio
@@ -34,9 +36,14 @@ ROT_VEL_SCALE = 2 ** 6        # rotational velocity, deg/s
 CORNERS = tuple(MODULE_POSITION_TO_CORNER.values())
 CORNER_TO_MODULE_POSITION = {v: k for k, v in MODULE_POSITION_TO_CORNER.items()}
 
-# How long without a frame from firmware before we treat the feed as dead and
-# stop publishing. The frontend has its own 3s timeout on top of this.
+# How long a reading from firmware stays valid after it arrives. Older readings
+# are published as None. The frontend has its own 3s timeout on top of this.
 FRESH_WINDOW_SECONDS = 2.0
+
+
+def _is_fresh(arrived_at):
+    """True if a reading that arrived at arrived_at is still within the window."""
+    return arrived_at is not None and (time.monotonic() - arrived_at) < FRESH_WINDOW_SECONDS
 
 
 class DriveFeedbackState:
@@ -55,7 +62,9 @@ class DriveFeedbackState:
         # True once a real operator command arrives; lets the simulator
         # self-drive until someone takes the controls.
         self._command_seen = False
-        self._last_frame_at = None   # last frame FROM FIRMWARE, not from us
+        # When each reading last arrived FROM FIRMWARE (not from us).
+        self._angle_at = {corner: None for corner in CORNERS}
+        self._velocities_at = None
         self._last_warn_at = 0.0     # rate-limits the unknown-module warning
 
     # ---------- writers ----------
@@ -89,7 +98,7 @@ class DriveFeedbackState:
             return
 
         self._angles[corner] = raw_angle / OFFSET_UNITS_PER_DEGREE
-        self._last_frame_at = time.monotonic()
+        self._angle_at[corner] = time.monotonic()
 
     def note_velocities(self, x_vel, y_vel, rot_vel):
         """Record measured chassis velocities, already in real units."""
@@ -98,36 +107,41 @@ class DriveFeedbackState:
             "yVel": float(y_vel),
             "rotVel": float(rot_vel),
         }
-        self._last_frame_at = time.monotonic()
+        self._velocities_at = time.monotonic()
 
     # ---------- readers ----------
+    # Freshness is keyed on when a reading last ARRIVED, not on whether its
+    # value changed - a parked rover still reports, and is not offline.
 
-    def has_fresh_data(self):
-        """True while firmware is still talking to us.
-
-        Keyed on when a frame last ARRIVED, not on whether values changed - a
-        parked rover still reports, and is not offline.
-        """
-        if self._last_frame_at is None:
-            return False
-        return (time.monotonic() - self._last_frame_at) < FRESH_WINDOW_SECONDS
+    def has_fresh_angles(self):
+        """True while firmware is still reporting at least one wheel angle."""
+        return any(_is_fresh(self._angle_at[corner]) for corner in CORNERS)
 
     def wheel_payload(self):
-        """wheelAngles event body. Unreported corners stay None, which
-        the UI renders as unknown rather than as 0 degrees."""
+        """wheelAngles event body. A corner that was never reported, or has
+        stopped reporting, is None, which the UI renders as unknown rather
+        than as 0 degrees."""
+        def angle(corner):
+            return self._angles[corner] if _is_fresh(self._angle_at[corner]) else None
+
         return {
-            "fLAngle": self._angles["fL"],
-            "fRAngle": self._angles["fR"],
-            "bLAngle": self._angles["bL"],
-            "bRAngle": self._angles["bR"],
+            "fLAngle": angle("fL"),
+            "fRAngle": angle("fR"),
+            "bLAngle": angle("bL"),
+            "bRAngle": angle("bR"),
         }
 
     def velocity_payload(self):
-        """driveFeedback event body: measured values plus what we commanded."""
+        """driveFeedback event body: measured values plus what we commanded.
+
+        The command is always known, so it is always sent. Measured values are
+        None unless firmware has recently reported them.
+        """
+        fresh = _is_fresh(self._velocities_at)
         return {
-            "xVel": self._measured["xVel"],
-            "yVel": self._measured["yVel"],
-            "rotVel": self._measured["rotVel"],
+            "xVel": self._measured["xVel"] if fresh else None,
+            "yVel": self._measured["yVel"] if fresh else None,
+            "rotVel": self._measured["rotVel"] if fresh else None,
             "commanded": dict(self._commanded),
         }
 
@@ -164,15 +178,17 @@ async def emit_drive_feedback_loop(sio, state, hz=5):
     """Publish both feedback events on a fixed timer.
 
     A timer rather than per-frame: one module arrives per offset frame, and the
-    900MHz control link is only ~1-7 Mbit/s. While firmware is quiet we publish
-    nothing, letting the frontend's staleness timer show NO DATA.
+    900MHz control link is only ~1-7 Mbit/s. While no wheel angle is fresh we
+    skip wheelAngles, letting the frontend's staleness timer show NO DATA.
+    driveFeedback always goes out because it carries the commanded velocity,
+    which the UI needs even when firmware reports nothing.
     """
     interval = 1.0 / hz
     while True:
         try:
-            if state.has_fresh_data():
+            if state.has_fresh_angles():
                 await sio.emit("wheelAngles", state.wheel_payload())
-                await sio.emit("driveFeedback", state.velocity_payload())
+            await sio.emit("driveFeedback", state.velocity_payload())
         except Exception as exc:
             print(f"Drive feedback emit error: {exc}")
         await asyncio.sleep(interval)
@@ -181,12 +197,15 @@ async def emit_drive_feedback_loop(sio, state, hz=5):
 # =================== Offline simulator ===================
 # Mirrors send_fake_gps_data() in gps.py - plausible telemetry with no rover.
 
-# Module positions in the rover frame, metres. x forward, y left.
+# Module positions in the rover frame, metres. x forward, y right, to match the
+# commands: the gamepad sends +yVel for stick right, and rotVel is clockwise
+# (the drive firmware rotates each module's position 90 degrees clockwise).
+# Angles therefore come out clockwise-positive, like Wheel.jsx's SVG rotate.
 _MODULE_OFFSETS = {
-    "fL": (0.35, 0.30),
-    "fR": (0.35, -0.30),
-    "bL": (-0.35, 0.30),
-    "bR": (-0.35, -0.30),
+    "fL": (0.35, -0.30),
+    "fR": (0.35, 0.30),
+    "bL": (-0.35, -0.30),
+    "bR": (-0.35, 0.30),
 }
 
 # Corner that refuses to move, to demonstrate the divergence warning.

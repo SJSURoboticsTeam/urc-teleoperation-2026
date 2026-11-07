@@ -465,6 +465,9 @@ drive_state = DriveFeedbackState()
 
 async def _send_drive_stop_command():
     """Write a zero-velocity command to the drive line. Caller must hold drive_command_lock."""
+    # Record the stop like any accepted command, so the UI's "commanded"
+    # value doesn't stay at the last speed after a handover or disconnect.
+    drive_state.note_command(0, 0, 0)
     if not serial_ports["drive"]:
         print("No drive serial connected. Cannot send stop command.")
         return
@@ -590,6 +593,8 @@ async def connect(sid,environ):
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
     """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
+    # Same as _send_drive_stop_command: the UI should show the zeroed command.
+    drive_state.note_command(0, 0, 0)
     if serial_ports["drive"]:
         async with drive_command_lock:
             try:

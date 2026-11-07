@@ -1,7 +1,6 @@
 import asyncio
 import config
 import can_serial
-import math
 from drive_control import is_drive_controller
 from drive_feedback import apply_parsed
 from soft_stop import is_soft_stopped
@@ -116,6 +115,19 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
             print(f'Error in driveHoming: {e}')
 
 
+def _parse_velocities(string_data):
+    """Return x, y and rotational velocity from a CANUSB velocity frame.
+
+    Each is a big-endian signed 16-bit value in the first six data bytes,
+    still fixed-point. Rotation is exactly four hex digits: a command ack
+    carries a seventh byte (module_conflicts) that is not part of it.
+    """
+    return tuple(
+        int.from_bytes(bytes.fromhex(string_data[start:start + 4]), "big", signed=True)
+        for start in (5, 9, 13)
+    )
+
+
 async def parse_drive_data(data, serial_ports):
     """Decode one CANUSB frame.
 
@@ -161,24 +173,20 @@ async def parse_drive_data(data, serial_ports):
         address = string_data[1:4]
 
         if address == drive_receive_ID['SET_VELOCITIES_RESPONSE']:
-            x_vel = int(string_data[5:9],16)
-            
-            if string_data[5] in "89ABCDEF":
-                x_vel = x_vel - math.pow(2, 16)
+            x_vel, y_vel, rot_vel = _parse_velocities(string_data)
 
-            y_vel = int(string_data[9:13],16)
-            
-            if string_data[9] in "89ABCDEF":
-                y_vel = y_vel - math.pow(2, 16)
+            # Firmware sends two different replies on this id, told apart by
+            # length: 7 bytes acknowledges our command by echoing it back, and
+            # 6 bytes is the velocity estimate (its answer to
+            # GET_ESTIMATED_VELOCITIES). Only the estimate measures anything,
+            # so the echo must not be shown as the rover's actual velocity.
+            if string_data[4] == "7":
+                print(f"\nack x vel: {x_vel} \nack y vel: {y_vel} \nack rot vel {rot_vel}")
+                return
 
-            rot_vel = int(string_data[13:],16)
-            
-            if string_data[13] in "89ABCDEF":
-                rot_vel = rot_vel - math.pow(2, 16)
+            print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
 
-            print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
-
-            # Acked on every command, so no polling needed. Scaled in apply_parsed().
+            # Scaled in apply_parsed().
             return {
                 "type": "velocities",
                 "xVel": x_vel,
@@ -203,20 +211,7 @@ async def parse_drive_data(data, serial_ports):
             }
 
         elif address == drive_receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
-            x_vel = int(string_data[5:9],16)
-            
-            if string_data[5] in "89ABCDEF":
-                x_vel = x_vel - math.pow(2, 16)
-
-            y_vel = int(string_data[9:13],16)
-            
-            if string_data[9] in "89ABCDEF":
-                y_vel = y_vel - math.pow(2, 16)
-
-            rot_vel = int(string_data[13:],16)
-            
-            if string_data[13] in "89ABCDEF":
-                rot_vel = rot_vel - math.pow(2, 16)
+            x_vel, y_vel, rot_vel = _parse_velocities(string_data)
 
             print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
 
