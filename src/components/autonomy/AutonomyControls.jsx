@@ -235,7 +235,7 @@ export default function AutonomyControls() {
     };
   }, [hardStopAutonomy]);
 
-  // Asks the rover to turn on autonomy mode; every client updates from the broadcast
+  // Asks the rover to turn on autonomy mode, every client updates from the broadcast
   const startAutonomy = () => {
     sendAutonomyCommand("startAutonomy");
   };

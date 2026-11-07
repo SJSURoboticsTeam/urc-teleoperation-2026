@@ -1,4 +1,3 @@
-"""Mock autonomy: simulates navigation and launch-key typing so the frontend can be built before the real stack exists."""
 import asyncio
 import math
 import time
@@ -8,14 +7,11 @@ import gps
 import rover_mode
 from rover_mode import AUTONOMY, READY, NAVIGATING, ARRIVED, RETURNING, TYPING, state, reply, broadcast, log
 
-MOCK_AUTONOMY_DEBUG = False
-MOCK_AUTONOMY_DEBUG_RATE_LIMIT_SEC = 1.0
-
 SPEED_M_S = 5.0
 TICK_S = 0.5
-ARRIVAL_RADIUS_M = 3.0  # GNSS-only locations (1.f.ii)
-RETURN_RADIUS_M = 5.0   # abort return to a visited location (1.f.viii)
-TYPE_INTERVAL_S = 0.7   # time between typed launch-key characters (1.e)
+ARRIVAL_RADIUS_M = 3.0  # stopping within 3 meters is successful
+RETURN_RADIUS_M = 5.0
+TYPE_INTERVAL_S = 0.7   # time between typed launch-key characters
 # used when there is no GPS fix yet; inside the area the fake GPS data uses
 START_POSITION = {"latitude": 37.3345, "longitude": -121.8825}
 
@@ -24,24 +20,11 @@ position = None
 
 _last_debug_log = 0
 
-
-def debug_log(message):
-    """Rate-limited log for the per-tick navigation output."""
-    global _last_debug_log
-    if not MOCK_AUTONOMY_DEBUG:
-        return
-    now = time.time()
-    if now - _last_debug_log >= MOCK_AUTONOMY_DEBUG_RATE_LIMIT_SEC:
-        print(message)
-        _last_debug_log = now
-
-
 def distance_m(a, b):
-    """Flat-earth distance, accurate enough over the 2 km course."""
+    """Return distance in meters between two GPS points."""
     dy = (b["latitude"] - a["latitude"]) * 111320
     dx = (b["longitude"] - a["longitude"]) * 111320 * math.cos(math.radians(a["latitude"]))
     return math.hypot(dx, dy)
-
 
 def to_float(value):
     try:
@@ -50,14 +33,11 @@ def to_float(value):
         return None
     return number if math.isfinite(number) else None
 
-
 def find_target(target_id):
     return next((t for t in state["targets"] if t["id"] == target_id), None)
 
-
 def target_name(target):
     return target["label"] or target["id"]
-
 
 async def emit_position(sio):
     gps.latest_fix = dict(position)
@@ -68,7 +48,6 @@ async def emit_position(sio):
         "accuracy_m": 0.5,
         "accuracy_source": "MOCK",
     })
-
 
 async def drive_to(sio, target, run, radius, returning, emit_gps):
     """Move the simulated rover toward target until it arrives or the run is replaced."""
@@ -99,7 +78,6 @@ async def drive_to(sio, target, run, radius, returning, emit_gps):
             await log(sio, state["message"])
             await broadcast(sio)
 
-
 async def arrive(sio, target, returning):
     if returning:
         rover_mode.set_mode(AUTONOMY, READY, f"Returned to {target_name(target)}")
@@ -110,7 +88,6 @@ async def arrive(sio, target, returning):
             state["visitedTargetIds"].append(target["id"])
     await log(sio, state["message"])
     await broadcast(sio)
-
 
 async def type_sequence(sio, run):
     """Type the launch key one character at a time until done or the run is replaced."""
@@ -134,7 +111,6 @@ async def type_sequence(sio, run):
             await log(sio, state["message"])
             await broadcast(sio)
 
-
 def register_mock_autonomy_events(sio, emit_gps):
     def start_drive(target, phase, message, radius):
         rover_mode.set_mode(AUTONOMY, phase, message)
@@ -143,7 +119,7 @@ def register_mock_autonomy_events(sio, emit_gps):
 
     @sio.event
     async def setTargets(sid, data=None):
-        # targets can be reprogrammed only while the rover is stopped (1.f.ix)
+        # targets can be reprogrammed only while the rover is stopped
         if state["phase"] in (NAVIGATING, RETURNING):
             return reply("DENIED", "Can't change targets while the rover is moving")
         state["targets"] = [
@@ -174,7 +150,7 @@ def register_mock_autonomy_events(sio, emit_gps):
 
     @sio.event
     async def abortAutonomy(sid, data=None):
-        """Stop navigating, or return autonomously to a visited location (1.f.viii)."""
+        """Stop navigating, or return autonomously to a visited location."""
         if state["phase"] not in (NAVIGATING, RETURNING):
             return reply("DENIED", "The rover isn't navigating")
         return_id = (data or {}).get("returnToTargetId")
@@ -192,7 +168,7 @@ def register_mock_autonomy_events(sio, emit_gps):
 
     @sio.event
     async def startTyping(sid, data=None):
-        """Type a launch key with the arm (1.e). The expected key is shared so every client can check it."""
+        """Mimic typing a launch key with the arm. The expected key is shared so every client can check it."""
         data = data or {}
         sequence = str(data.get("sequence") or "").strip().upper()
         if state["mode"] != AUTONOMY:
