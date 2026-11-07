@@ -22,14 +22,18 @@ import {
 import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 
 import { useGPS } from "../../contexts/GPSContext";
+import { robotsocket } from "../socket.io/socket";
 
 // Key used to store whether autonomy mode is enabled in localStorage
 const AUTONOMY_STORAGE_KEY = "rover_autonomy_enabled";
 
+// Target ids the rover uses for the two location cards
+const TARGET_IDS = { location1: "Location 1", location2: "Location 2" };
+
 // Initial state for the two drive locations
 const initialDriveState = {
-  location1: { label: "", lat: "", lon: "", reached: false },
-  location2: { label: "", lat: "", lon: "", reached: false },
+  location1: { label: "", lat: "", lon: "" },
+  location2: { label: "", lat: "", lon: "" },
 };
 
 // Helper to generate a HH:MM:SS timestamp for history logs
@@ -59,6 +63,12 @@ export default function AutonomyControls() {
   // Whether rover is currently in autonomous mode
   // The rover backend owns this state and shares it with every client
   const { autonomyState, autonomyEnabled, sendAutonomyCommand } = useAutonomyMode();
+  const phase = autonomyState?.phase;
+  const visitedTargetIds = autonomyState?.visitedTargetIds ?? [];
+
+  // Navigation and typing can only start while the rover is stopped in autonomy
+  const canStartTask = autonomyEnabled && (phase === "READY" || phase === "ARRIVED");
+  const roverMoving = phase === "NAVIGATING" || phase === "RETURNING";
 
   // State controlling the start/stop autonomy confirmation dialogs
   const [startpopupOpen, startsetPopupOpen] = useState(false);
@@ -68,36 +78,46 @@ export default function AutonomyControls() {
   const [activeTab, setActiveTab] = useState("drive");
 
   // Drive-related state
+  // Location inputs being edited; sent to the rover on blur / Enter
   const [driveData, setDriveData] = useState(initialDriveState);
-  const [lastCoords, setLastCoords] = useState({ lat: "___", lon: "___" });
   const { robotCoordinates } = useGPS();
-  const [driveStatus, setDriveStatus] = useState("Waiting for route.");
+  const [lastCoords, setLastCoords] = useState({ lat: "___", lon: "___" });
+  const driveStatus = autonomyState?.message || "Waiting for route.";
+
+  // Keep the last GPS fix; receive goes false a few seconds after each fix
+  useEffect(() => {
+    if (robotCoordinates.receive) {
+      setLastCoords({
+        lat: robotCoordinates.lat.toFixed(6),
+        lon: robotCoordinates.long.toFixed(6),
+      });
+    }
+  }, [robotCoordinates]);
 
   // confetti UI state
   const [showArrival, setShowArrival] = useState(false);
   const [arrivalMessage, setArrivalMessage] = useState("");
   const [confettiPieces, setConfettiPieces] = useState([]);
 
-  // Arm sequence / typing simulation state
+  // Arm sequence state; the rover sends back what it has typed
   const [expectedSequence, setExpectedSequence] = useState("");
   const [armInput, setArmInput] = useState("");
-  const [lastTyped, setLastTyped] = useState("");
-  const [typedProgress, setTypedProgress] = useState("");
-  const [typingInProgress, setTypingInProgress] = useState(false);
+  const typedProgress = autonomyState?.typing?.typed ?? "";
+  const typingInProgress = phase === "TYPING";
 
   // History log for arm events, initialized with a startup message
   const [armHistory, setArmHistory] = useState(() => [
     `[${formatTimestamp()}] Waiting for launch key sequence.`,
   ]);
 
-  // Ref used to hold the active interval for typing simulation
-  const typingIntervalRef = useRef(null);
-
   // Ref for the history box so it can auto-scroll
   const historyRef = useRef(null);
 
   // Ref used to prevent celebration from firing repeatedly once success is reached
   const armSuccessCelebratedRef = useRef(false);
+
+  // Previous phase, used to launch confetti only when the rover arrives
+  const prevPhaseRef = useRef(phase);
 
   // Teleop controls are locked whenever autonomy mode is enabled
   // In this autonomy view, mission programming inputs stay available even while autonomy is active
@@ -110,28 +130,57 @@ export default function AutonomyControls() {
     }
   }, [armHistory]);
 
-  // Cleanup typing interval when component unmounts
-  useEffect(() => {
-    return () => {
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Stops the typing simulation and clears the interval
-  const stopTypingAnimation = useCallback(() => {
-    if (typingIntervalRef.current) {
-      clearInterval(typingIntervalRef.current);
-      typingIntervalRef.current = null;
-    }
-    setTypingInProgress(false);
-  }, []);
-
   // Appends a timestamped message to arm history
   const addArmHistory = useCallback((message) => {
     setArmHistory((prev) => [...prev, `[${formatTimestamp()}] ${message}`]);
   }, []);
+
+  // Adds the rover's autonomy log lines to the history
+  useEffect(() => {
+    const handler = ({ time, text }) => {
+      setArmHistory((prev) => [...prev, `[${time}] ${text}`]);
+    };
+    robotsocket.on("autonomyLog", handler);
+    return () => {
+      robotsocket.off("autonomyLog", handler);
+    };
+  }, []);
+
+  // Location input that has focus, as { locationKey, field }
+  const focusedFieldRef = useRef(null);
+
+  // Refill the location inputs whenever the rover's targets change
+  // Skipped while disconnected so unsent edits aren't cleared
+  const targetsJson = autonomyState ? JSON.stringify(autonomyState.targets) : null;
+  useEffect(() => {
+    if (targetsJson === null) return;
+    const targets = JSON.parse(targetsJson);
+    setDriveData((prev) => {
+      const next = {};
+      for (const [locationKey, id] of Object.entries(TARGET_IDS)) {
+        const target = targets.find((t) => t.id === id);
+        next[locationKey] = {
+          label: target?.label ?? "",
+          lat: target?.latitude != null ? String(target.latitude) : "",
+          lon: target?.longitude != null ? String(target.longitude) : "",
+        };
+      }
+      // don't overwrite the input the user is typing in; it is sent on blur
+      const focused = focusedFieldRef.current;
+      if (focused) {
+        next[focused.locationKey][focused.field] = prev[focused.locationKey][focused.field];
+      }
+      return next;
+    });
+  }, [targetsJson]);
+
+  // Keep the expected sequence the same on every client
+  const serverExpected = autonomyState?.typing?.expected;
+  useEffect(() => {
+    if (serverExpected !== undefined) {
+      setExpectedSequence(serverExpected);
+    }
+  }, [serverExpected]);
 
   // Starts a short confetti celebration, then clears it after 1.8s
   const launchConfetti = useCallback(() => {
@@ -142,12 +191,13 @@ export default function AutonomyControls() {
     }, 1800);
   }, []);
 
-  // Placeholder for backend communication
-  // Currently just logs to console
-  const sendCommandToBackend = (payload) => {
-    console.log("Sending command to backend:", payload);
-    // TODO: replace with actual API call (fetch/axios)
-  };
+  // Confetti when the rover arrives at a location
+  useEffect(() => {
+    if (phase === "ARRIVED" && prevPhaseRef.current && prevPhaseRef.current !== "ARRIVED") {
+      launchConfetti();
+    }
+    prevPhaseRef.current = phase;
+  }, [phase, launchConfetti]);
 
   // Performs an immediate autonomy stop for minimize / hidden / page-exit situations
   // Stopping on the rover also stops any typing, and every client updates from the broadcast
@@ -155,20 +205,13 @@ export default function AutonomyControls() {
     (reason = "window_hidden") => {
       if (!autonomyEnabled) return;
 
-      stopTypingAnimation();
-      setDriveStatus("Autonomy hard-stopped.");
       setArrivalMessage("Autonomy hard-stopped.");
       setShowArrival(true);
       addArmHistory(`Autonomy hard-stopped (${reason}).`);
 
       sendAutonomyCommand("stopAutonomy");
     },
-    [
-      addArmHistory,
-      autonomyEnabled,
-      sendAutonomyCommand,
-      stopTypingAnimation,
-    ],
+    [addArmHistory, autonomyEnabled, sendAutonomyCommand],
   );
 
   // Hard stop autonomy when the page becomes hidden or is being unloaded
@@ -192,42 +235,6 @@ export default function AutonomyControls() {
     };
   }, [hardStopAutonomy]);
 
-  // Simulates the rover typing a sequence one character at a time
-  const startTypingAnimation = useCallback(
-    (sequence) => {
-      stopTypingAnimation(); // ensure no previous typing loop is running
-      setTypingInProgress(true);
-      setTypedProgress("");
-
-      let index = 0;
-      const normalized = sequence.toUpperCase();
-
-      typingIntervalRef.current = setInterval(() => {
-        const nextChar = normalized[index];
-
-        // Add next character to visible progress
-        setTypedProgress((prev) => prev + nextChar);
-
-        // Log it to history
-        addArmHistory(`ROVER typed ${nextChar}`);
-
-        // Simulate sending each typed character to backend
-        sendCommandToBackend({ type: "arm_input_char", value: nextChar });
-
-        index += 1;
-
-        // Stop interval once all characters have been typed
-        if (index >= normalized.length) {
-          clearInterval(typingIntervalRef.current);
-          typingIntervalRef.current = null;
-          setTypingInProgress(false);
-          addArmHistory(`ROVER finished typing ${normalized}`);
-        }
-      }, 700);
-    },
-    [addArmHistory, stopTypingAnimation],
-  );
-
   // Asks the rover to turn on autonomy mode; every client updates from the broadcast
   const startAutonomy = () => {
     sendAutonomyCommand("startAutonomy");
@@ -239,34 +246,30 @@ export default function AutonomyControls() {
   };
 
   // Resets mission state back to defaults
+  // The rover clears the targets, visited locations and typing for every client
   const restartMission = () => {
     if (teleopLocked) return;
 
-    stopTypingAnimation();
-    setDriveData(initialDriveState);
-    setLastCoords({ lat: "___", lon: "___" });
-    setDriveStatus("Mission restarted.");
     setShowArrival(false);
     setArrivalMessage("");
     setConfettiPieces([]);
-    setTypedProgress("");
+    setLastCoords({ lat: "___", lon: "___" });
     setArmInput("");
-    setLastTyped("");
     setArmHistory([
       `[${formatTimestamp()}] Mission restarted. Waiting for launch key sequence.`,
     ]);
     armSuccessCelebratedRef.current = false;
     setActiveTab("drive");
 
-    sendCommandToBackend({ type: "restart_mission" });
+    sendAutonomyCommand("restartMission");
   };
 
   // Derives which step the rover is currently on
-  const currentStep = driveData.location2.reached
-    ? 3
-    : driveData.location1.reached
-      ? 2
-      : 1;
+  const reached = {
+    location1: visitedTargetIds.includes(TARGET_IDS.location1),
+    location2: visitedTargetIds.includes(TARGET_IDS.location2),
+  };
+  const currentStep = reached.location2 ? 3 : reached.location1 ? 2 : 1;
 
   // Updates one field of one location card
   const handleLocationChange = (locationKey, field, value) => {
@@ -277,73 +280,43 @@ export default function AutonomyControls() {
         [field]: value,
       },
     }));
+  };
 
-    // Forward location edits even while autonomy is enabled
-    sendCommandToBackend({
-      type: "location_input_update",
-      location: locationKey,
-      field,
-      value,
+  // Sends both locations to the rover, which shares them with every client
+  const commitTargets = () => {
+    sendAutonomyCommand("setTargets", {
+      targets: Object.entries(TARGET_IDS).map(([locationKey, id]) => ({
+        id,
+        label: driveData[locationKey].label.trim(),
+        latitude: driveData[locationKey].lat,
+        longitude: driveData[locationKey].lon,
+      })),
     });
   };
 
-  // Shows success toast and confetti for arriving at a location
-  const triggerArrival = (locationName) => {
-    setArrivalMessage(`Arrived at ${locationName}`);
-    setShowArrival(true);
-    launchConfetti();
+  const handleFieldFocus = (locationKey, field) => {
+    focusedFieldRef.current = { locationKey, field };
   };
 
-  // Toggles whether a location has been reached
-  const handleReachedToggle = (locationKey) => {
-    const currentLocation = driveData[locationKey];
-    const nextReached = !currentLocation.reached;
-
-    // Fallback label if user has not given the location a custom name
-    const fallbackLabel =
-      locationKey === "location1" ? "Location 1" : "Location 2";
-    const displayLabel = currentLocation.label?.trim() || fallbackLabel;
-
-    // Update reached state
-    setDriveData((prev) => ({
-      ...prev,
-      [locationKey]: {
-        ...prev[locationKey],
-        reached: nextReached,
-      },
-    }));
-
-    if (nextReached) {
-      // When reached, store coords, update status, show celebration, notify backend
-      setLastCoords({
-        lat: robotCoordinates.receive ? robotCoordinates.lat.toFixed(6) : currentLocation.lat || "___",
-        lon: robotCoordinates.receive ? robotCoordinates.long.toFixed(6) : currentLocation.lon || "___",
-      });
-      // setLastCoords({
-      //   lat: currentLocation.lat || "___",
-      //   lon: currentLocation.lon || "___",
-      // });
-      setDriveStatus(`${displayLabel} reached.`);
-      triggerArrival(displayLabel);
-      sendCommandToBackend({
-        type: "location_reached",
-        location: locationKey,
-        label: displayLabel,
-      });
-    } else {
-      // If toggled back off, mark the location as pending again
-      setDriveStatus(`${displayLabel} marked pending.`);
-      sendCommandToBackend({
-        type: "location_pending",
-        location: locationKey,
-        label: displayLabel,
-      });
-    }
+  const handleFieldBlur = () => {
+    focusedFieldRef.current = null;
+    commitTargets();
   };
 
-  // Opens abort confirmation dialog
+  // Starts autonomous navigation to one location
+  const handleGo = (locationKey) => {
+    sendAutonomyCommand("goToTarget", { targetId: TARGET_IDS[locationKey] });
+  };
+
+  // Stops navigation where the rover is
   const handleAbort = () => {
-    endsetPopupOpen(true);
+    sendAutonomyCommand("abortAutonomy");
+  };
+
+  // Aborts and drives back to the last visited location (1.f.viii)
+  const lastVisitedId = visitedTargetIds[visitedTargetIds.length - 1];
+  const handleReturn = () => {
+    sendAutonomyCommand("abortAutonomy", { returnToTargetId: lastVisitedId });
   };
 
   // Starts arm typing sequence from the entered input
@@ -351,30 +324,24 @@ export default function AutonomyControls() {
     const typed = armInput.trim().toUpperCase();
     if (!typed) return;
 
-    setLastTyped(typed);
     setArmInput("");
-    addArmHistory(`Starting typed sequence ${typed}`);
-    sendCommandToBackend({ type: "arm_input_sequence", value: typed });
-    startTypingAnimation(typed);
+    sendAutonomyCommand("startTyping", { expected: expectedSequence, sequence: typed });
   };
 
   // Replays the most recent typed sequence
   const handleArmRedo = () => {
+    const lastTyped = autonomyState?.typing?.sequence;
     if (!lastTyped) {
       addArmHistory("Nothing to redo yet.");
       return;
     }
 
-    addArmHistory(`Redo typing ${lastTyped}`);
-    sendCommandToBackend({ type: "arm_input_redo", value: lastTyped });
-    startTypingAnimation(lastTyped);
+    sendAutonomyCommand("startTyping", { expected: expectedSequence, sequence: lastTyped });
   };
 
-  // Stops the current typing simulation
+  // Stops the rover's current typing
   const handleArmStop = () => {
-    stopTypingAnimation();
-    addArmHistory("Typing stopped.");
-    sendCommandToBackend({ type: "arm_stop" });
+    sendAutonomyCommand("stopTyping");
   };
 
   // Computes visual status boxes for each expected character
@@ -557,6 +524,15 @@ export default function AutonomyControls() {
           </Typography>
         </Box>
 
+        {/* Large arrival banner, shown on every client until the rover moves on */}
+        {phase === "ARRIVED" && (
+          <Box sx={{ px: 2, pb: 1.5 }}>
+            <Alert severity="success" variant="filled" sx={{ fontSize: "1.25rem", fontWeight: 700 }}>
+              {autonomyState.message}
+            </Alert>
+          </Box>
+        )}
+
         {/* Tab buttons for switching between Drive and Arm panels */}
         <Box
           sx={{
@@ -606,16 +582,27 @@ export default function AutonomyControls() {
               <DrivePanel
                 controlsLocked={false}
                 driveData={driveData}
+                reached={reached}
                 lastCoords={lastCoords}
                 currentStep={currentStep}
                 driveStatus={driveStatus}
+                activeTargetId={autonomyState?.activeTargetId}
+                phase={phase}
+                canStartTask={canStartTask}
+                roverMoving={roverMoving}
+                lastVisitedId={lastVisitedId}
                 onAbort={handleAbort}
+                onReturn={handleReturn}
                 onLocationChange={handleLocationChange}
-                onReachedToggle={handleReachedToggle}
+                onCommitTargets={commitTargets}
+                onFieldFocus={handleFieldFocus}
+                onFieldBlur={handleFieldBlur}
+                onGo={handleGo}
               />
             ) : (
               <ArmPanel
                 controlsLocked={false}
+                canStartTyping={canStartTask}
                 typingInProgress={typingInProgress}
                 expectedSequence={expectedSequence}
                 setExpectedSequence={setExpectedSequence}
@@ -641,16 +628,47 @@ export default function AutonomyControls() {
 function DrivePanel({
   controlsLocked,
   driveData,
+  reached,
   lastCoords,
   currentStep,
   driveStatus,
+  activeTargetId,
+  phase,
+  canStartTask,
+  roverMoving,
+  lastVisitedId,
   onAbort,
+  onReturn,
   onLocationChange,
-  onReachedToggle,
+  onCommitTargets,
+  onFieldFocus,
+  onFieldBlur,
+  onGo,
 }) {
+  // Props shared by both location cards
+  const cardProps = (locationKey) => {
+    const data = driveData[locationKey];
+    const id = TARGET_IDS[locationKey];
+    const active = roverMoving && activeTargetId === id;
+    return {
+      // targets can be reprogrammed only while the rover is stopped (1.f.ix)
+      controlsLocked: controlsLocked || roverMoving,
+      title: data.label ? `${id} - ${data.label}` : id,
+      data,
+      reached: reached[locationKey],
+      goLabel: active ? (phase === "RETURNING" ? "Returning" : "Navigating") : "Go",
+      canGo: canStartTask && data.lat !== "" && data.lon !== "",
+      onChange: (field, value) => onLocationChange(locationKey, field, value),
+      onCommit: onCommitTargets,
+      onFocusField: (field) => onFieldFocus(locationKey, field),
+      onBlurField: onFieldBlur,
+      onGo: () => onGo(locationKey),
+    };
+  };
+
   return (
     <Box>
-      {/* Top row with Abort button and last-known coordinates */}
+      {/* Top row with Abort / Return buttons and live rover coordinates */}
       <Box
         sx={{
           display: "flex",
@@ -661,14 +679,26 @@ function DrivePanel({
           mb: 2,
         }}
       >
-        <Button
-          variant="contained"
-          color="error"
-          onClick={onAbort}
-          disabled={controlsLocked}
-        >
-          Abort
-        </Button>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={onAbort}
+            disabled={controlsLocked || !roverMoving}
+          >
+            Abort
+          </Button>
+
+          {/* Abort and drive back to the last visited location */}
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={onReturn}
+            disabled={controlsLocked || !roverMoving || !lastVisitedId}
+          >
+            {lastVisitedId ? `Return to ${lastVisitedId}` : "Return"}
+          </Button>
+        </Box>
 
         <Paper
           variant="outlined"
@@ -734,21 +764,21 @@ function DrivePanel({
             }}
           >
             {/* Dot for location 1 */}
-            <StepDot active={driveData.location1.reached} />
+            <StepDot active={reached.location1} />
 
             {/* Vertical connecting line */}
             <Box
               sx={{
                 width: 4,
                 height: 130,
-                bgcolor: driveData.location1.reached ? "success.main" : "grey.300",
+                bgcolor: reached.location1 ? "success.main" : "grey.300",
                 borderRadius: 999,
                 my: 0.5,
               }}
             />
 
             {/* Dot for location 2 */}
-            <StepDot active={driveData.location2.reached} />
+            <StepDot active={reached.location2} />
           </Box>
 
           {/* Reserved layout space under the step indicator */}
@@ -766,33 +796,9 @@ function DrivePanel({
 
         {/* Location editor cards */}
         <Box sx={{ display: "grid", gap: 2 }}>
-          <LocationCard
-            controlsLocked={controlsLocked}
-            title={
-              driveData.location1.label
-                ? `Location 1 - ${driveData.location1.label}`
-                : "Location 1"
-            }
-            data={driveData.location1}
-            onChange={(field, value) =>
-              onLocationChange("location1", field, value)
-            }
-            onReachedToggle={() => onReachedToggle("location1")}
-          />
+          <LocationCard {...cardProps("location1")} />
 
-          <LocationCard
-            controlsLocked={controlsLocked}
-            title={
-              driveData.location2.label
-                ? `Location 2 - ${driveData.location2.label}`
-                : "Location 2"
-            }
-            data={driveData.location2}
-            onChange={(field, value) =>
-              onLocationChange("location2", field, value)
-            }
-            onReachedToggle={() => onReachedToggle("location2")}
-          />
+          <LocationCard {...cardProps("location2")} />
         </Box>
       </Box>
     </Box>
@@ -802,6 +808,7 @@ function DrivePanel({
 // Arm tab content
 function ArmPanel({
   controlsLocked,
+  canStartTyping,
   typingInProgress,
   expectedSequence,
   setExpectedSequence,
@@ -856,7 +863,7 @@ function ArmPanel({
           <Button
             type="submit"
             variant="contained"
-            disabled={controlsLocked || typingInProgress}
+            disabled={controlsLocked || !canStartTyping}
           >
             Enter
           </Button>
@@ -865,7 +872,7 @@ function ArmPanel({
           <Button
             variant="outlined"
             onClick={onRedo}
-            disabled={controlsLocked || typingInProgress}
+            disabled={controlsLocked || !canStartTyping}
           >
             Redo
           </Button>
@@ -1000,20 +1007,34 @@ function ArmPanel({
 }
 
 // Card for editing a single target location
-function LocationCard({ controlsLocked, title, data, onChange, onReachedToggle }) {
-  // Local input state for the label field
-  // This allows controlled editing before committing changes
-  const [labelInput, setLabelInput] = useState(data.label);
-
-  // Keep local label input in sync if parent data changes
-  useEffect(() => {
-    setLabelInput(data.label);
-  }, [data.label]);
-
-  // Commit the current label input back to parent state
-  const commitLabel = () => {
-    onChange("label", labelInput);
-  };
+function LocationCard({
+  controlsLocked,
+  title,
+  data,
+  reached,
+  goLabel,
+  canGo,
+  onChange,
+  onCommit,
+  onFocusField,
+  onBlurField,
+  onGo,
+}) {
+  // Shared input props: edits are sent to the rover on blur or Enter
+  const fieldProps = (field) => ({
+    value: data[field],
+    onChange: (e) => onChange(field, e.target.value),
+    onFocus: () => onFocusField(field),
+    onBlur: onBlurField,
+    onKeyDown: (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onCommit();
+      }
+    },
+    fullWidth: true,
+    disabled: controlsLocked,
+  });
 
   return (
     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
@@ -1032,14 +1053,17 @@ function LocationCard({ controlsLocked, title, data, onChange, onReachedToggle }
           {title}
         </Typography>
 
-        <Button
-          variant={data.reached ? "contained" : "outlined"}
-          color={data.reached ? "success" : "primary"}
-          onClick={onReachedToggle}
-          disabled={controlsLocked}
-        >
-          {data.reached ? "Reached" : "Mark Reached"}
-        </Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* Set by the rover when it arrives here */}
+          {reached && (
+            <Typography color="success.main" fontWeight={700}>
+              Reached
+            </Typography>
+          )}
+          <Button variant="contained" onClick={onGo} disabled={!canGo}>
+            {goLabel}
+          </Button>
+        </Box>
       </Box>
 
       {/* Inputs for label, latitude, and longitude */}
@@ -1050,37 +1074,11 @@ function LocationCard({ controlsLocked, title, data, onChange, onReachedToggle }
           gap: 1.5,
         }}
       >
-        <TextField
-          label="Label"
-          value={labelInput}
-          onChange={(e) => setLabelInput(e.target.value)}
-          onBlur={commitLabel}
-          onKeyDown={(e) => {
-            // Commit label change when Enter is pressed
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commitLabel();
-            }
-          }}
-          fullWidth
-          disabled={controlsLocked}
-        />
+        <TextField label="Label" {...fieldProps("label")} />
 
-        <TextField
-          label="Lat"
-          value={data.lat}
-          onChange={(e) => onChange("lat", e.target.value)}
-          fullWidth
-          disabled={controlsLocked}
-        />
+        <TextField label="Lat" {...fieldProps("lat")} />
 
-        <TextField
-          label="Long"
-          value={data.lon}
-          onChange={(e) => onChange("lon", e.target.value)}
-          fullWidth
-          disabled={controlsLocked}
-        />
+        <TextField label="Long" {...fieldProps("lon")} />
       </Box>
     </Paper>
   );
