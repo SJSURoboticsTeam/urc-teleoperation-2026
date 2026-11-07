@@ -20,8 +20,27 @@ export default function NotesPane({
   onChange,
   onRetry,
   refreshError,
+  baseConnected,
 }) {
   const editorRef = useRef(null);
+  const failed =
+    saveStatus === "Save failed" ||
+    saveStatus === "Save unconfirmed: automatic retries exhausted";
+  const statusColor =
+    refreshError || failed
+      ? "error.main"
+      : !baseConnected
+        ? "text.disabled"
+        : saveStatus === "Saved"
+          ? "success.main"
+          : "warning.main";
+  const statusLabel = refreshError
+    ? "Refresh failed"
+    : !baseConnected
+      ? saveStatus === "Saved"
+        ? "Saved · offline"
+        : "Unsaved · offline"
+      : saveStatus;
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -72,7 +91,30 @@ export default function NotesPane({
   return (
     <>
       {refreshError && <p role="alert">{refreshError}</p>}
-      <p role="status">{saveStatus}</p>
+      <Box
+        role="status"
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 1,
+          px: 2,
+          py: 1,
+          textAlign: "center",
+        }}
+      >
+        <Box
+          compoenent="span"
+          sx={{
+            width: 8,
+            height: 8,
+            flexShrink: 0,
+            borderRadius: "50%",
+            bgcolor: statusColor,
+          }}
+        />
+        <span>{statusLabel}</span>
+      </Box>
       <MDXEditor
         markdown={markdown}
         ref={editorRef}

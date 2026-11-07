@@ -257,6 +257,7 @@ export default function MenuPane(props) {
             setLoadAttempt((attempt) => attempt + 1);
           }}
           refreshError={refreshError}
+          baseConnected={baseConnected}
         />
       )}
     </Drawer>
