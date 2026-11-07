@@ -57,8 +57,8 @@ const buildConfettiPieces = () =>
 // Main exported component for rover autonomy controls
 export default function AutonomyControls() {
   // Whether rover is currently in autonomous mode
-  // State is now shared globally so all views can react to it
-  const { autonomyEnabled, setAutonomyEnabled } = useAutonomyMode();
+  // The rover backend owns this state and shares it with every client
+  const { autonomyState, autonomyEnabled, sendAutonomyCommand } = useAutonomyMode();
 
   // State controlling the start/stop autonomy confirmation dialogs
   const [startpopupOpen, startsetPopupOpen] = useState(false);
@@ -150,24 +150,23 @@ export default function AutonomyControls() {
   };
 
   // Performs an immediate autonomy stop for minimize / hidden / page-exit situations
+  // Stopping on the rover also stops any typing, and every client updates from the broadcast
   const hardStopAutonomy = useCallback(
     (reason = "window_hidden") => {
       if (!autonomyEnabled) return;
 
       stopTypingAnimation();
-      setAutonomyEnabled(false);
       setDriveStatus("Autonomy hard-stopped.");
       setArrivalMessage("Autonomy hard-stopped.");
       setShowArrival(true);
       addArmHistory(`Autonomy hard-stopped (${reason}).`);
 
-      sendCommandToBackend({ type: "arm_stop", reason });
-      sendCommandToBackend({ type: "autonomy_hard_stop", reason });
+      sendAutonomyCommand("stopAutonomy");
     },
     [
       addArmHistory,
       autonomyEnabled,
-      setAutonomyEnabled,
+      sendAutonomyCommand,
       stopTypingAnimation,
     ],
   );
@@ -229,18 +228,14 @@ export default function AutonomyControls() {
     [addArmHistory, stopTypingAnimation],
   );
 
-  // Turns on autonomy mode
+  // Asks the rover to turn on autonomy mode; every client updates from the broadcast
   const startAutonomy = () => {
-    setAutonomyEnabled(true);
-    setDriveStatus("Autonomy started.");
-    sendCommandToBackend({ type: "autonomy_start" });
+    sendAutonomyCommand("startAutonomy");
   };
 
-  // Turns off autonomy mode
+  // Asks the rover to turn off autonomy mode
   const endAutonomy = () => {
-    setAutonomyEnabled(false);
-    setDriveStatus("Autonomy stopped.");
-    sendCommandToBackend({ type: "autonomy_stop" });
+    sendAutonomyCommand("stopAutonomy");
   };
 
   // Resets mission state back to defaults
@@ -495,7 +490,7 @@ export default function AutonomyControls() {
             pb: 1,
           }}
         >
-          {/* Displays whether rover is in TELEOP or AUTONOMY */}
+          {/* Displays the rover mode: IDLE, TELEOPERATION or AUTONOMY */}
           <Paper
             variant="outlined"
             sx={{
@@ -509,7 +504,8 @@ export default function AutonomyControls() {
               Current Mode
             </Typography>
             <Typography variant="subtitle1" fontWeight={800}>
-              {autonomyEnabled ? "AUTONOMY" : "TELEOPERATION"}
+              {autonomyState?.mode ?? "UNKNOWN"}
+              {autonomyState?.phase ? ` / ${autonomyState.phase}` : ""}
             </Typography>
           </Paper>
 
@@ -527,7 +523,12 @@ export default function AutonomyControls() {
 
             {/* Show either Start or Stop Autonomy depending on current mode */}
             {!autonomyEnabled ? (
-              <Button variant="contained" onClick={() => startsetPopupOpen(true)}>
+              <Button
+                variant="contained"
+                onClick={() => startsetPopupOpen(true)}
+                // only available when the rover reports something that can run autonomy
+                disabled={!autonomyState?.source}
+              >
                 START AUTONOMY
               </Button>
             ) : (
