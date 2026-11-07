@@ -367,14 +367,10 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
             </div>
           ) : null}
 
-          {isRobotConnected ? (
             <div>
               <PeripheralManager openPane={openPane} />
               <hr className="border-t border-gray-300 my-4" />
             </div>
-          ) : (
-            <Typography sx={{ color: "black" }}>Robot is offline.</Typography>
-          )}
           <ShutdownManager />
         </div>
       )}

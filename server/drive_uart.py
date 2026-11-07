@@ -46,7 +46,7 @@ def build_set_chassis_velocities_payload(x_vel, y_vel, rot_vel, module_conflicts
 
 async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflicts):
     """Encode and send a chassis velocity command over UART."""
-    if serial_ports["drive"] is None:
+    if serial_ports["drive"]["port"] is None:
         raise RuntimeError("Drive UART not connected")
 
     payload = build_set_chassis_velocities_payload(
@@ -58,7 +58,7 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
     # send_packet is blocking, run it in a thread
     await asyncio.to_thread(
-        serial_ports["drive"].send_packet,
+        serial_ports["drive"]["port"].send_packet,
         DRIVE_MSG_ID["SET_CHASSIS_VELOCITIES"],
         payload,
     )
@@ -112,12 +112,12 @@ def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=Non
             return
         try:
             # make sure drive UART is connected first
-            if serial_ports["drive"] is None:
+            if serial_ports["drive"]["port"] is None:
                 print("Drive UART not connected")
                 return
 
             await asyncio.to_thread(
-                serial_ports["drive"].send_packet,
+                serial_ports["drive"]["port"].send_packet,
                 DRIVE_MSG_ID["HOMING_SEQUENCE"],
                 b""
             )
@@ -206,7 +206,7 @@ async def read_drive_uart_loop(serial_ports, drive_state=None):
     while True:
         try:
             # read_packet is blocking so run it in a thread
-            drive = serial_ports["drive"]
+            drive = serial_ports["drive"]["port"]
             if drive is not None:
                 packet = await asyncio.to_thread(drive.read_packet)
                 if packet:
@@ -224,7 +224,7 @@ async def send_drive_heartbeat(serial_ports):
     """Background task: periodic heartbeat so firmware knows we are alive."""
     try:
         while True:
-            drive = serial_ports["drive"]
+            drive = serial_ports["drive"]["port"]
             if drive is not None:
                 await asyncio.to_thread(
                     drive.send_packet,
