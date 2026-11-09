@@ -9,9 +9,7 @@ import {
   linkDialogPlugin,
   imagePlugin,
   tablePlugin,
-  directivesPlugin,
   diffSourcePlugin,
-  AdmonitionDirectiveDescriptor,
   UndoRedo,
   BoldItalicUnderlineToggles,
   Separator,
@@ -22,11 +20,11 @@ import {
   InsertImage,
   InsertTable,
   InsertThematicBreak,
-  InsertAdmonition,
   CodeToggle,
   DiffSourceToggleWrapper,
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
+import { preserveEmptyParagraphsPlugin } from "./preserveEmptyParagraphsPlugin";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import { useState, useRef, useEffect } from "react";
@@ -151,6 +149,7 @@ export default function NotesPane({
         ref={editorRef}
         overlayContainer={overlayContainer}
         plugins={[
+          preserveEmptyParagraphsPlugin(),
           headingsPlugin(),
           listsPlugin(),
           thematicBreakPlugin(),
@@ -158,9 +157,6 @@ export default function NotesPane({
           linkDialogPlugin(),
           imagePlugin(),
           tablePlugin(),
-          directivesPlugin({
-            directiveDescriptors: [AdmonitionDirectiveDescriptor],
-          }),
           diffSourcePlugin(),
           markdownShortcutPlugin(),
           toolbarPlugin({
@@ -183,9 +179,6 @@ export default function NotesPane({
                 <InsertThematicBreak />
                 <Separator />
                 <CodeToggle />
-                <Separator />
-                <InsertAdmonition />
-                <Separator />
               </DiffSourceToggleWrapper>
             ),
           }),
