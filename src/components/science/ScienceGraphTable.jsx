@@ -63,8 +63,8 @@ export default function ScienceGraphTable({ site, wavelengths = [], vials = [] }
               label: "Wavelength (nm)",
             },
           ]}
-          yAxis={[{ label: "Absorbance", width: 45 }]}
-          margin={{ left: 60, bottom: 40 }}
+          yAxis={[{ label: "Absorbance", width: 60 }]}
+          margin={{ left: 0, bottom: 40 }}
         />
       </Box>
 
