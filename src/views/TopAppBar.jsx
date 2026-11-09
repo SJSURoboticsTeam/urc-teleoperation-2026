@@ -26,6 +26,8 @@ import { useSoftStop } from "../contexts/SoftStopContext";
 
 import { useNavigate } from "react-router-dom";
 
+import Clock from "../components/clock/Clock";
+
 // Views shown in both the top bar tabs and the side drawer tabs
 const VIEW_TABS = [
   { label: "Drive", value: "/drive" },
@@ -230,6 +232,11 @@ export default function TopAppBar({
           </Dialog>
 
           {/* Gamepad connection status and selection panel */}
+          <Clock
+            openPane={openPane}
+            setOpenPane={setOpenPane}
+          />
+
           <GamepadPanel
             openPane={openPane}
             setOpenPane={setOpenPane}
