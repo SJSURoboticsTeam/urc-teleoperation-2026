@@ -12,6 +12,7 @@ from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_ant
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
 from video import send_fake_video_stats, videoloop
+from competition_timer import CompetitionTimer
 import sys, subprocess
 
 
@@ -103,6 +104,8 @@ sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*',allow_upg
 #     'password': 'admin',
 # })
 app = socketio.ASGIApp(sio)
+
+competition_timer = CompetitionTimer()
 
 # =================== Robot Client Setup ===================
 
@@ -228,6 +231,83 @@ video_task_started = False
 register_metric_events(sio)
 register_shutdown_commands(sio)
 # =================== Start Server ===================
+async def broadcast_competition_timer():
+    """Send the current timer state to every connected client."""
+    await sio.emit(
+        "competitionTimerUpdated",
+        competition_timer.get_state(),
+    )
+
+
+@sio.event
+async def getCompetitionTimer(sid):
+    """Return the current timer state to one requesting client."""
+    return competition_timer.get_state()
+
+
+@sio.event
+async def setCompetitionTimer(sid, data):
+    """Set a timer preset and broadcast the updated state."""
+    try:
+        minutes = data.get("presetMinutes")
+        state = competition_timer.set_preset(minutes)
+    except (AttributeError, TypeError, ValueError) as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }
+
+    await broadcast_competition_timer()
+
+    return {
+        "ok": True,
+        "state": state,
+    }
+
+
+@sio.event
+async def startCompetitionTimer(sid):
+    """Start or resume the competition timer."""
+    try:
+        state = competition_timer.start()
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }
+
+    await broadcast_competition_timer()
+
+    return {
+        "ok": True,
+        "state": state,
+    }
+
+
+@sio.event
+async def pauseCompetitionTimer(sid):
+    """Pause the competition timer."""
+    state = competition_timer.pause()
+
+    await broadcast_competition_timer()
+
+    return {
+        "ok": True,
+        "state": state,
+    }
+
+
+@sio.event
+async def resetCompetitionTimer(sid):
+    """Reset the timer to the selected preset."""
+    state = competition_timer.reset()
+
+    await broadcast_competition_timer()
+
+    return {
+        "ok": True,
+        "state": state,
+    }
 
 @sio.event
 async def connect(sid,environ):
@@ -239,6 +319,13 @@ async def connect(sid,environ):
     global video_task_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
+
+    await sio.emit(
+        "competitionTimerUpdated",
+        competition_timer.get_state(),
+        to=sid,
+    )
+
     try:
         metrics.numClients += 1
     except Exception:
