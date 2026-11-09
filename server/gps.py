@@ -131,7 +131,7 @@ class ZEDF9P:
 
 async def read_gps_data(serial_ports, sio):
     while True:
-        gps = serial_ports['gps']
+        gps = serial_ports['gps']["port"]
         if gps is None:
             await asyncio.sleep(0.5)  # Sleep briefly while waiting for GPS to connect
             continue

@@ -9,6 +9,7 @@ import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
 import BatteryDisplay from "../components/battery/batteryDisplay";
 import CameraManager from "../components/cameras/CameraManager"
+import GPSManager from "../components/gps/gpsManager";
 import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 export default function TopAppBar({showbottbar }) {
@@ -28,6 +29,7 @@ export default function TopAppBar({showbottbar }) {
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <GPSManager openPane={openPane} setOpenPane={setOpenPane} openUp/>
           <CameraManager openPane={openPane} setOpenPane={setOpenPane} openUp/>
           <AntennaRotation openPane={openPane} setOpenPane={setOpenPane} openUp/> 
           <Metrics openPane={openPane} setOpenPane={setOpenPane} openUp />
