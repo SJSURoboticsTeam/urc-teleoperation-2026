@@ -62,7 +62,7 @@ def register_notes_events(sio):
 
             try:
                 await sio.emit("notesUpdated", updated)
-            except socketio.connections.ConnectionError as e:
+            except socketio.exceptions.ConnectionError as e:
                 print(f"Notes saved, but broadcast failed: {e}")
 
         return {"status": "OK", **updated}
