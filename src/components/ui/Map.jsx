@@ -115,10 +115,12 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
             : "This is an older trail-only log, so the map's locations stay as they are."}
           {pendingImport?.trailPoints.length > 0 &&
             ` Its trail (${plural(pendingImport.trailPoints.length, "point")}) is shown as an imported trail; your recorded trail is not changed.`}
+          {locationsLocked && <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>Locked while autonomy or Soft Stop is active.</Typography>}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPendingImport(null)}>Cancel</Button>
-          <Button onClick={() => { onImportMap(pendingImport); setPendingImport(null); }}>
+          {/* The lock can turn on while the dialog is open (e.g. Soft Stop from another client) or while the file is read */}
+          <Button disabled={locationsLocked} onClick={() => { onImportMap(pendingImport); setPendingImport(null); }}>
             {pendingImport?.locations ? "Replace" : "Import"}
           </Button>
         </DialogActions>
@@ -127,10 +129,11 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         <DialogTitle>Clear map locations?</DialogTitle>
         <DialogContent>
           This removes {describeCounts(mapCounts)} from the map and this browser. The GPS trail is not affected. Export the map first if you want to keep them.
+          {locationsLocked && <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>Locked while autonomy or Soft Stop is active.</Typography>}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmClearMap(false)}>Cancel</Button>
-          <Button color="error" onClick={() => { onClearMap(); setConfirmClearMap(false); }}>Clear Map</Button>
+          <Button color="error" disabled={locationsLocked} onClick={() => { onClearMap(); setConfirmClearMap(false); }}>Clear Map</Button>
         </DialogActions>
       </Dialog>
       <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
