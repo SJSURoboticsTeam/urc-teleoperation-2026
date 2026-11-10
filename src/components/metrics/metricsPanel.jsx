@@ -92,7 +92,7 @@ export default function Metrics({ openPane, setOpenPane, openUp = false }) {
         <AnalyticsIcon sx={{ fontSize: 35 }} />
       </span>
 
-      {openPane == "Metrics" && (
+      {(openPane == "Metrics" || openPane == "AntennaRotation") && (
         <div
           style={{
             position: "absolute",
