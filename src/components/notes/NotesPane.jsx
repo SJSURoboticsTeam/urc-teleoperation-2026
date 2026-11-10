@@ -109,6 +109,8 @@ export default function NotesPane({
     <Box
       ref={setOverlayContainer}
       sx={{
+        px: 2,
+        pb: 2,
         '& [data-editor-block-type="image"]': {
           maxWidth: "100%",
         },
