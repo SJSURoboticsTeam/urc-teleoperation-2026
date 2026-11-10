@@ -100,7 +100,11 @@ export default function NotesPane({
           textAlign: "center",
         }}
       >
-        <p>Loading notes...</p>
+        <p>
+          {baseConnected
+            ? "Loading notes..."
+            : "Waiting for base-pi connection"}
+        </p>
       </Box>
     );
   }
