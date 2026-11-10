@@ -31,9 +31,9 @@ export default function TopAppBar({showbottbar }) {
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
+          <AntennaRotation openPane={openPane} setOpenPane={setOpenPane} openUp/> 
           <GPSManager openPane={openPane} setOpenPane={setOpenPane} openUp/>
           <CameraManager openPane={openPane} setOpenPane={setOpenPane} openUp/>
-          <AntennaRotation openPane={openPane} setOpenPane={setOpenPane} openUp/> 
           <Metrics openPane={openPane} setOpenPane={setOpenPane} openUp />
           <StateMachine openPane={openPane} setOpenPane={setOpenPane} isRobotConnected={isRobotConnected} openUp />
         </Toolbar>

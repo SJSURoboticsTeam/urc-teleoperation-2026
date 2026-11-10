@@ -119,7 +119,7 @@ export default function AntennaRotation({
             <Button
               variant="contained"
               //onClick={handleManualTx}
-              sx={{ whiteSpace: "nowrap", color: "black" }}
+              sx={{ whiteSpace: "nowrap" }}
               disabled={!baseConnected}
             >
               MANUAL TX
