@@ -360,7 +360,7 @@ else:
     print("Science link: CAN")
 register_science_events(sio, science_session)
 
-science_soft_stop_logged = False
+science_soft_stop_site = None
 
 # =================== Start Server ===================
 
@@ -457,14 +457,14 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
     else:
         print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
 
-    global science_soft_stop_logged
+    global science_soft_stop_site
     if not is_soft_stopped() and science_session.active_site_id() is not None:
+        science_soft_stop_site = science_session.active_site_id()
         science_session.log_event(
             "soft_stop",
-            site=science_session.active_site_id(),
+            site=science_soft_stop_site,
             step=science_session.pending_step(),
         )
-        science_soft_stop_logged = True
 
     # Broadcast to every connected client so they all lock, not just the sender
     await set_soft_stop(sio, True)
@@ -478,10 +478,10 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
 async def resumeControls(sid):
     """Acknowledge the frontend unlocking controls after a Soft Stop"""
     print(f'[{sid}] Controls resumed after Soft Stop.')
-    global science_soft_stop_logged
-    if science_soft_stop_logged:
-        science_soft_stop_logged = False
-        science_session.log_event("soft_stop_resumed", site=science_session.active_site_id())
+    global science_soft_stop_site
+    if science_soft_stop_site is not None:
+        science_session.log_event("soft_stop_resumed", site=science_soft_stop_site)
+        science_soft_stop_site = None
     await set_soft_stop(sio, False)
     return "OK"
 
