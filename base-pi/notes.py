@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+
 import socketio
 
 BASE_PI_DIRECTORY = Path(__file__).parent
