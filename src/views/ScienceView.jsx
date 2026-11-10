@@ -8,12 +8,11 @@ import {
   DialogContentText,
   DialogTitle,
   Step,
+  StepButton,
   StepLabel,
   Stepper,
   Typography,
 } from "@mui/material";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
 import { useSoftStop } from "../contexts/SoftStopContext";
 import ScienceGraphTable from "../components/science/ScienceGraphTable";
@@ -22,8 +21,29 @@ import { useGPS } from "../contexts/GPSContext";
 import { useScience } from "../contexts/ScienceContext";
 import { emptyScienceSession } from "../components/science/demoScienceSession";
 
+
+const SELECTED_SITE_LABEL_SX = {
+  color: "primary.main",
+  fontWeight: 700,
+  textDecoration: "underline",
+  textDecorationThickness: 2,
+  textUnderlineOffset: 6,
+};
+
+// Negative my cancels py so the bubble stays level with "Start"
+const SITE_BUTTON_SX = {
+  display: "flex",
+  width: "fit-content",
+  mx: "auto",
+  px: 1.5,
+  py: 0.75,
+  my: -0.75,
+  borderRadius: 2,
+};
+
 export default function ScienceView() {
   const { servercanState } = usePeripherals();
+
 
   const [tabContent, setTabContent] = useState(0);
 
@@ -49,18 +69,16 @@ export default function ScienceView() {
     resetSite,
   } = useScience();
 
-  // Render from a layout-only snapshot until the backend answers, so the page never collapses.
-  // The backend owns all science state; the only thing kept here is which tab is selected
+
+  // The backend owns all science state; the only thing kept here is which site is selected
   const shown = session ?? emptyScienceSession;
   const site = shown.sites[tabContent];
   const reading = siteReadings[tabContent];
 
-  // Which site the Reset dialog was opened for (null = closed). Captured at open time so a
-  // tab change or a broadcast can never retarget it
   const [resetTargetId, setResetTargetId] = useState(null);
   const resetTarget = shown.sites.find((s) => s.id === resetTargetId);
 
-  // Button rules, all in one place. UX only: the server re-validates every command
+
   const canAct = !controlsLocked && canCommand && !pending;
 
   const canStepSite = (s) =>
@@ -86,9 +104,9 @@ export default function ScienceView() {
     setResetTargetId(null);
   };
 
-  const handleChange = (event, newTabContent) => {
+  const handleSelectSite = (index) => {
     if (controlsLocked) return;
-    setTabContent(newTabContent);
+    setTabContent(index);
   };
 
   const handleGetGNSS = () => {
@@ -216,37 +234,33 @@ export default function ScienceView() {
       </Dialog>
 
       <Stepper
+        nonLinear
         activeStep={shown.activeSite === null ? -1 : shown.activeSite + 1}
         alternativeLabel
+        sx={{ mb: 1 }}
       >
         <Step completed={shown.sites.some((s) => s.status !== "not_started")}>
           <StepLabel>Start</StepLabel>
         </Step>
-        {shown.sites.map((s) => (
-          <Step key={s.id} completed={s.status === "complete"}>
-            <StepLabel>{s.name}</StepLabel>
-          </Step>
-        ))}
+        {shown.sites.map((s, index) => {
+          const selected = index === tabContent;
+          return (
+            <Step key={s.id} completed={s.status === "complete"} disabled={controlsLocked}>
+              <StepButton
+                sx={SITE_BUTTON_SX}
+                onClick={() => handleSelectSite(index)}
+                aria-current={selected ? "step" : undefined}
+              >
+                <Box component="span" sx={selected ? SELECTED_SITE_LABEL_SX : undefined}>
+                  {s.name}
+                </Box>
+              </StepButton>
+            </Step>
+          );
+        })}
       </Stepper>
 
       <Box sx={{ flex: 1, height: 400 }}>
-        <Box sx={{ border: 1, borderRadius: 2, borderColor: "divider" }}>
-          <Tabs
-            value={tabContent}
-            onChange={handleChange}
-            sx={{ minHeight: 32, width: "auto" }}
-          >
-            {shown.sites.map((s) => (
-              <Tab
-                key={s.id}
-                label={s.name}
-                sx={{ fontSize: "0.75rem", minHeight: 32 }}
-                disabled={controlsLocked}
-              />
-            ))}
-          </Tabs>
-        </Box>
-
         <Box sx={{ p: 1 }}>
           <div>
             {site.lastError && (
