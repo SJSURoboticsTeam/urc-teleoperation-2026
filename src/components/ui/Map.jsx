@@ -352,7 +352,9 @@ function ResetZoomControlUI({ onClickZoom, onClickPan }) {
     <Box
       sx={{
         display: "flex",
-        flexDirection: "column",
+        // One row so the panel stays short and the coordinate boxes below don't cover it
+        flexDirection: "row",
+        gap: 0.5,
         bgcolor: "rgba(255,255,255,0.9)",
         p: 1,
         borderRadius: 1,
@@ -408,7 +410,11 @@ function PoiControlUI({ isPlacing, canPinRover, onTogglePlacing, onPinRover }) {
     <Box
       sx={{
         display: "flex",
-        flexDirection: "column",
+        // Buttons in one row, like Reset Zoom; the placing hint wraps onto its own line
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 0.5,
+        maxWidth: 220,
         bgcolor: "rgba(255,255,255,0.9)",
         p: 1,
         borderRadius: 1,
@@ -419,8 +425,8 @@ function PoiControlUI({ isPlacing, canPinRover, onTogglePlacing, onPinRover }) {
       <Button size="small" variant={isPlacing ? "contained" : "outlined"} onClick={onTogglePlacing}>
         {isPlacing ? "Cancel" : "+ Add POI"}
       </Button>
-      {isPlacing && <Typography variant="caption">Click the map to drop a pin</Typography>}
       <Button size="small" variant="outlined" disabled={!canPinRover} onClick={onPinRover}>Pin Rover</Button>
+      {isPlacing && <Typography variant="caption" sx={{ flexBasis: "100%" }}>Click the map to drop a pin</Typography>}
     </Box>
   );
 }

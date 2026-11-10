@@ -14,3 +14,10 @@ body,
 body {
   margin: 0;
 }
+
+/* Put the map's top-left panels (Reset Zoom, POI) side by side instead of stacked,
+   so they stay above the bottom-left coordinate boxes on short screens */
+.maplibregl-ctrl-top-left {
+  display: flex;
+  align-items: flex-start;
+}
