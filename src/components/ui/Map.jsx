@@ -687,14 +687,20 @@ export default function Map() {
     marker?.getPopup()?.setLngLat(marker.getLngLat());
   }, [openPopup, openWaypoint]);
 
+  // POI and autonomy pins copy their location into the site. A science pin moves instead (keeping its
+  // GPS accuracy), so it doesn't leave a duplicate pin stacked on the same spot.
   const setScienceSiteFromWaypoint = (site) => {
     if (scienceLocked || !openWaypoint) return;
+    const movingFrom = openWaypoint.scienceSite;
     setSiteReadings((prev) => {
       const next = [...prev];
-      next[site - 1] = { lat: openWaypoint.lat, long: openWaypoint.long, accuracy_m: null, capturedAt: Date.now() };
+      next[site - 1] = movingFrom
+        ? prev[movingFrom - 1]
+        : { lat: openWaypoint.lat, long: openWaypoint.long, accuracy_m: null, capturedAt: Date.now() };
+      if (movingFrom) next[movingFrom - 1] = null;
       return next;
     });
-    enqueueSnackbar(`Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
+    enqueueSnackbar(movingFrom ? `Site ${movingFrom} moved to Site ${site}` : `Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
   };
   // Replace the map's locations with an imported file's. The file's trail is shown as the imported trail;
   // the recorded trail is never touched.
