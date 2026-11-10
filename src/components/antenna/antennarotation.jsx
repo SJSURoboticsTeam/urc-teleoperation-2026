@@ -8,10 +8,16 @@ import {
   Box,
   Switch,
   Button,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import ControlCameraIcon from "@mui/icons-material/ControlCamera";
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
+import NumberSpinner from "./numberspinner";
+
+// TODO: replace with real waypoint list once one exists
+const WAYPOINTS = ["Waypoint 1", "Waypoint 2", "Waypoint 3"];
 
 export default function AntennaRotation({
   openPane,
@@ -20,6 +26,9 @@ export default function AntennaRotation({
 }) {
   const { baseConnected } = useConnectionStatus();
   const [txon, settxon] = useState(false);
+  const [waypoint, setWaypoint] = useState("");
+  const [angle, setAngle] = useState(0);
+  const [mode, setMode] = useState("off");
 
   return (
     <div
@@ -59,12 +68,13 @@ export default function AntennaRotation({
           <Typography sx={{ color: "black" }} variant="h6">
             ANTENNA ROTATION
           </Typography>
-          <Box sx={{ display: "flex", flexDirection: "row", ml: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "row", ml: 1, mb: 1 }}>
             <FormControl>
               <RadioGroup
                 aria-labelledby="antenna-rotation"
-                defaultValue="off"
                 name="radio-buttons-group"
+                value= {mode}
+                onChange={(event)=> setMode(event.target.value)}
               >
                 <FormControlLabel
                   value="off"
@@ -78,18 +88,59 @@ export default function AntennaRotation({
                   label="Use GPS"
                   sx={{ color: "black" }}
                 />
-                <FormControlLabel
-                  value="waypoint"
-                  sx={{ color: "black" }}
-                  control={<Radio />}
-                  label="Waypoint"
-                />
-                <FormControlLabel
-                  value="manual"
-                  control={<Radio />}
-                  label="Manual Angle"
-                  sx={{ color: "black" }}
-                />
+                {/* Two-column grid so the waypoint dropdown and angle spinner
+                    line up in the same column, with radios left-aligned */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "auto 160px",
+                    alignItems: "center",
+                    columnGap: 1,
+                    rowGap: 1,
+                  }}
+                >
+                  <FormControlLabel
+                    value="waypoint"
+                    sx={{ color: "black" }}
+                    control={<Radio />}
+                    label="Waypoint"
+                  />
+                  <Select
+                    size="small"
+                    value={waypoint}
+                    onChange={(e) => setWaypoint(e.target.value)}
+                    disabled={mode != "waypoint"}
+                    displayEmpty
+                    fullWidth
+                    sx={{ textAlign: "left" }}
+                  >
+                    <MenuItem value="" disabled>
+                      Select...
+                    </MenuItem>
+                    {WAYPOINTS.map((name) => (
+                      <MenuItem key={name} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+
+                  <FormControlLabel
+                    value="angle"
+                    control={<Radio />}
+                    label="Angle"
+                    sx={{ color: "black" }}
+                  />
+                  <NumberSpinner
+                    label="Angle"
+                    value = {angle}
+                    onValueChange={(value) => setAngle(value ?? 0)}
+                    min={0}
+                    max={360}
+                    step={5}
+                    size="small"
+                    disabled={mode != "angle"}
+                  />
+                </Box>
               </RadioGroup>
             </FormControl>
           </Box>
