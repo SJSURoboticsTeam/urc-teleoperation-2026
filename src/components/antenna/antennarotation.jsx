@@ -11,10 +11,12 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import ControlCameraIcon from "@mui/icons-material/ControlCamera";
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 import NumberSpinner from "./numberspinner";
+import { basesocket } from "../socket.io/socket";
+import { useSnackbar } from "notistack";
 
 // TODO: replace with real waypoint list once one exists
 const WAYPOINTS = ["Waypoint 1", "Waypoint 2", "Waypoint 3"];
@@ -24,26 +26,74 @@ export default function AntennaRotation({
   setOpenPane,
   openUp = false,
 }) {
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const { baseConnected } = useConnectionStatus();
   const [data, setData] = useState({
     txon: false,
     waypointName: "",
-    angle: 0,
+    manualAngle: 0,
     mode: "off",
     loading: true,
   });
 
-  useEffect(() => {
-    if (openPane == "GPSManager") {
-      //refresh(); // update serial
-    } else {
-      // setservercanState((prev) => ({
-      //   ...prev,
-      //   // lock so next time so reload has to happen first (and unlock)
-      //   loading: true,
-      // }));
+  const updateAntennaSettings = (value, key) => {
+    // update array & send over network
+
+    const updatedData = { ...data, [key]: value };
+    setData(updatedData);
+    const payload = {
+      txon: updatedData.txon,
+      mode: updatedData.mode,
+      manualAngle: updatedData.manualAngle,
+    };
+    console.log(payload);
+    basesocket.emit("setAntennaSettings", payload, (response) => {
+      console.log("RESPONSE:" + response);
+      if (response === "OK") {
+        setData((current) => ({
+          ...current,
+        }));
+      } else {
+        enqueueSnackbar("Error saving antenna settings", {
+          variant: "error",
+        });
+        requestAntennaInfo();
+      }
+    });
+  };
+
+  const requestAntennaInfo = useCallback(() => {
+    // lock the ui so user can't do anything while loading
+    console.log("Refresh requested...");
+    setData((prev) => ({
+      ...prev,
+      loading: true,
+    }));
+    if (basesocket.connected) {
+      basesocket.emit("getAntennaSettings", (data) => {
+        //console.log(data);
+        setData((prev) => ({
+          ...prev,
+          txon: data["txon"],
+          mode: data["mode"],
+          manualAngle: data["manualAngle"],
+          loading: false,
+        }));
+      });
     }
-  }, [openPane]);
+  }, []);
+
+  useEffect(() => {
+    if (openPane == "AntennaRotation") {
+      requestAntennaInfo(); // update serial
+    } else {
+      setData((prev) => ({
+        ...prev,
+        // lock so next time so reload has to happen first (and unlock)
+        loading: true,
+      }));
+    }
+  }, [openPane, requestAntennaInfo]);
 
   return (
     <div
@@ -89,23 +139,21 @@ export default function AntennaRotation({
                 aria-labelledby="antenna-rotation"
                 name="radio-buttons-group"
                 value={data.mode}
-                onChange={(event) =>
-                  setData((prev) => ({
-                    ...prev,
-                    mode: event.target.value,
-                  }))
-                }
+                onChange={(event) => updateAntennaSettings(event.target.value, "mode")}
+                
               >
                 <FormControlLabel
                   value="off"
                   control={<Radio />}
                   label="Off"
+                  disabled={data.loading}
                   sx={{ color: "black" }}
                 />
                 <FormControlLabel
                   value="gps"
                   control={<Radio />}
                   label="Use GPS"
+                  disabled={data.loading}
                   sx={{ color: "black" }}
                 />
                 {/* Two-column grid so the waypoint dropdown and angle spinner
@@ -123,18 +171,14 @@ export default function AntennaRotation({
                     value="waypoint"
                     sx={{ color: "black" }}
                     control={<Radio />}
+                    disabled={data.loading}
                     label="Waypoint"
                   />
                   <Select
                     size="small"
                     value={data.waypointName}
-                    onChange={(e) =>
-                      setData((prev) => ({
-                        ...prev,
-                        waypointName: e.target.value,
-                      }))
-                    }
-                    disabled={data.mode != "waypoint"}
+                    onChange={(event) => updateAntennaSettings(event.target.value, "waypointName")}
+                    disabled={data.mode != "waypoint" || data.loading}
                     displayEmpty
                     fullWidth
                     sx={{ textAlign: "left" }}
@@ -153,22 +197,18 @@ export default function AntennaRotation({
                     value="angle"
                     control={<Radio />}
                     label="Angle"
+                    disabled={data.loading}
                     sx={{ color: "black" }}
                   />
                   <NumberSpinner
                     label="Angle"
-                    value={data.angle}
-                    onValueChange={(value) =>
-                      setData((prev) => ({
-                        ...prev,
-                        angle: value ?? 0,
-                      }))
-                    }
+                    value={data.manualAngle}
+                    onValueChange={(value) => updateAntennaSettings(value, "manualAngle")}
                     min={0}
                     max={360}
                     step={5}
                     size="small"
-                    disabled={data.mode != "angle"}
+                    disabled={data.mode != "angle" || data.loading}
                   />
                 </Box>
               </RadioGroup>
@@ -185,13 +225,8 @@ export default function AntennaRotation({
               control={
                 <Switch
                   checked={data.txon}
-                  onChange={(e) =>
-                    setData((prev) => ({
-                      ...prev,
-                      txon: e.target.checked,
-                    }))
-                  }
-                  //disabled={controlsLocked}
+                  disabled={data.loading}
+                  onChange={(event) => updateAntennaSettings(event.target.value, "txon")}
                 />
               }
               label="AUTO TX"
@@ -206,7 +241,8 @@ export default function AntennaRotation({
               variant="contained"
               //onClick={handleManualTx}
               sx={{ whiteSpace: "nowrap" }}
-              disabled={!baseConnected}
+              disabled={!baseConnected || data.loading}
+              loading={data.loading}
             >
               MANUAL TX
             </Button>

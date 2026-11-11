@@ -3,15 +3,18 @@ from dataclasses import dataclass
 
 @dataclass
 class AntennaData:
-    enabled: bool = False
+    txon: bool = False
     mode: str = "off"
+    manualAngle: int = 0
 
 antennadata = AntennaData()
 
 async def antennaloop(sio):
+    print("Starting loop")
     while True:
-        if(antennadata.enabled):
-            print("Mode" + antennadata.mode)
+        # only run if txon enabled, otherwise user can pulse it
+        if(antennadata.txon):
+            print("TX MODE: " + antennadata.mode)
         await asyncio.sleep(1)
 
 
@@ -23,10 +26,23 @@ def register_antenna_events(sio):
     global numClients
 
     @sio.event
-    async def getMode(sid):
-        return antennadata.mode
+    async def getAntennaSettings(sid):
+        data = {
+            'status': "OK",
+            'txon' : antennadata.txon,
+            'mode' : antennadata.mode,
+            'manualAngle' : antennadata.manualAngle,
+            }
+        return data
+
 
     @sio.event
-    async def setMode(data, sid):
-        antennadata.mode = data
-        return 1
+    async def setAntennaSettings(sid, payload):
+        antennadata.txon = payload["txon"]
+        antennadata.mode = payload["mode"]
+        antennadata.manualAngle=int(payload["manualAngle"])
+        if(antennadata.mode == "angle"):
+            print("NEW MODE: ANGLE of " + str(antennadata.manualAngle))
+        else:
+            print("MODE: " + antennadata.mode.upper())
+        return "OK"
