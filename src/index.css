@@ -21,3 +21,10 @@ body {
   display: flex;
   align-items: flex-start;
 }
+
+/* Waypoint pin popups match the app's other dropdowns: gray border and rounded corners */
+.waypoint-popup .maplibregl-popup-content {
+  border: 1px solid gray;
+  border-radius: 12px;
+  padding: 10px;
+}

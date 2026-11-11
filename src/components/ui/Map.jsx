@@ -620,7 +620,7 @@ function buildWaypoints(siteReadings, driveData, pois) {
     const long = parseCoordinate(location.lon);
     if (!hasValidGPSCoordinates({ latitude: lat, longitude: long })) return;
     const name = location.label.trim() || `Location ${index + 1}`;
-    waypoints.push({ id: `autonomy-${key}`, type: "autonomy", name, lat, long });
+    waypoints.push({ id: `autonomy-${key}`, type: "autonomy", name, autonomyKey: key, lat, long });
   });
 
   pois.forEach((poi) => {
@@ -701,6 +701,20 @@ export default function Map() {
       return next;
     });
     enqueueSnackbar(movingFrom ? `Site ${movingFrom} moved to Site ${site}` : `Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
+  };
+
+  // Delete from the popup: a POI is removed; a science site or autonomy location is emptied in its own pane
+  const deleteWaypoint = () => {
+    if (!openWaypoint) return;
+    if (openWaypoint.type === "poi") {
+      removePoi(openWaypoint.id);
+    } else if (openWaypoint.type === "science") {
+      if (scienceLocked) return;
+      setSiteReadings((prev) => prev.map((reading, index) => (index === openWaypoint.scienceSite - 1 ? null : reading)));
+    } else {
+      setDriveData((prev) => ({ ...prev, [openWaypoint.autonomyKey]: initialDriveState[openWaypoint.autonomyKey] }));
+    }
+    enqueueSnackbar(`${openWaypoint.name} deleted`, { variant: "success" });
   };
   // Replace the map's locations with an imported file's. The file's trail is shown as the imported trail;
   // the recorded trail is never touched.
@@ -1090,7 +1104,8 @@ export default function Map() {
         const element = document.createElement("div");
         // The popup's content is rendered into popupNode with a portal below, so it stays in this React tree
         const popupNode = document.createElement("div");
-        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px" }).setDOMContent(popupNode);
+        // waypoint-popup (index.css) gives it the same border and rounded corners as the app's dropdowns
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px", className: "waypoint-popup" }).setDOMContent(popupNode);
         popup.on("open", () => {
           // Map controls (GPS trail, coordinates) sit at z-index 2; keep the open popup above them
           popup.getElement().style.zIndex = 3;
@@ -1207,7 +1222,7 @@ export default function Map() {
           scienceLocked={scienceLocked}
           onSetScienceSite={setScienceSiteFromWaypoint}
           onRenamePoi={(name) => renamePoi(openWaypoint.id, name)}
-          onDeletePoi={() => removePoi(openWaypoint.id)}
+          onDelete={deleteWaypoint}
         />,
         openPopup.node,
       )}
