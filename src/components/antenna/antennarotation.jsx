@@ -25,10 +25,25 @@ export default function AntennaRotation({
   openUp = false,
 }) {
   const { baseConnected } = useConnectionStatus();
-  const [txon, settxon] = useState(false);
-  const [waypoint, setWaypoint] = useState("");
-  const [angle, setAngle] = useState(0);
-  const [mode, setMode] = useState("off");
+  const [data, setData] = useState({
+    txon: false,
+    waypointName: "",
+    angle: 0,
+    mode: "off",
+    loading: true,
+  });
+
+  useEffect(() => {
+    if (openPane == "GPSManager") {
+      //refresh(); // update serial
+    } else {
+      // setservercanState((prev) => ({
+      //   ...prev,
+      //   // lock so next time so reload has to happen first (and unlock)
+      //   loading: true,
+      // }));
+    }
+  }, [openPane]);
 
   return (
     <div
@@ -73,8 +88,13 @@ export default function AntennaRotation({
               <RadioGroup
                 aria-labelledby="antenna-rotation"
                 name="radio-buttons-group"
-                value= {mode}
-                onChange={(event)=> setMode(event.target.value)}
+                value={data.mode}
+                onChange={(event) =>
+                  setData((prev) => ({
+                    ...prev,
+                    mode: event.target.value,
+                  }))
+                }
               >
                 <FormControlLabel
                   value="off"
@@ -107,9 +127,14 @@ export default function AntennaRotation({
                   />
                   <Select
                     size="small"
-                    value={waypoint}
-                    onChange={(e) => setWaypoint(e.target.value)}
-                    disabled={mode != "waypoint"}
+                    value={data.waypointName}
+                    onChange={(e) =>
+                      setData((prev) => ({
+                        ...prev,
+                        waypointName: e.target.value,
+                      }))
+                    }
+                    disabled={data.mode != "waypoint"}
                     displayEmpty
                     fullWidth
                     sx={{ textAlign: "left" }}
@@ -132,13 +157,18 @@ export default function AntennaRotation({
                   />
                   <NumberSpinner
                     label="Angle"
-                    value = {angle}
-                    onValueChange={(value) => setAngle(value ?? 0)}
+                    value={data.angle}
+                    onValueChange={(value) =>
+                      setData((prev) => ({
+                        ...prev,
+                        angle: value ?? 0,
+                      }))
+                    }
                     min={0}
                     max={360}
                     step={5}
                     size="small"
-                    disabled={mode != "angle"}
+                    disabled={data.mode != "angle"}
                   />
                 </Box>
               </RadioGroup>
@@ -154,8 +184,13 @@ export default function AntennaRotation({
             <FormControlLabel
               control={
                 <Switch
-                  checked={txon}
-                  onChange={(e) => settxon(e.target.checked)}
+                  checked={data.txon}
+                  onChange={(e) =>
+                    setData((prev) => ({
+                      ...prev,
+                      txon: e.target.checked,
+                    }))
+                  }
                   //disabled={controlsLocked}
                 />
               }
