@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   AppBar,
   Toolbar,
@@ -19,6 +19,7 @@ import { orange } from "@mui/material/colors";
 import NavConnectionStatus from "../components/socket.io/BackendConnectionManager";
 import GamepadPanel from "../components/gamepad/Gamepad";
 import MenuPane from "../components/ui/MenuPane";
+import GraphsPane from "../components/metrics/graphsPane";
 
 import { robotsocket } from "../components/socket.io/socket";
 import { useConnectionStatus } from "../contexts/ConnectionContext";
@@ -44,6 +45,22 @@ export default function TopAppBar({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openPane, setOpenPane] = useState("None");
+  
+  const [graphsAnchor, setGraphsAnchor] = useState(null);
+  const graphsCloseTimer = useRef(null);
+  
+  const openGraphsPane = (anchorEl) => {
+    clearTimeout(graphsCloseTimer.current);
+    if (anchorEl) setGraphsAnchor(anchorEl);
+    setOpenPane("Graphs");
+  };
+  const closeGraphsPane = (delayMs = 150) => {
+    clearTimeout(graphsCloseTimer.current);
+    graphsCloseTimer.current = setTimeout(() => {
+      setOpenPane((current) => (current === "Graphs" ? "None" : current));
+    }, delayMs);
+  };
+  useEffect(() => () => clearTimeout(graphsCloseTimer.current), []);
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -174,10 +191,27 @@ export default function TopAppBar({
               }}
             >
               {VIEW_TABS.map(({ label, value }) => (
-                <Tab key={value} label={label} value={value} />
+                <Tab
+                 key={value}
+                 label={label}
+                 value={value}
+                 {...(value === "/graphs" && {
+                  onMouseEnter: (e) => openGraphsPane(e.currentTarget),
+                  onMouseLeave: () => closeGraphsPane(),
+                  onClick: () => closeGraphsPane(0),
+                  })}
+                />
               ))}
             </Tabs>
           </Box>
+
+          <GraphsPane
+           anchorEl={graphsAnchor}
+           open={openPane === "Graphs"}
+           onMouseEnter={() => openGraphsPane()}
+           onMouseLeave={() => closeGraphsPane()}
+           onSelect={() => closeGraphsPane(0)}
+          />
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />
