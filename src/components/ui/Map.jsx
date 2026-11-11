@@ -854,10 +854,14 @@ export default function Map() {
     const poiControl = new PoiControl(
       () => setIsPlacingPoi((prev) => !prev),
       () => {
+        // Works after the signal drops too, using the last known position (e.g. to mark where the connection was lost)
         const robot = robotCoordsRef.current;
-        if (!robot.receive) return;
+        if (!robot.hasFix) return;
         const poi = poiStateRef.current.addPoi({ lat: robot.lat, long: robot.long });
-        poiStateRef.current.enqueueSnackbar(`${poi.name} pinned at the rover`, { variant: "success" });
+        poiStateRef.current.enqueueSnackbar(
+          robot.receive ? `${poi.name} pinned at the rover` : `${poi.name} pinned at the rover's last known position (no GPS signal)`,
+          { variant: robot.receive ? "success" : "warning" },
+        );
       }
     );
 
@@ -891,7 +895,7 @@ export default function Map() {
 
       map.addControl(poiControl, "top-left");
       poiControlRef.current = poiControl;
-      poiControl.update(poiStateRef.current.isPlacingPoi, robotCoordsRef.current.receive);
+      poiControl.update(poiStateRef.current.isPlacingPoi, robotCoordsRef.current.hasFix);
 
       const trailControl = new TrailControl();
       map.addControl(trailControl, "bottom-right");
@@ -1078,11 +1082,11 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    poiControlRef.current?.update(isPlacingPoi, robotCoordinates.receive);
+    poiControlRef.current?.update(isPlacingPoi, robotCoordinates.hasFix);
     // Crosshair cursor shows the next map click will drop a pin
     const canvas = mapRef.current?.getCanvas();
     if (canvas) canvas.style.cursor = isPlacingPoi ? "crosshair" : "";
-  }, [isPlacingPoi, robotCoordinates.receive]);
+  }, [isPlacingPoi, robotCoordinates.hasFix]);
 
   // Keep one marker per waypoint: add new ones, move or restyle changed ones, remove deleted ones.
   // Must stay after the map setup effect so mapRef is ready on the first run.

@@ -41,6 +41,9 @@ export const GPSProvider = ({ children }) => {
         long: -121.881194,
         lat: 37.336847,
         receive: false,
+        // Stays true after the signal drops, so lat/long are the rover's last known position
+        // instead of the placeholder above
+        hasFix: false,
         accuracy_m: null,
     });
 
@@ -82,6 +85,7 @@ export const GPSProvider = ({ children }) => {
                 long: data.longitude,
                 lat: data.latitude,
                 receive: true,
+                hasFix: true,
                 accuracy_m: data.accuracy_m ?? null,
             });
 
