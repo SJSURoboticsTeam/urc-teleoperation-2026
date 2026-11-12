@@ -62,6 +62,19 @@ export default function AntennaRotation({
     });
   };
 
+  async function antennaPulse()  {
+    //console.log("Pulsing antenna");
+    basesocket.emit("antennaPulse", (response) => {
+      console.log("PULSE RESPONSE:" + response);
+      if (response !== "OK") {
+        enqueueSnackbar("Manual pulse failed", {
+          variant: "error",
+        });
+        requestAntennaInfo();
+      }
+    });
+  };
+
   const requestAntennaInfo = useCallback(() => {
     // lock the ui so user can't do anything while loading
     console.log("Refresh requested...");
@@ -239,7 +252,7 @@ export default function AntennaRotation({
 
             <Button
               variant="contained"
-              //onClick={handleManualTx}
+              onClick={antennaPulse}
               sx={{ whiteSpace: "nowrap" }}
               disabled={!baseConnected || data.loading}
               loading={data.loading}

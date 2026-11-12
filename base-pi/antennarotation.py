@@ -14,8 +14,12 @@ async def antennaloop(sio):
     while True:
         # only run if txon enabled, otherwise user can pulse it
         if(antennadata.txon):
-            print("TX MODE: " + antennadata.mode)
+            await antennasend()
         await asyncio.sleep(1)
+
+
+async def antennasend():
+    print("TX MODE: " + antennadata.mode)
 
 
 def register_antenna_events(sio):
@@ -34,6 +38,12 @@ def register_antenna_events(sio):
             'manualAngle' : antennadata.manualAngle,
             }
         return data
+
+    @sio.event
+    async def antennaPulse(sid):
+        await antennasend()
+        return "OK"
+    
 
 
     @sio.event
