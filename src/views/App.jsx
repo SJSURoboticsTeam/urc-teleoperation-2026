@@ -26,6 +26,7 @@ import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
 import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
+import ScienceProvider from "../providers/ScienceProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
 
@@ -97,6 +98,7 @@ function App() {
                     <ArmCommandProvider>
                       <GamepadProvider>
                         <DriveControlProvider>
+                        <ScienceProvider>
                           <DriveCommandProvider>
                             <MastCommandProvider>
                               <CssBaseline />
@@ -138,6 +140,7 @@ function App() {
                               </Box>
                             </MastCommandProvider>
                           </DriveCommandProvider>
+                        </ScienceProvider>
                         </DriveControlProvider>
                       </GamepadProvider>
                     </ArmCommandProvider>
