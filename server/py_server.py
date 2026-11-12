@@ -458,16 +458,18 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
         print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
 
     global science_soft_stop_site
-    if not is_soft_stopped() and science_session.active_site_id() is not None:
+    should_log = not is_soft_stopped() and science_session.active_site_id() is not None
+
+    # Broadcast to every connected client so they all lock, not just the sender
+    await set_soft_stop(sio, True)
+
+    if should_log:
         science_soft_stop_site = science_session.active_site_id()
         science_session.log_event(
             "soft_stop",
             site=science_soft_stop_site,
             step=science_session.pending_step(),
         )
-
-    # Broadcast to every connected client so they all lock, not just the sender
-    await set_soft_stop(sio, True)
 
     # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
     # drive specifically being connected.
