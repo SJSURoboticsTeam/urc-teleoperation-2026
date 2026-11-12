@@ -63,6 +63,7 @@ export default function ScienceView() {
     connected,
     canCommand,
     pending,
+    synced,
     startSite,
     step,
     stop,
@@ -79,7 +80,7 @@ export default function ScienceView() {
   const resetTarget = shown.sites.find((s) => s.id === resetTargetId);
 
 
-  const canAct = !controlsLocked && canCommand && !pending;
+  const canAct = !controlsLocked && canCommand && synced && !pending;
 
   const canStepSite = (s) =>
     canAct &&
@@ -154,6 +155,9 @@ export default function ScienceView() {
         <Typography sx={{ textAlign: "center", mb: 1 }}>
           Science backend not connected
         </Typography>
+      )}
+      {canCommand && !synced && (
+        <Typography sx={{ textAlign: "center", mb: 1 }}>Syncing science state…</Typography>
       )}
 
       <div className="flex flex-row justify-center">

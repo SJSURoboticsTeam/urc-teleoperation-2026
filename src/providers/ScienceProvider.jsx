@@ -15,16 +15,26 @@ export const ScienceProvider = ({ children }) => {
   const [session, setSession] = useState(offlineMode ? demoScienceSession : null);
   const [connected, setConnected] = useState(robotsocket.connected);
   const [pending, setPending] = useState(false);
+  const [synced, setSynced] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    let retryTimer;
+
     const pullScienceSession = () => {
       robotsocket.timeout(3000).emit("getScienceSession", (err, data) => {
-        if (!err && data) setSession(data);
+        if (!err && data) {
+          setSession(data);
+          setSynced(true);
+        } else if (active && robotsocket.connected) {
+          retryTimer = setTimeout(pullScienceSession, 1000);
+        }
       });
     };
 
     const onScienceSession = (data) => {
       setSession(data);
+      setSynced(true);
     };
 
     const onConnect = () => {
@@ -36,6 +46,8 @@ export const ScienceProvider = ({ children }) => {
     const onDisconnect = () => {
       setConnected(false);
       setPending(false);
+      setSynced(false);
+      clearTimeout(retryTimer);
     };
 
     robotsocket.on("scienceSession", onScienceSession);
@@ -48,6 +60,8 @@ export const ScienceProvider = ({ children }) => {
     }
 
     return () => {
+      active = false;
+      clearTimeout(retryTimer);
       robotsocket.off("scienceSession", onScienceSession);
       robotsocket.off("connect", onConnect);
       robotsocket.off("disconnect", onDisconnect);
@@ -110,6 +124,7 @@ export const ScienceProvider = ({ children }) => {
     connected,
     canCommand,
     pending,
+    synced,
     startSite,
     step,
     stop,
