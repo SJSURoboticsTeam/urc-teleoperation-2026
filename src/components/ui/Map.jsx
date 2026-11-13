@@ -687,8 +687,8 @@ export default function Map() {
     marker?.getPopup()?.setLngLat(marker.getLngLat());
   }, [openPopup, openWaypoint]);
 
-  // POI and autonomy pins copy their location into the site. A science pin moves instead (keeping its
-  // GPS accuracy), so it doesn't leave a duplicate pin stacked on the same spot.
+  // Science and POI pins move into the site, so they don't leave a duplicate pin stacked on the same spot.
+  // A science pin keeps its GPS accuracy. Autonomy pins only copy, since they are separate autonomy targets.
   const setScienceSiteFromWaypoint = (site) => {
     if (scienceLocked || !openWaypoint) return;
     const movingFrom = openWaypoint.scienceSite;
@@ -700,7 +700,9 @@ export default function Map() {
       if (movingFrom) next[movingFrom - 1] = null;
       return next;
     });
-    enqueueSnackbar(movingFrom ? `Site ${movingFrom} moved to Site ${site}` : `Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
+    if (openWaypoint.type === "poi") removePoi(openWaypoint.id);
+    const moved = movingFrom ? `Site ${movingFrom}` : openWaypoint.type === "poi" ? openWaypoint.name : null;
+    enqueueSnackbar(moved ? `${moved} moved to Site ${site}` : `Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
   };
 
   // Delete from the popup: a POI is removed; a science site or autonomy location is emptied in its own pane
