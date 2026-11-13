@@ -18,7 +18,6 @@ import DriveCommandProvider from "../providers/DriveCommandProvider";
 import MastCommandProvider from "../providers/MastCommandProvider";
 import GamepadProvider from "../providers/GamepadProvider";
 import GPSProvider from "../providers/GPSProvider";
-import ScienceProvider from "../providers/ScienceProvider";
 import AutonomyLocationsProvider from "../providers/AutonomyLocationsProvider";
 import AutonomyModeProvider from "../providers/AutonomyModeProvider";
 import SoftStopProvider from "../providers/SoftStopProvider";
@@ -28,6 +27,7 @@ import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
 import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
+import ScienceProvider from "../providers/ScienceProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
 
@@ -92,7 +92,6 @@ function App() {
         <SerialProvider>
           <PeripheralProvider>
             <GPSProvider>
-              <ScienceProvider>
               <AutonomyLocationsProvider>
               <MetricsProvider>
                 <VideoProvider>
@@ -101,6 +100,7 @@ function App() {
                     <ArmCommandProvider>
                       <GamepadProvider>
                         <DriveControlProvider>
+                        <ScienceProvider>
                           <DriveCommandProvider>
                             <MastCommandProvider>
                               <CssBaseline />
@@ -142,6 +142,7 @@ function App() {
                               </Box>
                             </MastCommandProvider>
                           </DriveCommandProvider>
+                        </ScienceProvider>
                         </DriveControlProvider>
                       </GamepadProvider>
                     </ArmCommandProvider>
@@ -150,7 +151,6 @@ function App() {
                 </VideoProvider>
               </MetricsProvider>
               </AutonomyLocationsProvider>
-              </ScienceProvider>
             </GPSProvider>
           </PeripheralProvider>
         </SerialProvider>
