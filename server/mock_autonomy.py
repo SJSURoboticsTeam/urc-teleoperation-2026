@@ -118,7 +118,7 @@ def register_mock_autonomy_events(sio, emit_gps):
         # targets can be reprogrammed only while the rover is stopped
         if state["phase"] in (NAVIGATING, RETURNING):
             return reply("DENIED", "Can't change targets while the rover is moving")
-        state["targets"] = [
+        targets = [
             {
                 "id": str(t.get("id")),
                 "label": str(t.get("label") or ""),
@@ -127,6 +127,27 @@ def register_mock_autonomy_events(sio, emit_gps):
             }
             for t in (data or {}).get("targets", [])
         ]
+        # reject out-of-range coordinates so Go and Return only use real positions
+        for t in targets:
+            if t["latitude"] is not None and not -90 <= t["latitude"] <= 90:
+                return reply("DENIED", f"{target_name(t)} latitude must be between -90 and 90")
+            if t["longitude"] is not None and not -180 <= t["longitude"] <= 180:
+                return reply("DENIED", f"{target_name(t)} longitude must be between -180 and 180")
+        # a visited target that moved (or was removed) is no longer a place the rover has been,
+        # so it loses its reached status and can't be used for Return
+        new_coords = {t["id"]: (t["latitude"], t["longitude"]) for t in targets}
+        moved = [
+            t["id"] for t in state["targets"]
+            if t["id"] in state["visitedTargetIds"]
+            and new_coords.get(t["id"]) != (t["latitude"], t["longitude"])
+        ]
+        state["targets"] = targets
+        if moved:
+            state["visitedTargetIds"] = [i for i in state["visitedTargetIds"] if i not in moved]
+            if state["phase"] == ARRIVED and state["activeTargetId"] in moved:
+                rover_mode.set_mode(AUTONOMY, READY, "Target changed, no longer at the reached location")
+                state["activeTargetId"] = None
+                await log(sio, state["message"])
         await broadcast(sio)
         return reply("OK")
 
