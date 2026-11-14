@@ -3,13 +3,26 @@ import { useSnackbar } from "notistack";
 import { robotsocket } from "../components/socket.io/socket";
 import { ScienceContext } from "../contexts/ScienceContext";
 import { demoScienceSession } from "../components/science/demoScienceSession";
+import { usePersistentState } from "../lib/usePersistentState";
+import { hasValidGPSCoordinates } from "../lib/gpsTrail";
 
 // lite/demo modes have no backend: show a static snapshot and disable commands
 const offlineMode =
   import.meta.env.MODE === "lite" || import.meta.env.MODE === "demo";
 
+const SCIENCE_SITES_KEY = "missionControl.scienceSites";
+
+// Ignore saved data that isn't 3 sites of null or valid coordinates, e.g. from an older version
+const isValidSiteReadings = (value) =>
+  Array.isArray(value) && value.length === 3 &&
+  value.every((reading) => reading === null || hasValidGPSCoordinates({ latitude: reading.lat, longitude: reading.long }));
+
 export const ScienceProvider = ({ children }) => {
   const { enqueueSnackbar } = useSnackbar();
+
+  // Science site locations, kept here so they survive switching panes and reloads, and the map can show them.
+  // siteReadings[0..2] are Sites 1-3: { lat, long, accuracy_m, capturedAt } or null if not captured yet.
+  const [siteReadings, setSiteReadings] = usePersistentState(SCIENCE_SITES_KEY, isValidSiteReadings, [null, null, null]);
 
   // null until the first snapshot arrives. The backend owns all of this
   const [session, setSession] = useState(offlineMode ? demoScienceSession : null);
@@ -129,6 +142,8 @@ export const ScienceProvider = ({ children }) => {
     step,
     stop,
     resetSite,
+    siteReadings,
+    setSiteReadings,
   };
 
   return (

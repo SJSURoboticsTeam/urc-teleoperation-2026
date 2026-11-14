@@ -49,8 +49,6 @@ export default function ScienceView() {
 
   const { robotCoordinates } = useGPS();
 
-  const [siteReadings, setSiteReadings] = useState([null, null, null])
-
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
   const { softStopActive } = useSoftStop();
@@ -68,6 +66,9 @@ export default function ScienceView() {
     step,
     stop,
     resetSite,
+    // Science sites live in ScienceProvider so they survive switching panes and show on the map
+    siteReadings,
+    setSiteReadings,
   } = useScience();
 
 

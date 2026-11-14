@@ -22,15 +22,10 @@ import {
 import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 
 import { useGPS } from "../../contexts/GPSContext";
+import { useAutonomyLocations, initialDriveState } from "../../contexts/AutonomyLocationsContext";
 
 // Key used to store whether autonomy mode is enabled in localStorage
 const AUTONOMY_STORAGE_KEY = "rover_autonomy_enabled";
-
-// Initial state for the two drive locations
-const initialDriveState = {
-  location1: { label: "", lat: "", lon: "", reached: false },
-  location2: { label: "", lat: "", lon: "", reached: false },
-};
 
 // Helper to generate a HH:MM:SS timestamp for history logs
 const formatTimestamp = () =>
@@ -68,7 +63,8 @@ export default function AutonomyControls() {
   const [activeTab, setActiveTab] = useState("drive");
 
   // Drive-related state
-  const [driveData, setDriveData] = useState(initialDriveState);
+  // Locations live in AutonomyLocationsProvider so they survive switching panes and show on the map
+  const { driveData, setDriveData } = useAutonomyLocations();
   const [lastCoords, setLastCoords] = useState({ lat: "___", lon: "___" });
   const { robotCoordinates } = useGPS();
   const [driveStatus, setDriveStatus] = useState("Waiting for route.");
