@@ -898,6 +898,9 @@ export default function Map() {
       map.addControl(poiControl, "top-left");
       poiControlRef.current = poiControl;
       poiControl.update(poiStateRef.current.isPlacingPoi, robotCoordsRef.current.hasFix);
+      // Put the top-left panels (Reset Zoom, POI) side by side instead of stacked,
+      // so the bottom-left coordinate boxes don't cover them on short screens
+      Object.assign(map.getContainer().querySelector(".maplibregl-ctrl-top-left").style, { display: "flex", alignItems: "flex-start" });
 
       const trailControl = new TrailControl();
       map.addControl(trailControl, "bottom-right");
@@ -1110,11 +1113,12 @@ export default function Map() {
         const element = document.createElement("div");
         // The popup's content is rendered into popupNode with a portal below, so it stays in this React tree
         const popupNode = document.createElement("div");
-        // waypoint-popup (index.css) gives it the same border and rounded corners as the app's dropdowns
-        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px", className: "waypoint-popup" }).setDOMContent(popupNode);
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px" }).setDOMContent(popupNode);
         popup.on("open", () => {
           // Map controls (GPS trail, coordinates) sit at z-index 2; keep the open popup above them
           popup.getElement().style.zIndex = 3;
+          // Same gray border and rounded corners as the app's other dropdowns (e.g. GPS Manager)
+          Object.assign(popup.getElement().querySelector(".maplibregl-popup-content").style, { border: "1px solid gray", borderRadius: "12px", padding: "10px" });
           setOpenPopup({ id: wp.id, node: popupNode });
         });
         // Opening another pin can close this one after the new one opens, so only clear if this pin is still the open one
