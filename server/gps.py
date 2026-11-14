@@ -166,6 +166,14 @@ async def send_fake_gps_data(sio):
     global latest_fix
     while True:
         if fake_gps_paused:
+            if latest_fix:
+                await sio.emit('gpsData', {
+                    'latitude': latest_fix["latitude"],
+                    'longitude': latest_fix["longitude"],
+                    'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                    'accuracy_m': 0.5,
+                    'accuracy_source': 'MOCK',
+                })
             await asyncio.sleep(1)
             continue
         data = {
