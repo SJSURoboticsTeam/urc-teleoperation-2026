@@ -31,6 +31,10 @@ from serial_console import SerialConsole, register_serial_console_events
 from drive_control import register_drive_control_events, release_drive_control
 from battery import send_fake_battery_data, get_battery_data
 from soft_stop import is_soft_stopped, set_soft_stop
+from science import ScienceSession, register_science_events
+from science_log import ScienceLogger
+from science_mock import MockScienceLink
+from science_can import CanScienceLink, read_science_can_loop
 
 
 print("\033[0m----------------")
@@ -110,6 +114,7 @@ serial_ports = {
 }
 canIds_arr = []
 serial_console = SerialConsole()
+science_logger = None
 
 
 
@@ -141,6 +146,12 @@ def shutdown():
         except Exception:
             print(id.upper() + " WAS NOT DISCONNECTED!!!")
             pass
+    # science log (records are already fsynced, this just closes the file)
+    try:
+        if science_logger is not None:
+            science_logger.close()
+    except Exception:
+        print("SCIENCE LOG WAS NOT CLOSED CLEANLY!!!")
     # e-stop
     try:
         estop_pin.close()
@@ -281,6 +292,7 @@ can_error_message_started_arm = False
 drive_task_started = False
 drive_heartbeat_started = False
 arm_task_started = False
+science_task_started = False
 gps_task_started = False
 arm_position_task_started = False
 async_ssh_started = False
@@ -333,6 +345,23 @@ register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
 
+# Science: the session owns all state, the link is the swappable firmware seam
+async def emit_science_session(snapshot):
+    await sio.emit("scienceSession", snapshot)
+
+science_logger = ScienceLogger(is_mock=offline)
+science_session = ScienceSession(logger=science_logger, on_change=emit_science_session)
+if offline:
+    science_session.link = MockScienceLink(science_session)
+    print("Science link: MOCK")
+else:
+    science_link = CanScienceLink(serial_ports, science_session)
+    science_session.link = science_link
+    print("Science link: CAN")
+register_science_events(sio, science_session)
+
+science_soft_stop_site = None
+
 # =================== Start Server ===================
 
 @sio.event
@@ -343,6 +372,7 @@ async def connect(sid,environ):
     global drive_task_started
     global drive_heartbeat_started
     global arm_task_started
+    global science_task_started
     global gps_task_started
     global async_ssh_started
     global arm_position_task_started
@@ -368,6 +398,9 @@ async def connect(sid,environ):
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not science_task_started and not offline:
+        science_task_started = True
+        sio.start_background_task(read_science_can_loop, serial_ports, science_link)
     if not arm_position_task_started:
         arm_position_task_started = True
         # sio.start_background_task(request_arm_position_loop, serial_ports)
@@ -424,8 +457,19 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
     else:
         print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
 
+    global science_soft_stop_site
+    should_log = not is_soft_stopped() and science_session.active_site_id() is not None
+
     # Broadcast to every connected client so they all lock, not just the sender
     await set_soft_stop(sio, True)
+
+    if should_log:
+        science_soft_stop_site = science_session.active_site_id()
+        science_session.log_event(
+            "soft_stop",
+            site=science_soft_stop_site,
+            step=science_session.pending_step(),
+        )
 
     # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
     # drive specifically being connected.
@@ -436,6 +480,10 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
 async def resumeControls(sid):
     """Acknowledge the frontend unlocking controls after a Soft Stop"""
     print(f'[{sid}] Controls resumed after Soft Stop.')
+    global science_soft_stop_site
+    if science_soft_stop_site is not None:
+        science_session.log_event("soft_stop_resumed", site=science_soft_stop_site)
+        science_soft_stop_site = None
     await set_soft_stop(sio, False)
     return "OK"
 
