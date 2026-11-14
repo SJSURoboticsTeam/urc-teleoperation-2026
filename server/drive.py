@@ -1,8 +1,8 @@
 import asyncio
 import config
 import can_serial
-import math
 from drive_control import is_drive_controller
+from drive_feedback import apply_parsed
 from soft_stop import is_soft_stopped
 
 
@@ -59,9 +59,16 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
 
 # =================== Client Drive Event Handlers ====================
 
-def register_drive_events(sio, serial_ports, drive_command_lock):
+def register_drive_events(sio, serial_ports, drive_command_lock, drive_state=None):
+    """Register the socket handlers that drive the rover over CAN.
+
+    drive_state is optional so existing callers keep working; when given,
+    accepted commands are mirrored into it for the commanded-vs-actual UI.
+    """
+
     @sio.event
     async def driveCommands(sid, data):
+        """Socket handler: send one chassis velocity command."""
         if is_soft_stopped():
             print(f'[{sid}] Ignored drive command: soft stop active')
             return
@@ -70,6 +77,14 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
                 if not is_drive_controller(sid):
                     print(f'[{sid}] Ignored drive command: not in control')
                     return
+
+                # Recorded only once the command is accepted, and before the
+                # send, which raises and is swallowed when running --offline.
+                if drive_state is not None:
+                    drive_state.note_command(
+                        data['xVel'], data['yVel'], data['rotVel'],
+                    )
+
                 can_msg = await send_drive_command(
                     serial_ports,
                     data['xVel'],
@@ -85,6 +100,7 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
 
     @sio.event
     async def driveHoming(sid):
+        """Socket handler: start the drive homing sequence."""
         if is_soft_stopped():
             print(f'[{sid}] Ignored homing request: soft stop active')
             return
@@ -99,7 +115,25 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
             print(f'Error in driveHoming: {e}')
 
 
+def _parse_velocities(string_data):
+    """Return x, y and rotational velocity from a CANUSB velocity frame.
+
+    Each is a big-endian signed 16-bit value in the first six data bytes,
+    still fixed-point. Rotation is exactly four hex digits: a command ack
+    carries a seventh byte (module_conflicts) that is not part of it.
+    """
+    return tuple(
+        int.from_bytes(bytes.fromhex(string_data[start:start + 4]), "big", signed=True)
+        for start in (5, 9, 13)
+    )
+
+
 async def parse_drive_data(data, serial_ports):
+    """Decode one CANUSB frame.
+
+    Returns a dict the caller feeds to apply_parsed, or None for frames that
+    carry no telemetry. Values stay fixed-point here.
+    """
     try:
         if not data:
             return
@@ -139,22 +173,26 @@ async def parse_drive_data(data, serial_ports):
         address = string_data[1:4]
 
         if address == drive_receive_ID['SET_VELOCITIES_RESPONSE']:
-            x_vel = int(string_data[5:9],16)
-            
-            if string_data[5] in "89ABCDEF":
-                x_vel = x_vel - math.pow(2, 16)
+            x_vel, y_vel, rot_vel = _parse_velocities(string_data)
 
-            y_vel = int(string_data[9:13],16)
-            
-            if string_data[9] in "89ABCDEF":
-                y_vel = y_vel - math.pow(2, 16)
+            # Firmware sends two different replies on this id, told apart by
+            # length: 7 bytes acknowledges our command by echoing it back, and
+            # 6 bytes is the velocity estimate (its answer to
+            # GET_ESTIMATED_VELOCITIES). Only the estimate measures anything,
+            # so the echo must not be shown as the rover's actual velocity.
+            if string_data[4] == "7":
+                print(f"\nack x vel: {x_vel} \nack y vel: {y_vel} \nack rot vel {rot_vel}")
+                return
 
-            rot_vel = int(string_data[13:],16)
-            
-            if string_data[13] in "89ABCDEF":
-                rot_vel = rot_vel - math.pow(2, 16)
+            print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
 
-            print(f"\nx vel: {x_vel} \ny vel: {y_vel} \nrot vel {rot_vel}")
+            # Scaled in apply_parsed().
+            return {
+                "type": "velocities",
+                "xVel": x_vel,
+                "yVel": y_vel,
+                "rotVel": rot_vel,
+            }
         
         elif address == drive_receive_ID['HEARTBEAT_REPLY']:
             print("Heartbeat Reply")
@@ -166,23 +204,23 @@ async def parse_drive_data(data, serial_ports):
             angle_offset = int(string_data[5:13],16)
             print(f"angle offset: {angle_offset} \nmodule position: {string_data[13:15]}")
 
+            return {
+                "type": "offset",
+                "modulePosition": int(string_data[13:15], 16),
+                "rawAngle": angle_offset,
+            }
+
         elif address == drive_receive_ID['RETURN_ESTIMATED_CHASSIS_VELOCITIES']:
-            x_vel = int(string_data[5:9],16)
-            
-            if string_data[5] in "89ABCDEF":
-                x_vel = x_vel - math.pow(2, 16)
-
-            y_vel = int(string_data[9:13],16)
-            
-            if string_data[9] in "89ABCDEF":
-                y_vel = y_vel - math.pow(2, 16)
-
-            rot_vel = int(string_data[13:],16)
-            
-            if string_data[13] in "89ABCDEF":
-                rot_vel = rot_vel - math.pow(2, 16)
+            x_vel, y_vel, rot_vel = _parse_velocities(string_data)
 
             print(f"est x vel: {x_vel} \nest y vel: {y_vel} \nest rot vel {rot_vel}")
+
+            return {
+                "type": "velocities",
+                "xVel": x_vel,
+                "yVel": y_vel,
+                "rotVel": rot_vel,
+            }
         
         # elif address == drive_receive_ID['CONFIG']:
         #     setting_data = int(string_data[5:13],16)
@@ -191,8 +229,8 @@ async def parse_drive_data(data, serial_ports):
     except Exception as e:
         print(f'Error parsing drive data: {e}')
 
-async def read_drive_can_loop(serial_ports):
-    """Read CAN data"""
+async def read_drive_can_loop(serial_ports, drive_state=None):
+    """Read CAN data and feed any decoded telemetry into drive_state."""
     while True:
         drive = serial_ports["drive"]["port"]
         # The task starts when the client connects, but the drive can be
@@ -206,7 +244,9 @@ async def read_drive_can_loop(serial_ports):
             # blocking all later status responses forever.
             data = await asyncio.to_thread(drive.read_can, 0.5)
             if data:
-                await parse_drive_data(data, serial_ports)
+                parsed = await parse_drive_data(data, serial_ports)
+                if drive_state is not None:
+                    apply_parsed(drive_state, parsed)
         except Exception as e:
             print(f"Drive CAN task error: {e}")
             await asyncio.sleep(0.1)

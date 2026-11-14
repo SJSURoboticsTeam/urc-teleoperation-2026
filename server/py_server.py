@@ -21,6 +21,11 @@ from drive_uart import (
     send_drive_command as send_uart_drive_command,
     send_drive_heartbeat,
 )
+from drive_feedback import (
+    DriveFeedbackState,
+    emit_drive_feedback_loop,
+    simulate_drive_feedback,
+)
 from arm import read_arm_can_loop, request_arm_position_loop, register_arm_events, send_arm_status_request
 from camera_pt import register_camera_pt_events
 from autonomy import get_autonomy_states
@@ -301,10 +306,17 @@ cpu_started = False
 drive_command_lock = asyncio.Lock()
 autonomy_started = False
 battery_started = False
+drive_feedback_started = False
+# collects wheel angles and measured velocities from whichever drive transport
+# is active (or from the simulator), so the emitter has a single source
+drive_state = DriveFeedbackState()
 
 
 async def _send_drive_stop_command():
     """Write a zero-velocity command to the drive line. Caller must hold drive_command_lock."""
+    # Record the stop like any accepted command, so the UI's "commanded"
+    # value doesn't stay at the last speed after a handover or disconnect.
+    drive_state.note_command(0, 0, 0)
     if not serial_ports["drive"]["port"]:
         print("No drive serial connected. Cannot send stop command.")
         return
@@ -336,9 +348,9 @@ async def stop_drive_motors_for_handover():
 
 register_metric_events(sio)
 if USE_UART_DRIVE:
-    register_uart_drive_events(sio, serial_ports, drive_command_lock)
+    register_uart_drive_events(sio, serial_ports, drive_command_lock, drive_state)
 else:
-    register_can_drive_events(sio, serial_ports, drive_command_lock)
+    register_can_drive_events(sio, serial_ports, drive_command_lock, drive_state)
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
@@ -379,6 +391,7 @@ async def connect(sid,environ):
     global cpu_started
     global numClients
     global autonomy_started
+    global drive_feedback_started
     global battery_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
@@ -389,12 +402,18 @@ async def connect(sid,environ):
 
     # Start background CAN loop once
     if not drive_task_started:
-        # Start either UART or CAN drive loop depending on selected transport
+        # Start either UART or CAN drive loop depending on selected transport.
+        # Offline is a peer branch so exactly one writer owns drive_state.
         drive_task_started = True
-        if USE_UART_DRIVE:
-            sio.start_background_task(read_drive_uart_loop, serial_ports)
+        if offline:
+            sio.start_background_task(simulate_drive_feedback, sio, drive_state)
+        elif USE_UART_DRIVE:
+            sio.start_background_task(read_drive_uart_loop, serial_ports, drive_state)
         else:
-            sio.start_background_task(read_drive_can_loop, serial_ports)
+            sio.start_background_task(read_drive_can_loop, serial_ports, drive_state)
+    if not drive_feedback_started:
+        drive_feedback_started = True
+        sio.start_background_task(emit_drive_feedback_loop, sio, drive_state)
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
@@ -444,6 +463,8 @@ async def connect(sid,environ):
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
     """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
+    # Same as _send_drive_stop_command: the UI should show the zeroed command.
+    drive_state.note_command(0, 0, 0)
     if serial_ports["drive"]["port"]:
         async with drive_command_lock:
             try:
