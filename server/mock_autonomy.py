@@ -6,8 +6,8 @@ import gps
 import rover_mode
 from rover_mode import AUTONOMY, READY, NAVIGATING, ARRIVED, RETURNING, TYPING, state, reply, broadcast, log
 
-SPEED_M_S = 5.0
-TICK_S = 0.5
+SPEED_M_S = 1000.0
+TICK_S = 0.1
 ARRIVAL_RADIUS_M = 3.0  # stopping within 3 meters is successful
 RETURN_RADIUS_M = 5.0
 TYPE_INTERVAL_S = 0.7   # time between typed launch-key characters
@@ -50,7 +50,9 @@ async def drive_to(sio, target, run, radius, returning, emit_gps):
     """Move the simulated rover toward target until it arrives or the run is replaced."""
     global position
     try:
-        if position is None:
+        # start from the latest fix unless the mock already owns the position,
+        # so the rover doesn't jump back to where an earlier run parked it
+        if position is None or not gps.fake_gps_paused:
             position = dict(gps.latest_fix or START_POSITION)
         if emit_gps:
             # once the mock drives, it owns the simulated position

@@ -7,6 +7,8 @@ import asyncio
 from datetime import datetime, timezone
 import math
 
+import rover_mode
+
 # last position sent as gpsData, used as the mock autonomy start point
 latest_fix = None
 # set by mock autonomy once it drives, so the random fake data stops jumping the rover around
@@ -163,8 +165,11 @@ async def read_gps_data(serial_ports, sio):
             await asyncio.sleep(0.5)  # Sleep briefly to prevent tight loop on error
 
 async def send_fake_gps_data(sio):
-    global latest_fix
+    global latest_fix, fake_gps_paused
     while True:
+        if fake_gps_paused and rover_mode.state["mode"] != rover_mode.AUTONOMY:
+            # autonomy stopped, so the random fake data takes the position back
+            fake_gps_paused = False
         if fake_gps_paused:
             if latest_fix:
                 await sio.emit('gpsData', {
