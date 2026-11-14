@@ -31,7 +31,7 @@ def register_camera_pt_events(sio,serial_ports):
             MAST_CAN_ID= "300" # 0x300
 
             can_msg = f't{MAST_CAN_ID}3{panx}{pany}{wheels_x}\r'
-            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+            await asyncio.to_thread(serial_ports["drive"]["port"].write, can_msg.encode())
             print(f'[{sid}] Mast command sent: {can_msg}')
 
         except Exception as e:

@@ -38,7 +38,7 @@ function valuesDiffer(a, b, epsilon = 0.01) {
 // and autonomy lockout.
 export default function ArmView() {
 
-  const { canState } = usePeripherals();
+  const { servercanState } = usePeripherals();
   const [armCommands, setArmCommands] = useArmCommands();
   const [connectedGamepads] = useConnectedGamepads();
 
@@ -315,7 +315,7 @@ export default function ArmView() {
           Arm · {controlModeLabel} · {sendModeLabel}
         </Typography>
 
-        {(canState.armState == "idle"&& !controlsLocked) && (
+        {(servercanState.arm.state == "idle"&& !controlsLocked) && (
           <Typography
             sx={{
               textAlign: "center",

@@ -56,7 +56,7 @@ export default function SerialConsole() {
     dtr,
     rts,
   } = useSerial();
-  const { canState } = usePeripherals();
+  const { servercanState } = usePeripherals();
 
   return (
     <Paper
@@ -98,10 +98,10 @@ export default function SerialConsole() {
                 <MenuItem
                   key={portId}
                   disabled={
-                    portId === canState.driveId ||
-                    portId === canState.armId ||
-                    portId === canState.scienceId ||
-                    portId === canState.gpsId
+                    portId === servercanState.drive.id ||
+                    portId === servercanState.arm.id ||
+                    portId === servercanState.science.id ||
+                    portId === servercanState.gps.id
                   }
                   value={portId}
                 >

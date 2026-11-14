@@ -48,8 +48,8 @@ async def send_drive_command(serial_ports, x_vel, y_vel, rot_vel, module_conflic
         f'{x_vel_encoded}{y_vel_encoded}{rot_vel_encoded}{mod_conf_encoded}\r'
     )
 
-    # serial_ports["drive"].write is blocking, run in thread
-    await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+    # serial_ports["drive"]["port"].write is blocking, run in thread
+    await asyncio.to_thread(serial_ports["drive"]["port"].write, can_msg.encode())
 
     global can_msg_count
     can_msg_count += 1
@@ -93,7 +93,7 @@ def register_drive_events(sio, serial_ports, drive_command_lock):
             return
         try:
             can_msg = f't{drive_send_ID["HOMING_SEQUENCE"]}0\r'
-            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+            await asyncio.to_thread(serial_ports["drive"]["port"].write, can_msg.encode())
             print(f'[{sid}] Homing initiated')
         except Exception as e:
             print(f'Error in driveHoming: {e}')
@@ -108,7 +108,7 @@ async def parse_drive_data(data, serial_ports):
         # command this commonly means the CAN transmit FIFO is full.
         if data.startswith(b"\x07"):
             print("CAN error: command rejected; possible transmit FIFO full")
-            status_event = serial_ports.get("drive_status_event")
+            status_event = serial_ports["drive"]["status_event"]
             if status_event:
                 status_event.set()
             return
@@ -128,7 +128,7 @@ async def parse_drive_data(data, serial_ports):
                     if flags & (1 << bit_number):
                         print(f"CAN error bit {bit_number}: {description}")
 
-            status_event = serial_ports.get("drive_status_event")
+            status_event = serial_ports["drive"]["status_event"]
             if status_event:
                 status_event.set()
 
@@ -194,10 +194,10 @@ async def parse_drive_data(data, serial_ports):
 async def read_drive_can_loop(serial_ports):
     """Read CAN data"""
     while True:
-        drive = serial_ports.get("drive")
+        drive = serial_ports["drive"]["port"]
         # The task starts when the client connects, but the drive can be
         # connected later through connectDrive.
-        if drive is None or serial_ports.get("driveId") == "disconnect":
+        if drive is None or serial_ports["drive"]["id"] == "disconnect":
             await asyncio.sleep(0.1)
             continue
         try:
@@ -219,8 +219,8 @@ async def send_drive_status_request(serial_ports, sio):
     overload_reported = False
 
     while True:
-        drive = serial_ports.get("drive")
-        if drive is None or serial_ports.get("driveId") == "disconnect":
+        drive = serial_ports["drive"]["port"]
+        if drive is None or serial_ports["drive"]["id"] == "disconnect":
             active_drive = None
             overload_reported = False
             # The drive may be connected later, so keep the monitor alive.
@@ -232,7 +232,7 @@ async def send_drive_status_request(serial_ports, sio):
                 active_drive = drive
                 overload_reported = False
 
-            status_event = serial_ports["drive_status_event"]
+            status_event = serial_ports["drive"]["status_event"]
             status_event.clear()
             await asyncio.to_thread(drive.write, b'F\r')
 
