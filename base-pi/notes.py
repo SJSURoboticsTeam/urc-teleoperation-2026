@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections import OrderedDict
 from pathlib import Path
 
 import socketio
@@ -36,13 +37,27 @@ def register_notes_events(sio):
         return {"status": "OK", **notes}
 
     write_mutex = asyncio.Lock()
+    completed_saves = OrderedDict()
+    MAX_COMPLETED_SAVES = 256
 
     @sio.event
     async def saveNotes(sid, data):
         if not isinstance(data, dict) or not isinstance(data.get("markdown"), str):
             return {"status": "ERROR", "message": "Expected a markdown string"}
+        operation_id = data.get("operationId")
+        if not isinstance(operation_id, str) or not operation_id:
+            return {"status": "ERROR", "message": "Expected an operation id"}
 
         async with write_mutex:
+            cached = completed_saves.get(operation_id)
+            if cached is not None:
+                if cached["markdown"] != data["markdown"]:
+                    return {
+                        "status": "ERROR",
+                        "message": "Operation id used with different content",
+                    }
+                completed_saves.move_to_end(operation_id)
+                return cached
             try:
                 current = await asyncio.to_thread(read_notes)
                 updated = {
@@ -61,9 +76,14 @@ def register_notes_events(sio):
             except (OSError, ValueError) as e:
                 return {"status": "ERROR", "message": str(e)}
 
+            response = {"status": "OK", **updated}
+            completed_saves[operation_id] = response
+            if len(completed_saves) > MAX_COMPLETED_SAVES:
+                completed_saves.popitem(last=False)
+
             try:
                 await sio.emit("notesUpdated", updated)
             except socketio.exceptions.ConnectionError as e:
                 print(f"Notes saved, but broadcast failed: {e}")
 
-        return {"status": "OK", **updated}
+        return response

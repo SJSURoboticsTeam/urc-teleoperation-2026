@@ -34,6 +34,7 @@ export default function NotesPane({
   saveStatus,
   loadError,
   onChange,
+  onRetrySave,
   onRetry,
   refreshError,
   baseConnected,
@@ -149,6 +150,11 @@ export default function NotesPane({
           }}
         />
         <span>{statusLabel}</span>
+        {failed && (
+          <Button size="small" onClick={onRetrySave} disabled={!baseConnected}>
+            Retry save
+          </Button>
+        )}
       </Box>
       <MDXEditor
         markdown={markdown}

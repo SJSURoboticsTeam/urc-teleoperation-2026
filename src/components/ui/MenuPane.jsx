@@ -10,6 +10,16 @@ const SAVE_NOTES_TIMEOUT_MS = 3000;
 const AUTOSAVE_DEBOUNCE_MS = 500;
 const RETRY_DELAY_MS = [1000, 2000];
 
+/**
+ * Returns a random 16 byte idempotency ID represented as hex
+ */
+function createOperationId() {
+  // Can't use crypto.randomUUID since it requires a secure context
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)),
+  (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
 export default function MenuPane(props) {
   const [activePane, setActivePane] = useState("settings");
   const handlePaneChange = (event, newValue) => {
@@ -56,6 +66,13 @@ export default function MenuPane(props) {
 
     return true;
   }, []);
+
+  function handleRetrySave() {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    retryCount.current = 0;
+    savePendingNotes();
+  }
 
   useEffect(() => {
     function handleNotesUpdated(notes) {
@@ -130,8 +147,8 @@ export default function MenuPane(props) {
     function flushPendingNotes() {
       if (currentlySaving.current) return;
 
-      const markdown = pendingNotes.current;
-      if (markdown == null) return;
+      const operation = pendingNotes.current;
+      if (operation == null) return;
 
       const requestId = ++latestSave.current;
 
@@ -146,7 +163,7 @@ export default function MenuPane(props) {
 
       basesocket
         .timeout(SAVE_NOTES_TIMEOUT_MS)
-        .emit("saveNotes", { markdown }, (err, response) => {
+        .emit("saveNotes", operation, (err, response) => {
           currentlySaving.current = false;
 
           const validSnapshot =
@@ -199,7 +216,10 @@ export default function MenuPane(props) {
 
     ++latestSave.current;
     setMarkdown(markdown);
-    pendingNotes.current = markdown;
+    pendingNotes.current = {
+      operationId: createOperationId(),
+      markdown,
+    };
     clearTimeout(saveTimer.current);
 
     if (!basesocket.connected) {
@@ -252,6 +272,7 @@ export default function MenuPane(props) {
           saveStatus={saveStatus}
           loadError={loadError}
           onChange={handleNotesChange}
+          onRetrySave={handleRetrySave}
           onRetry={() => {
             setLoadError("");
             setLoadAttempt((attempt) => attempt + 1);
