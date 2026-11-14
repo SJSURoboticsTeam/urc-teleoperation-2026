@@ -15,6 +15,8 @@ from soft_stop import is_soft_stopped
 
 _session_log = deque(maxlen=5000)
 _last_wrist_motor = {"pitch": None, "roll": None}  
+_arm_homing_active = False
+_arm_homing_timeout_task = None
 
 def log_frame(direction, raw):
     """direction: 'TX' or 'RX'"""
@@ -61,7 +63,7 @@ def arm_debug_log(key, message):
 arm_send_ID = {
     "STOP": '00C',
     "HEARTBEAT": '00E',
-    "HOMING_SEQUENCE": '111',
+    "HOMING_SEQUENCE": '120',
     # Will handle set and read servo position and velocity
     # PID (send in case defaults are wrong) when getting pid constants, if the defaults are not good, we can callibrate
     "TRACK": '121',
@@ -75,6 +77,7 @@ arm_send_ID = {
 arm_receive_ID = {
     # ACK is send address + 0x100 = 0x00C + 0x100 = 0x10C
     "RECEIVE_STOP": "10C",
+    "HOMING_SEQUENCE": '220',
     # Heartbeat response, Homing response, return ack, position, velocity, PID acks
     "TRACK": '221',
     "SHOULDER": '222',
@@ -110,6 +113,23 @@ ARM_TEST_JOINTS = {"track", "shoulder", "elbow", "pitch", "roll", "clamp"}
 
 def should_send_joint(joint_name):
     return ARM_TEST_JOINTS is None or joint_name in ARM_TEST_JOINTS
+
+def is_arm_homing():
+    return _arm_homing_active
+
+async def clear_arm_homing_after_timeout():
+    """Unlock arm commands if no homing ACK arrives."""
+    global _arm_homing_active, _arm_homing_timeout_task
+
+    try:
+        await asyncio.sleep(30)
+    except asyncio.CancelledError:
+        return
+
+    if _arm_homing_active:
+        _arm_homing_active = False
+        _arm_homing_timeout_task = None
+        print("[ARM] Homing timed out; arm commands unlocked")
 
 def invalidate_arm_connection(serial_ports, reason="unknown"):
     """
@@ -269,7 +289,7 @@ async def send_arm_homing(serial_ports):
         print("[ARM] Homing ignored: arm not connected")
         return False
 
-    # ID 0x111, DLC 1, command byte 0x11
+    # ID 0x120, DLC 1, command byte 0x11
     can_msg = f"t{arm_send_ID['HOMING_SEQUENCE']}111\r"
 
     try:
@@ -481,6 +501,18 @@ def parse_arm_data(data, serial_ports):
     if can_id == arm_receive_ID["RECEIVE_STOP"]:
         return parse_receive_stop()
 
+    if (can_id == "220" and frame_info["dlc"] == 1 and frame_info["payload_bytes"] == b"\x11"):
+        global _arm_homing_active, _arm_homing_timeout_task
+
+        if _arm_homing_active:
+            _arm_homing_active = False
+            if _arm_homing_timeout_task is not None:
+                _arm_homing_timeout_task.cancel()
+                _arm_homing_timeout_task = None
+            print("[ARM ACK] Universal homing response received; arm commands unlocked")
+
+        return {"type": "homing_ack", "frame": frame_info["frame"]}
+
     if can_id in RECEIVE_ID_TO_JOINT:
         # both ACK and position are DLC=4; route by Data[0]
         if frame_info["dlc"] == 4:
@@ -512,6 +544,9 @@ def register_arm_events(sio, serial_ports):
             return "ERROR"
         if serial_ports.get("arm") is None:
             print(f"[{sid}] armCommands ignored: arm not connected")
+            return "ERROR"
+        if is_arm_homing():
+            print(f"[{sid}] arm command ignored: homing active")
             return "ERROR"
 
         arm_debug_log(f"manual:{sid}", f"[{sid}] armCommands payload: {data}")
@@ -553,6 +588,9 @@ def register_arm_events(sio, serial_ports):
         if serial_ports.get("arm") is None:
             print(f"[{sid}] armJointCommand ignored: arm not connected")
             return "ERROR"
+        if is_arm_homing():
+            print(f"[{sid}] arm command ignored: homing active")
+            return "ERROR"
 
         joint_name = data.get("joint")
         value = data.get("value", 0)
@@ -585,6 +623,9 @@ def register_arm_events(sio, serial_ports):
         if serial_ports.get("arm") is None:
             print(f"[{sid}] armReadPosition ignored: arm not connected")
             return "ERROR"
+        if is_arm_homing():
+            print(f"[{sid}] arm command ignored: homing active")
+            return "ERROR"
 
         joint_name = data.get("joint")
         if not joint_name:
@@ -595,13 +636,33 @@ def register_arm_events(sio, serial_ports):
 
     @sio.event
     async def armHoming(sid):
-        """Start the arm homing sequence."""
+        global _arm_homing_active, _arm_homing_timeout_task
+
         if is_soft_stopped():
             print(f"[{sid}] armHoming ignored: soft stop active")
             return "ERROR"
+        if serial_ports["arm"] is None:
+            print(f"[{sid}] armHoming ignored: arm not connected")
+            return "ERROR"
+        if _arm_homing_active:
+            print(f"[{sid}] armHoming ignored: homing already active")
+            return "ERROR"
 
-        ok = await send_arm_homing(serial_ports)
-        return "OK" if ok else "ERROR"
+        _arm_homing_active = True
+
+        if _arm_homing_timeout_task is not None:
+            _arm_homing_timeout_task.cancel()
+        _arm_homing_timeout_task = asyncio.create_task(
+            clear_arm_homing_after_timeout()
+        )
+
+        if not await send_arm_homing(serial_ports):
+            _arm_homing_active = False
+            _arm_homing_timeout_task.cancel()
+            _arm_homing_timeout_task = None
+            return "ERROR"
+
+        return "OK"
 
 async def request_arm_position_loop(serial_ports):
     """
