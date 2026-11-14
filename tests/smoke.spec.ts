@@ -7,6 +7,8 @@ const routes = [
   "/science",
   "/autonomy",
   "/graphs",
+  "/graphs/antennas",
+  "/graphs/cameras",
   "/extras",
   "/extras/files",
   "/extras/speedtest",

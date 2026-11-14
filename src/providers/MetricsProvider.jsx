@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MetricsContext } from "../contexts/MetricsContext";
 import { useAntennaData } from "../components/metrics/antennaData";
+import { useVideoData } from "../components/video/VideoData";
 
 const colors = {
   "900": "#fe2a1a",
@@ -8,6 +9,17 @@ const colors = {
   "5": "#2522f6",
   "5-alt": "#00e1e1",
 };
+
+// one line per camera on the dropped-frames graph (names match base-pi/video.py)
+const cameraColors = {
+  mast: "#fe2a1a",
+  wheels: "#2522f6",
+  arm1: "#ebd400",
+  arm2: "#00e1e1",
+  science: "#8e24aa",
+};
+const emptyDroppedData = () =>
+  Object.fromEntries(Object.keys(cameraColors).map((name) => [name, []]));
 
 export const MetricsProvider = ({ children }) => {
   const [running, setRunning] = useState(false);
@@ -25,6 +37,12 @@ export const MetricsProvider = ({ children }) => {
   const [rxData5, setRxData5] = useState([]);
 
   const [antenna900, antenna5] = useAntennaData();
+  const [droppedData, setDroppedData] = useState(emptyDroppedData);
+  const videoStats = useVideoData();
+  const videoStatsRef = useRef(videoStats);
+  useEffect(() => {
+    videoStatsRef.current = videoStats;
+  }, [videoStats]);
 
   useEffect(() => {
     if (!running) return;
@@ -49,6 +67,7 @@ export const MetricsProvider = ({ children }) => {
     setRxData900([]);
     setTxData5([]);
     setRxData5([]);
+    setDroppedData(emptyDroppedData());
   }, [resetCount]);
 
   useEffect(() => {
@@ -78,6 +97,18 @@ export const MetricsProvider = ({ children }) => {
     setTxData5((prev) => [...prev, antenna5.txrate ?? null].slice(-points));
     setRxData5((prev) => [...prev, antenna5.rxrate ?? null].slice(-points));
   }, [time, running, antenna5, points]);
+  
+  useEffect(() => {
+    if (!running) return;
+    setDroppedData((prev) =>
+      Object.fromEntries(
+        Object.keys(prev).map((name) => [
+          name,
+          [...prev[name], videoStatsRef.current[name]?.droppedPerSec ?? null].slice(-points),
+        ]),
+      ),
+    );
+  }, [time]);
 
   const resetGraphs = () => setResetCount((count) => count + 1);
 
@@ -89,6 +120,8 @@ export const MetricsProvider = ({ children }) => {
     time,
     resetGraphs,
     colors,
+    cameraColors,
+    droppedData,
     antenna900,
     antenna5,
     signalData900,
