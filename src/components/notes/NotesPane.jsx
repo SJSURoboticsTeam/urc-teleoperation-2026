@@ -9,7 +9,6 @@ import {
   linkDialogPlugin,
   imagePlugin,
   tablePlugin,
-  diffSourcePlugin,
   UndoRedo,
   BoldItalicUnderlineToggles,
   Separator,
@@ -21,7 +20,6 @@ import {
   InsertTable,
   InsertThematicBreak,
   CodeToggle,
-  DiffSourceToggleWrapper,
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
 import { preserveEmptyParagraphsPlugin } from "./preserveEmptyParagraphsPlugin";
@@ -169,11 +167,10 @@ export default function NotesPane({
           linkDialogPlugin(),
           imagePlugin(),
           tablePlugin(),
-          diffSourcePlugin(),
           markdownShortcutPlugin(),
           toolbarPlugin({
             toolbarContents: () => (
-              <DiffSourceToggleWrapper options={["rich-text", "source"]}>
+              <>
                 <BlockTypeSelect />
                 <Separator />
                 <UndoRedo />
@@ -191,7 +188,7 @@ export default function NotesPane({
                 <InsertThematicBreak />
                 <Separator />
                 <CodeToggle />
-              </DiffSourceToggleWrapper>
+              </>
             ),
           }),
         ]}
