@@ -134,6 +134,7 @@ export default function NotesPane({
           px: 2,
           py: 1,
           textAlign: "center",
+
         }}
       >
         <Box
@@ -154,6 +155,11 @@ export default function NotesPane({
           </Button>
         )}
       </Box>
+      <Box
+        sx={{
+          border: "1px solid gray",
+          borderRadius: "6px",
+        }}>
       <MDXEditor
         markdown={markdown}
         ref={editorRef}
@@ -194,6 +200,7 @@ export default function NotesPane({
         ]}
         onChange={onChange}
       />
+      </Box>
     </Box>
   );
 }
