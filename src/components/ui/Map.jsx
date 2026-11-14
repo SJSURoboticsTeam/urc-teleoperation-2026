@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useSnackbar } from "notistack";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Button, Box, Typography, Switch, FormControlLabel, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import ScienceIcon from "@mui/icons-material/Science";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -38,13 +38,21 @@ const describeCounts = ({ sites, targets, pois }) =>
 function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onClearImport, mapData, locationsLocked, onImportMap, onClearMap }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmClearMap, setConfirmClearMap] = useState(false);
-  // A parsed file waiting for the operator to confirm the import
+  // A parsed file waiting for the operator to pick what to import:
+  // { name, trailPoints, locations, useTrail, useWaypoints }, where the use* flags are the checkboxes
   const [pendingImport, setPendingImport] = useState(null);
   const [importError, setImportError] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef(null);
   const mapCounts = countLocations(mapData);
   const hasLocations = mapCounts.sites + mapCounts.targets + mapCounts.pois > 0;
+
+  // A part can only be imported if the file has it. Waypoints change science sites, so they follow the
+  // autonomy/Soft Stop lock (which can turn on while the dialog is open); the trail is only an overlay, so it doesn't.
+  const fileHasTrail = pendingImport?.trailPoints.length > 0;
+  const canImportWaypoints = !!pendingImport?.locations && !locationsLocked;
+  const importTrail = fileHasTrail && pendingImport.useTrail;
+  const importWaypoints = canImportWaypoints && pendingImport.useWaypoints;
 
   const importMapFile = async (event) => {
     const file = event.target.files?.[0];
@@ -53,7 +61,8 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
     setImportError("");
     setIsImporting(true);
     try {
-      setPendingImport({ name: file.name, ...parseMapFile(await file.text()) });
+      // Everything in the file is ticked to start with
+      setPendingImport({ name: file.name, ...parseMapFile(await file.text()), useTrail: true, useWaypoints: true });
     } catch (error) {
       setImportError(error.message || "Could not read this map file.");
     } finally {
@@ -94,7 +103,7 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={!ready || isImporting || locationsLocked} onClick={() => importInputRef.current?.click()}>
+        <Button size="small" variant="outlined" disabled={!ready || isImporting} onClick={() => importInputRef.current?.click()}>
           {isImporting ? "Importing…" : "Import Map"}
         </Button>
         <Button size="small" variant="outlined" disabled={!importedTrail} onClick={onClearImport}>Clear Import</Button>
@@ -103,25 +112,49 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         Clear Map
       </Button>
       {locationsLocked && (
-        <Typography variant="caption" color="error.main">Import and Clear Map are locked while autonomy or Soft Stop is active.</Typography>
+        <Typography variant="caption" color="error.main">Importing waypoints and Clear Map are locked while autonomy or Soft Stop is active.</Typography>
       )}
       <input ref={importInputRef} type="file" accept=".log" aria-label="Import map file" hidden onChange={importMapFile} />
       {importError && <Typography role="alert" variant="body2" color="error.main">{importError}</Typography>}
       <Dialog open={!!pendingImport} onClose={() => setPendingImport(null)}>
         <DialogTitle>Import {pendingImport?.name}?</DialogTitle>
         <DialogContent>
-          {pendingImport?.locations
-            ? `This replaces the map's ${describeCounts(mapCounts)} with the file's ${describeCounts(countLocations(pendingImport.locations))}.`
-            : "This is an older trail-only log, so the map's locations stay as they are."}
-          {pendingImport?.trailPoints.length > 0 &&
-            ` Its trail (${plural(pendingImport.trailPoints.length, "point")}) is shown as an imported trail; your recorded trail is not changed.`}
-          {locationsLocked && <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>Locked while autonomy or Soft Stop is active.</Typography>}
+          <FormControlLabel
+            disabled={!fileHasTrail}
+            control={<Checkbox checked={importTrail} onChange={(event) => setPendingImport((prev) => ({ ...prev, useTrail: event.target.checked }))} />}
+            label={`GPS trail (${plural(pendingImport?.trailPoints.length ?? 0, "point")})`}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mt: -0.5, mb: 1 }}>
+            {fileHasTrail ? "Shown as an imported trail. Your recorded trail is not changed." : "This file has no trail."}
+          </Typography>
+          <FormControlLabel
+            disabled={!canImportWaypoints}
+            control={<Checkbox checked={importWaypoints} onChange={(event) => setPendingImport((prev) => ({ ...prev, useWaypoints: event.target.checked }))} />}
+            label={pendingImport?.locations ? `Waypoints (${describeCounts(countLocations(pendingImport.locations))})` : "Waypoints"}
+          />
+          <Typography variant="body2" color={pendingImport?.locations && locationsLocked ? "error.main" : "text.secondary"} sx={{ ml: 4, mt: -0.5 }}>
+            {!pendingImport?.locations
+              ? "This is an older trail-only log, so it has no waypoints."
+              : locationsLocked
+                ? "Locked while autonomy or Soft Stop is active."
+                : `Replaces the map's ${describeCounts(mapCounts)}.`}
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPendingImport(null)}>Cancel</Button>
-          {/* The lock can turn on while the dialog is open (e.g. Soft Stop from another client) or while the file is read */}
-          <Button disabled={locationsLocked} onClick={() => { onImportMap(pendingImport); setPendingImport(null); }}>
-            {pendingImport?.locations ? "Replace" : "Import"}
+          {/* Parts that aren't ticked are passed as null and left alone */}
+          <Button
+            disabled={!importTrail && !importWaypoints}
+            onClick={() => {
+              onImportMap({
+                name: pendingImport.name,
+                trailPoints: importTrail ? pendingImport.trailPoints : null,
+                locations: importWaypoints ? pendingImport.locations : null,
+              });
+              setPendingImport(null);
+            }}
+          >
+            Import
           </Button>
         </DialogActions>
       </Dialog>
@@ -718,17 +751,18 @@ export default function Map() {
     }
     enqueueSnackbar(`${openWaypoint.name} deleted`, { variant: "success" });
   };
-  // Replace the map's locations with an imported file's. The file's trail is shown as the imported trail;
-  // the recorded trail is never touched.
+  // Apply the parts of an imported file the operator ticked; a part that wasn't ticked is null and left alone.
+  // The file's trail is shown as the imported trail (the recorded trail is never touched), and its
+  // locations replace the map's.
   const importMap = useCallback(({ name, trailPoints: importedPoints, locations }) => {
-    setImportedTrail(importedPoints.length > 0 ? { name, points: importedPoints } : null);
-    // Older trail-only logs have no locations, so the map's stay as they are
+    if (importedPoints) setImportedTrail({ name, points: importedPoints });
     if (locations) {
       setSiteReadings(locations.siteReadings);
       setDriveData({ ...initialDriveState, ...locations.driveData });
       replacePois(locations.pois);
     }
-    enqueueSnackbar(`Imported ${name}`, { variant: "success" });
+    const parts = [importedPoints && "trail", locations && "waypoints"].filter(Boolean).join(" and ");
+    enqueueSnackbar(`Imported ${parts} from ${name}`, { variant: "success" });
   }, [setSiteReadings, setDriveData, replacePois, enqueueSnackbar]);
 
   // Remove all science sites, autonomy targets, and POIs, e.g. before a new mission. The trail has its own Clear Trail.
@@ -749,7 +783,7 @@ export default function Map() {
     importedTrail,
     onClearImport: clearImportedTrail,
     mapData: { siteReadings, driveData, pois },
-    // Import and Clear Map change science sites, so they follow the same lock
+    // Importing waypoints and Clear Map change science sites, so they follow the same lock
     locationsLocked: scienceLocked,
     onImportMap: importMap,
     onClearMap: clearMap,
