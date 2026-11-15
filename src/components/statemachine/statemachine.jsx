@@ -1,10 +1,38 @@
-import { Typography, Button } from "@mui/material";
+import { Typography, Button, ButtonGroup, Box } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import {useState, useEffect} from "react"
 import {robotsocket } from "../socket.io/socket";
 import { useDriveControl } from "../../contexts/DriveControlContext";
+import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 
-export default function StateMachine({ openPane, setOpenPane, missionMode, isRobotConnected, openUp = false }) {
+// Preview colors for the rover's LED
+const ledColors = {
+  grey: "grey.500",
+  blue: "#1e88e5",
+  red: "#e53935",
+  green: "#43a047",
+};
+
+// Small circle showing what the rover's LED shows
+function LedPreview({ led }) {
+  return (
+    <Box
+      sx={{
+        width: 18,
+        height: 18,
+        borderRadius: "50%",
+        bgcolor: led ? ledColors[led.color] : "grey.300",
+        "@keyframes led-flash": {
+          "0%, 100%": { opacity: 1 },
+          "50%": { opacity: 0.15 },
+        },
+        animation: led?.pattern === "flash" ? "led-flash 1s step-end infinite" : "none",
+      }}
+    />
+  );
+}
+
+export default function StateMachine({ openPane, setOpenPane, isRobotConnected, openUp = false }) {
   const [autonomyData, setautonomyData] = useState({
    isBooted: null,
    isTeleoperating: null
@@ -18,6 +46,8 @@ export default function StateMachine({ openPane, setOpenPane, missionMode, isRob
     requestControl,
     releaseControl,
   } = useDriveControl();
+  const { autonomyState, autonomyEnabled, sendAutonomyCommand } = useAutonomyMode();
+  const mode = autonomyState?.mode;
 
   const driveControlStatusText = offlineMode
     ? "Not enforced (offline mode)"
@@ -66,10 +96,8 @@ export default function StateMachine({ openPane, setOpenPane, missionMode, isRob
           <div
             style={{
               position: "absolute",
-              // open above the anchor when the bar is at the bottom of the screen
               ...(openUp ? { bottom: "100%" } : { top: "100%" }),
-              left: "0%",
-              transform: "translateX(-50%)",
+              right: 0,
               background: "white",
               border: "1px solid gray",
               padding: "10px",
@@ -79,9 +107,41 @@ export default function StateMachine({ openPane, setOpenPane, missionMode, isRob
           >
     
             <Typography  sx={{ color: 'black' }} variant = "h6">STATE MACHINE</Typography>
-            <Typography  sx={{ color: 'black' }}>
-              Current Mode: {missionMode ?? "UNKNOWN"}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+              <Typography sx={{ color: 'black' }}>
+                Current Mode: {mode ?? "UNKNOWN"}
+                {autonomyState?.phase ? ` / ${autonomyState.phase}` : ""}
+              </Typography>
+              <LedPreview led={autonomyState?.led} />
+            </Box>
+            {autonomyState?.message && (
+              <Typography variant="body2" sx={{ color: 'black' }}>
+                {autonomyState.message}
+              </Typography>
+            )}
+            {/* Manual mode change; Teleoperation is the same as Take control */}
+            <ButtonGroup size="small" disabled={!autonomyState} sx={{ my: 1 }}>
+              <Button
+                variant={mode === "IDLE" ? "contained" : "outlined"}
+                onClick={() => sendAutonomyCommand("setRoverMode", { mode: "IDLE" })}
+              >
+                Idle
+              </Button>
+              <Button
+                variant={mode === "TELEOPERATION" ? "contained" : "outlined"}
+                disabled={!autonomyState || autonomyEnabled || controlledByOther || pending}
+                onClick={requestControl}
+              >
+                Teleoperation
+              </Button>
+              <Button
+                variant={mode === "AUTONOMY" ? "contained" : "outlined"}
+                disabled={!autonomyState?.source}
+                onClick={() => sendAutonomyCommand("setRoverMode", { mode: "AUTONOMY" })}
+              >
+                Autonomy
+              </Button>
+            </ButtonGroup>
             <Typography  sx={{ color: 'black' }}>
               Is Teleoperating: {String(autonomyData.isTeleoperating)}
             </Typography>
@@ -109,7 +169,7 @@ export default function StateMachine({ openPane, setOpenPane, missionMode, isRob
                   variant="contained"
                   color="primary"
                   loading={pending}
-                  disabled={!isRobotConnected || controlledByOther || pending}
+                  disabled={!isRobotConnected || controlledByOther || pending || autonomyEnabled}
                   onClick={requestControl}
                   sx={{ mt: 1 }}
                 >
