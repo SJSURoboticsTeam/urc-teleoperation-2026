@@ -82,8 +82,11 @@ async def arrive(sio, target, returning):
         state["activeTargetId"] = None
     else:
         rover_mode.set_mode(AUTONOMY, ARRIVED, f"Arrived at {target_name(target)}")
-        if target["id"] not in state["visitedTargetIds"]:
-            state["visitedTargetIds"].append(target["id"])
+    # keep visits ordered by most recent arrival (returns included, since the rover is now there)
+    # the frontend's return uses the last entry
+    if target["id"] in state["visitedTargetIds"]:
+        state["visitedTargetIds"].remove(target["id"])
+    state["visitedTargetIds"].append(target["id"])
     await log(sio, state["message"])
     await broadcast(sio)
 

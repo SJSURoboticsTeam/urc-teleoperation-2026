@@ -460,7 +460,24 @@ async def connect(sid,environ):
 
 @sio.event
 async def softStop(sid):  # function name  == event name (sid  = client session id)
-    """Operator-triggered pause: lock controls, and zero drive velocity if drive is connected"""
+    """Operator-triggered pause: lock controls, stop autonomy, and zero drive velocity if drive is connected"""
+    global science_soft_stop_site
+    should_log = not is_soft_stopped() and science_session.active_site_id() is not None
+
+    # Lock every client and end the autonomy run before waiting on drive I/O.
+    # The drive write below can stall (no serial write timeout), and that must not
+    # delay the lockout or let a mock autonomy run keep going.
+    await set_soft_stop(sio, True)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by Soft Stop")
+
+    if should_log:
+        science_soft_stop_site = science_session.active_site_id()
+        science_session.log_event(
+            "soft_stop",
+            site=science_soft_stop_site,
+            step=science_session.pending_step(),
+        )
+
     if serial_ports["drive"]["port"]:
         async with drive_command_lock:
             try:
@@ -473,21 +490,6 @@ async def softStop(sid):  # function name  == event name (sid  = client session 
                 print(f'Failed to send Soft Stop drive command: {e}')
     else:
         print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
-
-    global science_soft_stop_site
-    should_log = not is_soft_stopped() and science_session.active_site_id() is not None
-
-    # Broadcast to every connected client so they all lock, not just the sender
-    await set_soft_stop(sio, True)
-    await rover_mode.stop_autonomy(sio, "Autonomy stopped by Soft Stop")
-
-    if should_log:
-        science_soft_stop_site = science_session.active_site_id()
-        science_session.log_event(
-            "soft_stop",
-            site=science_soft_stop_site,
-            step=science_session.pending_step(),
-        )
 
     # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
     # drive specifically being connected.
@@ -513,11 +515,16 @@ async def disconnect(sid):
 
     metrics.numClients = max(0, metrics.numClients - 1)
 
+    # End the autonomy run before any drive I/O wait below, so a stalled drive write
+    # can't keep autonomy running after the last client leaves
+    if metrics.numClients == 0:
+        await rover_mode.stop_autonomy(sio, "Autonomy stopped: no clients connected")
+
     await release_drive_control(sio, stop_drive_motors_for_handover, sid)
 
+    # rechecked: a client may have reconnected while release_drive_control waited
     if metrics.numClients == 0:
         print("No clients, stopping motors now.")
-        await rover_mode.stop_autonomy(sio, "Autonomy stopped: no clients connected")
         await stop_drive_motors()
 
 config = uvicorn.Config(
