@@ -231,7 +231,7 @@ antenna_started = False
 register_metric_events(sio)
 register_notes_events(sio)
 register_shutdown_commands(sio)
-register_antenna_events(sio, gps_heading)
+register_antenna_events(sio, serial_ports, gps_heading)
 # =================== Start Server ===================
 
 @sio.event
@@ -274,7 +274,7 @@ async def connect(sid,environ):
         sio.start_background_task(cpuloop,sio)
     if not antenna_started:
         antenna_started = True
-        sio.start_background_task(antennaloop,sio, gps_heading)
+        sio.start_background_task(antennaloop,serial_ports, gps_heading)
     if not video_task_started:
         video_task_started = True
         if offline:

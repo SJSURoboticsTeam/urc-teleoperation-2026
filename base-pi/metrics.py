@@ -35,7 +35,7 @@ async def cpuloop(sio):
     while True:
         try:
             #print("Testing metrics.")
-            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_percent = await asyncio.to_thread( psutil.cpu_percent, interval=1)
             ram = psutil.virtual_memory() # returns -->  (total, available, percent, used, free, active, inactive, buffers, cached, shared, slab)
             
             model_path = Path("/proc/device-tree/model")
