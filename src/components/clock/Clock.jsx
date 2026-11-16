@@ -35,6 +35,16 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
       : 0;
 
   const isRunning = timerState.status === "running";
+  const isFinished = timerState.status === "finished";
+
+  const remainingMinutes = Math.floor(remainingSeconds / 60);
+
+  const remainingPercent =
+    timerState.durationSeconds > 0
+      ? Math.round(
+          (remainingSeconds / timerState.durationSeconds) * 100,
+        )
+      : 0;
 
   return (
     <Box
@@ -47,9 +57,27 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
         mr: 2,
       }}
     >
-      <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-        {timerState.presetMinutes}m remaining
-      </Typography>
+      <Stack
+        direction="row"
+        spacing={0.75}
+        alignItems="center"
+        sx={{ mr: 2 }}
+      >
+        <LinearProgress
+          variant="determinate"
+          value={remainingPercent}
+          sx={{
+            width: 28,
+            height: 6,
+            borderRadius: 3,
+          }}
+          aria-label={`${remainingPercent}% timer remaining`}
+        />
+
+        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+          {remainingMinutes}m remaining
+        </Typography>
+      </Stack>
 
       {openPane === "Clock" && (
         <Box
@@ -96,7 +124,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
             <Select
               size="small"
               value={timerState.presetMinutes}
-              disabled={isLoading || isRunning}
+              disabled={isLoading || isRunning || isFinished}
               onChange={(event) => setPreset(Number(event.target.value))}
             >
               {[5, 10, 15, 20, 30, 45, 60].map((minutes) => (
@@ -110,7 +138,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
               <Button
                 fullWidth
                 variant="contained"
-                disabled={isLoading || isRunning}
+                disabled={isLoading || isRunning || isFinished}
                 onClick={startTimer}
               >
                 START

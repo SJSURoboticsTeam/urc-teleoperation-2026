@@ -30,6 +30,8 @@ export default function CompetitionTimerProvider({ children }) {
   );
   const [isLoading, setIsLoading] = useState(false);
 
+  const isDemoMode = import.meta.env.MODE === "demo";
+
   const applyTimerState = useCallback((state) => {
     if (!state) return;
 
@@ -79,6 +81,65 @@ export default function CompetitionTimerProvider({ children }) {
 
   const sendTimerAction = useCallback(
     (eventName, payload) => {
+      if (isDemoMode) {
+        let nextState;
+
+        if (eventName === "setCompetitionTimer") {
+          const presetMinutes = payload.presetMinutes;
+
+          nextState = {
+            ...DEFAULT_TIMER_STATE,
+            presetMinutes,
+            durationSeconds: presetMinutes * 60,
+            remainingSeconds: presetMinutes * 60,
+          };
+        } else if (eventName === "startCompetitionTimer") {
+          if (remainingSeconds <= 0) {
+            return Promise.resolve({
+              ok: false,
+              error: "Timer has finished",
+            });
+          }
+
+          const now = Date.now();
+
+          nextState = {
+            ...timerState,
+            status: "running",
+            remainingSeconds,
+            startedAt: timerState.startedAt ?? now,
+            endsAt: now + remainingSeconds * 1000,
+          };
+        } else if (eventName === "pauseCompetitionTimer") {
+          nextState = {
+            ...timerState,
+            status: "paused",
+            remainingSeconds,
+            endsAt: null,
+          };
+        } else if (eventName === "resetCompetitionTimer") {
+          nextState = {
+            ...timerState,
+            status: "idle",
+            remainingSeconds: timerState.durationSeconds,
+            startedAt: null,
+            endsAt: null,
+          };
+        } else {
+          return Promise.resolve({
+            ok: false,
+            error: "Unknown timer action",
+          });
+        }
+
+        applyTimerState(nextState);
+
+        return Promise.resolve({
+          ok: true,
+          state: nextState,
+        });
+      }
+
       if (!basesocket.connected) {
         return Promise.resolve({
           ok: false,
@@ -118,7 +179,12 @@ export default function CompetitionTimerProvider({ children }) {
         }
       });
     },
-    [applyTimerState],
+    [
+      applyTimerState,
+      isDemoMode,
+      remainingSeconds,
+      timerState,
+    ],
   );
 
   const setPreset = useCallback(
@@ -142,9 +208,23 @@ export default function CompetitionTimerProvider({ children }) {
     return sendTimerAction("resetCompetitionTimer");
   }, [sendTimerAction]);
 
+  const effectiveTimerState = useMemo(() => {
+    if (
+      timerState.status === "running" &&
+      remainingSeconds === 0
+    ) {
+      return {
+        ...timerState,
+        status: "finished",
+      };
+    }
+
+    return timerState;
+  }, [timerState, remainingSeconds]);
+
   const contextValue = useMemo(
     () => ({
-      timerState,
+      timerState: effectiveTimerState,
       remainingSeconds,
       isLoading,
       setPreset,
@@ -153,7 +233,7 @@ export default function CompetitionTimerProvider({ children }) {
       resetTimer,
     }),
     [
-      timerState,
+      effectiveTimerState,
       remainingSeconds,
       isLoading,
       setPreset,
