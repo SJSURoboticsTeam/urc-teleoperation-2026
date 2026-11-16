@@ -12,7 +12,7 @@ from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_ant
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
 from video import send_fake_video_stats, videoloop
-from antennarotation import register_antenna_events, antennaloop
+from antennarotation import register_antenna_events, antennaloop, send_antenna_status_request, read_antenna_can_loop
 import sys, subprocess
 from notes import register_notes_events
 
@@ -275,6 +275,8 @@ async def connect(sid,environ):
     if not antenna_started:
         antenna_started = True
         sio.start_background_task(antennaloop,serial_ports, gps_heading)
+        sio.start_background_task(send_antenna_status_request, serial_ports, sio)
+        sio.start_background_task(read_antenna_can_loop, serial_ports)
     if not video_task_started:
         video_task_started = True
         if offline:
