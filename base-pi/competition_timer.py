@@ -38,8 +38,10 @@ class CompetitionTimer:
     def get_state(self):
         """Return the current timer state for Socket.IO clients."""
         self._update_finished_state()
+        server_now = self._now_ms()
 
         return {
+            "serverNow": server_now,
             "status": self.status,
             "presetMinutes": self.preset_minutes,
             "durationSeconds": self.duration_seconds,

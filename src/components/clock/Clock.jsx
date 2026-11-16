@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   LinearProgress,
@@ -8,6 +9,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useCompetitionTimer } from "../../contexts/CompetitionTimerContext";
+
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 function formatTime(seconds) {
   const minutes = Math.floor(seconds / 60);
@@ -19,6 +22,10 @@ function formatTime(seconds) {
 }
 
 export default function Clock({ openPane, setOpenPane, openUp = false }) {
+  const { baseConnected } = useConnectionStatus();
+  const isDemoMode = import.meta.env.MODE === "demo";
+  const backendAvailable = baseConnected || isDemoMode;
+
   const {
     timerState,
     remainingSeconds,
@@ -121,10 +128,20 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
               sx={{ height: 8, borderRadius: 4 }}
             />
 
+            {!backendAvailable && (
+              <Alert severity="warning" sx={{ fontSize: "0.8rem" }}>
+                Base-pi backend is disconnected. Timer controls are disabled.
+              </Alert>
+            )}
+
             <Select
               size="small"
               value={timerState.presetMinutes}
-              disabled={isLoading || isRunning || isFinished}
+              disabled={
+                isLoading ||
+                isRunning ||
+                !backendAvailable
+              }
               onChange={(event) => setPreset(Number(event.target.value))}
             >
               {[5, 10, 15, 20, 30, 45, 60].map((minutes) => (
@@ -138,7 +155,12 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
               <Button
                 fullWidth
                 variant="contained"
-                disabled={isLoading || isRunning || isFinished}
+                disabled={
+                  isLoading ||
+                  isRunning ||
+                  isFinished ||
+                  !backendAvailable
+                }
                 onClick={startTimer}
               >
                 START
@@ -147,7 +169,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
               <Button
                 fullWidth
                 variant="outlined"
-                disabled={isLoading || !isRunning}
+                disabled={isLoading || !isRunning || !backendAvailable}
                 onClick={pauseTimer}
               >
                 PAUSE
@@ -157,7 +179,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
                 fullWidth
                 variant="outlined"
                 color="error"
-                disabled={isLoading}
+                disabled={isLoading || !backendAvailable}
                 onClick={resetTimer}
               >
                 RESET

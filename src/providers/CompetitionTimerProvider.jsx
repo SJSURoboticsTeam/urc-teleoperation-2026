@@ -12,11 +12,13 @@ function normalizeTimerState(state) {
   };
 }
 
-function calculateRemainingSeconds(state) {
+function calculateRemainingSeconds(state, clockOffsetMs = 0) {
   if (state.status === "running" && state.endsAt !== null) {
+    const clientNowAdjusted = Date.now() + clockOffsetMs;
+
     return Math.max(
       0,
-      Math.ceil((state.endsAt - Date.now()) / 1000),
+      Math.ceil((state.endsAt - clientNowAdjusted) / 1000),
     );
   }
 
@@ -29,6 +31,7 @@ export default function CompetitionTimerProvider({ children }) {
     DEFAULT_TIMER_STATE.remainingSeconds,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [clockOffsetMs, setClockOffsetMs] = useState(0);
 
   const isDemoMode = import.meta.env.MODE === "demo";
 
@@ -37,8 +40,19 @@ export default function CompetitionTimerProvider({ children }) {
 
     const normalizedState = normalizeTimerState(state);
 
+    const nextClockOffsetMs =
+      typeof normalizedState.serverNow === "number"
+        ? normalizedState.serverNow - Date.now()
+        : 0;
+
+    setClockOffsetMs(nextClockOffsetMs);
     setTimerState(normalizedState);
-    setRemainingSeconds(calculateRemainingSeconds(normalizedState));
+    setRemainingSeconds(
+      calculateRemainingSeconds(
+        normalizedState,
+        nextClockOffsetMs,
+      ),
+    );
   }, []);
 
   const requestCurrentTimerState = useCallback(() => {
@@ -71,13 +85,15 @@ export default function CompetitionTimerProvider({ children }) {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setRemainingSeconds(calculateRemainingSeconds(timerState));
-    }, 1000);
+      setRemainingSeconds(
+        calculateRemainingSeconds(timerState, clockOffsetMs),
+      );
+      }, 1000);
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [timerState]);
+      return () => {
+        clearInterval(intervalId);
+      };
+      }, [timerState, clockOffsetMs]);
 
   const sendTimerAction = useCallback(
     (eventName, payload) => {

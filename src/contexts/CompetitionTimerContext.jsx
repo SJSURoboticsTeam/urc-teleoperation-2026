@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 export const TIMER_PRESETS = [5, 10, 15, 20, 30, 45, 60];
 
 export const DEFAULT_TIMER_STATE = {
+  serverNow: null,
   status: "idle",
   presetMinutes: 5,
   durationSeconds: 300,
