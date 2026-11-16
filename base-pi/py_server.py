@@ -22,6 +22,7 @@ serial_ports = {
     "gps": {"port": None, "id": "disconnect", "lock": asyncio.Lock()},
 }
 gps_state = {"robot": None}
+gps_heading = {"distanceMeters": None, "headingDegrees": None}
 
 GPS_AUTO_ID = "1546:01A9"
 
@@ -230,7 +231,7 @@ antenna_started = False
 register_metric_events(sio)
 register_notes_events(sio)
 register_shutdown_commands(sio)
-register_antenna_events(sio)
+register_antenna_events(sio, gps_heading)
 # =================== Start Server ===================
 
 @sio.event
@@ -265,15 +266,15 @@ async def connect(sid,environ):
     if not gps_task_started:
         gps_task_started = True
         if offline:
-            sio.start_background_task(send_fake_gps_data, sio, gps_state)
+            sio.start_background_task(send_fake_gps_data, sio, gps_state,gps_heading)
         else:
-            sio.start_background_task(read_gps_data, serial_ports, sio, gps_state)
+            sio.start_background_task(read_gps_data, serial_ports, sio, gps_state,gps_heading)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)
     if not antenna_started:
         antenna_started = True
-        sio.start_background_task(antennaloop,sio)
+        sio.start_background_task(antennaloop,sio, gps_heading)
     if not video_task_started:
         video_task_started = True
         if offline:

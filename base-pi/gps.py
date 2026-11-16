@@ -52,12 +52,15 @@ def calculate_distance_and_heading(start, end):
     return distance, heading
 
 
-def add_distance_and_heading(data, gps_state):
+def add_distance_and_heading(data, gps_state, gps_heading):
     robot_position = gps_state.get("robot")
     if robot_position:
-        data["distanceMeters"], data["headingDegrees"] = calculate_distance_and_heading(
+        result = calculate_distance_and_heading(
             data, robot_position
         )
+        data["distanceMeters"], data["headingDegrees"] = result
+        gps_heading["distanceMeters"], gps_heading["headingDegrees"] = result
+
     else:
         data["distanceMeters"] = None
         data["headingDegrees"] = None
@@ -174,7 +177,7 @@ def find_gps_port(vid_pid=GPS_AUTO_ID):
             return port.device
     return None
 
-async def read_gps_data(serial_ports, sio, gps_state):
+async def read_gps_data(serial_ports, sio, gps_state, gps_heading):
     disconnect_delay = 2
     connect_delay = 0.5
     # Auto-connect once at task startup; a later STOP ALL must stay disconnected.
@@ -206,7 +209,7 @@ async def read_gps_data(serial_ports, sio, gps_state):
                         'accuracy_m': position.accuracy.horizontal_m if position.accuracy else None,
                         'accuracy_source': position.accuracy.source if position.accuracy else None
                 }
-                add_distance_and_heading(data, gps_state)
+                add_distance_and_heading(data, gps_state, gps_heading)
                 await sio.emit("gpsData2", data)
                 print(f"Latitude: {position.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}")
             else:
@@ -232,7 +235,7 @@ async def read_gps_data(serial_ports, sio, gps_state):
         finally:
             await asyncio.sleep(connect_delay)  # Sleep briefly to prevent tight loop on error
 
-async def send_fake_gps_data(sio, gps_state):
+async def send_fake_gps_data(sio, gps_state, gps_heading):
     while True:
         data = {
 
@@ -240,6 +243,6 @@ async def send_fake_gps_data(sio, gps_state):
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
         }
 
-        add_distance_and_heading(data, gps_state)
+        add_distance_and_heading(data, gps_state, gps_heading)
         await sio.emit('gpsData2', data)
         await asyncio.sleep(random.uniform(2,7))

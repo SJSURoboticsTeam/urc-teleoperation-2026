@@ -239,7 +239,7 @@ export default function AntennaRotation({
                 <Switch
                   checked={data.txon}
                   disabled={data.loading}
-                  onChange={(event) => updateAntennaSettings(event.target.value, "txon")}
+                  onChange={(event) => updateAntennaSettings(event.target.checked, "txon")}
                 />
               }
               label="AUTO TX"
