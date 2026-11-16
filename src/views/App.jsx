@@ -26,6 +26,7 @@ import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
 import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
+import ScienceProvider from "../providers/ScienceProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
 import CompetitionTimerProvider from "../providers/CompetitionTimerProvider";
@@ -87,70 +88,76 @@ function App() {
       }}
     >
       {/* snackbar */}
-        <DemoPopup />
-        <CompetitionTimerProvider>
-          <SerialProvider>
-            <PeripheralProvider>
-              <GPSProvider>
-                <MetricsProvider>
-                  <VideoProvider>
-                  <AutonomyModeProvider>
-                    <SoftStopProvider>
-                      <ArmCommandProvider>
-                        <GamepadProvider>
-                          <DriveControlProvider>
-                            <DriveCommandProvider>
-                              <MastCommandProvider>
-                                <CssBaseline />
-                                {/* Normalizes styles */}
-                                <TopAppBar
-                                  selectedElements={selectedElements}
-                                  setSelectedElements={setSelectedElements}
-                                  addSnackbarMessage={addSnackbarMessage}
-                                  showbottbar={showbottbar}
-                                  setshowbottbar={setshowbottbar}
-                                />
+                <DemoPopup />
 
-                                <BottomAppBar
-                                  selectedElements={selectedElements}
-                                  setSelectedElements={setSelectedElements}
-                                  addSnackbarMessage={addSnackbarMessage}
-                                  showbottbar={showbottbar}
-                                  setshowbottbar={setshowbottbar}
-                                />
+                <CompetitionTimerProvider>
+                  <SerialProvider>
+                    <PeripheralProvider>
+                      <GPSProvider>
+                        <MetricsProvider>
+                          <VideoProvider>
+                            <AutonomyModeProvider>
+                              <SoftStopProvider>
+                                <ArmCommandProvider>
+                                  <GamepadProvider>
+                                    <DriveControlProvider>
+                                      <ScienceProvider>
+                                        <DriveCommandProvider>
+                                          <MastCommandProvider>
+                                            <CssBaseline />
 
-                                <Box
-                                  component="main"
-                                  sx={{
-                                    flexGrow: 1,
-                                    p: 2,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    overflow: "hidden",
-                                    minHeight: 0,
-                                    marginTop: "55px",
-                                    marginBottom: showbottbar ? "50px" : "0px",
-                                  }}
-                                >
-                                  <SoftStopBanner />
-                                  <SplitView selectedElements={selectedElements}>
-                                    {/* we pass all these elements as "children" into SplitView */}
-                                    <Outlet />
-                                  </SplitView>
-                                </Box>
-                              </MastCommandProvider>
-                            </DriveCommandProvider>
-                          </DriveControlProvider>
-                        </GamepadProvider>
-                      </ArmCommandProvider>
-                    </SoftStopProvider>
-                  </AutonomyModeProvider>
-                  </VideoProvider>
-                </MetricsProvider>
-              </GPSProvider>
-            </PeripheralProvider>
-          </SerialProvider>
-        </CompetitionTimerProvider>
+                                            <TopAppBar
+                                              selectedElements={selectedElements}
+                                              setSelectedElements={setSelectedElements}
+                                              addSnackbarMessage={addSnackbarMessage}
+                                              showbottbar={showbottbar}
+                                              setshowbottbar={setshowbottbar}
+                                            />
+
+                                            <BottomAppBar
+                                              selectedElements={selectedElements}
+                                              setSelectedElements={setSelectedElements}
+                                              addSnackbarMessage={addSnackbarMessage}
+                                              showbottbar={showbottbar}
+                                              setshowbottbar={setshowbottbar}
+                                            />
+
+                                            <Box
+                                              component="main"
+                                              sx={{
+                                                flexGrow: 1,
+                                                p: 2,
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                overflow: "hidden",
+                                                minHeight: 0,
+                                                marginTop: "55px",
+                                                marginBottom: showbottbar
+                                                  ? "50px"
+                                                  : "0px",
+                                              }}
+                                            >
+                                              <SoftStopBanner />
+                                              <SplitView
+                                                selectedElements={selectedElements}
+                                              >
+                                                <Outlet />
+                                              </SplitView>
+                                            </Box>
+                                          </MastCommandProvider>
+                                        </DriveCommandProvider>
+                                      </ScienceProvider>
+                                    </DriveControlProvider>
+                                  </GamepadProvider>
+                                </ArmCommandProvider>
+                              </SoftStopProvider>
+                            </AutonomyModeProvider>
+                          </VideoProvider>
+                        </MetricsProvider>
+                      </GPSProvider>
+                    </PeripheralProvider>
+                  </SerialProvider>
+                </CompetitionTimerProvider>
     </Box>
   );
 }
