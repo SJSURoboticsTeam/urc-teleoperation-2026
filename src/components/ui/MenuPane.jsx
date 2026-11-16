@@ -5,6 +5,8 @@ import NotesPane from "../notes/NotesPane.jsx";
 import { basesocket } from "../socket.io/socket";
 import { useConnectionStatus } from "../../contexts/ConnectionContext.jsx";
 
+const IS_DEMO = import.meta.env.MODE === "demo";
+
 const GET_NOTES_TIMEOUT_MS = 3000;
 const SAVE_NOTES_TIMEOUT_MS = 3000;
 const AUTOSAVE_DEBOUNCE_MS = 500;
@@ -34,7 +36,7 @@ export default function MenuPane(props) {
   const retryCount = useRef(0);
   const serverRevision = useRef(-1);
   const latestServerNotes = useRef(null);
-  const [markdown, setMarkdown] = useState(null);
+  const [markdown, setMarkdown] = useState(IS_DEMO ? "" : null);
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -76,6 +78,8 @@ export default function MenuPane(props) {
 
   useEffect(() => {
     function handleNotesUpdated(notes) {
+      if (IS_DEMO) return;
+
       if (!receiveNotes(notes)) {
         console.log("Invalid notes update");
       }
@@ -89,7 +93,7 @@ export default function MenuPane(props) {
   }, [receiveNotes]);
 
   useEffect(() => {
-    if (!baseConnected || !basesocket.connected) return;
+    if (IS_DEMO || !baseConnected || !basesocket.connected) return;
 
     let active = true;
     let retryTimer = null;
@@ -145,6 +149,8 @@ export default function MenuPane(props) {
 
   const savePendingNotes = useCallback(
     function flushPendingNotes() {
+      if (IS_DEMO) return;
+
       if (currentlySaving.current) return;
 
       const operation = pendingNotes.current;
@@ -212,6 +218,11 @@ export default function MenuPane(props) {
 
   function handleNotesChange(markdown, markdownInitialize) {
     if (markdownInitialize) return;
+    if (IS_DEMO) {
+      setMarkdown(markdown);
+      return;
+    }
+
     retryCount.current = 0;
 
     ++latestSave.current;
@@ -286,6 +297,7 @@ export default function MenuPane(props) {
           }}
           refreshError={refreshError}
           baseConnected={baseConnected}
+          demoMode={IS_DEMO}
         />
       )}
     </Drawer>

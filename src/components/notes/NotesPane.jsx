@@ -36,6 +36,7 @@ export default function NotesPane({
   onRetry,
   refreshError,
   baseConnected,
+  demoMode,
 }) {
   const editorRef = useRef(null);
   const failed =
@@ -49,13 +50,15 @@ export default function NotesPane({
         : saveStatus === "Saved"
           ? "success.main"
           : "warning.main";
-  const statusLabel = refreshError
-    ? "Refresh failed"
-    : !baseConnected
-      ? saveStatus === "Saved"
-        ? "Saved · offline"
-        : "Unsaved · offline"
-      : saveStatus;
+  const statusLabel = demoMode
+    ? "Demo · changes are not saved"
+    : refreshError
+      ? "Refresh failed"
+      : !baseConnected
+        ? saveStatus === "Saved"
+          ? "Saved · offline"
+          : "Unsaved · offline"
+        : saveStatus;
   const [overlayContainer, setOverlayContainer] = useState(null);
 
   useEffect(() => {
