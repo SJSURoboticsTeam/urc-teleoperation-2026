@@ -11,23 +11,22 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
 import { useScience } from "../../contexts/ScienceContext";
-import { useAutonomyLocations, initialDriveState } from "../../contexts/AutonomyLocationsContext";
 import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
 import { useSoftStop } from "../../contexts/SoftStopContext";
 import WaypointPopup from "./WaypointPopup";
 import { createTrailUpdater, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
-import { serializeMapFile, parseMapFile } from "../../lib/mapFile";
+import { serializeMapFile, parseMapFile, AUTONOMY_TARGET_IDS } from "../../lib/mapFile";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 const IMPORTED_TRAIL_SOURCE = "imported-gps-trail";
 
 const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
-// Works for the map's locations and for an imported file's (whose driveData may only have some locations)
-function countLocations({ siteReadings, driveData, pois }) {
+// Works for the map's locations and for an imported file's (whose targets may only have some locations)
+function countLocations({ siteReadings, targets, pois }) {
   return {
     sites: siteReadings.filter(Boolean).length,
-    targets: Object.values(driveData).filter((location) => location.label || location.lat || location.lon || location.reached).length,
+    targets: targets.filter((target) => target.label || target.latitude !== null || target.longitude !== null).length,
     pois: pois.length,
   };
 }
@@ -161,7 +160,7 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
       <Dialog open={confirmClearMap} onClose={() => setConfirmClearMap(false)}>
         <DialogTitle>Clear map locations?</DialogTitle>
         <DialogContent>
-          This removes {describeCounts(mapCounts)} from the map and this browser. The GPS trail is not affected. Export the map first if you want to keep them.
+          This removes {describeCounts(mapCounts)} from the map. Autonomy targets are cleared on the rover for every operator. The GPS trail is not affected. Export the map first if you want to keep them.
           {locationsLocked && <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>Locked while autonomy or Soft Stop is active.</Typography>}
         </DialogContent>
         <DialogActions>
@@ -633,13 +632,8 @@ function WaypointPin({ waypoint }) {
   );
 }
 
-// Autonomy coordinates are typed text, so skip blank or half-typed values instead of pinning 0,0
-function parseCoordinate(text) {
-  return text.trim() === "" ? NaN : Number(text);
-}
-
-// Each pane owns its locations; the map only gathers them into one list of pins
-function buildWaypoints(siteReadings, driveData, pois) {
+// Each pane owns its locations (autonomy targets live on the rover); the map only gathers them into one list of pins
+function buildWaypoints(siteReadings, targets, pois) {
   const waypoints = [];
 
   siteReadings.forEach((reading, index) => {
@@ -647,13 +641,11 @@ function buildWaypoints(siteReadings, driveData, pois) {
     waypoints.push({ id: `science-${index + 1}`, type: "science", name: `Site ${index + 1}`, scienceSite: index + 1, lat: reading.lat, long: reading.long });
   });
 
-  ["location1", "location2"].forEach((key, index) => {
-    const location = driveData[key];
-    const lat = parseCoordinate(location.lat);
-    const long = parseCoordinate(location.lon);
-    if (!hasValidGPSCoordinates({ latitude: lat, longitude: long })) return;
-    const name = location.label.trim() || `Location ${index + 1}`;
-    waypoints.push({ id: `autonomy-${key}`, type: "autonomy", name, autonomyKey: key, lat, long });
+  // A target without both coordinates yet (null) gets no pin
+  targets.forEach((target) => {
+    if (!hasValidGPSCoordinates(target)) return;
+    const name = target.label.trim() || target.id;
+    waypoints.push({ id: `autonomy-${target.id}`, type: "autonomy", name, targetId: target.id, lat: target.latitude, long: target.longitude });
   });
 
   pois.forEach((poi) => {
@@ -697,16 +689,21 @@ export default function Map() {
 
   const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, pois, addPoi, renamePoi, removePoi, replacePois } = useGPS();
   const { siteReadings, setSiteReadings } = useScience();
-  const { driveData, setDriveData } = useAutonomyLocations();
+  const { autonomyEnabled, autonomyState, sendAutonomyCommand } = useAutonomyMode();
+  // The rover's autonomy targets, or none while disconnected. Keyed on their JSON so other rover
+  // state broadcasts (phase, messages) don't count as a change.
+  const targetsJson = JSON.stringify(autonomyState?.targets ?? []);
+  const targets = useMemo(() => JSON.parse(targetsJson), [targetsJson]);
+  // The autonomy pane locks its location inputs while the rover drives, and the rover refuses changes then too
+  const targetsLocked = autonomyState?.phase === "NAVIGATING" || autonomyState?.phase === "RETURNING";
   // Memoized so GPS updates re-rendering the map don't redraw every pin
-  const waypoints = useMemo(() => buildWaypoints(siteReadings, driveData, pois), [siteReadings, driveData, pois]);
+  const waypoints = useMemo(() => buildWaypoints(siteReadings, targets, pois), [siteReadings, targets, pois]);
   // While true, the next click on the map drops a POI there
   const [isPlacingPoi, setIsPlacingPoi] = useState(false);
 
   // The pin whose popup is open: { id, node } where node is the popup's DOM content
   const [openPopup, setOpenPopup] = useState(null);
   const openWaypoint = waypoints.find((wp) => wp.id === openPopup?.id);
-  const { autonomyEnabled } = useAutonomyMode();
   const { softStopActive } = useSoftStop();
   const { enqueueSnackbar } = useSnackbar();
   // Same lock as the science pane's GET GNSS button
@@ -719,6 +716,14 @@ export default function Map() {
     const marker = waypointMarkersRef.current[openPopup.id]?.marker;
     marker?.getPopup()?.setLngLat(marker.getLngLat());
   }, [openPopup, openWaypoint]);
+
+  // Send both autonomy targets to the rover, which shares them with every client (and refills the autonomy pane).
+  // Any target not in the list is sent blank, like an empty location card.
+  const sendTargets = useCallback((nextTargets) => {
+    sendAutonomyCommand("setTargets", {
+      targets: AUTONOMY_TARGET_IDS.map((id) => nextTargets.find((target) => target.id === id) ?? { id, label: "", latitude: null, longitude: null }),
+    });
+  }, [sendAutonomyCommand]);
 
   // Science and POI pins move into the site, so they don't leave a duplicate pin stacked on the same spot.
   // A science pin keeps its GPS accuracy. Autonomy pins only copy, since they are separate autonomy targets.
@@ -747,30 +752,35 @@ export default function Map() {
       if (scienceLocked) return;
       setSiteReadings((prev) => prev.map((reading, index) => (index === openWaypoint.scienceSite - 1 ? null : reading)));
     } else {
-      setDriveData((prev) => ({ ...prev, [openWaypoint.autonomyKey]: initialDriveState[openWaypoint.autonomyKey] }));
+      if (targetsLocked) return;
+      sendTargets(targets.filter((target) => target.id !== openWaypoint.targetId));
     }
     enqueueSnackbar(`${openWaypoint.name} deleted`, { variant: "success" });
   };
   // Apply the parts of an imported file the operator ticked; a part that wasn't ticked is null and left alone.
   // The file's trail is shown as the imported trail (the recorded trail is never touched), and its
-  // locations replace the map's.
+  // locations replace the map's. Autonomy targets are sent to the rover, so they need a rover connection.
   const importMap = useCallback(({ name, trailPoints: importedPoints, locations }) => {
     if (importedPoints) setImportedTrail({ name, points: importedPoints });
     if (locations) {
       setSiteReadings(locations.siteReadings);
-      setDriveData({ ...initialDriveState, ...locations.driveData });
       replacePois(locations.pois);
+      if (autonomyState) {
+        sendTargets(locations.targets);
+      } else if (locations.targets.length > 0) {
+        enqueueSnackbar("Autonomy targets were not imported: no rover connection.", { variant: "warning" });
+      }
     }
     const parts = [importedPoints && "trail", locations && "waypoints"].filter(Boolean).join(" and ");
     enqueueSnackbar(`Imported ${parts} from ${name}`, { variant: "success" });
-  }, [setSiteReadings, setDriveData, replacePois, enqueueSnackbar]);
+  }, [setSiteReadings, replacePois, autonomyState, sendTargets, enqueueSnackbar]);
 
   // Remove all science sites, autonomy targets, and POIs, e.g. before a new mission. The trail has its own Clear Trail.
   const clearMap = useCallback(() => {
     setSiteReadings([null, null, null]);
-    setDriveData(initialDriveState);
     replacePois([]);
-  }, [setSiteReadings, setDriveData, replacePois]);
+    if (autonomyState) sendTargets([]);
+  }, [setSiteReadings, replacePois, autonomyState, sendTargets]);
 
   const trailControlProps = useMemo(() => ({
     points: trailPoints,
@@ -782,12 +792,12 @@ export default function Map() {
     onClear: clearTrail,
     importedTrail,
     onClearImport: clearImportedTrail,
-    mapData: { siteReadings, driveData, pois },
+    mapData: { siteReadings, targets, pois },
     // Importing waypoints and Clear Map change science sites, so they follow the same lock
     locationsLocked: scienceLocked,
     onImportMap: importMap,
     onClearMap: clearMap,
-  }), [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, clearImportedTrail, siteReadings, driveData, pois, scienceLocked, importMap, clearMap]);
+  }), [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, clearImportedTrail, siteReadings, targets, pois, scienceLocked, importMap, clearMap]);
 
   trailPointsRef.current = trailPoints;
   trailControlPropsRef.current = trailControlProps;
@@ -1264,6 +1274,7 @@ export default function Map() {
           robotCoordinates={robotCoordinates}
           baseCoordinates={baseCoordinates}
           scienceLocked={scienceLocked}
+          targetsLocked={targetsLocked}
           onSetScienceSite={setScienceSiteFromWaypoint}
           onRenamePoi={(name) => renamePoi(openWaypoint.id, name)}
           onDelete={deleteWaypoint}

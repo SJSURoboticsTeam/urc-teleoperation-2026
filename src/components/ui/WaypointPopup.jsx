@@ -34,10 +34,11 @@ function PoiNameField({ name, onRename }) {
 // Popup shown when a waypoint pin is clicked: compare it with the rover, base, or another pin,
 // set it as a science site, or delete it. POIs can also be renamed here.
 // Kept compact, with delete at the top, because short maps on laptop screens cut off the bottom of tall popups.
-export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, baseCoordinates, scienceLocked, onSetScienceSite, onRenamePoi, onDelete }) {
+export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, baseCoordinates, scienceLocked, targetsLocked, onSetScienceSite, onRenamePoi, onDelete }) {
   const isPoi = waypoint.type === "poi";
-  // Science sites follow the same lock as their other buttons; POIs and autonomy locations can always be edited
-  const deleteLocked = waypoint.type === "science" && scienceLocked;
+  // Science sites follow the same lock as their other buttons, and autonomy targets can't change while the rover drives.
+  // POIs can always be edited.
+  const deleteLocked = (waypoint.type === "science" && scienceLocked) || (waypoint.type === "autonomy" && targetsLocked);
   // Science sites are GPS readings taken in the field and hard to redo, so deleting one asks first
   const confirmDelete = waypoint.type === "science";
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -129,6 +130,11 @@ export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, b
       {scienceLocked && (
         <Typography variant="caption" color="error">
           Science sites are locked while autonomy or Soft Stop is active.
+        </Typography>
+      )}
+      {waypoint.type === "autonomy" && targetsLocked && (
+        <Typography variant="caption" color="error">
+          Autonomy targets can't change while the rover is moving.
         </Typography>
       )}
     </Box>
