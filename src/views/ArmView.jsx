@@ -533,7 +533,7 @@ export default function ArmView() {
             </Typography>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 -130 300 400"
+            viewBox="0 -145 300 380"
             role="img"
             aria-label="Arm pose visualization"
             style={{ width: "100%", maxWidth: 320, height: "auto" }}
@@ -551,8 +551,8 @@ export default function ArmView() {
               </g>
               <g transform={`rotate(${elbowRotation} 145 58)`}>
                 <g id="head" strokeLinecap="round">
-                  <line x1="143" y1="52" x2="177" y2="82" stroke="#4aa3ae" strokeWidth="19.5" />
-                  <line x1="143" y1="52" x2="177" y2="82" stroke="#80cdd6" strokeWidth="18" />
+                  <line x1="145" y1="58" x2="177" y2="82" stroke="#4aa3ae" strokeWidth="19.5" />
+                  <line x1="145" y1="58" x2="177" y2="82" stroke="#80cdd6" strokeWidth="18" />
                 </g>
                 <g transform={`rotate(${pitchRotation} 177 82)`}>
                   <g
