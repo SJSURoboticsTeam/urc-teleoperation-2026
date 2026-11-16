@@ -121,6 +121,10 @@ export default function NotesPane({
           maxWidth: "100%",
           height: "auto",
         },
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {refreshError && <p role="alert">{refreshError}</p>}
@@ -134,7 +138,6 @@ export default function NotesPane({
           px: 2,
           py: 1,
           textAlign: "center",
-
         }}
       >
         <Box
@@ -159,47 +162,65 @@ export default function NotesPane({
         sx={{
           border: "1px solid gray",
           borderRadius: "6px",
-        }}>
-      <MDXEditor
-        markdown={markdown}
-        ref={editorRef}
-        overlayContainer={overlayContainer}
-        plugins={[
-          preserveEmptyParagraphsPlugin(),
-          headingsPlugin(),
-          listsPlugin(),
-          thematicBreakPlugin(),
-          linkPlugin(),
-          linkDialogPlugin(),
-          imagePlugin(),
-          tablePlugin(),
-          markdownShortcutPlugin(),
-          toolbarPlugin({
-            toolbarContents: () => (
-              <>
-                <BlockTypeSelect />
-                <Separator />
-                <UndoRedo />
-                <Separator />
-                <BoldItalicUnderlineToggles />
-                <Separator />
-                <StrikeThroughSupSubToggles />
-                <Separator />
-                <ListsToggle />
-                <Separator />
-                <CreateLink />
-                <InsertImage />
-                <Separator />
-                <InsertTable />
-                <InsertThematicBreak />
-                <Separator />
-                <CodeToggle />
-              </>
-            ),
-          }),
-        ]}
-        onChange={onChange}
-      />
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+
+          "& > .mdxeditor": {
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+          },
+
+          "& .mdxeditor-root-contenteditable": {
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+          },
+        }}
+      >
+        <MDXEditor
+          markdown={markdown}
+          ref={editorRef}
+          overlayContainer={overlayContainer}
+          plugins={[
+            preserveEmptyParagraphsPlugin(),
+            headingsPlugin(),
+            listsPlugin(),
+            thematicBreakPlugin(),
+            linkPlugin(),
+            linkDialogPlugin(),
+            imagePlugin(),
+            tablePlugin(),
+            markdownShortcutPlugin(),
+            toolbarPlugin({
+              toolbarContents: () => (
+                <>
+                  <BlockTypeSelect />
+                  <Separator />
+                  <UndoRedo />
+                  <Separator />
+                  <BoldItalicUnderlineToggles />
+                  <Separator />
+                  <StrikeThroughSupSubToggles />
+                  <Separator />
+                  <ListsToggle />
+                  <Separator />
+                  <CreateLink />
+                  <InsertImage />
+                  <Separator />
+                  <InsertTable />
+                  <InsertThematicBreak />
+                  <Separator />
+                  <CodeToggle />
+                </>
+              ),
+            }),
+          ]}
+          onChange={onChange}
+        />
       </Box>
     </Box>
   );

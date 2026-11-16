@@ -15,8 +15,8 @@ const RETRY_DELAY_MS = [1000, 2000];
  */
 function createOperationId() {
   // Can't use crypto.randomUUID since it requires a secure context
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)),
-  (byte) => byte.toString(16).padStart(2, "0"),
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, "0"),
   ).join("");
 }
 
@@ -258,10 +258,17 @@ export default function MenuPane(props) {
         "& .MuiDrawer-paper": {
           width: activePane == "notes" ? "min(100vw, 1000px)" : 240,
           borderRadius: "12px",
+          overflow: activePane === "notes" ? "hidden" : "auto",
         },
       }}
     >
-      <Tabs value={activePane} onChange={handlePaneChange}>
+      <Tabs
+        value={activePane}
+        onChange={handlePaneChange}
+        sx={{
+          flexShrink: 0,
+        }}
+      >
         <Tab label="Settings" value="settings"></Tab>
         <Tab label="Notes" value="notes"></Tab>
       </Tabs>
