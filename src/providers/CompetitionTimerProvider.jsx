@@ -127,10 +127,18 @@ export default function CompetitionTimerProvider({ children }) {
             endsAt: now + remainingSeconds * 1000,
           };
         } else if (eventName === "pauseCompetitionTimer") {
+          const currentRemainingSeconds = calculateRemainingSeconds(
+            timerState,
+            clockOffsetMs,
+          );
+
           nextState = {
             ...timerState,
-            status: "paused",
-            remainingSeconds,
+            status:
+              currentRemainingSeconds === 0
+                ? "finished"
+                : "paused",
+            remainingSeconds: currentRemainingSeconds,
             endsAt: null,
           };
         } else if (eventName === "resetCompetitionTimer") {
@@ -197,6 +205,7 @@ export default function CompetitionTimerProvider({ children }) {
     },
     [
       applyTimerState,
+      clockOffsetMs,
       isDemoMode,
       remainingSeconds,
       timerState,
