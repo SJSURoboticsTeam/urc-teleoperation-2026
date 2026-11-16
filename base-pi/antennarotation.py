@@ -152,8 +152,24 @@ async def parse_antenna_data(data, serial_ports):
         if len(string_data) < 5:
             return
         address = string_data[1:4]
+
         if address == IDs['REPLY']:
-            print("Got a message!")
+            print("REPLY OF " + str(string_data))
+            
+            decoded_hex = string_data[7:13]
+            decoded_bytes = bytes.fromhex(decoded_hex)
+            encoded_angle = int.from_bytes(decoded_bytes, byteorder="little")
+            angle = encoded_angle / 100.0
+
+            status_flag = int(string_data[5:7])
+            print("Status flag: " + str(status_flag))
+            if(status_flag == 0):
+                print("ANTENNA ERROR, at " + str(angle))
+            else:
+                if(status_flag == 1):
+                    print("Idle, at " + str(angle))
+                elif(status_flag == 2):
+                    print("Homing, at " + str(angle))
 
     except Exception as e:
         print(f'Error parsing drive data: {e}')
