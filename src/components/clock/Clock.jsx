@@ -206,6 +206,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
             <Select
               size="small"
               value={timerState.presetMinutes}
+              inputProps={{ "aria-label": "Timer preset" }}
               disabled={
                 isLoading ||
                 isRunning ||

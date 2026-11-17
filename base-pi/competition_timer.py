@@ -76,6 +76,9 @@ class CompetitionTimer:
         if mode not in ("countdown", "stopwatch"):
             raise ValueError("Invalid timer mode")
 
+        if self.status == "running":
+            raise ValueError("Cannot change timer mode while running")
+
         self.mode = mode
         self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
@@ -90,6 +93,9 @@ class CompetitionTimer:
         """Select a preset and reset the timer to that duration."""
         if minutes not in TIMER_PRESETS:
             raise ValueError("Invalid timer preset")
+
+        if self.status == "running":
+            raise ValueError("Cannot change timer preset while running")
 
         self.preset_minutes = minutes
         self.duration_seconds = minutes * 60

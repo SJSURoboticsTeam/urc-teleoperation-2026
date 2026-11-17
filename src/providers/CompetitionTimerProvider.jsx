@@ -182,8 +182,10 @@ export default function CompetitionTimerProvider({ children }) {
               ),
               elapsedMilliseconds,
               startedAt:
-                timerState.startedAt ??
-                now - elapsedMilliseconds,
+                timerState.status === "running" &&
+                timerState.startedAt !== null
+                  ? timerState.startedAt
+                  : now - elapsedMilliseconds,
               endsAt: null,
             };
           } else {
