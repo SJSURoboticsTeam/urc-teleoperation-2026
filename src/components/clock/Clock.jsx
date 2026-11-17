@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   LinearProgress,
   MenuItem,
   Select,
@@ -53,10 +54,24 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
         )
       : 0;
 
+  const isClockOpen = openPane === "Clock";
+
+  const handleClockKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setOpenPane("Clock");
+    }
+  };
+
   return (
     <Box
       onMouseEnter={() => setOpenPane("Clock")}
       onMouseLeave={() => setOpenPane("None")}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          setOpenPane("None");
+        }
+      }}
       sx={{
         position: "relative",
         cursor: "pointer",
@@ -64,30 +79,52 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
         mr: 2,
       }}
     >
-      <Stack
-        direction="row"
-        spacing={0.75}
-        alignItems="center"
-        sx={{ mr: 2 }}
+      <ButtonBase
+        component="button"
+        type="button"
+        aria-label="Open competition timer manager"
+        aria-expanded={isClockOpen}
+        aria-controls="competition-timer-manager"
+        onClick={() =>
+          setOpenPane(isClockOpen ? "None" : "Clock")
+        }
+        onKeyDown={handleClockKeyDown}
+        sx={{
+          borderRadius: 1,
+          mr: 2,
+          "&:focus-visible": {
+            outline: "2px solid currentColor",
+            outlineOffset: 2,
+          },
+        }}
       >
-        <LinearProgress
-          variant="determinate"
-          value={remainingPercent}
-          sx={{
-            width: 28,
-            height: 6,
-            borderRadius: 3,
-          }}
-          aria-label={`${remainingPercent}% timer remaining`}
-        />
+        <Stack
+          direction="row"
+          spacing={0.75}
+          alignItems="center"
+        >
+          <LinearProgress
+            variant="determinate"
+            value={remainingPercent}
+            sx={{
+              width: 28,
+              height: 6,
+              borderRadius: 3,
+            }}
+            aria-label={`${remainingPercent}% timer remaining`}
+          />
 
-        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-          {remainingMinutes}m remaining
-        </Typography>
-      </Stack>
+          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+            {remainingMinutes}m remaining
+          </Typography>
+        </Stack>
+      </ButtonBase>
 
       {openPane === "Clock" && (
         <Box
+          id="competition-timer-manager"
+          role="dialog"
+          aria-label="Competition timer manager"
           sx={{
             position: "absolute",
             ...(openUp ? { bottom: "100%" } : { top: "100%" }),

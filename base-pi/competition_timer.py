@@ -14,6 +14,7 @@ class CompetitionTimer:
 
         self.preset_minutes = default_minutes
         self.duration_seconds = default_minutes * 60
+        self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
         self.status = "idle"
         self.started_at = None
@@ -29,7 +30,8 @@ class CompetitionTimer:
         if self.status != "running" or self.ends_at is None:
             return
 
-        remaining_ms = self.ends_at - self._now_ms()
+        remaining_ms = max(0, self.ends_at - self._now_ms())
+        self.remaining_ms = remaining_ms
         self.remaining_seconds = max(0, math.ceil(remaining_ms / 1000))
 
         if self.remaining_seconds == 0:
@@ -57,6 +59,7 @@ class CompetitionTimer:
 
         self.preset_minutes = minutes
         self.duration_seconds = minutes * 60
+        self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
         self.status = "idle"
         self.started_at = None
@@ -76,7 +79,7 @@ class CompetitionTimer:
 
         now = self._now_ms()
         self.started_at = now
-        self.ends_at = now + (self.remaining_seconds * 1000)
+        self.ends_at = now + self.remaining_ms
         self.status = "running"
 
         return self.get_state()
@@ -95,6 +98,7 @@ class CompetitionTimer:
 
     def reset(self):
         """Reset the timer to the currently selected preset."""
+        self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
         self.status = "idle"
         self.started_at = None

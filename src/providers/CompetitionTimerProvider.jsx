@@ -185,10 +185,6 @@ export default function CompetitionTimerProvider({ children }) {
             return;
           }
 
-          if (response?.state) {
-            applyTimerState(response.state);
-          }
-
           resolve(response);
         };
 
