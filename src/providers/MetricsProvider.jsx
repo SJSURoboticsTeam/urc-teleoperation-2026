@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MetricsContext } from "../contexts/MetricsContext";
 import { useAntennaData } from "../components/metrics/antennaData";
 
@@ -26,14 +26,37 @@ export const MetricsProvider = ({ children }) => {
 
   const [antenna900, antenna5] = useAntennaData();
 
+  // Latest antenna readings for the sampler below. The antenna objects are
+  // replaced every second (delay tick) and on every socket message, so reading
+  // them through a ref keeps the sampling interval from restarting each time.
+  const latestAntennaRef = useRef({ antenna900, antenna5 });
+  useEffect(() => {
+    latestAntennaRef.current = { antenna900, antenna5 };
+  }, [antenna900, antenna5]);
+
+  // One tick -> one point on every graph. Sampling the time axis and all eight
+  // series together keeps them the same length and lined up with each other.
   useEffect(() => {
     if (!running) return;
 
+    const append = (setter, value) =>
+      setter((prev) => [...prev, value ?? null].slice(-points)); // negative start parameter counts from end
+
     const intervalId = setInterval(() => {
+      const { antenna900: a900, antenna5: a5 } = latestAntennaRef.current;
+
       setTime((prev) => {
         const next = prev.length === 0 ? 0 : prev.at(-1) + 1;
         return [...prev, next].slice(-points);
       });
+      append(setSignalData900, a900.roverRSSI);
+      append(setSignalData5, a5.roverRSSI);
+      append(setNoiseData900, a900.noise);
+      append(setNoiseData5, a5.noise);
+      append(setTxData900, a900.txrate);
+      append(setRxData900, a900.rxrate);
+      append(setTxData5, a5.txrate);
+      append(setRxData5, a5.rxrate);
     }, 1000);
 
     return () => clearInterval(intervalId);
@@ -50,34 +73,6 @@ export const MetricsProvider = ({ children }) => {
     setTxData5([]);
     setRxData5([]);
   }, [resetCount]);
-
-  useEffect(() => {
-    if (!running) return;
-
-    setSignalData900((prev) => [...prev, antenna900.roverRSSI ?? null].slice(-points));
-    setSignalData5((prev) => [...prev, antenna5.roverRSSI ?? null].slice(-points));
-  }, [time, running, antenna900, antenna5, points]);
-
-  useEffect(() => {
-    if (!running) return;
-
-    setNoiseData900((prev) => [...prev, antenna900.noise ?? null].slice(-points));
-    setNoiseData5((prev) => [...prev, antenna5.noise ?? null].slice(-points));
-  }, [time, running, antenna900, antenna5, points]);
-
-  useEffect(() => {
-    if (!running) return;
-
-    setTxData900((prev) => [...prev, antenna900.txrate ?? null].slice(-points));
-    setRxData900((prev) => [...prev, antenna900.rxrate ?? null].slice(-points));
-  }, [time, running, antenna900, points]);
-
-  useEffect(() => {
-    if (!running) return;
-
-    setTxData5((prev) => [...prev, antenna5.txrate ?? null].slice(-points));
-    setRxData5((prev) => [...prev, antenna5.rxrate ?? null].slice(-points));
-  }, [time, running, antenna5, points]);
 
   const resetGraphs = () => setResetCount((count) => count + 1);
 
