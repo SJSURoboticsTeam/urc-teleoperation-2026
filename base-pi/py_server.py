@@ -14,7 +14,7 @@ from shutdown import register_shutdown_commands
 from video import send_fake_video_stats, videoloop
 from competition_timer import CompetitionTimer
 import sys, subprocess
-
+from notes import register_notes_events
 
 print("\033[0m----------------")
 serial_ports = {
@@ -229,6 +229,7 @@ video_task_started = False
 
 
 register_metric_events(sio)
+register_notes_events(sio)
 register_shutdown_commands(sio)
 # =================== Start Server ===================
 async def broadcast_competition_timer():
