@@ -13,9 +13,11 @@ class CompetitionTimer:
             raise ValueError("Invalid default timer preset")
 
         self.preset_minutes = default_minutes
+        self.mode = "countdown"
         self.duration_seconds = default_minutes * 60
         self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
+        self.elapsed_ms = 0
         self.status = "idle"
         self.started_at = None
         self.ends_at = None
@@ -25,17 +27,31 @@ class CompetitionTimer:
         """Return the current Unix time in milliseconds."""
         return int(time.time() * 1000)
 
-    def _update_finished_state(self):
-        """Update the timer when a running countdown reaches zero."""
-        if self.status != "running" or self.ends_at is None:
+    def _update_running_state(self):
+        """Update the active countdown or stopwatch state."""
+        if self.status != "running":
             return
 
-        remaining_ms = max(0, self.ends_at - self._now_ms())
-        self.remaining_ms = remaining_ms
-        self.remaining_seconds = max(0, math.ceil(remaining_ms / 1000))
+        now = self._now_ms()
+
+        if self.mode == "stopwatch":
+            self.elapsed_ms = max(0, now - self.started_at)
+            return
+
+        if self.ends_at is None:
+            return
+
+        self.remaining_ms = max(0, self.ends_at - now)
+        self.remaining_seconds = math.ceil(
+            self.remaining_ms / 1000,
+        )
 
         if self.remaining_seconds == 0:
             self.status = "finished"
+
+    def _update_finished_state(self):
+        """Update the active timer state."""
+        self._update_running_state()
 
     def get_state(self):
         """Return the current timer state for Socket.IO clients."""
@@ -44,13 +60,31 @@ class CompetitionTimer:
 
         return {
             "serverNow": server_now,
+            "mode": self.mode,
             "status": self.status,
             "presetMinutes": self.preset_minutes,
             "durationSeconds": self.duration_seconds,
             "remainingSeconds": self.remaining_seconds,
+            "elapsedSeconds": math.floor(self.elapsed_ms / 1000),
+            "elapsedMilliseconds": self.elapsed_ms,
             "startedAt": self.started_at,
             "endsAt": self.ends_at,
         }
+
+    def set_mode(self, mode):
+        """Switch between countdown and stopwatch modes."""
+        if mode not in ("countdown", "stopwatch"):
+            raise ValueError("Invalid timer mode")
+
+        self.mode = mode
+        self.remaining_ms = self.duration_seconds * 1000
+        self.remaining_seconds = self.duration_seconds
+        self.elapsed_ms = 0
+        self.status = "idle"
+        self.started_at = None
+        self.ends_at = None
+
+        return self.get_state()
 
     def set_preset(self, minutes):
         """Select a preset and reset the timer to that duration."""
@@ -61,6 +95,7 @@ class CompetitionTimer:
         self.duration_seconds = minutes * 60
         self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
+        self.elapsed_ms = 0
         self.status = "idle"
         self.started_at = None
         self.ends_at = None
@@ -78,8 +113,14 @@ class CompetitionTimer:
             return self.get_state()
 
         now = self._now_ms()
-        self.started_at = now
-        self.ends_at = now + self.remaining_ms
+
+        if self.mode == "stopwatch":
+            self.started_at = now - self.elapsed_ms
+            self.ends_at = None
+        else:
+            self.started_at = now
+            self.ends_at = now + self.remaining_ms
+
         self.status = "running"
 
         return self.get_state()
@@ -100,6 +141,7 @@ class CompetitionTimer:
         """Reset the timer to the currently selected preset."""
         self.remaining_ms = self.duration_seconds * 1000
         self.remaining_seconds = self.duration_seconds
+        self.elapsed_ms = 0
         self.status = "idle"
         self.started_at = None
         self.ends_at = None

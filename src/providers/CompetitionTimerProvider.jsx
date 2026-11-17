@@ -25,11 +25,35 @@ function calculateRemainingSeconds(state, clockOffsetMs = 0) {
   return Math.max(0, state.remainingSeconds ?? 0);
 }
 
+function calculateElapsedSeconds(state, clockOffsetMs = 0) {
+  if (
+    state.mode === "stopwatch" &&
+    state.status === "running" &&
+    state.startedAt !== null
+  ) {
+    const clientNowAdjusted = Date.now() + clockOffsetMs;
+
+    return Math.max(
+      0,
+      Math.floor(
+        (clientNowAdjusted - state.startedAt) / 1000,
+      ),
+    );
+  }
+
+  return Math.max(0, state.elapsedSeconds ?? 0);
+}
+
 export default function CompetitionTimerProvider({ children }) {
   const [timerState, setTimerState] = useState(DEFAULT_TIMER_STATE);
   const [remainingSeconds, setRemainingSeconds] = useState(
     DEFAULT_TIMER_STATE.remainingSeconds,
   );
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(
+    DEFAULT_TIMER_STATE.elapsedSeconds,
+  );
+
   const [isLoading, setIsLoading] = useState(false);
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
 
@@ -49,6 +73,13 @@ export default function CompetitionTimerProvider({ children }) {
     setTimerState(normalizedState);
     setRemainingSeconds(
       calculateRemainingSeconds(
+        normalizedState,
+        nextClockOffsetMs,
+      ),
+    );
+
+    setElapsedSeconds(
+      calculateElapsedSeconds(
         normalizedState,
         nextClockOffsetMs,
       ),
@@ -88,6 +119,9 @@ export default function CompetitionTimerProvider({ children }) {
       setRemainingSeconds(
         calculateRemainingSeconds(timerState, clockOffsetMs),
       );
+      setElapsedSeconds(
+        calculateElapsedSeconds(timerState, clockOffsetMs),
+      );
       }, 1000);
 
       return () => {
@@ -100,52 +134,119 @@ export default function CompetitionTimerProvider({ children }) {
       if (isDemoMode) {
         let nextState;
 
-        if (eventName === "setCompetitionTimer") {
+        if (eventName === "setCompetitionTimerMode") {
+          const mode = payload.mode;
+
+          if (mode !== "countdown" && mode !== "stopwatch") {
+            return Promise.resolve({
+              ok: false,
+              error: "Invalid timer mode",
+            });
+          }
+
+          nextState = {
+            ...timerState,
+            mode,
+            status: "idle",
+            remainingSeconds: timerState.durationSeconds,
+            elapsedSeconds: 0,
+            elapsedMilliseconds: 0,
+            startedAt: null,
+            endsAt: null,
+          };
+        } else if (eventName === "setCompetitionTimer") {
           const presetMinutes = payload.presetMinutes;
 
           nextState = {
             ...DEFAULT_TIMER_STATE,
+            mode: timerState.mode,
             presetMinutes,
             durationSeconds: presetMinutes * 60,
             remainingSeconds: presetMinutes * 60,
+            elapsedSeconds: 0,
+            elapsedMilliseconds: 0,
           };
         } else if (eventName === "startCompetitionTimer") {
-          if (remainingSeconds <= 0) {
-            return Promise.resolve({
-              ok: false,
-              error: "Timer has finished",
-            });
-          }
-
           const now = Date.now();
 
-          nextState = {
-            ...timerState,
-            status: "running",
-            remainingSeconds,
-            startedAt: timerState.startedAt ?? now,
-            endsAt: now + remainingSeconds * 1000,
-          };
-        } else if (eventName === "pauseCompetitionTimer") {
-          const currentRemainingSeconds = calculateRemainingSeconds(
-            timerState,
-            clockOffsetMs,
-          );
+          if (timerState.mode === "stopwatch") {
+            const elapsedMilliseconds =
+              timerState.elapsedMilliseconds ??
+              elapsedSeconds * 1000;
 
-          nextState = {
-            ...timerState,
-            status:
-              currentRemainingSeconds === 0
-                ? "finished"
-                : "paused",
-            remainingSeconds: currentRemainingSeconds,
-            endsAt: null,
-          };
+            nextState = {
+              ...timerState,
+              status: "running",
+              elapsedSeconds: Math.floor(
+                elapsedMilliseconds / 1000,
+              ),
+              elapsedMilliseconds,
+              startedAt:
+                timerState.startedAt ??
+                now - elapsedMilliseconds,
+              endsAt: null,
+            };
+          } else {
+            if (remainingSeconds <= 0) {
+              return Promise.resolve({
+                ok: false,
+                error: "Timer has finished",
+              });
+            }
+
+            nextState = {
+              ...timerState,
+              status: "running",
+              remainingSeconds,
+              startedAt: now,
+              endsAt: now + remainingSeconds * 1000,
+            };
+          }
+        } else if (eventName === "pauseCompetitionTimer") {
+          if (timerState.mode === "stopwatch") {
+            const elapsedMilliseconds =
+              timerState.status === "running" &&
+              timerState.startedAt !== null
+                ? Math.max(
+                    0,
+                    Date.now() - timerState.startedAt,
+                  )
+                : timerState.elapsedMilliseconds ??
+                  elapsedSeconds * 1000;
+
+            nextState = {
+              ...timerState,
+              status: "paused",
+              elapsedSeconds: Math.floor(
+                elapsedMilliseconds / 1000,
+              ),
+              elapsedMilliseconds,
+              endsAt: null,
+            };
+          } else {
+            const currentRemainingSeconds =
+              calculateRemainingSeconds(
+                timerState,
+                clockOffsetMs,
+              );
+
+            nextState = {
+              ...timerState,
+              status:
+                currentRemainingSeconds === 0
+                  ? "finished"
+                  : "paused",
+              remainingSeconds: currentRemainingSeconds,
+              endsAt: null,
+            };
+          }
         } else if (eventName === "resetCompetitionTimer") {
           nextState = {
             ...timerState,
             status: "idle",
             remainingSeconds: timerState.durationSeconds,
+            elapsedSeconds: 0,
+            elapsedMilliseconds: 0,
             startedAt: null,
             endsAt: null,
           };
@@ -163,7 +264,6 @@ export default function CompetitionTimerProvider({ children }) {
           state: nextState,
         });
       }
-
       if (!basesocket.connected) {
         return Promise.resolve({
           ok: false,
@@ -204,8 +304,18 @@ export default function CompetitionTimerProvider({ children }) {
       clockOffsetMs,
       isDemoMode,
       remainingSeconds,
+      elapsedSeconds,
       timerState,
     ],
+  );
+
+  const setMode = useCallback(
+    (mode) => {
+      return sendTimerAction("setCompetitionTimerMode", {
+        mode,
+      });
+    },
+    [sendTimerAction],
   );
 
   const setPreset = useCallback(
@@ -247,8 +357,10 @@ export default function CompetitionTimerProvider({ children }) {
     () => ({
       timerState: effectiveTimerState,
       remainingSeconds,
+      elapsedSeconds,
       isLoading,
       setPreset,
+      setMode,
       startTimer,
       pauseTimer,
       resetTimer,
@@ -256,8 +368,10 @@ export default function CompetitionTimerProvider({ children }) {
     [
       effectiveTimerState,
       remainingSeconds,
+      elapsedSeconds,
       isLoading,
       setPreset,
+      setMode,
       startTimer,
       pauseTimer,
       resetTimer,

@@ -30,15 +30,22 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
   const {
     timerState,
     remainingSeconds,
+    elapsedSeconds,
     isLoading,
     setPreset,
+    setMode,
     startTimer,
     pauseTimer,
     resetTimer,
   } = useCompetitionTimer();
 
+  const isStopwatch = timerState.mode === "stopwatch";
+  const displayedSeconds = isStopwatch
+    ? elapsedSeconds
+    : remainingSeconds;
+
   const progress =
-    timerState.durationSeconds > 0
+    !isStopwatch && timerState.durationSeconds > 0
       ? (remainingSeconds / timerState.durationSeconds) * 100
       : 0;
 
@@ -101,19 +108,23 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
           spacing={0.75}
           alignItems="center"
         >
-          <LinearProgress
-            variant="determinate"
-            value={remainingPercent}
-            sx={{
-              width: 28,
-              height: 6,
-              borderRadius: 3,
-            }}
-            aria-label={`${remainingPercent}% timer remaining`}
-          />
+          {!isStopwatch && (
+            <LinearProgress
+              variant="determinate"
+              value={remainingPercent}
+              sx={{
+                width: 28,
+                height: 6,
+                borderRadius: 3,
+              }}
+              aria-label={`${remainingPercent}% timer remaining`}
+            />
+          )}
 
           <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
-            {remainingMinutes}m remaining
+            {isStopwatch
+              ? `Stopwatch ${formatTime(elapsedSeconds)}`
+              : `${remainingMinutes}m remaining`}
           </Typography>
         </Stack>
       </ButtonBase>
@@ -147,7 +158,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
               variant="h4"
               sx={{ color: "black", textAlign: "center" }}
             >
-              {formatTime(remainingSeconds)}
+              {formatTime(displayedSeconds)}
             </Typography>
 
             <Typography
@@ -157,17 +168,40 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
               Status: {timerState.status}
             </Typography>
 
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{ height: 8, borderRadius: 4 }}
-            />
+            {!isStopwatch && (
+              <LinearProgress
+                variant="determinate"
+                value={progress}
+                sx={{ height: 8, borderRadius: 4 }}
+              />
+            )}
 
             {!backendAvailable && (
               <Alert severity="warning" sx={{ fontSize: "0.8rem" }}>
                 Base-pi backend is disconnected. Timer controls are disabled.
               </Alert>
             )}
+
+            <Select
+              size="small"
+              value={timerState.mode}
+              disabled={
+                isLoading ||
+                isRunning ||
+                !backendAvailable
+              }
+              onChange={(event) => setMode(event.target.value)}
+              inputProps={{
+                "aria-label": "Timer mode",
+              }}
+            >
+              <MenuItem value="countdown">
+                Countdown
+              </MenuItem>
+              <MenuItem value="stopwatch">
+                Stopwatch
+              </MenuItem>
+            </Select>
 
             <Select
               size="small"

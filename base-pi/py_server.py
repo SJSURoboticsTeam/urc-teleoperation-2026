@@ -264,6 +264,24 @@ async def setCompetitionTimer(sid, data):
         "state": state,
     }
 
+@sio.event
+async def setCompetitionTimerMode(sid, data):
+    """Switch between countdown and stopwatch modes."""
+    try:
+        mode = data.get("mode")
+        state = competition_timer.set_mode(mode)
+    except (AttributeError, TypeError, ValueError) as exc:
+        return {
+            "ok": False,
+            "error": str(exc),
+        }
+
+    await broadcast_competition_timer()
+
+    return {
+        "ok": True,
+        "state": state,
+    }
 
 @sio.event
 async def startCompetitionTimer(sid):
