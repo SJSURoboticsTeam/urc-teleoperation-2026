@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { MetricsContext } from "../contexts/MetricsContext";
 import { useAntennaData } from "../components/metrics/antennaData";
 
@@ -74,27 +74,52 @@ export const MetricsProvider = ({ children }) => {
     setRxData5([]);
   }, [resetCount]);
 
-  const resetGraphs = () => setResetCount((count) => count + 1);
+  const resetGraphs = useCallback(
+    () => setResetCount((count) => count + 1),
+    [],
+  );
 
-  const value = {
-    running,
-    setRunning,
-    points,
-    setPoints,
-    time,
-    resetGraphs,
-    colors,
-    antenna900,
-    antenna5,
-    signalData900,
-    signalData5,
-    noiseData900,
-    noiseData5,
-    txData900,
-    rxData900,
-    txData5,
-    rxData5,
-  };
+  // Keep the same value object until one of its parts changes. colors is a
+  // module constant and the setters never change, so they stay out of the
+  // list. antenna900/antenna5 still change about once a second (delay tick),
+  // so readers of this context still re-render at that rate.
+  const value = useMemo(
+    () => ({
+      running,
+      setRunning,
+      points,
+      setPoints,
+      time,
+      resetGraphs,
+      colors,
+      antenna900,
+      antenna5,
+      signalData900,
+      signalData5,
+      noiseData900,
+      noiseData5,
+      txData900,
+      rxData900,
+      txData5,
+      rxData5,
+    }),
+    [
+      running,
+      points,
+      time,
+      resetGraphs,
+      antenna900,
+      antenna5,
+      signalData900,
+      signalData5,
+      noiseData900,
+      noiseData5,
+      txData900,
+      rxData900,
+      txData5,
+      rxData5,
+    ],
+  );
 
   return (
     <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>
