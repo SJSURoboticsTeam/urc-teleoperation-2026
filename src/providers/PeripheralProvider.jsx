@@ -7,8 +7,8 @@ import { useSerial } from "../contexts/SerialContext";
 
 function ReconnectAction({
   snackbarId,
-  disconnectRoverPeripheral,
-  connectRoverPeripheral,
+  disconnectPeripheral,
+  connectPeripheral,
   clearCanWarning,
   canId,
 }) {
@@ -19,8 +19,8 @@ function ReconnectAction({
 
 
     try {
-      await disconnectRoverPeripheral(canId);
-      await connectRoverPeripheral(canId);
+      await disconnectPeripheral(canId);
+      await connectPeripheral(canId);
       clearCanWarning(canId, snackbarId);
     } catch (error) {
       console.error(error);
@@ -103,6 +103,8 @@ export const PeripheralProvider = ({ children }) => {
   const previousCanIds = useRef({
     drive: servercanState.drive.id,
     arm: servercanState.arm.id,
+    science: servercanState.science.id,
+    antenna: basecanState.antenna.id,
   });
   const clearCanWarning = useCallback(
     (canId, fallbackSnackbarId) => {
@@ -122,16 +124,18 @@ export const PeripheralProvider = ({ children }) => {
     const currentCanIds = {
       drive: servercanState.drive.id,
       arm: servercanState.arm.id,
+      science: servercanState.science.id,
+      antenna: basecanState.antenna.id,
     };
 
     // Centralize warning cleanup so every source of a CAN ID change is covered.
-    for (const canId of ["drive", "arm"]) {
+    for (const canId of ["drive", "arm", "science", "antenna"]) {
       if (previousCanIds.current[canId] !== currentCanIds[canId]) {
         clearCanWarning(canId);
       }
     }
     previousCanIds.current = currentCanIds;
-  }, [servercanState.arm.id, servercanState.drive.id, clearCanWarning]);
+  }, [servercanState.arm.id, servercanState.drive.id, servercanState.science.id, basecanState.antenna.id, clearCanWarning]);
 
   const requestCanInfo = useCallback(() => {
     // lock the ui so user can't do anything while loading
@@ -195,18 +199,23 @@ export const PeripheralProvider = ({ children }) => {
       console.log("Refreshing CAN state");
       clearCanWarning("drive");
       clearCanWarning("arm");
+      clearCanWarning("science");
+      requestCanInfo();
+    };
+    const updateBaseCan = () => {
+      clearCanWarning("antenna");
       requestCanInfo();
     };
     robotsocket.on("forcecanrefresh", updateCan);
     robotsocket.on("connect", updateCan);
-    basesocket.on("forcecanrefresh", requestCanInfo);
-    basesocket.on("connect", requestCanInfo);
+    basesocket.on("forcecanrefresh", updateBaseCan);
+    basesocket.on("connect", updateBaseCan);
 
     return () => {
       robotsocket.off("forcecanrefresh", updateCan);
       robotsocket.off("connect", updateCan);
-      basesocket.off("forcecanrefresh", requestCanInfo);
-      basesocket.off("connect", requestCanInfo);
+      basesocket.off("forcecanrefresh", updateBaseCan);
+      basesocket.off("connect", updateBaseCan);
     };
   }, [requestCanInfo, clearCanWarning]);
 
@@ -390,8 +399,9 @@ export const PeripheralProvider = ({ children }) => {
         action: (snackbarId) => (
           <ReconnectAction
             snackbarId={snackbarId}
-            connectRoverPeripheral={connectRoverPeripheral}
-            disconnectRoverPeripheral={disconnectRoverPeripheral}
+            // Antenna CAN runs on the base; drive, arm, and science run on the rover.
+            connectPeripheral={canId === "antenna" ? connectBasePeripheral : connectRoverPeripheral}
+            disconnectPeripheral={canId === "antenna" ? disconnectBasePeripheral : disconnectRoverPeripheral}
             clearCanWarning={clearCanWarning}
             canId={canId}
           />
@@ -402,15 +412,21 @@ export const PeripheralProvider = ({ children }) => {
 
     robotsocket.on("canoverload", sendCanWarningToast);
     robotsocket.on("canoverloadclear", clearCanWarning);
+    basesocket.on("canoverload", sendCanWarningToast);
+    basesocket.on("canoverloadclear", clearCanWarning);
 
     return () => {
       robotsocket.off("canoverload", sendCanWarningToast);
       robotsocket.off("canoverloadclear", clearCanWarning);
+      basesocket.off("canoverload", sendCanWarningToast);
+      basesocket.off("canoverloadclear", clearCanWarning);
     };
   }, [
     enqueueSnackbar,
     connectRoverPeripheral,
     disconnectRoverPeripheral,
+    connectBasePeripheral,
+    disconnectBasePeripheral,
     clearCanWarning,
   ]);
 
