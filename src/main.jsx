@@ -17,6 +17,7 @@ import ArmView from "./views/ArmView";
 import ScienceView from "./views/ScienceView";
 import AutonomyView from "./views/AutonomyView";
 import ExtrasView from "./views/ExtrasView";
+import CameraGraphs from "./components/metrics/cameraGraph";
 import SerialConsole from "./components/serial/SerialConsole";
 // extras panes
 import { Graphs, Files, SpeedTestView } from "./views/ExtrasView";
@@ -57,9 +58,22 @@ const approuter = createBrowserRouter([
         path: "autonomy",
         element: <AutonomyView />,
       },
+      {
+      path: "graphs",
+      children: [
         {
-        path: "graphs",
-        element: <Graphs />,
+          index: true,
+          element: <Navigate to="/graphs/antennas" replace />,
+        },
+        {
+          path: "antennas",
+          element: <Graphs />,
+        },
+        {
+          path: "cameras",
+          element: <CameraGraphs />,
+        },
+      ],
       },
       {
         path: "extras",
