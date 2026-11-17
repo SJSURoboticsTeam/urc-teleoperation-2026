@@ -85,9 +85,7 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
         aria-label="Open competition timer manager"
         aria-expanded={isClockOpen}
         aria-controls="competition-timer-manager"
-        onClick={() =>
-          setOpenPane(isClockOpen ? "None" : "Clock")
-        }
+        onClick={() => setOpenPane("Clock")}
         onKeyDown={handleClockKeyDown}
         sx={{
           borderRadius: 1,
