@@ -68,10 +68,10 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
   const isFinished = timerState.status === "finished";
 
   const timerIconColor = isRunning
-  ? "warning.main"
-  : isFinished
-    ? "error.main"
-    : "info.main";
+      ? "warning.main"
+      : isFinished
+        ? "error.main"
+        : "info.main";
 
   const remainingMinutes = Math.floor(remainingSeconds / 60);
 
@@ -110,7 +110,6 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
         onKeyDown={handleClockKeyDown}
         sx={{
           borderRadius: 1,
-          mr: 2,
           "&:focus-visible": {
             outline: "2px solid currentColor",
             outlineOffset: 2,
@@ -124,8 +123,8 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
         >
           <Box
             sx={{
-              width: 28,
-              height: 28,
+              width: 24,
+              height: 24,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
@@ -138,9 +137,18 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
             <TimerOutlined fontSize="small" />
           </Box>
 
-          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+          <Typography
+            component="span"
+            sx={{
+              whiteSpace: "nowrap",
+              fontSize: 12,
+              fontWeight: 700,
+              lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {isStopwatch
-              ? `Stopwatch ${formatTime(elapsedSeconds)}`
+              ? `stopwatch ${formatTime(elapsedSeconds)}`
               : `${remainingMinutes}m remaining`}
           </Typography>
         </Stack>
