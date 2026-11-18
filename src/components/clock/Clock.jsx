@@ -9,8 +9,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import TimerOutlined from "@mui/icons-material/TimerOutlined";
 import { useCompetitionTimer } from "../../contexts/CompetitionTimerContext";
-
 import { useConnectionStatus } from "../../contexts/ConnectionContext";
 
 function formatTime(seconds) {
@@ -52,14 +52,13 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
   const isRunning = timerState.status === "running";
   const isFinished = timerState.status === "finished";
 
-  const remainingMinutes = Math.floor(remainingSeconds / 60);
+  const timerIconColor = isRunning
+  ? "warning.main"
+  : isFinished
+    ? "error.main"
+    : "info.main";
 
-  const remainingPercent =
-    timerState.durationSeconds > 0
-      ? Math.round(
-          (remainingSeconds / timerState.durationSeconds) * 100,
-        )
-      : 0;
+  const remainingMinutes = Math.floor(remainingSeconds / 60);
 
   const isClockOpen = openPane === "Clock";
 
@@ -108,18 +107,21 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
           spacing={0.75}
           alignItems="center"
         >
-          {!isStopwatch && (
-            <LinearProgress
-              variant="determinate"
-              value={remainingPercent}
-              sx={{
-                width: 28,
-                height: 6,
-                borderRadius: 3,
-              }}
-              aria-label={`${remainingPercent}% timer remaining`}
-            />
-          )}
+          <Box
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: timerIconColor,
+              color: "common.white",
+              boxShadow: isRunning ? 2 : 0,
+            }}
+          >
+            <TimerOutlined fontSize="small" />
+          </Box>
 
           <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
             {isStopwatch
