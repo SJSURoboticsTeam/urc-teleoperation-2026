@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useSnackbar } from "notistack";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
@@ -170,19 +170,32 @@ export const GPSProvider = ({ children }) => {
         setHasUnsavedTrail(false);
     }, [enqueueSnackbar]);
 
-    const value = {
-        robotCoordinates,
-        baseCoordinates,
-        robotSignalDiff,
-        baseSignalDiff,
-        trailPoints,
-        trailReady,
-        isRecording,
-        hasUnsavedTrail,
-        startRecording,
-        stopRecording,
-        clearTrail,
-    };
+    const value = useMemo(
+        () => ({
+            robotCoordinates,
+            baseCoordinates,
+            robotSignalDiff,
+            baseSignalDiff,
+            trailPoints,
+            trailReady,
+            isRecording,
+            hasUnsavedTrail,
+            startRecording,
+            stopRecording,
+            clearTrail,
+        }),
+        [
+            robotCoordinates,
+            baseCoordinates,
+            trailPoints,
+            trailReady,
+            isRecording,
+            hasUnsavedTrail,
+            startRecording,
+            stopRecording,
+            clearTrail,
+        ],
+    );
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;
 };
