@@ -9,9 +9,10 @@ import Metrics from "../components/metrics/metricsPanel";
 import StateMachine from "../components/statemachine/statemachine";
 import BatteryDisplay from "../components/battery/batteryDisplay";
 import CameraManager from "../components/cameras/CameraManager"
-import Clock from "../components/clock/Clock";
 import GPSManager from "../components/gps/gpsManager";
 import { useConnectionStatus } from "../contexts/ConnectionContext";
+
+import Clock from "../components/clock/Clock";
 
 export default function TopAppBar({showbottbar }) {
   const [openPane, setOpenPane] = useState("None");
@@ -27,7 +28,12 @@ export default function TopAppBar({showbottbar }) {
       >
         <Toolbar>
           <BatteryDisplay/>
-          <Clock openPane={openPane} setOpenPane={setOpenPane} openUp/>
+
+          <Clock
+            openPane={openPane}
+            setOpenPane={setOpenPane}
+            openUp
+          />
 
           {/* fill the space between the buttons and the connection status */}
           <div style={{ flexGrow: 1 }} />

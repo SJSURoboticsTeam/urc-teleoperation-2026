@@ -266,7 +266,7 @@ export default function TopAppBar({
         </Toolbar>
       </AppBar>
       {/* Drawer for side panel comopnents */}
-      <MenuPane 
+      <MenuPane
         drawerOpen={drawerOpen}
         toggleDrawer={toggleDrawer}
         navigate={navigate}
