@@ -108,12 +108,17 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
 
   // polling effects
 
+  // Polls skip ticks while their socket is offline. Socket.IO buffers emits
+  // made while disconnected and flushes them all on reconnect, so unguarded
+  // polls would send a burst of stale pings when the link comes back.
+
   // ROBOT
 
   useEffect(() => {
     let interval;
     // send a ping to the server every 750ms and measure latency
     function checkLatency() {
+      if (!robotsocket.connected) return;
       const start = Date.now();
       robotsocket.emit("pingCheck", () => {
         setRobotLatency(Date.now() - start);
@@ -129,6 +134,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
     let interval;
     // send a ping to the server every 2s to get number of connected clients from backend
     function numClients() {
+      if (!robotsocket.connected) return;
       robotsocket.emit("getConnections", (connections) => {
         setRobotNumConnections(connections);
       });
@@ -159,6 +165,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
     let interval;
     // send a ping to the server every 750ms and measure latency
     function checkLatency() {
+      if (!basesocket.connected) return;
       const start = Date.now();
       basesocket.emit("pingCheck", () => {
         setBaseLatency(Date.now() - start);
@@ -172,6 +179,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
     let interval;
     // send a ping to the server every 2s to get number of connected clients from backend
     function numClients() {
+      if (!basesocket.connected) return;
       basesocket.emit("getConnections", (connections) => {
         setBaseNumConnections(connections);
       });

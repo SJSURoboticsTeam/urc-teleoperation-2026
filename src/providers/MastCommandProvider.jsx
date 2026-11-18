@@ -1,5 +1,5 @@
 import { MastCommandContext } from "../contexts/MastCommandContext";
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 
 // Import in App.jsx and wrap around components that need access to it
 export default function MastCommandProvider({ children }) {
@@ -10,8 +10,15 @@ export default function MastCommandProvider({ children }) {
     panSpeed: 50,
   });
   const panAnglesRef = useRef({ px: 0, py: 0, wheelsx: 0 });
+  // Keep the same value object until mastCommands changes, so a provider
+  // re-render alone doesn't re-render every reader. The ref and setter never
+  // change identity.
+  const value = useMemo(
+    () => ({ panAnglesRef, mastCommands, setMastCommands }),
+    [mastCommands],
+  );
   return (
-    <MastCommandContext.Provider value={{ panAnglesRef, mastCommands, setMastCommands }}>
+    <MastCommandContext.Provider value={value}>
       {children}
     </MastCommandContext.Provider>
   );

@@ -84,6 +84,13 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
   );
 }
 
+function unmountControlRoot(root, container) {
+  container?.remove();
+  if (root) {
+    setTimeout(() => root.unmount(), 0);
+  }
+}
+
 class TrailControl {
   onAdd() {
     this._container = document.createElement("div");
@@ -95,8 +102,7 @@ class TrailControl {
     this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} importedTrail={importedTrail} onImport={onImport} onClearImport={onClearImport} />);
   }
   onRemove() {
-    this._root?.unmount();
-    this._container?.remove();
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -172,12 +178,7 @@ class CoordControl {
     );
   }
   onRemove() {
-    if (this._root) {
-      this._root.unmount();
-    }
-    if(this._container && this._container.parentNode) {
-      this._container.parentNode.removeChild(this._container);
-    }
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -271,12 +272,7 @@ class LockOnControl {
     );
   }
   onRemove() {
-    if (this._root) {
-      this._root.unmount();
-    }
-    if(this._container && this._container.parentNode) {
-      this._container.parentNode.removeChild(this._container);
-    }
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -327,12 +323,7 @@ class ResetZoomControl {
     );
   }
   onRemove() {
-    if (this._root) {
-      this._root.unmount();
-    }
-    if(this._container && this._container.parentNode) {
-      this._container.parentNode.removeChild(this._container);
-    }
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
