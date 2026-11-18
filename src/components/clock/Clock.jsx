@@ -44,6 +44,21 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
     ? elapsedSeconds
     : remainingSeconds;
 
+  const timerSelection = isStopwatch
+  ? "stopwatch"
+  : String(timerState.presetMinutes);
+
+  const handleTimerSelectionChange = (event) => {
+    const value = event.target.value;
+
+    if (value === "stopwatch") {
+      setMode("stopwatch");
+      return;
+    }
+
+    setPreset(Number(value));
+  };
+
   const progress =
     !isStopwatch && timerState.durationSeconds > 0
       ? (remainingSeconds / timerState.durationSeconds) * 100
@@ -186,41 +201,24 @@ export default function Clock({ openPane, setOpenPane, openUp = false }) {
 
             <Select
               size="small"
-              value={timerState.mode}
+              value={timerSelection}
+              inputProps={{ "aria-label": "Timer selection" }}
               disabled={
                 isLoading ||
                 isRunning ||
                 !backendAvailable
               }
-              onChange={(event) => setMode(event.target.value)}
-              inputProps={{
-                "aria-label": "Timer mode",
-              }}
-            >
-              <MenuItem value="countdown">
-                Countdown
-              </MenuItem>
-              <MenuItem value="stopwatch">
-                Stopwatch
-              </MenuItem>
-            </Select>
-
-            <Select
-              size="small"
-              value={timerState.presetMinutes}
-              inputProps={{ "aria-label": "Timer preset" }}
-              disabled={
-                isLoading ||
-                isRunning ||
-                !backendAvailable
-              }
-              onChange={(event) => setPreset(Number(event.target.value))}
+              onChange={handleTimerSelectionChange}
             >
               {[5, 10, 15, 20, 30, 45, 60].map((minutes) => (
-                <MenuItem key={minutes} value={minutes}>
+                <MenuItem key={minutes} value={String(minutes)}>
                   {minutes} minutes
                 </MenuItem>
               ))}
+
+              <MenuItem value="stopwatch">
+                Stopwatch
+              </MenuItem>
             </Select>
 
             <Stack direction="row" spacing={1}>

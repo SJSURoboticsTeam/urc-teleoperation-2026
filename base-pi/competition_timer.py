@@ -101,6 +101,7 @@ class CompetitionTimer:
         if self.status == "running":
             raise ValueError("Cannot change timer preset while running")
 
+        self.mode = "countdown"
         self.preset_minutes = minutes
         self.duration_seconds = minutes * 60
         self.remaining_ms = self.duration_seconds * 1000

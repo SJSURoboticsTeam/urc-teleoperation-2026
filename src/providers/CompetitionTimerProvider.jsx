@@ -159,7 +159,7 @@ export default function CompetitionTimerProvider({ children }) {
 
           nextState = {
             ...DEFAULT_TIMER_STATE,
-            mode: timerState.mode,
+            mode: "countdown",
             presetMinutes,
             durationSeconds: presetMinutes * 60,
             remainingSeconds: presetMinutes * 60,
