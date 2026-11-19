@@ -44,7 +44,7 @@ export default function CameraGraphs() {
           </FormControl>
         </Box>
       </div>
-      <Box sx={{ width: "75%" }}>
+      <Box sx={{ width: 700 }}>
         <LineChart
           height={350}
           width={700}
