@@ -554,7 +554,7 @@ export default function ArmView() {
                   <line x1="145" y1="58" x2="177" y2="82" stroke="#4aa3ae" strokeWidth="19.5" />
                   <line x1="145" y1="58" x2="177" y2="82" stroke="#80cdd6" strokeWidth="18" />
                 </g>
-                <g transform={`rotate(${pitchRotation} 177 82)`}>
+                <g transform={`rotate(${pitchRotation - 90} 177 82)`}>
                   <g
                     id="clamp1"
                     transform={`rotate(${-clampRotation} 177 92)`}
