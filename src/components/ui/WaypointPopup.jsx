@@ -32,13 +32,17 @@ function PoiNameField({ name, onRename }) {
 }
 
 // Popup shown when a waypoint pin is clicked: compare it with the rover, base, or another pin,
-// set it as a science site, or delete it. POIs can also be renamed here.
+// set it as a science site or autonomy target, or delete it. POIs can also be renamed here.
 // Kept compact, with delete at the top, because short maps on laptop screens cut off the bottom of tall popups.
-export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, baseCoordinates, scienceLocked, targetsLocked, onSetScienceSite, onRenamePoi, onDelete }) {
+export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, baseCoordinates, scienceLocked, targetsLocked, roverConnected, autonomyTargetIds, onSetAs, onRenamePoi, onDelete }) {
   const isPoi = waypoint.type === "poi";
   // Science sites follow the same lock as their other buttons, and autonomy targets can't change while the rover drives.
   // POIs can always be edited.
   const deleteLocked = (waypoint.type === "science" && scienceLocked) || (waypoint.type === "autonomy" && targetsLocked);
+  // Autonomy targets are stored on the rover, so setting one also needs a rover connection
+  const targetsBlocked = targetsLocked || !roverConnected;
+  // "Set as" moves the pin, which also empties the slot it is in now, so that slot must be unlocked too
+  const setAsBlocked = { science: scienceLocked || deleteLocked, autonomy: targetsBlocked || deleteLocked };
   // Science sites are GPS readings taken in the field and hard to redo, so deleting one asks first
   const confirmDelete = waypoint.type === "science";
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -104,26 +108,45 @@ export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, b
           ))}
         </NativeSelect>
       </Box>
-      <Typography variant="body2">
-        {result
-          ? `${compare.name} → ${waypoint.name}: ${result.distanceMeters.toFixed(1)} m, ${result.headingDegrees.toFixed(1)}° ${compassDirection(result.headingDegrees)}`
-          : `${compare.name}: no GPS signal`}
-      </Typography>
+      {/* Names on one line and the numbers on the next, so long names don't wrap in the middle of the result */}
+      {result ? (
+        <Box>
+          <Typography variant="body2" noWrap title={`${compare.name} → ${waypoint.name}`}>{compare.name} → {waypoint.name}</Typography>
+          <Typography variant="body2" fontWeight="bold">
+            {result.distanceMeters.toFixed(1)} m, {result.headingDegrees.toFixed(1)}° {compassDirection(result.headingDegrees)}
+          </Typography>
+        </Box>
+      ) : (
+        <Typography variant="body2">{compare.name}: no GPS signal</Typography>
+      )}
 
       <Divider />
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap", mr: 0.5 }}>Set as</Typography>
+      {/* Six columns: each science site spans two, each autonomy location spans three */}
+      <Box sx={{ display: "grid", gridTemplateColumns: "auto repeat(6, 1fr)", alignItems: "center", gap: 0.5, "& .MuiButton-root": { minWidth: 0, fontSize: "0.75rem", py: 0.25 } }}>
+        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap", mr: 0.5, gridRow: "span 2" }}>Set as</Typography>
         {[1, 2, 3].map((site) => (
           <Button
             key={site}
             size="small"
             variant="outlined"
-            disabled={scienceLocked || waypoint.scienceSite === site}
-            onClick={() => onSetScienceSite(site)}
-            sx={{ minWidth: 0, flex: 1, fontSize: "0.75rem", py: 0.25 }}
+            disabled={setAsBlocked.science || waypoint.scienceSite === site}
+            onClick={() => onSetAs("science", site)}
+            sx={{ gridColumn: "span 2" }}
           >
             Site {site}
+          </Button>
+        ))}
+        {autonomyTargetIds.map((id) => (
+          <Button
+            key={id}
+            size="small"
+            variant="outlined"
+            disabled={setAsBlocked.autonomy || waypoint.targetId === id}
+            onClick={() => onSetAs("autonomy", id)}
+            sx={{ gridColumn: "span 3" }}
+          >
+            {id}
           </Button>
         ))}
       </Box>
@@ -132,9 +155,14 @@ export default function WaypointPopup({ waypoint, waypoints, robotCoordinates, b
           Science sites are locked while autonomy or Soft Stop is active.
         </Typography>
       )}
-      {waypoint.type === "autonomy" && targetsLocked && (
+      {targetsLocked && (
         <Typography variant="caption" color="error">
           Autonomy targets can't change while the rover is moving.
+        </Typography>
+      )}
+      {!roverConnected && (
+        <Typography variant="caption" color="text.secondary">
+          Autonomy targets need a rover connection.
         </Typography>
       )}
     </Box>

@@ -207,10 +207,11 @@ export const GPSProvider = ({ children }) => {
     }, [setPois]);
 
     // Swap in a whole set of POIs ({ name, lat, long }), e.g. from an imported map file or Clear Map.
-    // The counter skips past imported "POI N" names so new pins don't duplicate them.
+    // The old POIs are gone, so numbering restarts: at POI 1 after Clear Map, or right after the
+    // highest imported "POI N" so new pins don't duplicate an imported name.
     const replacePois = useCallback((list) => {
         const importedNumbers = list.map((poi) => Number(/^POI (\d+)$/.exec(poi.name)?.[1] ?? 0));
-        setNextPoiNumber((prev) => Math.max(prev, ...importedNumbers.map((number) => number + 1)));
+        setNextPoiNumber(Math.max(1, ...importedNumbers.map((number) => number + 1)));
         const now = Date.now();
         setPois(list.map((poi, index) => ({ id: `poi-${now}-import-${index}`, name: poi.name, lat: poi.lat, long: poi.long })));
     }, [setPois, setNextPoiNumber]);

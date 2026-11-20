@@ -583,10 +583,10 @@ const WAYPOINT_STYLES = {
   poi: { color: "#455a64", Icon: PlaceIcon },
 };
 
-// Science pins are larger and ringed in yellow so they stand out from other waypoints
+// Mission pins (science sites and autonomy targets) are larger and ringed in yellow so they stand out from POIs
 function WaypointPin({ waypoint }) {
   const { color, Icon } = WAYPOINT_STYLES[waypoint.type] ?? WAYPOINT_STYLES.poi;
-  const highlighted = waypoint.type === "science";
+  const highlighted = waypoint.type !== "poi";
   const size = highlighted ? 34 : 26;
   const label = waypoint.name;
 
@@ -725,22 +725,38 @@ export default function Map() {
     });
   }, [sendAutonomyCommand]);
 
-  // Science and POI pins move into the site, so they don't leave a duplicate pin stacked on the same spot.
-  // A science pin keeps its GPS accuracy. Autonomy pins only copy, since they are separate autonomy targets.
-  const setScienceSiteFromWaypoint = (site) => {
-    if (scienceLocked || !openWaypoint) return;
-    const movingFrom = openWaypoint.scienceSite;
-    setSiteReadings((prev) => {
-      const next = [...prev];
-      next[site - 1] = movingFrom
-        ? prev[movingFrom - 1]
-        : { lat: openWaypoint.lat, long: openWaypoint.long, accuracy_m: null, capturedAt: Date.now() };
-      if (movingFrom) next[movingFrom - 1] = null;
-      return next;
-    });
-    if (openWaypoint.type === "poi") removePoi(openWaypoint.id);
-    const moved = movingFrom ? `Site ${movingFrom}` : openWaypoint.type === "poi" ? openWaypoint.name : null;
-    enqueueSnackbar(moved ? `${moved} moved to Site ${site}` : `Site ${site} set to ${openWaypoint.name}'s location`, { variant: "success" });
+  // "Set as" moves any pin into a science site (kind "science", slot 1-3) or autonomy target (kind "autonomy",
+  // slot "Location 1"/"Location 2"). The pin leaves its old POI, site, or target, so no duplicate pin is left
+  // stacked on the same spot, and whatever was in the chosen slot is replaced.
+  const setWaypointAs = (kind, slot) => {
+    if (!openWaypoint) return;
+    const { type, name, scienceSite, targetId, lat, long } = openWaypoint;
+    // The move changes both the old slot and the new one, so both must be unlocked (the popup disables the same cases)
+    const touchesScience = kind === "science" || type === "science";
+    const touchesTargets = kind === "autonomy" || type === "autonomy";
+    if ((touchesScience && scienceLocked) || (touchesTargets && (targetsLocked || !autonomyState))) return;
+
+    if (touchesScience) {
+      setSiteReadings((prev) => {
+        const next = [...prev];
+        if (type === "science") next[scienceSite - 1] = null;
+        // A site moving to another site keeps its GPS accuracy
+        if (kind === "science") next[slot - 1] = type === "science" ? prev[scienceSite - 1] : { lat, long, accuracy_m: null, capturedAt: Date.now() };
+        return next;
+      });
+    }
+    // One setTargets call both empties the old target and fills the new one
+    if (touchesTargets) {
+      let nextTargets = targets.filter((target) => target.id !== targetId);
+      if (kind === "autonomy") {
+        // A POI's name or the target's own label carries over; a science site has no label of its own
+        const label = type === "poi" ? name : targets.find((target) => target.id === targetId)?.label ?? "";
+        nextTargets = [...nextTargets.filter((target) => target.id !== slot), { id: slot, label, latitude: lat, longitude: long }];
+      }
+      sendTargets(nextTargets);
+    }
+    if (type === "poi") removePoi(openWaypoint.id);
+    enqueueSnackbar(`${name} moved to ${kind === "science" ? `Site ${slot}` : slot}`, { variant: "success" });
   };
 
   // Delete from the popup: a POI is removed; a science site or autonomy location is emptied in its own pane
@@ -1176,8 +1192,8 @@ export default function Map() {
       const { marker, root } = markers[wp.id];
       marker.setLngLat([wp.long, wp.lat]);
       marker.getElement().title = `${wp.name}\n${wp.lat.toFixed(6)}, ${wp.long.toFixed(6)}`;
-      // Keep highlighted science pins on top of overlapping waypoints
-      marker.getElement().style.zIndex = wp.type === "science" ? 1 : "";
+      // Keep highlighted pins on top of overlapping POIs, with science sites above autonomy targets
+      marker.getElement().style.zIndex = { science: 2, autonomy: 1 }[wp.type] ?? "";
       root.render(<WaypointPin waypoint={wp} />);
     }
   }, [waypoints]);
@@ -1275,7 +1291,9 @@ export default function Map() {
           baseCoordinates={baseCoordinates}
           scienceLocked={scienceLocked}
           targetsLocked={targetsLocked}
-          onSetScienceSite={setScienceSiteFromWaypoint}
+          roverConnected={Boolean(autonomyState)}
+          autonomyTargetIds={AUTONOMY_TARGET_IDS}
+          onSetAs={setWaypointAs}
           onRenamePoi={(name) => renamePoi(openWaypoint.id, name)}
           onDelete={deleteWaypoint}
         />,
