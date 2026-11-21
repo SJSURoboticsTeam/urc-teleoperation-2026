@@ -50,7 +50,9 @@ export default function ArmView() {
 
   const armConnectedOne = connectedGamepads.arm;
   const gamepadMode = armConnectedOne != null;
-  const controlsLocked = autonomyEnabled || softStopActive;
+
+  const [homingActive, setHomingActive] = useState(false);
+  const controlsLocked = autonomyEnabled || softStopActive || homingActive;
 
   const [txon, settxon] = useState(false);
   const [txPulse, setTxPulse] = useState(false);
@@ -230,6 +232,15 @@ export default function ArmView() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleHomingState = ({ active }) => {
+      setHomingActive(Boolean(active));
+    };
+
+    robotsocket.on("armHomingState", handleHomingState);
+    return () => robotsocket.off("armHomingState", handleHomingState);
+  }, []);
+
   // Clear pulse timers on unmount.
   useEffect(() => {
     const pulseTimeouts = pulseTimeoutsRef.current;
@@ -259,7 +270,7 @@ export default function ArmView() {
     if (
       controlsLocked ||
       !serverConnected ||
-      canState.armState === "idle" ||
+      servercanState.arm.state === "idle" ||
       txon
     ) {
       return;
@@ -481,7 +492,7 @@ export default function ArmView() {
                 disabled={
                   controlsLocked ||
                   !serverConnected ||
-                  canState.armState === "idle"
+                  servercanState.arm.state === "idle"
                 }
               >
                 Homing

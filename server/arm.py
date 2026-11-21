@@ -16,7 +16,8 @@ from soft_stop import is_soft_stopped
 _session_log = deque(maxlen=5000)
 _last_wrist_motor = {"pitch": None, "roll": None}  
 _arm_homing_active = False
-_arm_homing_timeout_task = None
+_arm_homing_poll_task = None
+_arm_homing_seen = False
 
 def log_frame(direction, raw):
     """direction: 'TX' or 'RX'"""
@@ -105,6 +106,10 @@ RECEIVE_ID_TO_JOINT = {
     "226": "clamp",
 }
 
+_arm_active_action = {
+    joint: None for joint in RECEIVE_ID_TO_JOINT.values()
+}
+
 # Optional temporary test filter for hardware bring-up
 # Limits which joints are actually sent to CAN
 # Ex: {"track"}, {"shoulder"}, {"elbow"}, {"pitch"}, {"roll"}, {"clamp"}
@@ -116,20 +121,6 @@ def should_send_joint(joint_name):
 
 def is_arm_homing():
     return _arm_homing_active
-
-async def clear_arm_homing_after_timeout():
-    """Unlock arm commands if no homing ACK arrives."""
-    global _arm_homing_active, _arm_homing_timeout_task
-
-    try:
-        await asyncio.sleep(30)
-    except asyncio.CancelledError:
-        return
-
-    if _arm_homing_active:
-        _arm_homing_active = False
-        _arm_homing_timeout_task = None
-        print("[ARM] Homing timed out; arm commands unlocked")
 
 def invalidate_arm_connection(serial_ports, reason, failed_port):
     """
@@ -287,7 +278,7 @@ async def send_arm_joint(serial_ports, joint_name, value):
 
 async def send_arm_homing(serial_ports):
     """Start the universal arm homing sequence over CAN."""
-    arm_serial = serial_ports.get("arm")
+    arm_serial = serial_ports["arm"]["port"]
     if arm_serial is None:
         print("[ARM] Homing ignored: arm not connected")
         return False
@@ -302,8 +293,40 @@ async def send_arm_homing(serial_ports):
         return True
     except Exception as e:
         print(f"[ARM] Homing send failed: {e}")
-        invalidate_arm_connection(serial_ports, "homing send failure")
+        invalidate_arm_connection(serial_ports, "homing send failure", arm_serial)
         return False
+
+async def request_arm_active_action(serial_ports, joint_name):
+    arm_serial = serial_ports["arm"]["port"]
+    if arm_serial is None or joint_name not in JOINT_TO_CAN_KEY:
+        return False
+
+    can_key = JOINT_TO_CAN_KEY[joint_name]
+    can_msg = f"t{arm_send_ID[can_key]}129\r"  # DLC 1, command 0x29
+
+    try:
+        await asyncio.to_thread(arm_serial.write, can_msg.encode())
+        return True
+    except Exception as e:
+        print(f"[ARM] Active-action request failed for {joint_name}: {e}")
+        invalidate_arm_connection(
+            serial_ports, f"active-action request failure on {joint_name}", arm_serial
+        )
+        return False
+
+async def monitor_arm_homing(serial_ports):
+    while is_arm_homing():
+        for joint_name in RECEIVE_ID_TO_JOINT.values():
+            if not is_arm_homing():
+                return
+
+            if not await request_arm_active_action(serial_ports, joint_name):
+                await asyncio.sleep(0.1)
+                break
+
+            await asyncio.sleep(0.05)
+
+        await asyncio.sleep(0.1)
     
 _wrist_lock = asyncio.Lock()
 
@@ -504,19 +527,36 @@ def parse_arm_data(data, serial_ports):
     if can_id == arm_receive_ID["RECEIVE_STOP"]:
         return parse_receive_stop()
 
-    if (can_id == "220" and frame_info["dlc"] == 1 and frame_info["payload_bytes"] == b"\x11"):
-        global _arm_homing_active, _arm_homing_timeout_task
-
-        if _arm_homing_active:
-            _arm_homing_active = False
-            if _arm_homing_timeout_task is not None:
-                _arm_homing_timeout_task.cancel()
-                _arm_homing_timeout_task = None
-            print("[ARM ACK] Universal homing response received; arm commands unlocked")
-
-        return {"type": "homing_ack", "frame": frame_info["frame"]}
-
     if can_id in RECEIVE_ID_TO_JOINT:
+        if frame_info["dlc"] == 2:
+            payload = frame_info["payload_bytes"]
+            if len(payload) == 2 and payload[0] == 0x29:
+                global _arm_homing_active, _arm_homing_seen
+
+                joint_name = RECEIVE_ID_TO_JOINT[can_id]
+                action = payload[1]
+                _arm_active_action[joint_name] = action
+
+                if action == 2:  # 2 = homing
+                    _arm_homing_seen = True
+
+                if (
+                    _arm_homing_active
+                    and _arm_homing_seen
+                    and all(
+                        value is not None and value != 2
+                        for value in _arm_active_action.values()
+                    )
+                ):
+                    _arm_homing_active = False
+                    print("[ARM] All servos report homing complete")
+                    return {"type": "homing_complete"}
+
+                return {
+                    "type": "active_action",
+                    "joint": joint_name,
+                    "action": action,
+                }
         # both ACK and position are DLC=4; route by Data[0]
         if frame_info["dlc"] == 4:
             payload = frame_info["payload_bytes"]
@@ -639,32 +679,32 @@ def register_arm_events(sio, serial_ports):
 
     @sio.event
     async def armHoming(sid):
-        global _arm_homing_active, _arm_homing_timeout_task
+        global _arm_homing_active, _arm_homing_poll_task, _arm_homing_seen
 
         if is_soft_stopped():
             print(f"[{sid}] armHoming ignored: soft stop active")
             return "ERROR"
-        if serial_ports["arm"] is None:
+        if serial_ports["arm"]["port"] is None:
             print(f"[{sid}] armHoming ignored: arm not connected")
             return "ERROR"
         if _arm_homing_active:
             print(f"[{sid}] armHoming ignored: homing already active")
             return "ERROR"
 
-        _arm_homing_active = True
+        for joint_name in _arm_active_action:
+            _arm_active_action[joint_name] = None
 
-        if _arm_homing_timeout_task is not None:
-            _arm_homing_timeout_task.cancel()
-        _arm_homing_timeout_task = asyncio.create_task(
-            clear_arm_homing_after_timeout()
-        )
+        _arm_homing_seen = False
+        _arm_homing_active = True
 
         if not await send_arm_homing(serial_ports):
             _arm_homing_active = False
-            _arm_homing_timeout_task.cancel()
-            _arm_homing_timeout_task = None
             return "ERROR"
 
+        await sio.emit("armHomingState", {"active": True})
+        _arm_homing_poll_task = asyncio.create_task(
+            monitor_arm_homing(serial_ports)
+        )
         return "OK"
 
 async def request_arm_position_loop(serial_ports):
@@ -720,8 +760,11 @@ async def read_arm_can_loop(serial_ports, sio):
                 continue
             if data:
                 parsed = parse_arm_data(data, serial_ports)
-                if isinstance(parsed, dict) and parsed.get("type") == "position":
-                    await sio.emit("armFeedback", parsed)
+                if isinstance(parsed, dict):
+                    if parsed.get("type") == "position":
+                        await sio.emit("armFeedback", parsed)
+                    elif parsed.get("type") == "homing_complete":
+                        await sio.emit("armHomingState", {"active": False})
 
             # time.sleep(0.01)
             await asyncio.sleep(0.01)
