@@ -28,9 +28,17 @@ from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
 from serial_console import SerialConsole, register_serial_console_events
-from drive_control import register_drive_control_events, release_drive_control
+from drive_control import register_drive_control_events, release_drive_control, revoke_drive_control
 from battery import send_fake_battery_data, get_battery_data
 from led import register_led_events, run_led_demo
+from soft_stop import is_soft_stopped, set_soft_stop
+import rover_mode
+from rover_mode import register_rover_mode_events
+from mock_autonomy import register_mock_autonomy_events
+from science import ScienceSession, register_science_events
+from science_log import ScienceLogger
+from science_mock import MockScienceLink
+from science_can import CanScienceLink, read_science_can_loop
 
 
 print("\033[0m----------------")
@@ -83,6 +91,10 @@ if (autonomy):
 else:
     print("Autonomy integration disabled")
 
+# mock autonomy simulates navigation and typing until the real autonomy stack is wired in
+rover_mode.state["source"] = "mock"
+print("Mock autonomy enabled")
+
 # initialize e-stop
 estop_pin = None
 try:
@@ -101,19 +113,16 @@ except BadPinFactory:
 
 
 print("----------------")
+
 serial_ports = {
-    "drive": None,
-    "driveId" : "disconnect",
-    "drive_status_event": asyncio.Event(),
-    "arm": None,
-    "armId" : "disconnect",
-    "arm_status_event": asyncio.Event(),
-    "gps": None,
-    "gpsId" : "disconnect",
-    "science": None,
-    "scienceId" : "disconnect"
+    "drive": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "arm": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "science": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
+    "gps": {"port": None, "id": "disconnect", "status_event": asyncio.Event(), "lock": asyncio.Lock()},
 }
+canIds_arr = []
 serial_console = SerialConsole()
+science_logger = None
 
 
 
@@ -133,46 +142,24 @@ def shutdown():
     shutting_down = True
     serial_console.close()
     print("Shutting down... ")
-    #drive
+    # shut down all the ids
+    ids = ["drive", "arm", "science", "gps"]
+    for id in ids:
+        try:
+            if serial_ports[id]["port"]:
+                serial_ports[id]["port"].close()
+                print(id.capitalize() + " serial closed.")
+            else:
+                print(id.capitalize() + " was never connected.")
+        except Exception:
+            print(id.upper() + " WAS NOT DISCONNECTED!!!")
+            pass
+    # science log (records are already fsynced, this just closes the file)
     try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
-            print("Drive serial closed.")
-        else:
-            print("Drive was never connected.")
+        if science_logger is not None:
+            science_logger.close()
     except Exception:
-        print("DRIVE WAS NOT DISCONNECTED!!!")
-        pass
-    #arm
-    try:
-        if serial_ports["arm"]:
-            serial_ports["arm"].close()
-            print("Arm serial closed.")
-        else:
-            print("Arm was never connected.")
-    except Exception:
-        print("ARM WAS NOT DISCONNECTED!!!")
-        pass
-    #science
-    try:
-        if serial_ports["science"]:
-            serial_ports["science"].close()
-            print("Science serial closed.")
-        else:
-            print("Science was never connected.")
-    except Exception:
-        print("SCIENCE WAS NOT DISCONNECTED!!!")
-        pass
-    #gps
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            print("GPS serial closed.")
-        else:
-            print("GPS was never connected.")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        pass
+        print("SCIENCE LOG WAS NOT CLOSED CLEANLY!!!")
     # e-stop
     try:
         estop_pin.close()
@@ -214,211 +201,81 @@ async def getCanInfo(sid):
     if USE_UART_DRIVE:
         uart_str = "UART"
 
-    # can ids for web ui
-    canIds_arr = []
+    # global array for peripheral ids, wiped before a scan appending new ids to list
+    canIds_arr.clear()
     for port in list_ports.comports():
         print(f"{port.device} ")
 
-        if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) ):
+        if( (port.device.find("serial") != -1) or (port.device.find("COM")) != -1 or (port.device.find("tty") != -1) or (port.device.find("modem") != -1) ):
             # loose check to remove system serial interfaces
             canIds_arr.append(port.device)
 
     data = {
     'status': "OK",
     'canIds' : canIds_arr,
-    'driveId' : serial_ports["driveId"],
-    'armId' : serial_ports["armId"],
-    'scienceId' : serial_ports["scienceId"],
-    'gpsId' : serial_ports["gpsId"],
+    'driveId' : serial_ports["drive"]["id"],
+    'armId' : serial_ports["arm"]["id"],
+    'scienceId' : serial_ports["science"]["id"],
+    'gpsId' : serial_ports["gps"]["id"],
     "uartMode" : uart_str,
     }
     return data
 
 @sio.event
-async def connectDrive(sid,data):
-    """PeripheralManager backend code to connect Drive"""
-    # connects to can and returns OK or ERROR
-    global serial_ports
-    # prevent double connection
-    if serial_ports["driveId"] != "disconnect":
-        print("DRIVE WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
-    try:
-        # Use UART as a backup / alternative to CAN for drive communication
-        if USE_UART_DRIVE:
-            serial_ports["drive"] = UartDriveSerial(data)
-            print("Drive UART connected.")
-        else:
-            serial_ports["drive"] = CanSerial(data)
-            print("Drive CAN connected.")
-            sio.start_background_task(run_led_demo, serial_ports)
-            
-
-        serial_ports["driveId"] = data
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT DRIVE: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-
-@sio.event
-async def disconnectDrive(sid):
-    """PeripheralManager backend code to disconnect Drive"""
-    # disconnects can and returns OK or ERROR
-    global serial_ports
-    try:
-        if serial_ports["drive"]:
-            serial_ports["drive"].close()
-            serial_ports["drive"] = None
-            serial_ports["driveId"] = "disconnect"
-            print("Drive serial closed.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
-            return("OK")
-        else:
-            print("Drive was never connected.")
-            return("ERROR")
-    except Exception:
-        print("DRIVE WAS NOT DISCONNECTED!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-        pass
-
-@sio.event
-async def connectArm(sid,data):
-    """PeripheralManager backend code to connect Arm"""
-    # connects to can and returns OK or ERROR
-    global serial_ports
-    # prevent double connection
-    try:
-        if serial_ports["arm"] is not None:
-            try:
-                serial_ports["arm"].close()
-            except Exception:
-                pass
-
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-
-        print("Connecting to " + str(data))
-        serial_ports["arm"] = CanSerial(data)
-        serial_ports["armId"] = data
-        print("Arm connected.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return "OK"
-    except Exception as e:
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-        print("FAILURE TO CONNECT ARM: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
+async def connectRoverPeripheral(sid, line, id):
+    """Initialize serial hardware off the event loop, then publish the connection."""
+    # ensure port exists, and id is in list of discovered ids
+    if (line not in serial_ports) or (id not in canIds_arr):
         return "ERROR"
 
-@sio.event
-async def disconnectArm(sid):
-    """PeripheralManager backend code to disconnect Arm"""
-    # disconnects can and returns OK or ERROR
-    global serial_ports
-    try:
-        if serial_ports["arm"]:
-            serial_ports["arm"].close()
+    # Setup yields to other handlers; serialize changes to this peripheral.
+    async with serial_ports[line]["lock"]:
+        if serial_ports[line]["id"] != "disconnect":
+            print(line.upper() + " WAS ALREADY CONNECTED!")
+            return "ERROR"
+        print("Connecting " + line + " to " + str(id))
+        try:
+            if USE_UART_DRIVE and line == "drive":
+                port = await asyncio.to_thread(UartDriveSerial, id)
+            elif line == "gps":
+                port = await asyncio.to_thread(ZEDF9P, id, 57600)
+            else:
+                port = await asyncio.to_thread(CanSerial, id)
 
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-        print("Arm serial closed.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return "OK"
-    except Exception:
-        serial_ports["arm"] = None
-        serial_ports["armId"] = "disconnect"
-        print("ARM WAS NOT DISCONNECTED CLEANLY!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
+            serial_ports[line]["port"] = port
+            serial_ports[line]["id"] = id
+            if line == "drive" and not USE_UART_DRIVE:
+                sio.start_background_task(run_led_demo, serial_ports)
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO CONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
+
+
+@sio.event
+async def disconnectRoverPeripheral(sid, line):
+    """Wait for pending setup before disconnecting the peripheral."""
+    if line not in serial_ports:
         return "ERROR"
+    print("Disconnecting " + line)
 
-@sio.event
-async def connectScience(sid,data):
-    """PeripheralManager backend code to connect Science"""
-    # connects to can and returns OK or ERROR
-    global serial_ports
-    # prevent double connection
-    if serial_ports["scienceId"]!= "disconnect":
-        print("SCIENCE WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
-    try:
-        serial_ports["science"] = CanSerial(data)
-        serial_ports["scienceId"] = data
-        print("Science connected.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT SCIENCE: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
+    async with serial_ports[line]["lock"]:
+        port = serial_ports[line]["port"]
+        # Detach before yielding so background tasks stop using the old port.
+        serial_ports[line]["port"] = None
+        serial_ports[line]["id"] = "disconnect"
+        try:
+            if port is not None:
+                await asyncio.to_thread(port.close)
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "OK"
+        except Exception as e:
+            print("FAILURE TO DISCONNECT " + line.upper() + ": " + str(e))
+            await sio.emit("forcecanrefresh", skip_sid=sid)
+            return "ERROR"
 
-@sio.event
-async def disconnectScience(sid):
-    """PeripheralManager backend code to disconnect Science"""
-    # disconnects can and returns OK or ERROR
-    global serial_ports
-    try:
-        if serial_ports["science"]:
-            serial_ports["science"].close()
-            serial_ports["science"] = None
-            serial_ports["scienceId"] = "disconnect"
-            print("Science serial closed.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
-            return("OK")
-        else:
-            print("Science was never connected.")
-            return("ERROR")
-    except Exception:
-        print("SCIENCE WAS NOT DISCONNECTED!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-        pass
-
-# =================== GPS connections ===================
-@sio.event
-async def connectGPS(sid, data):
-    """PeripheralManager backend code to connect GPS"""
-    # connect to gps serial port
-    global serial_ports
-    if serial_ports["gpsId"] != "disconnect":
-        print("GPS WAS ALREADY CONNECTED!")
-        return("ERROR")
-    print("Connecting to " + str(data))
-    try:
-        serial_ports["gps"] = ZEDF9P(data, 57600) 
-        serial_ports["gpsId"] = data
-        print("GPS connected.")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("OK")
-    except Exception as e:
-        print("FAILURE TO CONNECT GPS: " + str(e))
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-
-@sio.event
-async def disconnectGPS(sid):
-    """PeripheralManager backend code to disconnect GPS"""
-    global serial_ports
-    try:
-        if serial_ports["gps"]:
-            serial_ports["gps"].close()
-            serial_ports["gps"] = None
-            serial_ports["gpsId"] = "disconnect"
-            print("GPS serial closed.")
-            await sio.emit('forcecanrefresh', skip_sid=sid)
-            return("OK")
-        else:
-            print("GPS was never connected.")
-            return("ERROR")
-    except Exception:
-        print("GPS WAS NOT DISCONNECTED!!!")
-        await sio.emit('forcecanrefresh', skip_sid=sid)
-        return("ERROR")
-        pass
 
 @sio.event
 async def E_STOP(sid):
@@ -435,6 +292,7 @@ async def E_STOP(sid):
         print(f"\033[91mPhysical e-stop activation failed: {exc}\033[0m")
         # wait 200ms for message to come back, then stop
     asyncio.get_event_loop().call_later(1, shutdown)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by E-Stop")
     return("OK")
     
 
@@ -445,6 +303,7 @@ can_error_message_started_arm = False
 drive_task_started = False
 drive_heartbeat_started = False
 arm_task_started = False
+science_task_started = False
 gps_task_started = False
 arm_position_task_started = False
 async_ssh_started = False
@@ -457,7 +316,7 @@ battery_started = False
 
 async def _send_drive_stop_command():
     """Write a zero-velocity command to the drive line. Caller must hold drive_command_lock."""
-    if not serial_ports["drive"]:
+    if not serial_ports["drive"]["port"]:
         print("No drive serial connected. Cannot send stop command.")
         return
     try:
@@ -497,6 +356,30 @@ register_shutdown_commands(sio)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
 register_led_events(sio, serial_ports)
+register_rover_mode_events(
+    sio,
+    lambda: revoke_drive_control(sio, stop_drive_motors_for_handover),
+    stop_drive_motors_for_handover,
+)
+# in offline mode the mock also sends the simulated position as gpsData for the map
+register_mock_autonomy_events(sio, emit_gps=offline)
+
+# Science: the session owns all state, the link is the swappable firmware seam
+async def emit_science_session(snapshot):
+    await sio.emit("scienceSession", snapshot)
+
+science_logger = ScienceLogger(is_mock=offline)
+science_session = ScienceSession(logger=science_logger, on_change=emit_science_session)
+if offline:
+    science_session.link = MockScienceLink(science_session)
+    print("Science link: MOCK")
+else:
+    science_link = CanScienceLink(serial_ports, science_session)
+    science_session.link = science_link
+    print("Science link: CAN")
+register_science_events(sio, science_session)
+
+science_soft_stop_site = None
 
 # =================== Start Server ===================
 
@@ -508,6 +391,7 @@ async def connect(sid,environ):
     global drive_task_started
     global drive_heartbeat_started
     global arm_task_started
+    global science_task_started
     global gps_task_started
     global async_ssh_started
     global arm_position_task_started
@@ -533,6 +417,9 @@ async def connect(sid,environ):
     if not arm_task_started:
         arm_task_started = True
         sio.start_background_task(read_arm_can_loop, serial_ports, sio)
+    if not science_task_started and not offline:
+        science_task_started = True
+        sio.start_background_task(read_science_can_loop, serial_ports, science_link)
     if not arm_position_task_started:
         arm_position_task_started = True
         # sio.start_background_task(request_arm_position_loop, serial_ports)
@@ -566,9 +453,64 @@ async def connect(sid,environ):
     if not battery_started:
         battery_started = True
         if offline:
-            sio.start_background_task(send_fake_battery_data, sio) 
+            sio.start_background_task(send_fake_battery_data, sio)
         else:
             sio.start_background_task(get_battery_data, sio)
+
+    # Sync a newly-connecting client to the current Soft Stop state
+    await set_soft_stop(sio, is_soft_stopped(), sid=sid)
+    # and to the current rover mode
+    await rover_mode.broadcast(sio, sid=sid)
+
+@sio.event
+async def softStop(sid):  # function name  == event name (sid  = client session id)
+    """Operator-triggered pause: lock controls, stop autonomy, and zero drive velocity if drive is connected"""
+    global science_soft_stop_site
+    should_log = not is_soft_stopped() and science_session.active_site_id() is not None
+
+    # Lock every client and end the autonomy run before waiting on drive I/O.
+    # The drive write below can stall (no serial write timeout), and that must not
+    # delay the lockout or let a mock autonomy run keep going.
+    await set_soft_stop(sio, True)
+    await rover_mode.stop_autonomy(sio, "Autonomy stopped by Soft Stop")
+
+    if should_log:
+        science_soft_stop_site = science_session.active_site_id()
+        science_session.log_event(
+            "soft_stop",
+            site=science_soft_stop_site,
+            step=science_session.pending_step(),
+        )
+
+    if serial_ports["drive"]["port"]:
+        async with drive_command_lock:
+            try:
+                if USE_UART_DRIVE:
+                    await send_uart_drive_command(serial_ports, 0, 0, 0, 0)
+                else:
+                    await send_can_drive_command(serial_ports, 0, 0, 0, 0)
+                print(f'[{sid}] Soft Stop triggered - drive velocity zeroed.')
+            except Exception as e:
+                print(f'Failed to send Soft Stop drive command: {e}')
+    else:
+        print(f'[{sid}] Soft Stop triggered - drive not connected, locking controls only.')
+
+    # Always acknowledge: locking out Drive/Arm/Science doesn't depend on
+    # drive specifically being connected.
+    return "OK"
+
+
+@sio.event
+async def resumeControls(sid):
+    """Acknowledge the frontend unlocking controls after a Soft Stop"""
+    print(f'[{sid}] Controls resumed after Soft Stop.')
+    global science_soft_stop_site
+    if science_soft_stop_site is not None:
+        science_session.log_event("soft_stop_resumed", site=science_soft_stop_site)
+        science_soft_stop_site = None
+    await set_soft_stop(sio, False)
+    return "OK"
+
 
 @sio.event
 async def disconnect(sid):
@@ -577,8 +519,14 @@ async def disconnect(sid):
 
     metrics.numClients = max(0, metrics.numClients - 1)
 
+    # End the autonomy run before any drive I/O wait below, so a stalled drive write
+    # can't keep autonomy running after the last client leaves
+    if metrics.numClients == 0:
+        await rover_mode.stop_autonomy(sio, "Autonomy stopped: no clients connected")
+
     await release_drive_control(sio, stop_drive_motors_for_handover, sid)
 
+    # rechecked: a client may have reconnected while release_drive_control waited
     if metrics.numClients == 0:
         print("No clients, stopping motors now.")
         await stop_drive_motors()

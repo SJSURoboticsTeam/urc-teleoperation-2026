@@ -2,16 +2,20 @@ import "react-resizable/css/styles.css";
 import { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+
+// Use the socket for drive commands and shared context for connection status
 import { robotsocket } from "../socket.io/socket";
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import Button from "@mui/material/Button";
 import { FrameRateConstant } from "./FrameRateConstant.js";
-import { useRobotSocketStatus } from "../socket.io/socket";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 import Slider from "@mui/material/Slider";
 import { Stack } from "@mui/system";
 import Wheel from "../ui/Wheel";
-import { TbRocket, TbHourglassLow } from "react-icons/tb";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 
 import { useDriveCommands } from "../../contexts/DriveCommandContext.jsx";
 import { useMastCommands } from "../../contexts/MastCommandContext.jsx";
@@ -21,7 +25,10 @@ const HEADER_HEIGHT = 56;
 
 export default function DriveManualInput({ controlsLocked = false, driveLocked = false }) {
   // Server connection status
-  const serverConnected = useRobotSocketStatus();
+
+  // Use centralized robot connection state to control drive features
+  const { robotConnected: serverConnected } = useConnectionStatus();
+
   const [txon, settxon] = useState(false);
 
   // Drive
@@ -234,7 +241,7 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
               direction="row"
               sx={{ alignItems: "center", mb: 1, opacity: driveLocked ? 0.65 : 1 }}
             >
-              <TbHourglassLow size="30px" />
+              <HourglassBottomIcon sx={{ fontSize: 30 }} />
               <Slider
                 step={0.25}
                 marks
@@ -247,7 +254,7 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
                 sx={{ width: 150 }}
                 disabled={driveLocked}
               />
-              <TbRocket size="30px" />
+              <RocketLaunchIcon sx={{ fontSize: 30 }} />
             </Stack>
           </Box>
 
@@ -325,7 +332,7 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
               direction="row"
               sx={{ alignItems: "center", mb: 1 }}
             >
-              <TbHourglassLow size="30px" />
+              <HourglassBottomIcon sx={{ fontSize: 30 }} />
               <Slider
                 step={10}
                 marks
@@ -338,7 +345,7 @@ export default function DriveManualInput({ controlsLocked = false, driveLocked =
                 sx={{ width: 150 }}
                 disabled={controlsLocked}
               />
-              <TbRocket size="30px" />
+              <RocketLaunchIcon sx={{ fontSize: 30 }} />
             </Stack>
           </Box>
 

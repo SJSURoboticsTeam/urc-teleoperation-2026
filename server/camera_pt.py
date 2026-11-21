@@ -2,6 +2,7 @@ import asyncio
 import config
 import can_serial
 import math
+from soft_stop import is_soft_stopped
 
 
 def clamp(x, minimum, maximum):
@@ -13,6 +14,9 @@ def register_camera_pt_events(sio,serial_ports):
     @sio.event
     async def mastCommands(sid,data):
         """Transmit a mast command over CAN"""
+        if is_soft_stopped():
+            print(f'[{sid}] Ignored mast command: soft stop active')
+            return
         try:
             print("Camera Pan Commands X: " + str(data['xVel']) + " Y: " + str(data['yVel']) + " Wheels X: " + str(data['wheels_x']))
             # frontend is from -90 to 90, but controls expects 0 to 180 so add 90
@@ -27,7 +31,7 @@ def register_camera_pt_events(sio,serial_ports):
             MAST_CAN_ID= "300" # 0x300
 
             can_msg = f't{MAST_CAN_ID}3{panx}{pany}{wheels_x}\r'
-            await asyncio.to_thread(serial_ports["drive"].write, can_msg.encode())
+            await asyncio.to_thread(serial_ports["drive"]["port"].write, can_msg.encode())
             print(f'[{sid}] Mast command sent: {can_msg}')
 
         except Exception as e:

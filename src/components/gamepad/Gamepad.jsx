@@ -15,7 +15,7 @@ import { ARM_LIMITS, ARM_DEFAULTS } from "../../constants/armConfig";
 import { getOS } from "./getOS";
 
 // Handles gamepad connections and state
-export default function GamepadPanel() {
+export default function GamepadPanel({openUp = false}) {
   // general vars
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -166,6 +166,8 @@ export default function GamepadPanel() {
 
   const lastTimeRef = useRef(null);
   useEffect(() => {
+    if (driveConnectedOne == null) return;
+
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
     const pollAxes = (time) => {
@@ -484,7 +486,7 @@ export default function GamepadPanel() {
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            ...(openUp ? { bottom: "100%" } : { top: "100%" }),
             left: "50%",
             transform: "translateX(-50%)",
             background: "white",

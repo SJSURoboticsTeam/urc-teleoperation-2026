@@ -45,7 +45,7 @@ async def send_led(serial_ports, brightness, red, green, blue, time_on, time_off
 
     print(repr(can_message))
 
-    await asyncio.to_thread(serial_ports["drive"].write, can_message.encode())
+    await asyncio.to_thread(serial_ports["drive"]["port"].write, can_message.encode())
 
 
 async def run_led_demo(serial_ports):

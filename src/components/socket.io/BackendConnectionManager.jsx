@@ -3,16 +3,22 @@ import { useState, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { green, red, yellow } from "@mui/material/colors";
-import { useRobotSocketStatus, useBaseSocketStatus } from "./socket";
+
+// Read shared connection state from the centralized context
+import { useConnectionStatus } from "../../contexts/ConnectionContext";
+
 import MapsHomeWorkIcon from "@mui/icons-material/MapsHomeWork";
 import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
 import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 
-export default function NavConnectionStatus({ openPane, setOpenPane }) {
-  const isRobotConnected = useRobotSocketStatus(); // get socket status from ui
-  const isBaseConnected = useBaseSocketStatus(); // get socket status from ui
+export default function NavConnectionStatus({ openPane, setOpenPane, openUp = false }) {
+  // Use centralized status instead of registering separate socket listeners here
+  const {
+    robotConnected: isRobotConnected,
+    baseConnected: isBaseConnected,
+  } = useConnectionStatus();
 
   // robot
   const [robotLatency, setRobotLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
@@ -102,12 +108,17 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
 
   // polling effects
 
+  // Polls skip ticks while their socket is offline. Socket.IO buffers emits
+  // made while disconnected and flushes them all on reconnect, so unguarded
+  // polls would send a burst of stale pings when the link comes back.
+
   // ROBOT
 
   useEffect(() => {
     let interval;
     // send a ping to the server every 750ms and measure latency
     function checkLatency() {
+      if (!robotsocket.connected) return;
       const start = Date.now();
       robotsocket.emit("pingCheck", () => {
         setRobotLatency(Date.now() - start);
@@ -123,6 +134,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
     let interval;
     // send a ping to the server every 2s to get number of connected clients from backend
     function numClients() {
+      if (!robotsocket.connected) return;
       robotsocket.emit("getConnections", (connections) => {
         setRobotNumConnections(connections);
       });
@@ -153,6 +165,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
     let interval;
     // send a ping to the server every 750ms and measure latency
     function checkLatency() {
+      if (!basesocket.connected) return;
       const start = Date.now();
       basesocket.emit("pingCheck", () => {
         setBaseLatency(Date.now() - start);
@@ -166,6 +179,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
     let interval;
     // send a ping to the server every 2s to get number of connected clients from backend
     function numClients() {
+      if (!basesocket.connected) return;
       basesocket.emit("getConnections", (connections) => {
         setBaseNumConnections(connections);
       });
@@ -203,7 +217,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          marginRight: 20,
+          marginRight: 10,
         }}
       >
         SERVER{robotconnectedIcon}
@@ -214,7 +228,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            ...(openUp ? { bottom: "100%" } : { top: "100%" }),
             left: "50%",
             transform: "translateX(-50%)",
             background: "white",
@@ -361,14 +375,10 @@ export default function NavConnectionStatus({ openPane, setOpenPane }) {
             </div>
           ) : null}
 
-          {isRobotConnected ? (
             <div>
               <PeripheralManager openPane={openPane} />
               <hr className="border-t border-gray-300 my-4" />
             </div>
-          ) : (
-            <Typography sx={{ color: "black" }}>Robot is offline.</Typography>
-          )}
           <ShutdownManager />
         </div>
       )}

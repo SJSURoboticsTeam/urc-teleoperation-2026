@@ -2,21 +2,23 @@ import DriveManualInput from "../components/gamepad/DriveWidget";
 import { lazy, Suspense, useRef } from "react";
 import { Box, Typography } from "@mui/material";
 import { useAutonomyMode } from "../contexts/AutonomyModeContext";
+import { useSoftStop } from "../contexts/SoftStopContext";
 import { usePeripherals } from "../contexts/PeripheralContext";
 import { useDriveControl } from "../contexts/DriveControlContext";
 
 const Map = lazy(() => import("../components/ui/Map"));
 
 export default function DriveComponents() {
-  const { canState } = usePeripherals();
+  const { servercanState } = usePeripherals();
   const containerRef = useRef(null);
 
   // Read global autonomy state
   const { autonomyEnabled } = useAutonomyMode();
+  const { softStopActive } = useSoftStop();
   const { hasControl } = useDriveControl();
-  const controlsLocked = autonomyEnabled;
-  const driveLocked = autonomyEnabled || !hasControl;
-  const showCanWarning = canState.driveState == "idle" && !controlsLocked;
+  const controlsLocked = autonomyEnabled || softStopActive;
+  const driveLocked = controlsLocked || !hasControl;
+  const showCanWarning = servercanState.drive.state == "idle" && !controlsLocked;
   const showControlWarning = !controlsLocked && !hasControl;
 
   return (
@@ -35,7 +37,7 @@ export default function DriveComponents() {
           >
             {showCanWarning && (
               <Box component="span" sx={{ color: "error.main" }}>
-                You don't have {canState.uartMode} connected!
+                You don't have {servercanState.uartMode} connected!
               </Box>
             )}
             {showCanWarning && showControlWarning && (
@@ -58,7 +60,7 @@ export default function DriveComponents() {
             }}
             color="error"
           >
-            Drive controls are disabled while autonomy is active.
+            Drive controls are disabled while autonomy or Soft Stop is active.
           </Typography>
         )}
 
