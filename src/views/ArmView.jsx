@@ -270,13 +270,28 @@ export default function ArmView() {
     if (
       controlsLocked ||
       !serverConnected ||
-      servercanState.arm.state === "idle" ||
-      txon
+      servercanState.arm.state === "idle" 
     ) {
       return;
     }
 
-    robotsocket.emit("armHoming");
+    const wasAutoTx = txon;
+      if (wasAutoTx) settxon(false);
+
+      robotsocket.emit("armHoming", (result) => {
+        if (result !== "OK") {
+          if (wasAutoTx) settxon(true);
+          return;
+        }
+
+        if (wasAutoTx) {
+          const defaults = { ...ARM_DEFAULTS };
+          armCommandsRef.current = defaults;
+          prevArmCommandsRef.current = defaults;
+          prevDisplayCommandsRef.current = defaults;
+          setArmCommands(defaults);
+        }
+      });
   };
 
   // When sliders are used, update armCommands state.
@@ -353,14 +368,15 @@ export default function ArmView() {
 
         {controlsLocked && (
           <Typography
-            sx={{
-              textAlign: "center",
-              mb: 2,
-              fontWeight: 700,
-            }}
+            sx={{ 
+              textAlign: "center", 
+              mb: 2, 
+              fontWeight: 700 }}
             color="error"
           >
-            Arm controls are disabled while autonomy or Soft Stop is active.
+            {homingActive
+              ? "Arm is currently homing. Controls are locked until homing finishes."
+              : "Arm controls are disabled while autonomy or Soft Stop is active."}
           </Typography>
         )}
 
@@ -478,27 +494,28 @@ export default function ArmView() {
           />
 
           {!txon && (
-            <>
-              <Button
-                variant="contained"
-                onClick={handleManualUpdate}
-                disabled={controlsLocked || !serverConnected}
-              >
-                MANUAL TX
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleHoming}
-                disabled={
-                  controlsLocked ||
-                  !serverConnected ||
-                  servercanState.arm.state === "idle"
-                }
-              >
-                Homing
-              </Button>
-            </>
+            <Button
+              variant="contained"
+              onClick={handleManualUpdate}
+              disabled={controlsLocked || !serverConnected}
+            >
+              MANUAL TX
+            </Button>
           )}
+
+          <Button
+            variant="contained"
+            loading={homingActive}
+            loadingPosition="start"
+            onClick={handleHoming}
+            disabled={
+              controlsLocked ||
+              !serverConnected ||
+              servercanState.arm.state === "idle"
+            }
+          >
+            {homingActive ? "HOMING..." : "HOMING"}
+          </Button>
         </Box>
 
         <Box
