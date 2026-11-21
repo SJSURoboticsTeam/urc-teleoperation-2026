@@ -1,35 +1,116 @@
 import "react-resizable/css/styles.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
-import { robotsocket } from "../socket.io/socket";
+import Typography from "@mui/material/Typography";
+import { useDriveFeedback } from "../../contexts/DriveFeedbackContext";
+
+// SVG silently drops an invalid transform, which looks identical to 0 degrees.
+function drawAngle(value) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+function hasAngle(value) {
+  return Number.isFinite(value);
+}
+
+// Feedback arrives at 5Hz, so a 200ms tween exactly bridges one frame to the
+// next and the wheels sweep instead of stepping. Linear, not ease, or each
+// frame would visibly accelerate and brake.
+const SWEEP = { transition: "transform 200ms linear" };
+const SWEEP_D = { transition: "d 200ms linear" };
+// Honour the OS "reduce motion" setting: the wheels still update, they just
+// jump straight to the new value instead of sweeping.
+const NO_MOTION = { transition: "none" };
+
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia?.(REDUCED_MOTION_QUERY).matches ?? false,
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia?.(REDUCED_MOTION_QUERY);
+    if (!query) return;
+
+    const onChange = (event) => setReduced(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  return reduced;
+}
+
+// The direction vector also doubles as a speed gauge: short stub when stopped,
+// full length at speed. Both maxima are 4 because Gamepad.jsx scales all three
+// axes - including rotation - by the drive speed slider, which tops out at 4.
+const MAX_TRANSLATION = 4.0;   // m/s
+const MAX_ROTATION = 4.0;      // deg/s, same slider
+// Each vector starts 43.94 below its wheel rectangle's top edge, so anything
+// shorter than that is swallowed by the wheel and the direction cue is lost.
+// Floor it just past that; the top end is a little beyond the original 92.
+const VECTOR_MIN = 52;
+const VECTOR_MAX = 104;
+
+// Per-wheel speed is not reported - only chassis velocity - so all four
+// vectors share one magnitude taken from whichever of translation or rotation
+// is further along its range.
+function speedFactor(measured) {
+  const translation = Math.hypot(measured.xVel ?? 0, measured.yVel ?? 0);
+  const rotation = Math.abs(measured.rotVel ?? 0);
+  const t = Math.min(1, translation / MAX_TRANSLATION);
+  const r = Math.min(1, rotation / MAX_ROTATION);
+  return Number.isFinite(Math.max(t, r)) ? Math.max(t, r) : 0;
+}
+
+// Each vector starts at a point and runs "up" the wheel in local coords.
+function vectorPath(x, y, length) {
+  return `M${x} ${y}v-${length.toFixed(2)}`;
+}
 
 export default function Wheel() {
-  const [wheelAngles, setWheelAngles] = useState({
-    frontLeft: 0,
-    frontRight: 0,
-    backLeft: 0,
-    backRight: 0,
-  });
+    const { wheelAngles, measured, anglesFresh, velocitiesFresh } = useDriveFeedback();
+  const reducedMotion = usePrefersReducedMotion();
+  const sweep = reducedMotion ? NO_MOTION : SWEEP;
+  const sweepD = reducedMotion ? NO_MOTION : SWEEP_D;
 
-  robotsocket.on("wheelAngles", (data) => {
-    setWheelAngles({
-      frontLeft: data.fLAngle,
-      frontRight: data.fRAngle,
-      backLeft: data.bLAngle,
-      backRight: data.bRAngle,
-    });
-  });
+  // 0 degrees is a real angle, so an unheard-from corner must not render as one.
+  const known = {
+    frontLeft: hasAngle(wheelAngles.frontLeft),
+    frontRight: hasAngle(wheelAngles.frontRight),
+    backLeft: hasAngle(wheelAngles.backLeft),
+    backRight: hasAngle(wheelAngles.backRight),
+  };
+  const anyKnown = Object.values(known).some(Boolean);
+
+  // Shared by all four vectors.
+  // A stale velocity must not keep inflating the speed gauge.
+  const vectorLength = velocitiesFresh
+    ? VECTOR_MIN + speedFactor(measured) * (VECTOR_MAX - VECTOR_MIN)
+    : VECTOR_MIN;
 
   return (
     <Box
       height={175}
       display="flex"
+      flexDirection="column"
+      alignItems="center"
       sx={{
         width: "clamp(120px, 10vw, 150px)",
         m: "clamp(4px, 0.8vw, 12px)",
+        position: "relative",
       }}
       justifyContent="center"
     >
+      {(!anglesFresh || !anyKnown) && (
+        <Typography
+          variant="caption"
+          color="error"
+          sx={{ fontWeight: 700, letterSpacing: "0.04em" }}
+        >
+          NO DATA
+        </Typography>
+      )}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="100%"
@@ -68,14 +149,17 @@ export default function Wheel() {
         >
           <g
             id="Front_Left"
-            transform={`rotate(${wheelAngles.frontLeft} 27.505 98.385)`}
+            opacity={known.frontLeft ? 1 : 0.25}
+            style={sweep}
+            transform={`rotate(${drawAngle(wheelAngles.frontLeft)} 27.505 98.385)`}
           >
             {/* wheel rectangle */}
             <path d="M1.24 49.9h52.53v96.97H1.24z" className="wheel" />
             {/* vector */}
             <path
               id="Front_Left_Vector"
-              d="M27.51 93.84V1.92"
+              style={sweepD}
+              d={vectorPath(27.51, 93.84, vectorLength)}
               className="cls-2"
             />
           </g>
@@ -90,12 +174,15 @@ export default function Wheel() {
         >
           <g
             id="Back_Left"
-            transform={`rotate(${wheelAngles.backLeft} 26.76 316.11)`}
+            opacity={known.backLeft ? 1 : 0.25}
+            style={sweep}
+            transform={`rotate(${drawAngle(wheelAngles.backLeft)} 26.76 316.11)`}
           >
             <path d="M.5 267.62h52.53v96.97H.5z" className="wheel" />
             <path
               id="Back_Left_Vector"
-              d="M26.76 311.56v-91.92"
+              style={sweepD}
+              d={vectorPath(26.76, 311.56, vectorLength)}
               className="cls-2"
             />
           </g>
@@ -110,12 +197,15 @@ export default function Wheel() {
         >
           <g
             id="Back_Right"
-            transform={`rotate(${wheelAngles.backRight} 203.51 316.11)`}
+            opacity={known.backRight ? 1 : 0.25}
+            style={sweep}
+            transform={`rotate(${drawAngle(wheelAngles.backRight)} 203.51 316.11)`}
           >
             <path d="M177.25 265.6h52.53v96.97h-52.53z" className="wheel" />
             <path
               id="Back_Right_Vector"
-              d="M203.51 309.54v-91.92"
+              style={sweepD}
+              d={vectorPath(203.51, 309.54, vectorLength)}
               className="cls-2"
             />
           </g>
@@ -130,12 +220,15 @@ export default function Wheel() {
         >
           <g
             id="Front_Right"
-            transform={`rotate(${wheelAngles.frontRight} 203.51 98.385)`}
+            opacity={known.frontRight ? 1 : 0.25}
+            style={sweep}
+            transform={`rotate(${drawAngle(wheelAngles.frontRight)} 203.51 98.385)`}
           >
             <path d="M175.55 47.98h52.53v96.97h-52.53z" className="wheel" />
             <path
               id="Front_Right_Vector"
-              d="M201.82 91.92V0"
+              style={sweepD}
+              d={vectorPath(201.82, 91.92, vectorLength)}
               className="cls-2"
             />
           </g>
