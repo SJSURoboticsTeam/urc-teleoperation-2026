@@ -305,20 +305,23 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
               p: 2,
             }}
           >
-            <video
-              key={`${selectedCamera.url}-fallback`}
-              src={`${import.meta.env.BASE_URL}logo-spin.mp4`}
-              autoPlay
-              loop
-              muted
-              playsInline
-              style={{
+            <Box
+              component="img"
+              src={`${import.meta.env.BASE_URL}sjsu_robotics_logo.png`}
+              alt=""
+              sx={{
                 flex: "1 1 0",
                 minWidth: 0,
                 minHeight: 0,
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
+                transform: "scale(0.75)",
+                animation: "camera-logo-spin 5s linear infinite",
+                "@keyframes camera-logo-spin": {
+                  from: { transform: "scale(0.75) perspective(1000px) rotateY(0deg)" },
+                  to: { transform: "scale(0.75) perspective(1000px) rotateY(-360deg)" },
+                },
               }}
             />
             <Typography color="error">

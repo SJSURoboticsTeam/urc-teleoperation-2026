@@ -27,6 +27,7 @@ import MetricsProvider from "../providers/MetricsProvider";
 import DriveFeedbackProvider from "../providers/DriveFeedbackProvider";
 import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
+import ScienceProvider from "../providers/ScienceProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
 
@@ -98,6 +99,7 @@ function App() {
                     <ArmCommandProvider>
                       <GamepadProvider>
                         <DriveControlProvider>
+                        <ScienceProvider>
                           <DriveCommandProvider>
                             <DriveFeedbackProvider>
                             <MastCommandProvider>
@@ -141,6 +143,7 @@ function App() {
                             </MastCommandProvider>
                             </DriveFeedbackProvider>
                           </DriveCommandProvider>
+                        </ScienceProvider>
                         </DriveControlProvider>
                       </GamepadProvider>
                     </ArmCommandProvider>

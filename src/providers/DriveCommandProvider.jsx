@@ -1,5 +1,5 @@
 import { DriveCommandContext } from "../contexts/DriveCommandContext";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 // Import in App.jsx and wrap around components that need access to it
 export default function DriveCommandProvider({ children }) {
@@ -10,8 +10,14 @@ export default function DriveCommandProvider({ children }) {
     moduleConflicts: 1,
     driveSpeed: 2
   });
+  // Keep the same value object until driveCommands changes, so a provider
+  // re-render alone doesn't re-render every reader. Setters never change.
+  const value = useMemo(
+    () => ({ driveCommands, setDriveCommands }),
+    [driveCommands],
+  );
   return (
-    <DriveCommandContext.Provider value={{ driveCommands, setDriveCommands }}>
+    <DriveCommandContext.Provider value={value}>
       {children}
     </DriveCommandContext.Provider>
   );
