@@ -50,7 +50,9 @@ export default function ArmView() {
 
   const armConnectedOne = connectedGamepads.arm;
   const gamepadMode = armConnectedOne != null;
-  const controlsLocked = autonomyEnabled || softStopActive;
+
+  const [homingActive, setHomingActive] = useState(false);
+  const controlsLocked = autonomyEnabled || softStopActive || homingActive;
 
   const [txon, settxon] = useState(false);
   const [txPulse, setTxPulse] = useState(false);
@@ -230,6 +232,15 @@ export default function ArmView() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleHomingState = ({ active }) => {
+      setHomingActive(Boolean(active));
+    };
+
+    robotsocket.on("armHomingState", handleHomingState);
+    return () => robotsocket.off("armHomingState", handleHomingState);
+  }, []);
+
   // Clear pulse timers on unmount.
   useEffect(() => {
     const pulseTimeouts = pulseTimeoutsRef.current;
@@ -253,6 +264,34 @@ export default function ArmView() {
 
     emitCounterRef.current.full += 1;
     pulseTx();
+  };
+
+  const handleHoming = () => {
+    if (
+      controlsLocked ||
+      !serverConnected ||
+      servercanState.arm.state === "idle" 
+    ) {
+      return;
+    }
+
+    const wasAutoTx = txon;
+      if (wasAutoTx) settxon(false);
+
+      robotsocket.emit("armHoming", (result) => {
+        if (result !== "OK") {
+          if (wasAutoTx) settxon(true);
+          return;
+        }
+
+        if (wasAutoTx) {
+          const defaults = { ...ARM_DEFAULTS };
+          armCommandsRef.current = defaults;
+          prevArmCommandsRef.current = defaults;
+          prevDisplayCommandsRef.current = defaults;
+          setArmCommands(defaults);
+        }
+      });
   };
 
   // When sliders are used, update armCommands state.
@@ -329,14 +368,15 @@ export default function ArmView() {
 
         {controlsLocked && (
           <Typography
-            sx={{
-              textAlign: "center",
-              mb: 2,
-              fontWeight: 700,
-            }}
+            sx={{ 
+              textAlign: "center", 
+              mb: 2, 
+              fontWeight: 700 }}
             color="error"
           >
-            Arm controls are disabled while autonomy or Soft Stop is active.
+            {homingActive
+              ? "Arm is currently homing. Controls are locked until homing finishes."
+              : "Arm controls are disabled while autonomy or Soft Stop is active."}
           </Typography>
         )}
 
@@ -462,6 +502,20 @@ export default function ArmView() {
               MANUAL TX
             </Button>
           )}
+
+          <Button
+            variant="contained"
+            loading={homingActive}
+            loadingPosition="start"
+            onClick={handleHoming}
+            disabled={
+              controlsLocked ||
+              !serverConnected ||
+              servercanState.arm.state === "idle"
+            }
+          >
+            {homingActive ? "HOMING..." : "HOMING"}
+          </Button>
         </Box>
 
         <Box
