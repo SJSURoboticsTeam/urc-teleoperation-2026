@@ -24,6 +24,7 @@ import PeripheralProvider from "../providers/PeripheralProvider";
 import {useSnackbar } from "notistack";
 import SerialProvider from "../providers/SerialProvider";
 import MetricsProvider from "../providers/MetricsProvider";
+import DriveFeedbackProvider from "../providers/DriveFeedbackProvider";
 import VideoProvider from "../providers/VideoProvider";
 import DriveControlProvider from "../providers/DriveControlProvider";
 import ScienceProvider from "../providers/ScienceProvider";
@@ -100,6 +101,7 @@ function App() {
                         <DriveControlProvider>
                         <ScienceProvider>
                           <DriveCommandProvider>
+                            <DriveFeedbackProvider>
                             <MastCommandProvider>
                               <CssBaseline />
                               {/* Normalizes styles */}
@@ -139,6 +141,7 @@ function App() {
                                 </SplitView>
                               </Box>
                             </MastCommandProvider>
+                            </DriveFeedbackProvider>
                           </DriveCommandProvider>
                         </ScienceProvider>
                         </DriveControlProvider>
