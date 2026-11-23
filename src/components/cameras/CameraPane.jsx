@@ -47,7 +47,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       allowed: true,
     },
     {
-      value: "Mast Camera",
+      value: "mast",
       mediatype: "iframe",
       name: "Mast",
       url: `http://${URL}:8889/mast/`,
@@ -60,35 +60,43 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       url: `http://${URL}:8889/wheels/`,
       allowed: true,
     },
-    {
-      value: "arm1",
+        {
+      value: "scout",
       mediatype: "iframe",
-      name: "Arm Cam 1",
-      url: `http://${URL}:8889/arm1/`,
+      name: "Scout",
+      url: `http://${URL}:8889/scout/`,
+      allowed: true,
+    },
+        {
+      value: "feet",
+      mediatype: "iframe",
+      name: "Feet",
+      url: `http://${URL}:8889/feet/`,
       allowed: true,
     },
     {
-      value: "arm2",
+      value: "module1",
       mediatype: "iframe",
-      name: "Arm Cam",
-      url: `http://${URL}:8889/arm2/`,
-      allowed: false,
+      name: "Arm / Science",
+      url: `http://${URL}:8889/module1/`,
+      allowed: true,
     },
     {
-      value: "science",
+      value: "module2",
       mediatype: "iframe",
-      name: "Science Cam",
-      url: `http://${URL}:8889/science/`,
-      allowed: false,
+      name: "End Effector",
+      url: `http://${URL}:8889/module2/`,
+      allowed: true,
     },
   ];
 
   const cameraToVideoMap = {
-    "Mast Camera": "mast",
+    mast : "mast",
     wheels: "wheels",
-    arm1: "arm1",
-    arm2: "arm2",
-    science: "science",
+    scout: "scout",
+    feet : "feet",
+    module1: "module1",
+    module2: "module2",
   };
 
   const selectedCamera = cameras.find((cam) => cam.value == camera);
