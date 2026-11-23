@@ -89,7 +89,8 @@ export default function ArmView() {
     roll: safeArmCommands.roll ?? ARM_JOINT_META.roll.initial,
     clamp: safeArmCommands.clamp ?? ARM_JOINT_META.clamp.initial,
   };
-  const trackOffset = (visualCommands.track / ARM_JOINT_META.track.max) * 45;
+  const trackOffset =
+    (visualCommands.track / ARM_JOINT_META.track.max) * 45 - 45;
   const shoulderRotation =
     visualCommands.shoulder - ARM_JOINT_META.shoulder.initial;
   const elbowRotation = visualCommands.elbow - ARM_JOINT_META.elbow.initial;
@@ -542,7 +543,7 @@ export default function ArmView() {
           <g id="body">
             <rect x="110" y="50" width="24" height="70" fill="#80cdd6" />
           </g>
-          <g transform={`translate(0 ${-trackOffset})`}>
+          <g transform={`translate(0 ${trackOffset})`}>
             <rect x="112" y="98" width="20" height="20" rx="3" fill="#4aa3ae" />
             <g transform={`rotate(${shoulderRotation} 122 108)`}>
               <g id="neck" strokeLinecap="round">
@@ -557,7 +558,7 @@ export default function ArmView() {
                 <g transform={`rotate(${pitchRotation - 90} 177 82)`}>
                   <g
                     id="clamp1"
-                    transform={`rotate(${-clampRotation} 177 92)`}
+                    transform={`rotate(${clampRotation} 177 92)`}
                     strokeLinecap="round"
                   >
                     <line x1="177" y1="92" x2="187" y2="112" stroke="#4aa3ae" strokeWidth="11" />
@@ -567,7 +568,7 @@ export default function ArmView() {
                   </g>
                   <g
                     id="clamp2"
-                    transform={`rotate(${clampRotation} 187 82)`}
+                    transform={`rotate(${-clampRotation} 187 82)`}
                     strokeLinecap="round"
                   >
                     <line x1="187" y1="82" x2="207" y2="92" stroke="#4aa3ae" strokeWidth="11" />
