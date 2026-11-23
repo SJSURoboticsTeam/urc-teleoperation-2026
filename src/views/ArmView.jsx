@@ -95,7 +95,8 @@ export default function ArmView() {
     visualCommands.shoulder - ARM_JOINT_META.shoulder.initial;
   const elbowRotation = visualCommands.elbow - ARM_JOINT_META.elbow.initial;
   const pitchRotation = visualCommands.pitch - ARM_JOINT_META.pitch.initial;
-  const rollRotation = visualCommands.roll - ARM_JOINT_META.roll.initial;
+  const rollRotation =
+    visualCommands.roll - ARM_JOINT_META.roll.initial - 90;
   const clampRotation =
     (visualCommands.clamp - ARM_JOINT_META.clamp.initial) * 0.25;
 
