@@ -65,6 +65,7 @@ export const SerialProvider = ({ children }) => {
   }, []);
 
   const refresh = useCallback(() => {
+    if (!robotsocket.connected) return; // The "connect" listener refreshes once the socket is back
     robotsocket.emit("getSerialConsoleInfo", (response) => {
       if (response) applyInfo(response);
     });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useSnackbar } from "notistack";
 import { robotsocket, basesocket } from "../components/socket.io/socket";
 import { GPSContext } from "../contexts/GPSContext";
@@ -216,24 +216,42 @@ export const GPSProvider = ({ children }) => {
         setPois(list.map((poi, index) => ({ id: `poi-${now}-import-${index}`, name: poi.name, lat: poi.lat, long: poi.long })));
     }, [setPois, setNextPoiNumber]);
 
-    const value = {
-        robotCoordinates,
-        baseCoordinates,
-        robotSignalDiff,
-        baseSignalDiff,
-        trailPoints,
-        trailReady,
-        isRecording,
-        hasUnsavedTrail,
-        startRecording,
-        stopRecording,
-        clearTrail,
-        pois,
-        addPoi,
-        renamePoi,
-        removePoi,
-        replacePois,
-    };
+    const value = useMemo(
+        () => ({
+            robotCoordinates,
+            baseCoordinates,
+            robotSignalDiff,
+            baseSignalDiff,
+            trailPoints,
+            trailReady,
+            isRecording,
+            hasUnsavedTrail,
+            startRecording,
+            stopRecording,
+            clearTrail,
+            pois,
+            addPoi,
+            renamePoi,
+            removePoi,
+            replacePois,
+        }),
+        [
+            robotCoordinates,
+            baseCoordinates,
+            trailPoints,
+            trailReady,
+            isRecording,
+            hasUnsavedTrail,
+            startRecording,
+            stopRecording,
+            clearTrail,
+            pois,
+            addPoi,
+            renamePoi,
+            removePoi,
+            replacePois,
+        ],
+    );
 
     return <GPSContext.Provider value={value}>{children}</GPSContext.Provider>;
 };
