@@ -10,10 +10,15 @@ import {
 import SoftwareVersionDetails from "./SoftwareVersionDetails";
 
 export default function VersionWarning({ versions }) {
-  const [dismissedCheckId, setDismissedCheckId] = useState(null);
+  const [dismissedWarning, setDismissedWarning] = useState(null);
+  const isDismissed = dismissedWarning?.checkId === versions.compatibilityCheckId
+    && (!versions.unverifiable || dismissedWarning.unverifiable);
   const open = (versions.mismatch || versions.unverifiable)
-    && dismissedCheckId !== versions.compatibilityCheckId;
-  const dismissCurrentCheck = () => setDismissedCheckId(versions.compatibilityCheckId);
+    && !isDismissed;
+  const dismissCurrentCheck = () => setDismissedWarning({
+    checkId: versions.compatibilityCheckId,
+    unverifiable: versions.unverifiable,
+  });
 
   return (
     <Dialog fullScreen open={open} onClose={dismissCurrentCheck} aria-labelledby="version-warning-title">
