@@ -44,9 +44,7 @@ from science_can import CanScienceLink, read_science_can_loop
 print("\033[0m----------------")
 
 
-# Capture the version once: this describes the running process, even if the
-# checkout is updated later. Anchor Git to this file rather than the launch cwd.
-git_version = {"sha": None, "branch": None, "message": None}
+startup_git_version = {"sha": None, "branch": None, "message": None}
 try:
     commit_result = subprocess.run(
         ["git", "log", "-1", "--format=%H%n%s"],
@@ -57,7 +55,7 @@ try:
         check=True,
     )
     sha, _, message = commit_result.stdout.strip().partition("\n")
-    git_version.update(sha=sha or None, message=message)
+    startup_git_version.update(sha=sha or None, message=message)
     branch_result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         cwd=Path(__file__).resolve().parent,
@@ -66,13 +64,13 @@ try:
         timeout=2,
         check=True,
     )
-    git_version["branch"] = branch_result.stdout.strip() or None
+    startup_git_version["branch"] = branch_result.stdout.strip() or None
 except (OSError, subprocess.SubprocessError):
     pass
 
-short_hash = (git_version["sha"] or "unknown")[:8]
-branch = git_version["branch"] or "unknown"
-message = git_version["message"] or ""
+short_hash = (startup_git_version["sha"] or "unknown")[:8]
+branch = startup_git_version["branch"] or "unknown"
+message = startup_git_version["message"] or ""
 print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 # Toggle drive communication transport for testing / fallback
@@ -381,10 +379,9 @@ register_science_events(sio, science_session)
 
 science_soft_stop_site = None
 
-# Return the startup snapshot without running Git on the asyncio event loop.
 @sio.on("getVersion")
 async def get_version(sid):
-    return git_version
+    return startup_git_version
 
 
 # =================== Start Server ===================
