@@ -12,12 +12,14 @@ import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
 import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
+import SoftwareVersionDetails from "./SoftwareVersionDetails";
 
 export default function NavConnectionStatus({ openPane, setOpenPane, openUp = false }) {
   // Use centralized status instead of registering separate socket listeners here
   const {
     robotConnected: isRobotConnected,
     baseConnected: isBaseConnected,
+    versions,
   } = useConnectionStatus();
 
   // robot
@@ -229,12 +231,13 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
           style={{
             position: "absolute",
             ...(openUp ? { bottom: "100%" } : { top: "100%" }),
-            left: "50%",
-            transform: "translateX(-50%)",
+            right: 0,
             background: "white",
             border: "1px solid gray",
             padding: "10px",
             width: "300px",
+            maxHeight: "80dvh",
+            overflowY: "auto",
             borderRadius: "12px",
           }}
         >
@@ -374,6 +377,10 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
               <hr className="border-t border-gray-300 my-4" />
             </div>
           ) : null}
+
+          <Typography sx={{ color: "black", mb: 1 }} fontWeight={600}>Software versions</Typography>
+          <SoftwareVersionDetails versions={versions} />
+          <hr className="border-t border-gray-300 my-4" />
 
             <div>
               <PeripheralManager openPane={openPane} />
