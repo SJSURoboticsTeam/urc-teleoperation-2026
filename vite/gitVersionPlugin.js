@@ -7,7 +7,7 @@ const moduleId = "virtual:git-version";
 const resolvedId = `\0${moduleId}`;
 
 async function readGitVersion(root) {
-  const git = async (args) => {
+  const readGitOutputOrNull = async (args) => {
     try {
       const { stdout } = await execFileAsync("git", args, {
         cwd: root,
@@ -20,8 +20,8 @@ async function readGitVersion(root) {
     }
   };
   const [commit, branch] = await Promise.all([
-    git(["log", "-1", "--format=%H%n%s"]),
-    git(["rev-parse", "--abbrev-ref", "HEAD"]),
+    readGitOutputOrNull(["log", "-1", "--format=%H%n%s"]),
+    readGitOutputOrNull(["rev-parse", "--abbrev-ref", "HEAD"]),
   ]);
   const [sha, ...subject] = commit?.split("\n") ?? [];
   return { sha: sha || null, branch, message: commit ? subject.join("\n") : null };
@@ -30,7 +30,7 @@ async function readGitVersion(root) {
 export default function gitVersionPlugin() {
   let root;
   let version;
-  let timer;
+  let gitPollTimer;
   let closed = false;
 
   return {
@@ -49,32 +49,32 @@ export default function gitVersionPlugin() {
     },
     configureServer(server) {
       closed = false;
-      let refreshing = false;
-      timer = setInterval(async () => {
-        if (refreshing) return;
-        refreshing = true;
+      let gitReadInProgress = false;
+      gitPollTimer = setInterval(async () => {
+        if (gitReadInProgress) return;
+        gitReadInProgress = true;
         try {
           const next = await readGitVersion(root);
           if (closed) return;
           if (JSON.stringify(next) !== JSON.stringify(version)) {
             version = next;
-            const module = server.moduleGraph.getModuleById(resolvedId);
-            if (module) {
-              server.moduleGraph.invalidateModule(module);
-              await server.reloadModule(module);
+            const virtualVersionModule = server.moduleGraph.getModuleById(resolvedId);
+            if (virtualVersionModule) {
+              server.moduleGraph.invalidateModule(virtualVersionModule);
+              await server.reloadModule(virtualVersionModule);
             }
           }
         } catch (error) {
           server.config.logger.error(`Git version refresh failed: ${error.message}`);
         } finally {
-          refreshing = false;
+          gitReadInProgress = false;
         }
       }, 1000);
-      timer.unref();
+      gitPollTimer.unref();
     },
     closeBundle() {
       closed = true;
-      clearInterval(timer);
+      clearInterval(gitPollTimer);
     },
   };
 }

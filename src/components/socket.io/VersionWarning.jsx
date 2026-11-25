@@ -10,14 +10,14 @@ import {
 import SoftwareVersionDetails from "./SoftwareVersionDetails";
 
 export default function VersionWarning({ versions }) {
-  const [dismissedCheck, setDismissedCheck] = useState(null);
+  const [dismissedCheckId, setDismissedCheckId] = useState(null);
   const open = !versions.checking
     && (versions.mismatch || versions.unverifiable)
-    && dismissedCheck !== versions.checkKey;
-  const dismiss = () => setDismissedCheck(versions.checkKey);
+    && dismissedCheckId !== versions.compatibilityCheckId;
+  const dismissCurrentCheck = () => setDismissedCheckId(versions.compatibilityCheckId);
 
   return (
-    <Dialog fullScreen open={open} onClose={dismiss} aria-labelledby="version-warning-title">
+    <Dialog fullScreen open={open} onClose={dismissCurrentCheck} aria-labelledby="version-warning-title">
       <DialogTitle id="version-warning-title" color="warning.main">
         {versions.mismatch ? "Software versions are out of sync" : "Software compatibility cannot be verified"}
       </DialogTitle>
@@ -41,7 +41,7 @@ export default function VersionWarning({ versions }) {
         </Typography>
       </DialogContent>
       <DialogActions>
-        <Button variant="contained" onClick={dismiss}>Continue anyway</Button>
+        <Button variant="contained" onClick={dismissCurrentCheck}>Continue anyway</Button>
       </DialogActions>
     </Dialog>
   );
