@@ -59,10 +59,24 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
   const selectedUrl = selectedCamera?.url ?? null;
   const selectedMediaType = selectedCamera?.mediatype ?? null;
 
-  // loading camera state
-  const resetCameraState = () => {
+  // True once the stream server has answered the reachability probe; the
+  // iframe is only mounted after that.
+  const [reachable, setReachable] = useState(false);
+  // Bumped by the Retry button to rerun the effect below for the same camera.
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Whenever the camera changes (or Retry is pressed), reset loading/error and,
+  // for iframe streams, probe the endpoint before mounting the iframe.
+  //
+  // Why probe: Chrome fires the iframe's onLoad even when it renders its own
+  // "refused to connect" page, and the cross-origin frame can't be inspected,
+  // so onLoad alone can't tell success from failure. A no-cors fetch rejects
+  // on a network failure (refused, unreachable, DNS) but resolves for any HTTP
+  // response, which is enough to know the stream server is up.
+  useEffect(() => {
     setLoading(true);
     setError(false);
+    setReachable(false);
 
     if (isWebDemo) {
       setLoading(false);
@@ -70,30 +84,41 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
       return;
     }
 
-    if (iframeTimeoutRef.current) {
-      clearTimeout(iframeTimeoutRef.current);
-      iframeTimeoutRef.current = null;
-    }
-    // if selectedCamera is iframe/video, start a timeout to mark error if not loaded
-    if (selectedMediaType === "iframe") {
-      iframeTimeoutRef.current = setTimeout(() => {
-        setLoading(false);
-        setError(true);
-      }, 5000);
-    }
-  };
+    if (selectedMediaType !== "iframe" || !selectedUrl) return;
 
-  // whenever camera changes, reset loading/error
-  useEffect(() => {
-    resetCameraState();
+    let cancelled = false;
+    const controller = new AbortController();
+    const fail = () => {
+      if (cancelled) return;
+      cancelled = true;
+      controller.abort();
+      setLoading(false);
+      setError(true);
+    };
+
+    // One deadline covers both the probe and the iframe's load; iframe onLoad
+    // clears it.
+    iframeTimeoutRef.current = setTimeout(fail, 5000);
+
+    fetch(selectedUrl, {
+      mode: "no-cors",
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(() => {
+        if (!cancelled) setReachable(true);
+      })
+      .catch(fail);
 
     return () => {
+      cancelled = true;
+      controller.abort();
       if (iframeTimeoutRef.current) {
         clearTimeout(iframeTimeoutRef.current);
         iframeTimeoutRef.current = null;
       }
     };
-  }, [selectedUrl, selectedMediaType]);
+  }, [selectedUrl, selectedMediaType, isWebDemo, retryCount]);
 
   return (
     // Root Box is flexible so CameraPane can grow inside a column
@@ -179,7 +204,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
         {selectedCamera && (
           (selectedCamera.mediatype === "image" ? (
             <img
-              key={selectedCamera.url}
+              key={`${selectedCamera.url}#${retryCount}`}
               src={selectedCamera.url}
               alt={selectedCamera.name}
               onLoad={() => {
@@ -201,7 +226,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
             />
           ) : (
             // if error, iframe does not show to prevent browser error messages
-            !error && (
+            !error && reachable && (
               <iframe
                 key={selectedCamera.url}
                 src={selectedCamera.url}
@@ -288,7 +313,7 @@ export default function CameraPane({ cameraValue, onCameraChange }) {
                 sx={{ mt: 1 }}
                 variant="contained"
                 onClick={() => {
-                  resetCameraState();
+                  setRetryCount((count) => count + 1);
                 }}
               >
                 Retry
