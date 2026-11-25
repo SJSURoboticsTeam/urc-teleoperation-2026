@@ -77,13 +77,13 @@ export default function useSoftwareVersions() {
   const connected = Object.values(backends).filter(
     ({ status }) => status !== "disconnected",
   );
-  const versions = [normalizeVersion(frontend), ...connected.map(({ version }) => version)];
+  const completed = connected.filter(({ status }) => status !== "checking");
+  const versions = [normalizeVersion(frontend), ...completed.map(({ version }) => version)];
   const shas = versions.map((version) => version?.sha).filter(Boolean);
 
   return {
     frontend: { status: frontend.sha ? "ready" : "unknown", version: frontend },
     ...backends,
-    checking: connected.some(({ status }) => status === "checking"),
     mismatch: new Set(shas).size > 1,
     unverifiable: connected.length > 0 && versions.some((version) => !version?.sha),
     compatibilityCheckId: `${connectionCount}:${frontendHotUpdateCount}`,

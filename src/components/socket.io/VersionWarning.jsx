@@ -11,8 +11,7 @@ import SoftwareVersionDetails from "./SoftwareVersionDetails";
 
 export default function VersionWarning({ versions }) {
   const [dismissedCheckId, setDismissedCheckId] = useState(null);
-  const open = !versions.checking
-    && (versions.mismatch || versions.unverifiable)
+  const open = (versions.mismatch || versions.unverifiable)
     && dismissedCheckId !== versions.compatibilityCheckId;
   const dismissCurrentCheck = () => setDismissedCheckId(versions.compatibilityCheckId);
 
