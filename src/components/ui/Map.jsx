@@ -704,17 +704,17 @@ export default function Map() {
   }, [openPopup, openWaypoint]);
 
   // Send both autonomy targets to the rover, which shares them with every client (and refills the autonomy pane).
-  // Any target not in the list is sent blank, like an empty location card.
-  const sendTargets = useCallback((nextTargets) => {
+  // Any target not in the list is sent blank, like an empty location card. Resolves to true if the rover accepts.
+  const sendTargets = useCallback((nextTargets) => (
     sendAutonomyCommand("setTargets", {
       targets: AUTONOMY_TARGET_IDS.map((id) => nextTargets.find((target) => target.id === id) ?? { id, label: "", latitude: null, longitude: null }),
-    });
-  }, [sendAutonomyCommand]);
+    })
+  ), [sendAutonomyCommand]);
 
   // "Set as" moves any pin into a science site (kind "science", slot 1-3) or autonomy target (kind "autonomy",
   // slot "Location 1"/"Location 2"). The pin leaves its old POI, site, or target, so no duplicate pin is left
   // stacked on the same spot, and whatever was in the chosen slot is replaced.
-  const setWaypointAs = (kind, slot) => {
+  const setWaypointAs = async (kind, slot) => {
     if (!openWaypoint) return;
     const { type, name, scienceSite, targetId, lat, long } = openWaypoint;
     // The move changes both the old slot and the new one, so both must be unlocked (the popup disables the same cases)
@@ -722,16 +722,9 @@ export default function Map() {
     const touchesTargets = kind === "autonomy" || type === "autonomy";
     if ((touchesScience && scienceLocked) || (touchesTargets && (targetsLocked || !autonomyState))) return;
 
-    if (touchesScience) {
-      setSiteReadings((prev) => {
-        const next = [...prev];
-        if (type === "science") next[scienceSite - 1] = null;
-        // A site moving to another site keeps its GPS accuracy
-        if (kind === "science") next[slot - 1] = type === "science" ? prev[scienceSite - 1] : { lat, long, accuracy_m: null, capturedAt: Date.now() };
-        return next;
-      });
-    }
-    // One setTargets call both empties the old target and fills the new one
+    // One setTargets call both empties the old target and fills the new one.
+    // Nothing else changes until the rover accepts it, so a refused or timed-out move
+    // (the autonomy provider warns about it) leaves the pin where it was instead of losing it.
     if (touchesTargets) {
       let nextTargets = targets.filter((target) => target.id !== targetId);
       if (kind === "autonomy") {
@@ -739,14 +732,24 @@ export default function Map() {
         const label = type === "poi" ? name : targets.find((target) => target.id === targetId)?.label ?? "";
         nextTargets = [...nextTargets.filter((target) => target.id !== slot), { id: slot, label, latitude: lat, longitude: long }];
       }
-      sendTargets(nextTargets);
+      if (!(await sendTargets(nextTargets))) return;
+    }
+    if (touchesScience) {
+      setSiteReadings((prev) => {
+        const next = [...prev];
+        // Only empty the old site if it still holds this pin's reading, since it can change while waiting for the rover
+        if (type === "science" && prev[scienceSite - 1]?.lat === lat && prev[scienceSite - 1]?.long === long) next[scienceSite - 1] = null;
+        // A site moving to another site keeps its GPS accuracy
+        if (kind === "science") next[slot - 1] = type === "science" ? prev[scienceSite - 1] : { lat, long, accuracy_m: null, capturedAt: Date.now() };
+        return next;
+      });
     }
     if (type === "poi") removePoi(openWaypoint.id);
     enqueueSnackbar(`${name} moved to ${kind === "science" ? `Site ${slot}` : slot}`, { variant: "success" });
   };
 
   // Delete from the popup: a POI is removed; a science site or autonomy location is emptied in its own pane
-  const deleteWaypoint = () => {
+  const deleteWaypoint = async () => {
     if (!openWaypoint) return;
     if (openWaypoint.type === "poi") {
       removePoi(openWaypoint.id);
@@ -755,7 +758,8 @@ export default function Map() {
       setSiteReadings((prev) => prev.map((reading, index) => (index === openWaypoint.scienceSite - 1 ? null : reading)));
     } else {
       if (targetsLocked) return;
-      sendTargets(targets.filter((target) => target.id !== openWaypoint.targetId));
+      // Wait for the rover, so a refused delete isn't reported as done
+      if (!(await sendTargets(targets.filter((target) => target.id !== openWaypoint.targetId)))) return;
     }
     enqueueSnackbar(`${openWaypoint.name} deleted`, { variant: "success" });
   };

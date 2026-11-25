@@ -34,12 +34,14 @@ export default function AutonomyModeProvider({ children }) {
   }, []);
 
   // Sends an autonomy event and shows the reason if the rover refuses it
+  // Resolves to true only when the rover accepts, for callers that must wait before changing anything else
   // memoized so effects that depend on it don't re-run every render
-  const sendAutonomyCommand = useCallback((event, data) => {
+  const sendAutonomyCommand = useCallback((event, data) => new Promise((resolve) => {
     const args = data === undefined ? [] : [data];
     robotsocket.timeout(3000).emit(event, ...args, (err, res) => {
       if (err) {
         enqueueSnackbar(`${event} timed out.`, { variant: "error" });
+        resolve(false);
         return;
       }
       if (res.status !== "OK") {
@@ -47,8 +49,9 @@ export default function AutonomyModeProvider({ children }) {
           variant: res.status === "DENIED" ? "warning" : "error",
         });
       }
+      resolve(res.status === "OK");
     });
-  }, [enqueueSnackbar]);
+  }), [enqueueSnackbar]);
 
   const autonomyEnabled = autonomyState?.mode === "AUTONOMY";
 
