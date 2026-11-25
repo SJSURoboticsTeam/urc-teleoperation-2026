@@ -12,7 +12,8 @@ from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_ant
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
 from video import send_fake_video_stats, videoloop
-import sys, subprocess
+import subprocess
+from pathlib import Path
 from notes import register_notes_events
 
 print("\033[0m----------------")
@@ -27,32 +28,35 @@ GPS_AUTO_ID = "1546:01A9"
 canIds_arr = []
 
 
-short_hash = "unknown"
-message = ""
-branch = "unknown"
-
+# Capture the version once: this describes the running process, even if the
+# checkout is updated later. Anchor Git to this file rather than the launch cwd.
+git_version = {"sha": None, "branch": None, "message": None}
 try:
     commit_result = subprocess.run(
-        ["git", "log", "-1", "--pretty=format:%h %s"],
+        ["git", "log", "-1", "--format=%H%n%s"],
+        cwd=Path(__file__).resolve().parent,
         capture_output=True,
         text=True,
+        timeout=2,
+        check=True,
     )
-
-    if commit_result.returncode == 0:
-        short_hash, _, message = commit_result.stdout.strip().partition(" ")
-
+    sha, _, message = commit_result.stdout.strip().partition("\n")
+    git_version.update(sha=sha or None, message=message)
     branch_result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        cwd=Path(__file__).resolve().parent,
         capture_output=True,
         text=True,
+        timeout=2,
+        check=True,
     )
-
-    if branch_result.returncode == 0:
-        branch = branch_result.stdout.strip()
-
-except OSError:
+    git_version["branch"] = branch_result.stdout.strip() or None
+except (OSError, subprocess.SubprocessError):
     pass
 
+short_hash = (git_version["sha"] or "unknown")[:8]
+branch = git_version["branch"] or "unknown"
+message = git_version["message"] or ""
 print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 
@@ -228,6 +232,14 @@ video_task_started = False
 register_metric_events(sio)
 register_notes_events(sio)
 register_shutdown_commands(sio)
+
+
+# Return the startup snapshot without running Git on the asyncio event loop.
+@sio.on("getVersion")
+async def get_version(sid):
+    return git_version
+
+
 # =================== Start Server ===================
 
 @sio.event
