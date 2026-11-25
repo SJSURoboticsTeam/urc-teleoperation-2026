@@ -35,7 +35,6 @@ export default function VersionWarning({ versions }) {
         pointerEvents: "none",
       }}
     >
-      {/* Match the top bar's responsive height without blocking its controls. */}
       <Toolbar aria-hidden="true" sx={{ flexShrink: 0 }} />
       <Paper
         square
