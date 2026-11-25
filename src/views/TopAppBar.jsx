@@ -113,6 +113,7 @@ export default function TopAppBar({
   return (
     <>
       <AppBar
+        data-version-warning-accessible
         sx={{
           bgcolor: import.meta.env.MODE === "prod" ? orange[700] : undefined,
           zIndex: (theme) => theme.zIndex.appBar + 1,

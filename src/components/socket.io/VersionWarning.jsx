@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -12,6 +12,8 @@ import {
 import SoftwareVersionDetails from "./SoftwareVersionDetails";
 
 export default function VersionWarning({ versions }) {
+  const warningRef = useRef(null);
+  const titleRef = useRef(null);
   const [dismissedWarning, setDismissedWarning] = useState(null);
   const isDismissed = dismissedWarning?.checkId === versions.compatibilityCheckId
     && (!versions.unverifiable || dismissedWarning.unverifiable);
@@ -22,10 +24,40 @@ export default function VersionWarning({ versions }) {
     unverifiable: versions.unverifiable,
   });
 
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const previousFocus = document.activeElement;
+    const warning = warningRef.current;
+    const root = document.getElementById("root");
+    const coveredElements = new Set();
+    const disableCoveredContent = (element) => {
+      if (element === warning || element.matches("[data-version-warning-accessible]")) return;
+      if (element.contains(warning) || element.querySelector("[data-version-warning-accessible]")) {
+        Array.from(element.children).forEach(disableCoveredContent);
+      } else if (!element.inert) {
+        element.inert = true;
+        coveredElements.add(element);
+      }
+    };
+
+    titleRef.current.focus({ preventScroll: true });
+    disableCoveredContent(root);
+    const observer = new MutationObserver(() => disableCoveredContent(root));
+    observer.observe(root, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      coveredElements.forEach((element) => { element.inert = false; });
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
     <Box
+      ref={warningRef}
       sx={{
         position: "fixed",
         inset: 0,
@@ -51,7 +83,7 @@ export default function VersionWarning({ versions }) {
         }}
       >
         <Box sx={{ width: "100%", maxWidth: 720, mx: "auto", my: "auto", py: 3, flexShrink: 0, textAlign: "center" }}>
-          <DialogTitle id="version-warning-title" color="warning.main">
+          <DialogTitle ref={titleRef} tabIndex={-1} id="version-warning-title" color="warning.main">
             {versions.mismatch ? "Software versions are out of sync" : "Software compatibility cannot be verified"}
           </DialogTitle>
           <DialogContent sx={{ flex: "none", overflow: "visible" }}>
