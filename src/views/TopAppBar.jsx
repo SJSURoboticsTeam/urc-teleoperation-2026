@@ -115,6 +115,7 @@ export default function TopAppBar({
       <AppBar
         sx={{
           bgcolor: import.meta.env.MODE === "prod" ? orange[700] : undefined,
+          zIndex: (theme) => theme.zIndex.appBar + 1,
         }}
       >
         <Toolbar>
