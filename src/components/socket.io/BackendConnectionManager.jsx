@@ -378,7 +378,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
             </div>
           ) : null}
 
-          <Typography sx={{ color: "black", mb: 1 }} fontWeight={600}>Software versions</Typography>
+          <Typography sx={{ color: "black", mb: 1 }} fontWeight={600}>Versions</Typography>
           <SoftwareVersionDetails versions={versions} />
           <hr className="border-t border-gray-300 my-4" />
 
