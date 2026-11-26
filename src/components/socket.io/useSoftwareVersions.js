@@ -83,6 +83,13 @@ export default function useSoftwareVersions() {
   const shas = versions.map((version) => version?.sha).filter(Boolean);
   const mismatch = new Set(shas).size > 1;
   const unverifiable = connected.length > 0 && versions.some((version) => !version?.sha);
+  const compatibility =
+    connected.length === 0 ? "disconnected"
+      : mismatch ? "mismatch"
+        : unverifiable ? "unknown"
+          : completed.length < connected.length ? "checking"
+            : "matching";
+
   const checkId = `${connectionCount}:${frontendHotUpdateCount}`;
   const isDismissed = dismissedWarning?.checkId === checkId
     && (!mismatch || dismissedWarning.mismatch)
@@ -91,6 +98,7 @@ export default function useSoftwareVersions() {
   return {
     frontend: { status: frontend.sha ? "ready" : "unknown", version: frontend },
     ...backends,
+    compatibility,
     warning: {
       open: (mismatch || unverifiable) && !isDismissed,
       mismatch,

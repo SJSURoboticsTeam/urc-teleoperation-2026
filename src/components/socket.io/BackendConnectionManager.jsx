@@ -14,6 +14,14 @@ import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
 import SoftwareVersionDetails from "./SoftwareVersionDetails";
 
+const versionStatuses = {
+  matching: { label: "Connected versions match", color: "success.dark" },
+  mismatch: { label: "Versions differ", color: "error.dark" },
+  unknown: { label: "Compatibility unknown", color: "warning.dark" },
+  checking: { label: "Checking…", color: "text.secondary" },
+  disconnected: { label: "No backends connected", color: "text.secondary" },
+};
+
 export default function NavConnectionStatus({ openPane, setOpenPane, openUp = false }) {
   // Use centralized status instead of registering separate socket listeners here
   const {
@@ -21,6 +29,7 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
     baseConnected: isBaseConnected,
     versions,
   } = useConnectionStatus();
+  const versionStatus = versionStatuses[versions.compatibility];
 
   // robot
   const [robotLatency, setRobotLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
@@ -361,7 +370,12 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
                 <hr className="border-t border-gray-300 my-4" />
               </>
             ) : null}
-            <Typography sx={{ color: "black", mb: 1 }} fontWeight={600}>Versions</Typography>
+            <Box sx={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", columnGap: 1, mb: 1 }}>
+              <Typography sx={{ color: "black" }} fontWeight={600}>Versions</Typography>
+              <Typography variant="body2" color={versionStatus.color} role="status">
+                {versionStatus.label}
+              </Typography>
+            </Box>
             <SoftwareVersionDetails versions={versions} />
           </Box>
           <Box
