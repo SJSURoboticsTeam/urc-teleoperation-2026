@@ -7,7 +7,7 @@ from collections import deque
 VideoPollingRate = 0.1
 RateWindow = 10
 FakeVideoPollingRate = 2
-camera_names = ["mast", "wheels", "arm1", "arm2", "science"]
+camera_names = ["mast", "wheels", "scout", "feet", "module1", "module2"]
 
 GOOD_MAX = 1.0      #adjust number after testing real cameras
 DEGRADED_MAX = 5.0  #adjust number after testing real cameras

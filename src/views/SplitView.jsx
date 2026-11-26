@@ -7,6 +7,10 @@ import {
 } from "react";
 import CameraPane from "../components/cameras/CameraPane";
 import {
+  DEFAULT_CAMERA,
+  resolveCameraValue,
+} from "../components/cameras/cameraList";
+import {
   FormControl,
   InputLabel,
   MenuItem,
@@ -15,7 +19,6 @@ import {
   Typography,
 } from "@mui/material";
 
-const DEFAULT_CAMERA = "Standby";
 const DEFAULT_CAMERA_NUM = 2;
 const STORAGE_KEY = "missionControl.cameraLayout";
 
@@ -39,8 +42,10 @@ export default function SplitView({
       if (raw) {
         const parsed = JSON.parse(raw);
         const nextNum = Math.max(1, parsed.cameraNum ?? DEFAULT_CAMERA_NUM);
+        // Saved modes may predate a camera rename; unknown values fall back
+        // to DEFAULT_CAMERA so CameraPane never gets a value with no source.
         const nextModes = Array.isArray(parsed.cameraModes)
-          ? parsed.cameraModes.slice(0, nextNum)
+          ? parsed.cameraModes.slice(0, nextNum).map(resolveCameraValue)
           : Array(nextNum).fill(DEFAULT_CAMERA);
         setCameraNum(nextNum);
         setCameraModes(

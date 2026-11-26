@@ -6,9 +6,10 @@ const emptyStats = { status: "UNAVAILABLE", droppedPerSec: null };
 const allUnavailable = {
   mast: emptyStats,
   wheels: emptyStats,
-  arm1: emptyStats,
-  arm2: emptyStats,
-  science: emptyStats,
+  scout: emptyStats,
+  feet: emptyStats,
+  module1: emptyStats,
+  module2: emptyStats,
 };
 
 export function useVideoData() {
