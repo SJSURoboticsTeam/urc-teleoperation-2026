@@ -9,7 +9,6 @@ import {
 } from "../components/socket.io/socket";
 import { ConnectionContext } from "../contexts/ConnectionContext";
 import useSoftwareVersions from "../components/socket.io/useSoftwareVersions";
-import VersionWarning from "../components/socket.io/VersionWarning";
 
 export default function ConnectionProvider({ children }) {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
@@ -164,7 +163,6 @@ export default function ConnectionProvider({ children }) {
   return (
     <ConnectionContext.Provider value={value}>
       {children}
-      <VersionWarning versions={versions} />
     </ConnectionContext.Provider>
   );
 }

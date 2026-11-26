@@ -29,8 +29,11 @@ import DriveControlProvider from "../providers/DriveControlProvider";
 import ScienceProvider from "../providers/ScienceProvider";
 import DemoPopup from "../components/ui/DemoPane";
 import SoftStopBanner from "../components/ui/SoftStopBanner";
+import VersionWarning from "../components/socket.io/VersionWarning";
+import { useConnectionStatus } from "../contexts/ConnectionContext";
 
 function App() {
+  const { versions } = useConnectionStatus();
   // Global autonomy state so every view can react to it
   // Start in TELEOP mode on initial load
 
@@ -151,6 +154,7 @@ function App() {
             </GPSProvider>
           </PeripheralProvider>
         </SerialProvider>
+        <VersionWarning versions={versions} />
     </Box>
   );
 }
