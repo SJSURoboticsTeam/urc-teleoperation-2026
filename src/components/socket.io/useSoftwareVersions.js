@@ -41,6 +41,7 @@ export default function useSoftwareVersions() {
   );
   const [backends, setBackends] = useState({ robot: disconnected(), base: disconnected() });
   const [connectionCount, setConnectionCount] = useState(0);
+  const [dismissedWarning, setDismissedWarning] = useState(null);
 
   useEffect(() => {
     const cleanups = [["robot", robotsocket], ["base", basesocket]].map(([key, socket]) => {
@@ -80,12 +81,20 @@ export default function useSoftwareVersions() {
   const completed = connected.filter(({ status }) => status !== "checking");
   const versions = [normalizeVersion(frontend), ...completed.map(({ version }) => version)];
   const shas = versions.map((version) => version?.sha).filter(Boolean);
+  const mismatch = new Set(shas).size > 1;
+  const unverifiable = connected.length > 0 && versions.some((version) => !version?.sha);
+  const checkId = `${connectionCount}:${frontendHotUpdateCount}`;
+  const isDismissed = dismissedWarning?.checkId === checkId
+    && (!unverifiable || dismissedWarning.unverifiable);
 
   return {
     frontend: { status: frontend.sha ? "ready" : "unknown", version: frontend },
     ...backends,
-    mismatch: new Set(shas).size > 1,
-    unverifiable: connected.length > 0 && versions.some((version) => !version?.sha),
-    compatibilityCheckId: `${connectionCount}:${frontendHotUpdateCount}`,
+    warning: {
+      open: (mismatch || unverifiable) && !isDismissed,
+      mismatch,
+      unverifiable,
+      dismiss: () => setDismissedWarning({ checkId, unverifiable }),
+    },
   };
 }

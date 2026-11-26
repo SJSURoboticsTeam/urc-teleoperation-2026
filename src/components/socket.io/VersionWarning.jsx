@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -14,15 +14,7 @@ import SoftwareVersionDetails from "./SoftwareVersionDetails";
 export default function VersionWarning({ versions }) {
   const warningRef = useRef(null);
   const titleRef = useRef(null);
-  const [dismissedWarning, setDismissedWarning] = useState(null);
-  const isDismissed = dismissedWarning?.checkId === versions.compatibilityCheckId
-    && (!versions.unverifiable || dismissedWarning.unverifiable);
-  const open = (versions.mismatch || versions.unverifiable)
-    && !isDismissed;
-  const dismissCurrentCheck = () => setDismissedWarning({
-    checkId: versions.compatibilityCheckId,
-    unverifiable: versions.unverifiable,
-  });
+  const { open, mismatch, unverifiable, dismiss } = versions.warning;
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -84,16 +76,16 @@ export default function VersionWarning({ versions }) {
       >
         <Box sx={{ width: "100%", maxWidth: 720, mx: "auto", my: "auto", py: 3, flexShrink: 0, textAlign: "center" }}>
           <DialogTitle ref={titleRef} tabIndex={-1} id="version-warning-title" color="warning.main">
-            {versions.mismatch ? "Software versions are out of sync" : "Software compatibility cannot be verified"}
+            {mismatch ? "Software versions are out of sync" : "Software compatibility cannot be verified"}
           </DialogTitle>
           <DialogContent sx={{ flex: "none", overflow: "visible" }}>
-            {versions.mismatch && (
+            {mismatch && (
               <Typography sx={{ mb: 2 }}>
                 These components are running different commits. Update them to the
                 same commit to avoid compatibility problems.
               </Typography>
             )}
-            {versions.unverifiable && (
+            {unverifiable && (
               <Typography sx={{ mb: 2 }}>
                 Version information is unavailable for a connected component. Its
                 compatibility cannot be verified.
@@ -108,7 +100,7 @@ export default function VersionWarning({ versions }) {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ justifyContent: "center" }}>
-            <Button variant="contained" onClick={dismissCurrentCheck}>Continue anyway</Button>
+            <Button variant="contained" onClick={dismiss}>Continue anyway</Button>
           </DialogActions>
         </Box>
       </Paper>
