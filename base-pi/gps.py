@@ -6,6 +6,17 @@ from typing import Union
 import time
 import asyncio
 import math
+import queue
+import threading
+
+try:
+    from pyubx2 import ERR_IGNORE, NMEA_PROTOCOL, RTCM3_PROTOCOL, UBX_PROTOCOL, UBXReader
+    rtk_available = True
+except ImportError:
+    rtk_available = False
+
+# Timeout allows the reader thread to shut down promptly.
+READ_TIMEOUT_S = 1.0
 
 @dataclass
 class GNRMC:
@@ -64,18 +75,116 @@ def add_distance_and_heading(data, gps_state):
 
 class ZEDF9P:
     def __init__(self, port, baudrate, timeout: float = 0.01):
-        self.gps_port = serial.Serial(port, baudrate, timeout=timeout)
+        self.gps_port = serial.Serial(
+            port, baudrate, timeout=READ_TIMEOUT_S if rtk_available else timeout
+        )
         self.lines = []
-        self.__gnrmc: GNRMC = GNRMC(None, None, False)
-        self.__accuracy: Union[AccuracyEstimate, None] = None
+        self._init_state()
+        self._reader = None
+        if rtk_available:
+            self._reader = threading.Thread(target=self._reader_loop, daemon=True)
+            self._reader.start()
 
         # sleep for a second to ensure we have data to populate self.gnrmc
         time.sleep(1)
 
+    def _init_state(self):
+        self.__gnrmc: GNRMC = GNRMC(None, None, False)
+        self.__accuracy: Union[AccuracyEstimate, None] = None
+        self.svin = None  # latest parsed UBX-NAV-SVIN
+        self.on_rtcm = None  # optional callback(raw_frame: bytes), runs on the reader thread
+        self._error: Union[Exception, None] = None
+        self._stop = threading.Event()
+        self._acks = queue.Queue(maxsize=32)
+        self._tx_lock = threading.Lock()
+
+    @property
+    def reader_active(self) -> bool:
+        return self._reader is not None
+
     @property
     def gnrmc(self):
-        self._read_all_available_sentences()
+        if self._reader is None:
+            self._read_all_available_sentences()
+        elif self._error is not None:
+            raise self._error
         return self.__gnrmc
+
+    def _reader_loop(self):
+        """Read frames until stopped; tolerate isolated read errors, store persistent ones."""
+        reader = UBXReader(
+            self.gps_port,
+            protfilter=NMEA_PROTOCOL | UBX_PROTOCOL | RTCM3_PROTOCOL,
+            quitonerror=ERR_IGNORE,
+        )
+        failures = 0
+        while not self._stop.is_set():
+            try:
+                raw, parsed = reader.read()
+                failures = 0
+            except (serial.SerialException, OSError) as e:
+                failures += 1
+                if failures < 3 and self.gps_port.is_open and not self._stop.is_set():
+                    time.sleep(0.1)
+                    continue
+                if not self._stop.is_set():
+                    self._error = e
+                return
+            except Exception:
+                continue
+            if raw is None:
+                continue
+            try:
+                self._handle_message(raw, parsed)
+            except Exception as e:
+                print(f"GPS message error: {e}")
+
+    def _handle_message(self, raw: bytes, parsed):
+        if raw[:1] == b"\xd3":
+            if self.on_rtcm is not None:
+                try:
+                    self.on_rtcm(raw)
+                except Exception as e:
+                    print(f"RTCM callback error: {e}")
+        elif raw[:2] == b"\xb5\x62":
+            if parsed.identity == "NAV-SVIN":
+                self.svin = parsed
+            elif parsed.identity in ("ACK-ACK", "ACK-NAK"):
+                try:
+                    self._acks.put_nowait((parsed.identity, parsed.clsID, parsed.msgID))
+                except queue.Full:
+                    pass
+        else:
+            try:
+                self._process_line(raw.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError, IndexError):
+                pass
+
+    def send_ubx(self, msg, timeout: float = 2.0):
+        """
+        Write a UBX config message and wait for its ACK-ACK. Blocks, so call it
+        through asyncio.to_thread. Raises RuntimeError on ACK-NAK, TimeoutError
+        if no ACK arrives in time.
+        """
+        if self._reader is None:
+            raise RuntimeError("pyubx2 is not installed")
+        with self._tx_lock:
+            if self._error is not None:
+                raise self._error
+            while not self._acks.empty():
+                self._acks.get_nowait()
+            self.gps_port.write(msg.serialize())
+            key = (msg.msg_cls[0], msg.msg_id[0])
+            deadline = time.monotonic() + timeout
+            while True:
+                try:
+                    ident, cls_id, msg_id = self._acks.get(timeout=max(deadline - time.monotonic(), 0))
+                except queue.Empty:
+                    raise TimeoutError(f"no ACK for {msg.identity} within {timeout}s") from None
+                if (cls_id, msg_id) == key:
+                    if ident == "ACK-NAK":
+                        raise RuntimeError(f"receiver rejected {msg.identity}")
+                    return
 
     def process_gnrmc(self, line: str) -> GNRMC:
         # parse the gnrmc sentences according to
@@ -158,13 +267,19 @@ class ZEDF9P:
         Processes all available sentences, updating self.gnrmc
         """
         for line in self.lines:
-            if line.startswith("$") and line[3:6] == "RMC":
-                self.__gnrmc = self.process_gnrmc(line)
-            if "$GNGGA" in line:
-                self.process_gngga(line)
-    
+            self._process_line(line)
+
+    def _process_line(self, line: str):
+        if line.startswith("$") and line[3:6] == "RMC":
+            self.__gnrmc = self.process_gnrmc(line)
+        if "$GNGGA" in line:
+            self.process_gngga(line)
+
     def close(self) -> None:
+        self._stop.set()
         self.gps_port.close()
+        if self._reader is not None and self._reader is not threading.current_thread():
+            self._reader.join(timeout=2)
 
 def find_gps_port(vid_pid=GPS_AUTO_ID):
     """Search connected serial devices for one matching the given VID:PID.
@@ -225,10 +340,11 @@ async def read_gps_data(serial_ports, sio, gps_state):
         #     # time.sleep(0.01)
         except Exception as e:
             print(f'GPS thread error: {e}')
-            try: gps.close()
+            if serial_ports["gps"]["port"] is gps:
+                serial_ports["gps"]["port"] = None
+                serial_ports["gps"]["id"] = "disconnect"
+            try: await asyncio.to_thread(gps.close)
             except Exception: pass
-            serial_ports["gps"]["port"] = None
-            serial_ports["gps"]["id"] = "disconnect"
         finally:
             await asyncio.sleep(connect_delay)  # Sleep briefly to prevent tight loop on error
 

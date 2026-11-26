@@ -7,3 +7,4 @@ asyncssh
 dotenv
 pathlib
 pyserial
+pyubx2>=1.4.1
