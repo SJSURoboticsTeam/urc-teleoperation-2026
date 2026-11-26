@@ -8,9 +8,11 @@ import {
   robotsocket,
 } from "../components/socket.io/socket";
 import { ConnectionContext } from "../contexts/ConnectionContext";
+import useSoftwareVersions from "../components/socket.io/useSoftwareVersions";
 
 export default function ConnectionProvider({ children }) {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+  const versions = useSoftwareVersions();
 
   // Initialize state from the sockets' current connection status.
   const [robotConnected, setRobotConnected] = useState(
@@ -153,8 +155,9 @@ export default function ConnectionProvider({ children }) {
     () => ({
       robotConnected,
       baseConnected,
+      versions,
     }),
-    [robotConnected, baseConnected],
+    [robotConnected, baseConnected, versions],
   );
 
   return (

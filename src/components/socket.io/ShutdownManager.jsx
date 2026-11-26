@@ -97,7 +97,7 @@ export default function ShutdownManager() {
         onClick={openPopup}
         variant="contained"
         disabled={!baseConnected && !serverConnected}
-        sx={{ width: 280 }}
+        fullWidth
       >
         POWER OFF
       </Button>

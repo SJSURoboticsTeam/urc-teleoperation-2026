@@ -7,6 +7,7 @@ import asyncio
 import signal
 import sys
 import subprocess
+from pathlib import Path
 from metrics import cpuloop, register_metric_events
 from drive import (
     read_drive_can_loop,
@@ -43,32 +44,38 @@ from science_can import CanScienceLink, read_science_can_loop
 print("\033[0m----------------")
 
 
-short_hash = "unknown"
-message = ""
-branch = "unknown"
+def read_git_version():
+    version = {"sha": None, "branch": None, "message": None}
+    try:
+        commit_result = subprocess.run(
+            ["git", "log", "-1", "--format=%H%n%s"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+        sha, _, message = commit_result.stdout.strip().partition("\n")
+        version.update(sha=sha or None, message=message)
+        branch_result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+        version["branch"] = branch_result.stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return version
 
-try:
-    commit_result = subprocess.run(
-        ["git", "log", "-1", "--pretty=format:%h %s"],
-        capture_output=True,
-        text=True,
-    )
 
-    if commit_result.returncode == 0:
-        short_hash, _, message = commit_result.stdout.strip().partition(" ")
+startup_git_version = read_git_version()
 
-    branch_result = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        capture_output=True,
-        text=True,
-    )
-
-    if branch_result.returncode == 0:
-        branch = branch_result.stdout.strip()
-
-except OSError:
-    pass
-
+short_hash = (startup_git_version["sha"] or "unknown")[:8]
+branch = startup_git_version["branch"] or "unknown"
+message = startup_git_version["message"] or ""
 print(f"\033[1m\033[94m[{short_hash}] [{branch}] {message}\033[0m")
 
 # Toggle drive communication transport for testing / fallback
@@ -376,6 +383,11 @@ else:
 register_science_events(sio, science_session)
 
 science_soft_stop_site = None
+
+@sio.on("getVersion")
+async def get_version(sid):
+    return startup_git_version
+
 
 # =================== Start Server ===================
 

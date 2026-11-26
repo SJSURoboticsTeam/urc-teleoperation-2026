@@ -12,13 +12,24 @@ import SettingsRemoteIcon from "@mui/icons-material/SettingsRemote";
 import Box from "@mui/material/Box";
 import PeripheralManager from "./PeripheralManager";
 import ShutdownManager from "./ShutdownManager";
+import SoftwareVersionDetails from "./SoftwareVersionDetails";
+
+const versionStatuses = {
+  matching: { label: "Connected versions match", color: "success.dark" },
+  mismatch: { label: "Versions differ", color: "error.dark" },
+  unknown: { label: "Compatibility unknown", color: "warning.dark" },
+  checking: { label: "Checking…", color: "text.secondary" },
+  disconnected: { label: "No backends connected", color: "text.secondary" },
+};
 
 export default function NavConnectionStatus({ openPane, setOpenPane, openUp = false }) {
   // Use centralized status instead of registering separate socket listeners here
   const {
     robotConnected: isRobotConnected,
     baseConnected: isBaseConnected,
+    versions,
   } = useConnectionStatus();
+  const versionStatus = versionStatuses[versions.compatibility];
 
   // robot
   const [robotLatency, setRobotLatency] = useState(null); // integer of rough estimated latency based on roundtrip ping
@@ -208,8 +219,13 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
     <div
       onMouseEnter={() => setOpenPane("Backend")}
       onMouseLeave={() => setOpenPane("None")}
-      // needed to detect hover and placement of popup
-      style={{ position: "relative", cursor: "pointer", textAlign: "center" }}
+      style={{
+        alignSelf: "stretch",
+        display: "flex",
+        alignItems: "center",
+        cursor: "pointer",
+        textAlign: "center",
+      }}
     >
       <span
         style={{
@@ -225,162 +241,189 @@ export default function NavConnectionStatus({ openPane, setOpenPane, openUp = fa
       </span>
 
       {openPane == "Backend" && (
-        <div
-          style={{
+        <Box
+          sx={{
             position: "absolute",
             ...(openUp ? { bottom: "100%" } : { top: "100%" }),
-            left: "50%",
-            transform: "translateX(-50%)",
+            right: 8,
             background: "white",
             border: "1px solid gray",
-            padding: "10px",
-            width: "300px",
+            p: "10px",
+            width: { xs: 300, md: 600 },
+            maxWidth: "calc(100vw - 16px)",
+            maxHeight: "80dvh",
+            overflowY: "auto",
             borderRadius: "12px",
+            display: "grid",
+            gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, minmax(0, 1fr))" },
+            gap: 2,
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              justifyContent: "center",
-            }}
-          >
-            <Box>
-              <Typography
-                sx={{ color: "black", mt: -1 }}
-                variant="h6"
-                fontWeight={600}
-              >
-                ROBOT PI
-              </Typography>
-              <Button
-                color="success"
-                onClick={connectRobotPi}
-                variant="contained"
-                sx={{ width: 120 }}
-              >
-                CONNECT
-              </Button>
-              <Button
-                color="error"
-                onClick={disconnectRobotPI}
-                variant="contained"
-                sx={{ width: 120, mt: 1 }}
-              >
-                DISCONNECT
-              </Button>
+          <Box sx={{ minWidth: 0 }}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography
+                  sx={{ color: "black", mt: -1 }}
+                  variant="h6"
+                  fontWeight={600}
+                >
+                  ROBOT PI
+                </Typography>
+                <Button
+                  color="success"
+                  onClick={connectRobotPi}
+                  variant="contained"
+                  fullWidth
+                >
+                  CONNECT
+                </Button>
+                <Button
+                  color="error"
+                  onClick={disconnectRobotPI}
+                  variant="contained"
+                  fullWidth
+                  sx={{ mt: 1 }}
+                >
+                  DISCONNECT
+                </Button>
+              </Box>
+              <Box>
+                <Typography
+                  sx={{ color: "black", mt: -1 }}
+                  variant="h6"
+                  fontWeight={600}
+                >
+                  BASE PI
+                </Typography>
+                <Button
+                  color="success"
+                  onClick={connectBasePi}
+                  variant="contained"
+                  fullWidth
+                >
+                  CONNECT
+                </Button>
+                <Button
+                  color="error"
+                  onClick={disconnectBasePI}
+                  variant="contained"
+                  fullWidth
+                  sx={{ mt: 1 }}
+                >
+                  DISCONNECT
+                </Button>
+              </Box>
             </Box>
             <hr className="border-t border-gray-300 my-4" />
-            <Box>
-              <Typography
-                sx={{ color: "black", mt: -1 }}
-                variant="h6"
-                fontWeight={600}
-              >
-                BASE PI
-              </Typography>
-              <Button
-                color="success"
-                onClick={connectBasePi}
-                variant="contained"
-                sx={{ width: 120 }}
-              >
-                CONNECT
-              </Button>
-              <Button
-                color="error"
-                onClick={disconnectBasePI}
-                variant="contained"
-                sx={{ width: 120, mt: 1 }}
-              >
-                DISCONNECT
-              </Button>
-            </Box>
-          </Box>
-          <hr className="border-t border-gray-300 my-4" />
-          {isBaseConnected || isRobotConnected ? (
-            <div>
-              <div style={{ textAlign: "center", padding: "4px 0" }}>
+            {isBaseConnected || isRobotConnected ? (
+              <>
                 <Box
                   sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 1,
+                    display: "grid",
+                    gridTemplateColumns: "1.5fr 1fr 1fr",
+                    gap: 0.5,
+                    backgroundColor: "#ebebeb",
+                    p: 1,
+                    borderRadius: 2,
+                    mt: 1,
                   }}
                 >
+                  {/* Headers */}
+                  <Typography sx={{ color: "black" }} fontWeight={600}>
+                    Data Field
+                  </Typography>
+                  <Typography sx={{ color: "black" }} fontWeight={600}>
+                    Robot PI
+                  </Typography>
+                  <Typography sx={{ color: "black" }} fontWeight={600}>
+                    Base PI
+                  </Typography>
+
+                  {/* Latency Row */}
+                  <Typography sx={{ color: "black" }}>Latency:</Typography>
+                  <Typography sx={{ color: "black" }}>
+                    {robotLatency} ms
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    {baseLatency} ms
+                  </Typography>
+
+                  {/* Clients Row */}
+                  <Typography sx={{ color: "black" }}># of Clients:</Typography>
+                  <Typography sx={{ color: "black" }}>
+                    {robotNumConnections}
+                  </Typography>
+                  <Typography sx={{ color: "black" }}>
+                    {baseNumConnections}
+                  </Typography>
+                  {/* Websockets Row */}
+                  <Typography sx={{ color: "black" }}>Websockets</Typography>
+                  <Typography sx={{ color: "black" }}>{robotConnType}</Typography>
+                  <Typography sx={{ color: "black" }}>{baseConnType}</Typography>
+                </Box>
+                <hr className="border-t border-gray-300 my-4" />
+              </>
+            ) : null}
+            <Box sx={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", columnGap: 1, mb: 1 }}>
+              <Typography sx={{ color: "black" }} fontWeight={600}>Versions</Typography>
+              <Typography variant="body2" color={versionStatus.color} role="status">
+                {versionStatus.label}
+              </Typography>
+            </Box>
+            <SoftwareVersionDetails versions={versions} />
+          </Box>
+          <Box
+            sx={{
+              minWidth: 0,
+              borderColor: "grey.300",
+              borderStyle: "solid",
+              borderWidth: { xs: "1px 0 0", md: "0 0 0 1px" },
+              pl: { xs: 0, md: 2 },
+              pt: { xs: 2, md: 0 },
+            }}
+          >
+            {isBaseConnected || isRobotConnected ? (
+              <>
+                <div style={{ textAlign: "center", padding: "4px 0" }}>
                   <Box
                     sx={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      backgroundColor: health.color,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 1,
                     }}
-                  />
-                  <Typography sx={{ color: "black", fontWeight: 600 }}>
-                    HEALTH: {healthLevel}
+                  >
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        backgroundColor: health.color,
+                      }}
+                    />
+                    <Typography sx={{ color: "black", fontWeight: 600 }}>
+                      HEALTH: {healthLevel}
+                    </Typography>
+                  </Box>
+
+                  <Typography variant="caption" color="text.secondary">
+                    {health.message}
                   </Typography>
-                </Box>
-
-                <Typography variant="caption" color="text.secondary">
-                  {health.message}
-                </Typography>
-              </div>
-
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "1.5fr 1fr 1fr",
-                  gap: 0.5,
-                  backgroundColor: "#ebebeb",
-                  p: 1,
-                  borderRadius: 2,
-                  mt: 1,
-                }}
-              >
-                {/* Headers */}
-                <Typography sx={{ color: "black" }} fontWeight={600}>
-                  Data Field
-                </Typography>
-                <Typography sx={{ color: "black" }} fontWeight={600}>
-                  Robot PI
-                </Typography>
-                <Typography sx={{ color: "black" }} fontWeight={600}>
-                  Base PI
-                </Typography>
-
-                {/* Latency Row */}
-                <Typography sx={{ color: "black" }}>Latency:</Typography>
-                <Typography sx={{ color: "black" }}>
-                  {robotLatency} ms
-                </Typography>
-                <Typography sx={{ color: "black" }}>
-                  {baseLatency} ms
-                </Typography>
-
-                {/* Clients Row */}
-                <Typography sx={{ color: "black" }}># of Clients:</Typography>
-                <Typography sx={{ color: "black" }}>
-                  {robotNumConnections}
-                </Typography>
-                <Typography sx={{ color: "black" }}>
-                  {baseNumConnections}
-                </Typography>
-                {/* Websockets Row */}
-                <Typography sx={{ color: "black" }}>Websockets</Typography>
-                <Typography sx={{ color: "black" }}>{robotConnType}</Typography>
-                <Typography sx={{ color: "black" }}>{baseConnType}</Typography>
-              </Box>
-              <hr className="border-t border-gray-300 my-4" />
-            </div>
-          ) : null}
-
-            <div>
-              <PeripheralManager openPane={openPane} />
-              <hr className="border-t border-gray-300 my-4" />
-            </div>
-          <ShutdownManager />
-        </div>
+                </div>
+                <hr className="border-t border-gray-300 my-4" />
+              </>
+            ) : null}
+            <PeripheralManager openPane={openPane} />
+            <hr className="border-t border-gray-300 my-4" />
+            <ShutdownManager />
+          </Box>
+        </Box>
       )}
     </div>
   );
