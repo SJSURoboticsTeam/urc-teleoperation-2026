@@ -85,6 +85,7 @@ export default function useSoftwareVersions() {
   const unverifiable = connected.length > 0 && versions.some((version) => !version?.sha);
   const checkId = `${connectionCount}:${frontendHotUpdateCount}`;
   const isDismissed = dismissedWarning?.checkId === checkId
+    && (!mismatch || dismissedWarning.mismatch)
     && (!unverifiable || dismissedWarning.unverifiable);
 
   return {
@@ -94,7 +95,7 @@ export default function useSoftwareVersions() {
       open: (mismatch || unverifiable) && !isDismissed,
       mismatch,
       unverifiable,
-      dismiss: () => setDismissedWarning({ checkId, unverifiable }),
+      dismiss: () => setDismissedWarning({ checkId, unverifiable, mismatch }),
     },
   };
 }
