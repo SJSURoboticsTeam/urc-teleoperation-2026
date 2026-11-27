@@ -4,7 +4,7 @@ import random
 # See CAN Frames document for message specification
 
 LED_CONTROL_ID = 0x304
-LENGTH = 6
+LENGTH = 7
 
 
 def clamp(val, minimum, maximum):
@@ -22,16 +22,19 @@ def register_led_events(sio, serial_ports):
             data["blue"],
             data["time_on"],
             data["time_off"],
+            data.get("animation", 0),
         )
 
 
-async def send_led(serial_ports, brightness, red, green, blue, time_on, time_off):
+async def send_led(serial_ports, brightness, red, green, blue, time_on, time_off, animation=0):
     brightness = clamp(brightness, 0, 32)
     red = clamp(red, 0, 255)
     green = clamp(green, 0, 255)
     blue = clamp(blue, 0, 255)
     time_on = clamp(time_on, 0, 255)
     time_off = clamp(time_off, 0, 255)
+    # Data[6]: 0 = all on, 1 = swirl on/off.
+    animation = clamp(animation, 0, 1)
 
     can_message = (
         f"t{LED_CONTROL_ID:03X}{LENGTH}"
@@ -40,7 +43,8 @@ async def send_led(serial_ports, brightness, red, green, blue, time_on, time_off
         f"{green:02X}"
         f"{blue:02X}"
         f"{time_on:02X}"
-        f"{time_off:02X}\r"
+        f"{time_off:02X}"
+        f"{animation:02X}\r"
     )
 
     print(repr(can_message))
@@ -58,5 +62,6 @@ async def run_led_demo(serial_ports):
             blue=random.randint(0, 255),
             time_on=100,
             time_off=100,
+            animation=random.randint(0, 1),
         )
         await asyncio.sleep(0.5)
