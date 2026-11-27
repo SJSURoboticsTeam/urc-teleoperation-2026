@@ -11,6 +11,7 @@ import sys
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
+from rtk import register_rtk_events, rtk_status_loop
 from video import send_fake_video_stats, videoloop
 import sys, subprocess
 
@@ -223,10 +224,12 @@ robot_gps_task_started = False
 async_ssh_started = False
 cpu_started = False
 video_task_started = False
+rtk_task_started = False
 
 
 register_metric_events(sio)
 register_shutdown_commands(sio)
+register_rtk_events(sio, serial_ports, offline)
 # =================== Start Server ===================
 
 @sio.event
@@ -237,6 +240,7 @@ async def connect(sid,environ):
     global robot_gps_task_started
     global numClients
     global video_task_started
+    global rtk_task_started
     # Ensure we log connection and keep metrics' client count in sync
     print(f"Client connected (py_server): {sid}")
     try:
@@ -263,6 +267,9 @@ async def connect(sid,environ):
             sio.start_background_task(send_fake_gps_data, sio, gps_state)
         else:
             sio.start_background_task(read_gps_data, serial_ports, sio, gps_state)
+    if not rtk_task_started:
+        rtk_task_started = True
+        sio.start_background_task(rtk_status_loop)
     if not cpu_started:
         cpu_started = True
         sio.start_background_task(cpuloop,sio)

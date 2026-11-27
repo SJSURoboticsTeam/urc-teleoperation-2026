@@ -10,7 +10,7 @@ import queue
 import threading
 
 try:
-    from pyubx2 import ERR_IGNORE, NMEA_PROTOCOL, RTCM3_PROTOCOL, UBX_PROTOCOL, UBXReader
+    from pyubx2 import ERR_IGNORE, NMEA_PROTOCOL, RTCM3_PROTOCOL, UBX_PROTOCOL, UBXMessage, UBXReader
     rtk_available = True
 except ImportError:
     rtk_available = False
@@ -93,6 +93,9 @@ class ZEDF9P:
         self.__gnrmc: GNRMC = GNRMC(None, None, False)
         self.__accuracy: Union[AccuracyEstimate, None] = None
         self.svin = None  # latest parsed UBX-NAV-SVIN
+        self.svin_time = None  # time.monotonic() when svin last arrived
+        self.cfg = {}  # latest base gps configuration values by key name, filled by poll_cfg
+        self._cfg_event = threading.Event()
         self.on_rtcm = None  # optional callback(raw_frame: bytes), runs on the reader thread
         self._error: Union[Exception, None] = None
         self._stop = threading.Event()
@@ -154,6 +157,10 @@ class ZEDF9P:
         elif raw[:2] == b"\xb5\x62":
             if parsed.identity == "NAV-SVIN":
                 self.svin = parsed
+                self.svin_time = time.monotonic()
+            elif parsed.identity == "CFG-VALGET":
+                self.cfg.update({k: v for k, v in vars(parsed).items() if k.startswith("CFG_")})
+                self._cfg_event.set()
             elif parsed.identity in ("ACK-ACK", "ACK-NAK"):
                 try:
                     self._acks.put_nowait((parsed.identity, parsed.clsID, parsed.msgID))
@@ -190,6 +197,28 @@ class ZEDF9P:
                     if ident == "ACK-NAK":
                         raise RuntimeError(f"receiver rejected {msg.identity}")
                     return
+
+    def poll_cfg(self, keys, timeout: float = 2.0) -> dict:
+        """
+        Read configuration keys from the receiver's RAM layer. Blocks, so call it
+        through asyncio.to_thread. Raises TimeoutError if the reply does not
+        contain every key in time.
+        """
+        if self._reader is None:
+            raise RuntimeError("pyubx2 is not installed")
+        with self._tx_lock:
+            if self._error is not None:
+                raise self._error
+            for key in keys:
+                self.cfg.pop(key, None)
+            self._cfg_event.clear()
+            self.gps_port.write(UBXMessage.config_poll(0, 0, list(keys)).serialize())
+            deadline = time.monotonic() + timeout
+            while not all(key in self.cfg for key in keys):
+                if not self._cfg_event.wait(max(deadline - time.monotonic(), 0)):
+                    raise TimeoutError(f"no CFG-VALGET reply for {list(keys)} within {timeout}s")
+                self._cfg_event.clear()
+            return {key: self.cfg[key] for key in keys}
 
     def process_gnrmc(self, line: str) -> GNRMC:
         # parse the gnrmc sentences according to
