@@ -76,7 +76,8 @@ def add_distance_and_heading(data, gps_state):
 class ZEDF9P:
     def __init__(self, port, baudrate, timeout: float = 0.01):
         self.gps_port = serial.Serial(
-            port, baudrate, timeout=READ_TIMEOUT_S if rtk_available else timeout
+            port, baudrate, timeout=READ_TIMEOUT_S if rtk_available else timeout,
+            write_timeout=1, exclusive=True,
         )
         self.lines = []
         self._init_state()
@@ -108,6 +109,8 @@ class ZEDF9P:
             self._read_all_available_sentences()
         elif self._error is not None:
             raise self._error
+        elif not self._reader.is_alive():
+            raise RuntimeError("GPS reader thread stopped")
         return self.__gnrmc
 
     def _reader_loop(self):
@@ -130,7 +133,9 @@ class ZEDF9P:
                 if not self._stop.is_set():
                     self._error = e
                 return
-            except Exception:
+            except Exception as e:
+                print(f"GPS reader error: {e}")
+                time.sleep(0.1)  # a persistent non-serial error must not spin the CPU
                 continue
             if raw is None:
                 continue
