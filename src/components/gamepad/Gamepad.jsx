@@ -166,6 +166,8 @@ export default function GamepadPanel({openUp = false}) {
 
   const lastTimeRef = useRef(null);
   useEffect(() => {
+    if (driveConnectedOne == null) return;
+
     const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
     const pollAxes = (time) => {

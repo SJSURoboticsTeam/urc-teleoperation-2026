@@ -1,44 +1,81 @@
-import React, {useEffect, useRef, useState, useCallback, useLayoutEffect} from "react";
+import React, {useEffect, useRef, useState, useCallback, useLayoutEffect, useMemo} from "react";
 import ReactDOM from "react-dom/client";
+import { createPortal } from "react-dom";
+import { useSnackbar } from "notistack";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Button, Box, Typography, Switch, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Button, Box, Typography, Switch, FormControlLabel, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import ScienceIcon from "@mui/icons-material/Science";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import PlaceIcon from "@mui/icons-material/Place";
 import { useGPS } from "../../contexts/GPSContext";
-import { createTrailUpdater, serializeTrailLog, parseTrailLog, importedTrailGeoJSON } from "../../lib/gpsTrail";
+import { useScience } from "../../contexts/ScienceContext";
+import { useAutonomyMode } from "../../contexts/AutonomyModeContext";
+import { useSoftStop } from "../../contexts/SoftStopContext";
+import WaypointPopup from "./WaypointPopup";
+import { createTrailUpdater, importedTrailGeoJSON, hasValidGPSCoordinates } from "../../lib/gpsTrail";
+import { serializeMapFile, parseMapFile, AUTONOMY_TARGET_IDS } from "../../lib/mapFile";
 
 const TRAIL_SOURCE = "rover-gps-trail";
 const IMPORTED_TRAIL_SOURCE = "imported-gps-trail";
 
-function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport }) {
+const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
+// Works for the map's locations and for an imported file's (whose targets may only have some locations)
+function countLocations({ siteReadings, targets, pois }) {
+  return {
+    sites: siteReadings.filter(Boolean).length,
+    targets: targets.filter((target) => target.label || target.latitude !== null || target.longitude !== null).length,
+    pois: pois.length,
+  };
+}
+
+const describeCounts = ({ sites, targets, pois }) =>
+  `${plural(sites, "science site")}, ${plural(targets, "autonomy target")}, and ${plural(pois, "POI")}`;
+
+function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onClearImport, mapData, locationsLocked, onImportMap, onClearMap }) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmClearMap, setConfirmClearMap] = useState(false);
+  // A parsed file waiting for the operator to pick what to import:
+  // { name, trailPoints, locations, useTrail, useWaypoints }, where the use* flags are the checkboxes
+  const [pendingImport, setPendingImport] = useState(null);
   const [importError, setImportError] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef(null);
+  const mapCounts = countLocations(mapData);
+  const hasLocations = mapCounts.sites + mapCounts.targets + mapCounts.pois > 0;
 
-  const importLog = async (event) => {
+  // A part can only be imported if the file has it. Waypoints change science sites, so they follow the
+  // autonomy/Soft Stop lock (which can turn on while the dialog is open); the trail is only an overlay, so it doesn't.
+  const fileHasTrail = pendingImport?.trailPoints.length > 0;
+  const canImportWaypoints = !!pendingImport?.locations && !locationsLocked;
+  const importTrail = fileHasTrail && pendingImport.useTrail;
+  const importWaypoints = canImportWaypoints && pendingImport.useWaypoints;
+
+  const importMapFile = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     setImportError("");
     setIsImporting(true);
     try {
-      const points = parseTrailLog(await file.text());
-      onImport({ name: file.name, points });
+      // Everything in the file is ticked to start with
+      setPendingImport({ name: file.name, ...parseMapFile(await file.text()), useTrail: true, useWaypoints: true });
     } catch (error) {
-      setImportError(error.message || "Could not read this trail log.");
+      setImportError(error.message || "Could not read this map file.");
     } finally {
       setIsImporting(false);
     }
   };
 
-  const exportLog = () => {
-    const blob = new Blob([serializeTrailLog(points)], { type: "application/x-ndjson;charset=utf-8" });
+  const exportMap = () => {
+    const blob = new Blob([serializeMapFile({ trailPoints: points, ...mapData })], { type: "application/x-ndjson;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    // File name of the log is a timestamp of when it was downloaded
-    link.download = `rover-gps-trail-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
+    // File name of the map file is a timestamp of when it was downloaded
+    link.download = `rover-map-${new Date().toISOString().replace(/[:.]/g, "-")}.log`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -53,7 +90,7 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
       </Typography>
       {hasUnsavedTrail && (
         <Typography role="alert" variant="body2" color="error.main">
-          Trail changes could not be saved. Export Log before reloading or closing this page.
+          Trail changes could not be saved. Export Map before reloading or closing this page.
         </Typography>
       )}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
@@ -61,17 +98,76 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
         <Button size="small" variant="outlined" disabled={!recording} onClick={onStop}>Stop Recording</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
-        <Button size="small" variant="outlined" disabled={!ready || points.length === 0} onClick={exportLog}>Export Log</Button>
+        <Button size="small" variant="outlined" disabled={!ready || (points.length === 0 && !hasLocations)} onClick={exportMap}>Export Map</Button>
         <Button size="small" color="error" variant="outlined" disabled={!ready || points.length === 0} onClick={() => setConfirmClear(true)}>Clear Trail</Button>
       </Box>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 0.5, mt: 0.5 }}>
         <Button size="small" variant="outlined" disabled={!ready || isImporting} onClick={() => importInputRef.current?.click()}>
-          {isImporting ? "Importing…" : "Import Log"}
+          {isImporting ? "Importing…" : "Import Map"}
         </Button>
         <Button size="small" variant="outlined" disabled={!importedTrail} onClick={onClearImport}>Clear Import</Button>
       </Box>
-      <input ref={importInputRef} type="file" accept=".log" aria-label="Import GPS trail log" hidden onChange={importLog} />
+      <Button size="small" color="error" variant="outlined" fullWidth sx={{ mt: 0.5 }} disabled={!hasLocations || locationsLocked} onClick={() => setConfirmClearMap(true)}>
+        Clear Map
+      </Button>
+      {locationsLocked && (
+        <Typography variant="caption" color="error.main">Importing waypoints and Clear Map are locked while autonomy or Soft Stop is active.</Typography>
+      )}
+      <input ref={importInputRef} type="file" accept=".log" aria-label="Import map file" hidden onChange={importMapFile} />
       {importError && <Typography role="alert" variant="body2" color="error.main">{importError}</Typography>}
+      <Dialog open={!!pendingImport} onClose={() => setPendingImport(null)}>
+        <DialogTitle>Import {pendingImport?.name}?</DialogTitle>
+        <DialogContent>
+          <FormControlLabel
+            disabled={!fileHasTrail}
+            control={<Checkbox checked={importTrail} onChange={(event) => setPendingImport((prev) => ({ ...prev, useTrail: event.target.checked }))} />}
+            label={`GPS trail (${plural(pendingImport?.trailPoints.length ?? 0, "point")})`}
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mt: -0.5, mb: 1 }}>
+            {fileHasTrail ? "Shown as an imported trail. Your recorded trail is not changed." : "This file has no trail."}
+          </Typography>
+          <FormControlLabel
+            disabled={!canImportWaypoints}
+            control={<Checkbox checked={importWaypoints} onChange={(event) => setPendingImport((prev) => ({ ...prev, useWaypoints: event.target.checked }))} />}
+            label={pendingImport?.locations ? `Waypoints (${describeCounts(countLocations(pendingImport.locations))})` : "Waypoints"}
+          />
+          <Typography variant="body2" color={pendingImport?.locations && locationsLocked ? "error.main" : "text.secondary"} sx={{ ml: 4, mt: -0.5 }}>
+            {!pendingImport?.locations
+              ? "This is an older trail-only log, so it has no waypoints."
+              : locationsLocked
+                ? "Locked while autonomy or Soft Stop is active."
+                : `Replaces the map's ${describeCounts(mapCounts)}.`}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingImport(null)}>Cancel</Button>
+          {/* Parts that aren't ticked are passed as null and left alone */}
+          <Button
+            disabled={!importTrail && !importWaypoints}
+            onClick={() => {
+              onImportMap({
+                name: pendingImport.name,
+                trailPoints: importTrail ? pendingImport.trailPoints : null,
+                locations: importWaypoints ? pendingImport.locations : null,
+              });
+              setPendingImport(null);
+            }}
+          >
+            Import
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={confirmClearMap} onClose={() => setConfirmClearMap(false)}>
+        <DialogTitle>Clear map locations?</DialogTitle>
+        <DialogContent>
+          This removes {describeCounts(mapCounts)} from the map. Autonomy targets are cleared on the rover for every operator. The GPS trail is not affected. Export the map first if you want to keep them.
+          {locationsLocked && <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>Locked while autonomy or Soft Stop is active.</Typography>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmClearMap(false)}>Cancel</Button>
+          <Button color="error" disabled={locationsLocked} onClick={() => { onClearMap(); setConfirmClearMap(false); }}>Clear Map</Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
         <DialogTitle>Clear GPS trail?</DialogTitle>
         <DialogContent>This removes all saved trail points from this browser. Export a log first if you want to keep them.</DialogContent>
@@ -84,6 +180,13 @@ function TrailControlUI({ points, ready, recording, hasUnsavedTrail, onStart, on
   );
 }
 
+function unmountControlRoot(root, container) {
+  container?.remove();
+  if (root) {
+    setTimeout(() => root.unmount(), 0);
+  }
+}
+
 class TrailControl {
   onAdd() {
     this._container = document.createElement("div");
@@ -91,12 +194,12 @@ class TrailControl {
     this._root = ReactDOM.createRoot(this._container);
     return this._container;
   }
-  update(points, ready, recording, hasUnsavedTrail, onStart, onStop, onClear, importedTrail, onImport, onClearImport) {
-    this._root?.render(<TrailControlUI points={points} ready={ready} recording={recording} hasUnsavedTrail={hasUnsavedTrail} onStart={onStart} onStop={onStop} onClear={onClear} importedTrail={importedTrail} onImport={onImport} onClearImport={onClearImport} />);
+  // Takes the TrailControlUI props as one object; there are too many to pass by position
+  update(props) {
+    this._root?.render(<TrailControlUI {...props} />);
   }
   onRemove() {
-    this._root?.unmount();
-    this._container?.remove();
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -172,12 +275,7 @@ class CoordControl {
     );
   }
   onRemove() {
-    if (this._root) {
-      this._root.unmount();
-    }
-    if(this._container && this._container.parentNode) {
-      this._container.parentNode.removeChild(this._container);
-    }
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -271,12 +369,7 @@ class LockOnControl {
     );
   }
   onRemove() {
-    if (this._root) {
-      this._root.unmount();
-    }
-    if(this._container && this._container.parentNode) {
-      this._container.parentNode.removeChild(this._container);
-    }
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -287,7 +380,9 @@ function ResetZoomControlUI({ onClickZoom, onClickPan }) {
     <Box
       sx={{
         display: "flex",
-        flexDirection: "column",
+        // One row so the panel stays short and the coordinate boxes below don't cover it
+        flexDirection: "row",
+        gap: 0.5,
         bgcolor: "rgba(255,255,255,0.9)",
         p: 1,
         borderRadius: 1,
@@ -327,12 +422,67 @@ class ResetZoomControl {
     );
   }
   onRemove() {
-    if (this._root) {
-      this._root.unmount();
+    unmountControlRoot(this._root, this._container);
+    this._root = null;
+    this._container = null;
+  }
+}
+
+function PoiControlUI({ isPlacing, canPinRover, onTogglePlacing, onPinRover }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        // Buttons in one row, like Reset Zoom; the placing hint wraps onto its own line
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 0.5,
+        maxWidth: 220,
+        bgcolor: "rgba(255,255,255,0.9)",
+        p: 1,
+        borderRadius: 1,
+        border: "1px solid black",
+        minWidth: 100,
+      }}
+    >
+      <Button size="small" variant={isPlacing ? "contained" : "outlined"} onClick={onTogglePlacing}>
+        {isPlacing ? "Cancel" : "+ Add POI"}
+      </Button>
+      <Button size="small" variant="outlined" disabled={!canPinRover} onClick={onPinRover}>Pin Rover</Button>
+      {isPlacing && <Typography variant="caption" sx={{ flexBasis: "100%" }}>Click the map to drop a pin</Typography>}
+    </Box>
+  );
+}
+
+class PoiControl {
+  constructor(onTogglePlacing, onPinRover) {
+    this._onTogglePlacing = onTogglePlacing;
+    this._onPinRover = onPinRover;
+    this._root = null;
+  }
+  onAdd(map) {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl my-custom-control";
+    this._root = ReactDOM.createRoot(this._container);
+    this.update(false, false);
+    return this._container;
+  }
+  update(isPlacing, canPinRover) {
+    if(!this._root) {
+      return;
     }
-    if(this._container && this._container.parentNode) {
-      this._container.parentNode.removeChild(this._container);
-    }
+    this._root.render(
+      <PoiControlUI
+        isPlacing = {isPlacing}
+        canPinRover = {canPinRover}
+        onTogglePlacing = {this._onTogglePlacing}
+        onPinRover = {this._onPinRover}
+      />
+    );
+  }
+  onRemove() {
+    unmountControlRoot(this._root, this._container);
     this._root = null;
     this._container = null;
   }
@@ -413,6 +563,90 @@ function updateAccuracyCircle(map, sourceId, layerId, coords) {
   updateAccuracyRadius(map, layerId, coords);
 }
 
+const WAYPOINT_STYLES = {
+  science: { color: "#00897b", Icon: ScienceIcon },
+  autonomy: { color: "#3949ab", Icon: SmartToyIcon },
+  poi: { color: "#455a64", Icon: PlaceIcon },
+};
+
+// Mission pins (science sites and autonomy targets) are larger and ringed in yellow so they stand out from POIs
+function WaypointPin({ waypoint }) {
+  const { color, Icon } = WAYPOINT_STYLES[waypoint.type] ?? WAYPOINT_STYLES.poi;
+  const highlighted = waypoint.type !== "poi";
+  const size = highlighted ? 34 : 26;
+  const label = waypoint.name;
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        bgcolor: color,
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: highlighted ? "3px solid #ffd600" : "2px solid #fff",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.5)",
+        cursor: "pointer",
+      }}
+    >
+      <Icon sx={{ fontSize: size * 0.6 }} />
+      {/* Label hangs below the icon so the icon's center stays on the coordinate */}
+      <Typography
+        variant="caption"
+        sx={{
+          position: "absolute",
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          mt: 0.25,
+          px: 0.5,
+          bgcolor: "rgba(255,255,255,0.9)",
+          color: "#000",
+          borderRadius: 0.5,
+          fontWeight: highlighted ? 700 : 400,
+          lineHeight: 1.4,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
+// Each pane owns its locations (autonomy targets live on the rover); the map only gathers them into one list of pins
+function buildWaypoints(siteReadings, targets, pois) {
+  const waypoints = [];
+
+  siteReadings.forEach((reading, index) => {
+    if (!reading) return;
+    waypoints.push({ id: `science-${index + 1}`, type: "science", name: `Site ${index + 1}`, scienceSite: index + 1, lat: reading.lat, long: reading.long });
+  });
+
+  // A target without both coordinates yet (null) gets no pin
+  targets.forEach((target) => {
+    if (!hasValidGPSCoordinates(target)) return;
+    const name = target.label.trim() || target.id;
+    waypoints.push({ id: `autonomy-${target.id}`, type: "autonomy", name, targetId: target.id, lat: target.latitude, long: target.longitude });
+  });
+
+  pois.forEach((poi) => {
+    waypoints.push({ id: poi.id, type: "poi", name: poi.name, lat: poi.lat, long: poi.long });
+  });
+
+  return waypoints;
+}
+
+function removeWaypointMarker({ marker, root }) {
+  marker.remove();
+  // Unmounting a root while React is committing logs a warning, so wait a tick
+  setTimeout(() => root.unmount());
+}
+
 export default function Map() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -422,27 +656,159 @@ export default function Map() {
   const coordRef = useRef(null);
   const coordRef2 = useRef(null);
   const resetZoomRef = useRef(null);
+  const poiControlRef = useRef(null);
+  const poiStateRef = useRef(null);
   const suppressTrackRef = useRef(false);
 
   const trailControlRef = useRef(null);
   const trailPointsRef = useRef([]);
-  const trailControlStateRef = useRef(null);
+  const trailControlPropsRef = useRef(null);
   const trailUpdaterRef = useRef(null);
+  // Waypoint id -> { marker, root }. A plain object because this component's name hides the built-in Map
+  const waypointMarkersRef = useRef({});
 
   const [isLockedOn, setIsLockedOn] = useState(true);
   const [isCentered, setIsCentered] = useState(false);
   const [webglSupported, setWebglSupported] = useState(null);
   const [importedTrail, setImportedTrail] = useState(null);
-
-  const importTrail = useCallback((trail) => {
-    setImportedTrail(trail);
-    // setIsLockedOn(false);
-  }, []);
   const clearImportedTrail = useCallback(() => setImportedTrail(null), []);
 
-  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail } = useGPS();
+  const { robotCoordinates, baseCoordinates, robotSignalDiff, baseSignalDiff, trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, pois, addPoi, renamePoi, removePoi, replacePois } = useGPS();
+  const { siteReadings, setSiteReadings } = useScience();
+  const { autonomyEnabled, autonomyState, sendAutonomyCommand } = useAutonomyMode();
+  // The rover's autonomy targets, or none while disconnected. Keyed on their JSON so other rover
+  // state broadcasts (phase, messages) don't count as a change.
+  const targetsJson = JSON.stringify(autonomyState?.targets ?? []);
+  const targets = useMemo(() => JSON.parse(targetsJson), [targetsJson]);
+  // The autonomy pane locks its location inputs while the rover drives, and the rover refuses changes then too
+  const targetsLocked = autonomyState?.phase === "NAVIGATING" || autonomyState?.phase === "RETURNING";
+  // Memoized so GPS updates re-rendering the map don't redraw every pin
+  const waypoints = useMemo(() => buildWaypoints(siteReadings, targets, pois), [siteReadings, targets, pois]);
+  // While true, the next click on the map drops a POI there
+  const [isPlacingPoi, setIsPlacingPoi] = useState(false);
+
+  // The pin whose popup is open: { id, node } where node is the popup's DOM content
+  const [openPopup, setOpenPopup] = useState(null);
+  const openWaypoint = waypoints.find((wp) => wp.id === openPopup?.id);
+  const { softStopActive } = useSoftStop();
+  const { enqueueSnackbar } = useSnackbar();
+  // Same lock as the science pane's GET GNSS button
+  const scienceLocked = autonomyEnabled || softStopActive;
+
+  // The popup opens empty and its content renders right after, so re-place it once the content is in.
+  // MapLibre picks above/below the pin from the popup's size; without this it measures an empty popup and gets clipped.
+  useLayoutEffect(() => {
+    if (!openPopup) return;
+    const marker = waypointMarkersRef.current[openPopup.id]?.marker;
+    marker?.getPopup()?.setLngLat(marker.getLngLat());
+  }, [openPopup, openWaypoint]);
+
+  // Send both autonomy targets to the rover, which shares them with every client (and refills the autonomy pane).
+  // Any target not in the list is sent blank, like an empty location card. Resolves to true if the rover accepts.
+  const sendTargets = useCallback((nextTargets) => (
+    sendAutonomyCommand("setTargets", {
+      targets: AUTONOMY_TARGET_IDS.map((id) => nextTargets.find((target) => target.id === id) ?? { id, label: "", latitude: null, longitude: null }),
+    })
+  ), [sendAutonomyCommand]);
+
+  // "Set as" moves any pin into a science site (kind "science", slot 1-3) or autonomy target (kind "autonomy",
+  // slot "Location 1"/"Location 2"). The pin leaves its old POI, site, or target, so no duplicate pin is left
+  // stacked on the same spot, and whatever was in the chosen slot is replaced.
+  const setWaypointAs = async (kind, slot) => {
+    if (!openWaypoint) return;
+    const { type, name, scienceSite, targetId, lat, long } = openWaypoint;
+    // The move changes both the old slot and the new one, so both must be unlocked (the popup disables the same cases)
+    const touchesScience = kind === "science" || type === "science";
+    const touchesTargets = kind === "autonomy" || type === "autonomy";
+    if ((touchesScience && scienceLocked) || (touchesTargets && (targetsLocked || !autonomyState))) return;
+
+    // One setTargets call both empties the old target and fills the new one.
+    // Nothing else changes until the rover accepts it, so a refused or timed-out move
+    // (the autonomy provider warns about it) leaves the pin where it was instead of losing it.
+    if (touchesTargets) {
+      let nextTargets = targets.filter((target) => target.id !== targetId);
+      if (kind === "autonomy") {
+        // A POI's name or the target's own label carries over; a science site has no label of its own
+        const label = type === "poi" ? name : targets.find((target) => target.id === targetId)?.label ?? "";
+        nextTargets = [...nextTargets.filter((target) => target.id !== slot), { id: slot, label, latitude: lat, longitude: long }];
+      }
+      if (!(await sendTargets(nextTargets))) return;
+    }
+    if (touchesScience) {
+      setSiteReadings((prev) => {
+        const next = [...prev];
+        // Only empty the old site if it still holds this pin's reading, since it can change while waiting for the rover
+        if (type === "science" && prev[scienceSite - 1]?.lat === lat && prev[scienceSite - 1]?.long === long) next[scienceSite - 1] = null;
+        // A site moving to another site keeps its GPS accuracy
+        if (kind === "science") next[slot - 1] = type === "science" ? prev[scienceSite - 1] : { lat, long, accuracy_m: null, capturedAt: Date.now() };
+        return next;
+      });
+    }
+    if (type === "poi") removePoi(openWaypoint.id);
+    enqueueSnackbar(`${name} moved to ${kind === "science" ? `Site ${slot}` : slot}`, { variant: "success" });
+  };
+
+  // Delete from the popup: a POI is removed; a science site or autonomy location is emptied in its own pane
+  const deleteWaypoint = async () => {
+    if (!openWaypoint) return;
+    if (openWaypoint.type === "poi") {
+      removePoi(openWaypoint.id);
+    } else if (openWaypoint.type === "science") {
+      if (scienceLocked) return;
+      setSiteReadings((prev) => prev.map((reading, index) => (index === openWaypoint.scienceSite - 1 ? null : reading)));
+    } else {
+      if (targetsLocked) return;
+      // Wait for the rover, so a refused delete isn't reported as done
+      if (!(await sendTargets(targets.filter((target) => target.id !== openWaypoint.targetId)))) return;
+    }
+    enqueueSnackbar(`${openWaypoint.name} deleted`, { variant: "success" });
+  };
+  // Apply the parts of an imported file the operator ticked; a part that wasn't ticked is null and left alone.
+  // The file's trail is shown as the imported trail (the recorded trail is never touched), and its
+  // locations replace the map's. Autonomy targets are sent to the rover, so they need a rover connection.
+  const importMap = useCallback(({ name, trailPoints: importedPoints, locations }) => {
+    if (importedPoints) setImportedTrail({ name, points: importedPoints });
+    if (locations) {
+      setSiteReadings(locations.siteReadings);
+      replacePois(locations.pois);
+      if (autonomyState) {
+        sendTargets(locations.targets);
+      } else if (locations.targets.length > 0) {
+        enqueueSnackbar("Autonomy targets were not imported: no rover connection.", { variant: "warning" });
+      }
+    }
+    const parts = [importedPoints && "trail", locations && "waypoints"].filter(Boolean).join(" and ");
+    enqueueSnackbar(`Imported ${parts} from ${name}`, { variant: "success" });
+  }, [setSiteReadings, replacePois, autonomyState, sendTargets, enqueueSnackbar]);
+
+  // Remove all science sites, autonomy targets, and POIs, e.g. before a new mission. The trail has its own Clear Trail.
+  const clearMap = useCallback(() => {
+    setSiteReadings([null, null, null]);
+    replacePois([]);
+    if (autonomyState) sendTargets([]);
+  }, [setSiteReadings, replacePois, autonomyState, sendTargets]);
+
+  const trailControlProps = useMemo(() => ({
+    points: trailPoints,
+    ready: trailReady,
+    recording: isRecording,
+    hasUnsavedTrail,
+    onStart: startRecording,
+    onStop: stopRecording,
+    onClear: clearTrail,
+    importedTrail,
+    onClearImport: clearImportedTrail,
+    mapData: { siteReadings, targets, pois },
+    // Importing waypoints and Clear Map change science sites, so they follow the same lock
+    locationsLocked: scienceLocked,
+    onImportMap: importMap,
+    onClearMap: clearMap,
+  }), [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, clearImportedTrail, siteReadings, targets, pois, scienceLocked, importMap, clearMap]);
+
   trailPointsRef.current = trailPoints;
-  trailControlStateRef.current = { trailReady,isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail };
+  trailControlPropsRef.current = trailControlProps;
+  // Read by the map click handler and POI control, which are created once when the map loads
+  poiStateRef.current = { isPlacingPoi, addPoi, enqueueSnackbar };
 
   const robotCoordsRef = useRef(robotCoordinates);
   const baseCoordsRef = useRef(baseCoordinates);
@@ -537,6 +903,30 @@ export default function Map() {
       () => resetMapCam({ pitch: 60, bearing: -20 })
     );
 
+    const poiControl = new PoiControl(
+      () => setIsPlacingPoi((prev) => !prev),
+      () => {
+        // Works after the signal drops too, using the last known position (e.g. to mark where the connection was lost)
+        const robot = robotCoordsRef.current;
+        if (!robot.hasFix) return;
+        const poi = poiStateRef.current.addPoi({ lat: robot.lat, long: robot.long });
+        poiStateRef.current.enqueueSnackbar(
+          robot.receive ? `${poi.name} pinned at the rover` : `${poi.name} pinned at the rover's last known position (no GPS signal)`,
+          { variant: robot.receive ? "success" : "warning" },
+        );
+      }
+    );
+
+    const onMapClick = (e) => {
+      if (!poiStateRef.current.isPlacingPoi) return;
+      // Clicks on a pin or popup open/use that popup instead of dropping a new pin
+      if (e.originalEvent.target.closest?.(".maplibregl-marker, .maplibregl-popup")) return;
+      const poi = poiStateRef.current.addPoi({ lat: e.lngLat.lat, long: e.lngLat.lng });
+      setIsPlacingPoi(false);
+      poiStateRef.current.enqueueSnackbar(`${poi.name} added`, { variant: "success" });
+    };
+    map.on("click", onMapClick);
+
     const onZoom = () => {
       updateAccuracyRadius(map, "robot-accuracy-circle-layer", robotCoordsRef.current);
       updateAccuracyRadius(map, "base-accuracy-circle-layer", baseCoordsRef.current);
@@ -555,11 +945,17 @@ export default function Map() {
       map.addControl(resetZoomControl, "top-left");
       resetZoomRef.current = resetZoomControl;
 
+      map.addControl(poiControl, "top-left");
+      poiControlRef.current = poiControl;
+      poiControl.update(poiStateRef.current.isPlacingPoi, robotCoordsRef.current.hasFix);
+      // Put the top-left panels (Reset Zoom, POI) side by side instead of stacked,
+      // so the bottom-left coordinate boxes don't cover them on short screens
+      Object.assign(map.getContainer().querySelector(".maplibregl-ctrl-top-left").style, { display: "flex", alignItems: "flex-start" });
+
       const trailControl = new TrailControl();
       map.addControl(trailControl, "bottom-right");
       trailControlRef.current = trailControl;
-      const currentTrailState = trailControlStateRef.current;
-      trailControl.update(trailPointsRef.current, currentTrailState.trailReady, currentTrailState.isRecording, currentTrailState.hasUnsavedTrail, currentTrailState.startRecording, currentTrailState.stopRecording, currentTrailState.clearTrail, currentTrailState.importedTrail, currentTrailState.importTrail, currentTrailState.clearImportedTrail);
+      trailControl.update(trailControlPropsRef.current);
 
       // Add 3D buildings only if the style provides the expected source
       const style = map.getStyle && map.getStyle();
@@ -632,7 +1028,7 @@ export default function Map() {
       // Draw imported trails
       map.addSource(IMPORTED_TRAIL_SOURCE, {
         type: "geojson",
-        data: importedTrailGeoJSON(currentTrailState.importedTrail?.points ?? []),
+        data: importedTrailGeoJSON(trailControlPropsRef.current.importedTrail?.points ?? []),
       });
       map.addLayer({
         id: IMPORTED_TRAIL_SOURCE,
@@ -728,6 +1124,9 @@ export default function Map() {
       window.removeEventListener("resize", onWindowResize);
       map.off("zoom", onZoom);
       map.off("load", onLoad);
+      map.off("click", onMapClick);
+      Object.values(waypointMarkersRef.current).forEach(removeWaypointMarker);
+      waypointMarkersRef.current = {};
       // Clean up map instance
       if (map && typeof map.remove === "function") {
         map.remove();
@@ -736,6 +1135,58 @@ export default function Map() {
       trailUpdaterRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    poiControlRef.current?.update(isPlacingPoi, robotCoordinates.hasFix);
+    // Crosshair cursor shows the next map click will drop a pin
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = isPlacingPoi ? "crosshair" : "";
+  }, [isPlacingPoi, robotCoordinates.hasFix]);
+
+  // Keep one marker per waypoint: add new ones, move or restyle changed ones, remove deleted ones.
+  // Must stay after the map setup effect so mapRef is ready on the first run.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const markers = waypointMarkersRef.current;
+    const currentIds = new Set(waypoints.map((wp) => wp.id));
+
+    for (const id of Object.keys(markers)) {
+      if (!currentIds.has(id)) {
+        removeWaypointMarker(markers[id]);
+        delete markers[id];
+      }
+    }
+
+    for (const wp of waypoints) {
+      if (!markers[wp.id]) {
+        const element = document.createElement("div");
+        // The popup's content is rendered into popupNode with a portal below, so it stays in this React tree
+        const popupNode = document.createElement("div");
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: "300px" }).setDOMContent(popupNode);
+        popup.on("open", () => {
+          // Map controls (GPS trail, coordinates) sit at z-index 2; keep the open popup above them
+          popup.getElement().style.zIndex = 3;
+          // Same gray border and rounded corners as the app's other dropdowns (e.g. GPS Manager)
+          Object.assign(popup.getElement().querySelector(".maplibregl-popup-content").style, { border: "1px solid gray", borderRadius: "12px", padding: "10px" });
+          setOpenPopup({ id: wp.id, node: popupNode });
+        });
+        // Opening another pin can close this one after the new one opens, so only clear if this pin is still the open one
+        popup.on("close", () => setOpenPopup((prev) => (prev?.id === wp.id ? null : prev)));
+        markers[wp.id] = {
+          // MapLibre needs a position before addTo
+          marker: new maplibregl.Marker({ element }).setLngLat([wp.long, wp.lat]).setPopup(popup).addTo(map),
+          root: ReactDOM.createRoot(element),
+        };
+      }
+      const { marker, root } = markers[wp.id];
+      marker.setLngLat([wp.long, wp.lat]);
+      marker.getElement().title = `${wp.name}\n${wp.lat.toFixed(6)}, ${wp.long.toFixed(6)}`;
+      // Keep highlighted pins on top of overlapping POIs, with science sites above autonomy targets
+      marker.getElement().style.zIndex = { science: 2, autonomy: 1 }[wp.type] ?? "";
+      root.render(<WaypointPin waypoint={wp} />);
+    }
+  }, [waypoints]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource(TRAIL_SOURCE);
@@ -752,8 +1203,8 @@ export default function Map() {
   }, [importedTrail]);
 
   useEffect(() => {
-    trailControlRef.current?.update(trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail);
-  }, [trailPoints, trailReady, isRecording, hasUnsavedTrail, startRecording, stopRecording, clearTrail, importedTrail, importTrail, clearImportedTrail]);
+    trailControlRef.current?.update(trailControlProps);
+  }, [trailControlProps]);
 
   useEffect(() => {
     if (webglSupported === false) return;
@@ -818,6 +1269,27 @@ export default function Map() {
       <div>This map requires WebGL to work, which wasn't detected.</div>
     </div>
   )} else {
-  return <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />;
+  return (
+    <>
+      <div ref={mapContainer} className="w-full flex-1 min-h-0 bg-gray-200" />
+      {openWaypoint && createPortal(
+        <WaypointPopup
+          key={openWaypoint.id}
+          waypoint={openWaypoint}
+          waypoints={waypoints}
+          robotCoordinates={robotCoordinates}
+          baseCoordinates={baseCoordinates}
+          scienceLocked={scienceLocked}
+          targetsLocked={targetsLocked}
+          roverConnected={Boolean(autonomyState)}
+          autonomyTargetIds={AUTONOMY_TARGET_IDS}
+          onSetAs={setWaypointAs}
+          onRenamePoi={(name) => renamePoi(openWaypoint.id, name)}
+          onDelete={deleteWaypoint}
+        />,
+        openPopup.node,
+      )}
+    </>
+  );
   }
 }

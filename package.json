@@ -23,6 +23,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mdxeditor/editor": "^4.3.3",
     "@mui/icons-material": "^7.1.2",
     "@mui/material": "^7.1.2",
     "@mui/system": "^7.1.1",
@@ -30,6 +31,7 @@
     "@rolldown/pluginutils": "^1.0.0-beta.42",
     "@vis.gl/react-maplibre": "^8.0.4",
     "express": "^4.21.2",
+    "lexical": "^0.48.0",
     "maplibre-gl": "^6.10.0",
     "notistack": "^3.0.2",
     "react": "^19.1.0",

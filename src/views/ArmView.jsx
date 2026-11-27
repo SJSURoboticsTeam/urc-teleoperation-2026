@@ -81,6 +81,25 @@ export default function ArmView() {
   const controlModeLabel = gamepadMode ? "Gamepad Control" : "Slider Control";
   const sendModeLabel = controlsLocked ? "Locked" : txon ? "Auto" : "Manual";
 
+  const visualCommands = {
+    track: safeArmCommands.track ?? ARM_JOINT_META.track.initial,
+    shoulder: safeArmCommands.shoulder ?? ARM_JOINT_META.shoulder.initial,
+    elbow: safeArmCommands.elbow ?? ARM_JOINT_META.elbow.initial,
+    pitch: safeArmCommands.pitch ?? ARM_JOINT_META.pitch.initial,
+    roll: safeArmCommands.roll ?? ARM_JOINT_META.roll.initial,
+    clamp: safeArmCommands.clamp ?? ARM_JOINT_META.clamp.initial,
+  };
+  const trackOffset =
+    (visualCommands.track / ARM_JOINT_META.track.max) * 45 - 45;
+  const shoulderRotation =
+    visualCommands.shoulder - ARM_JOINT_META.shoulder.initial;
+  const elbowRotation = visualCommands.elbow - ARM_JOINT_META.elbow.initial;
+  const pitchRotation = visualCommands.pitch - ARM_JOINT_META.pitch.initial;
+  const rollRotation =
+    visualCommands.roll - ARM_JOINT_META.roll.initial - 90;
+  const clampRotation =
+    (visualCommands.clamp - ARM_JOINT_META.clamp.initial) * 0.25;
+
   useEffect(() => {
     armCommandsRef.current = safeArmCommands;
   }, [safeArmCommands]);
@@ -286,22 +305,25 @@ export default function ArmView() {
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
+        flexDirection: "row",
         justifyContent: "flex-start",
-        flexDirection: "column",
         overflowY: "auto",
+        overflowX: "auto",
         width: "100%",
         height: "100%",
-        px: { xs: 1, sm: 2 },
-        boxSizing: "border-box",
+        minWidth: 0,
       }}
     >
       <Box
         sx={{
           mt: 2,
-          width: "100%",
+          flex: "1 1 0",
+          width: "auto",
           maxWidth: 980,
-          mx: "auto",
+          minWidth: 260,
+          mx: 0,
+          flexShrink: 1,
         }}
       >
         <Typography
@@ -345,7 +367,7 @@ export default function ArmView() {
             display: "grid",
             gridTemplateColumns: {
               xs: "1fr",
-              sm: "repeat(auto-fit, minmax(260px, 1fr))",
+              sm: "repeat(auto-fit, minmax(220px, 1fr))",
             },
             gap: 2,
             width: "100%",
@@ -431,15 +453,14 @@ export default function ArmView() {
             </Box>
           ))}
         </Box>
-
         <Box
           sx={{
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             gap: 2,
-            mt: 3,
             flexWrap: "wrap",
+            mt: 3,
           }}
         >
           <FormControlLabel
@@ -462,32 +483,130 @@ export default function ArmView() {
               MANUAL TX
             </Button>
           )}
-        </Box>
 
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: txPulse ? "success.main" : "grey.400",
+                transition: "background-color 0.15s ease",
+              }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              TX Activity
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+          width: 360,
+          minWidth: 360,
+          mt: 2,
+        }}
+      >
         <Box
           sx={{
-            mt: 2,
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
             gap: 1,
+            width: "100%",
           }}
         >
-          <Box
-            sx={{
-              width: 10,
-              height: 10,
-              borderRadius: "50%",
-              backgroundColor: txPulse ? "success.main" : "grey.400",
-              transition: "background-color 0.15s ease",
-            }}
-          />
-
-          <Typography variant="body2" color="text.secondary">
-            TX Activity
-          </Typography>
+          <Box sx={{ display: "flex", flex: "0 0 320px", width: 320, flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              ARM VISUAL
+            </Typography>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 -145 300 380"
+            role="img"
+            aria-label="Arm pose visualization"
+            style={{ width: "100%", maxWidth: 320, height: "auto" }}
+          >
+          <g transform="translate(-15 0) translate(150 100) scale(1.4) translate(-150 -100)">
+          <g id="body">
+            <rect x="110" y="50" width="24" height="70" fill="#80cdd6" />
+          </g>
+          <g transform={`translate(0 ${trackOffset})`}>
+            <rect x="112" y="98" width="20" height="20" rx="3" fill="#4aa3ae" />
+            <g transform={`rotate(${shoulderRotation} 122 108)`}>
+              <g id="neck" strokeLinecap="round">
+                <line x1="122" y1="108" x2="145" y2="58" stroke="#4aa3ae" strokeWidth="19.5" />
+                <line x1="122" y1="108" x2="145" y2="58" stroke="#80cdd6" strokeWidth="18" />
+              </g>
+              <g transform={`rotate(${elbowRotation} 145 58)`}>
+                <g id="head" strokeLinecap="round">
+                  <line x1="145" y1="58" x2="177" y2="82" stroke="#4aa3ae" strokeWidth="19.5" />
+                  <line x1="145" y1="58" x2="177" y2="82" stroke="#80cdd6" strokeWidth="18" />
+                </g>
+                <g transform={`rotate(${pitchRotation - 90} 177 82)`}>
+                  <g
+                    id="clamp1"
+                    transform={`rotate(${clampRotation} 177 92)`}
+                    strokeLinecap="round"
+                  >
+                    <line x1="177" y1="92" x2="187" y2="112" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="177" y1="92" x2="187" y2="112" stroke="#80cdd6" strokeWidth="10" />
+                    <line x1="187" y1="112" x2="193" y2="107" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="187" y1="112" x2="193" y2="107" stroke="#80cdd6" strokeWidth="10" />
+                  </g>
+                  <g
+                    id="clamp2"
+                    transform={`rotate(${-clampRotation} 187 82)`}
+                    strokeLinecap="round"
+                  >
+                    <line x1="187" y1="82" x2="207" y2="92" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="187" y1="82" x2="207" y2="92" stroke="#80cdd6" strokeWidth="10" />
+                    <line x1="207" y1="92" x2="201" y2="100" stroke="#4aa3ae" strokeWidth="11" />
+                    <line x1="207" y1="92" x2="201" y2="100" stroke="#80cdd6" strokeWidth="10" />
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+          </g>
+          </svg>
+          </Box>
+          <Box sx={{ display: "flex", flex: "0 0 150px", width: 150, flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body2" sx={{ mb: 0.5 }}>
+              WRIST ROLL
+            </Typography>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 300 200"
+            role="img"
+            aria-label={`Front view of clamp at ${round2(visualCommands.roll)} degrees wrist roll`}
+            style={{ width: "100%", maxWidth: 150, height: "auto" }}
+          >
+          <circle cx="125" cy="100" r="58" fill="#80cdd6" stroke="#4aa3ae" strokeWidth="2" />
+          <g transform={`rotate(${rollRotation} 125 100)`} strokeLinecap="round">
+            <line x1="125" y1="50" x2="125" y2="80" stroke="#4aa3ae" strokeWidth="30" />
+            <line x1="125" y1="50" x2="125" y2="80" stroke="#80cdd6" strokeWidth="26" />
+            <line x1="125" y1="120" x2="125" y2="150" stroke="#4aa3ae" strokeWidth="30" />
+            <line x1="125" y1="120" x2="125" y2="150" stroke="#80cdd6" strokeWidth="26" />
+            <line x1="125" y1="100" x2="225" y2="100" stroke="#4aa3ae" strokeWidth="2" />
+          </g>
+          </svg>
         </Box>
       </Box>
+    </Box>
     </Box>
   );
 }

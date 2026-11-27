@@ -14,7 +14,7 @@ from shutdown import register_shutdown_commands
 from rtk import register_rtk_events, rtk_status_loop
 from video import send_fake_video_stats, videoloop
 import sys, subprocess
-
+from notes import register_notes_events
 
 print("\033[0m----------------")
 serial_ports = {
@@ -228,6 +228,7 @@ rtk_task_started = False
 
 
 register_metric_events(sio)
+register_notes_events(sio)
 register_shutdown_commands(sio)
 register_rtk_events(sio, serial_ports, offline)
 # =================== Start Server ===================
