@@ -35,7 +35,23 @@ RATE_WINDOW_S = 5
 TYPE_WINDOW_S = 10
 SETUP_RETRY_S = 5
 
+FORWARD_INTERVAL_S = 0.1
+QUEUE_MAX_FRAMES = 32
+MAX_BATCH_BYTES = 4096
+EMIT_TIMEOUT_S = 2
+MOCK_FRAME_PERIOD_S = 1
+RTCM_BASE_POSITION = 1005
+# dummy frames with invalid CRC; payload starts with the message type
+MOCK_OBS_FRAME = b"\xd3\x00\x04\x43\x20\x00\x00" + bytes(3)  # 1074
+MOCK_FRAME = b"\xd3\x00\x04\x3e\xd0\x00\x00" + bytes(3)  # 1005
+RESULTS = ("OK", "NO_GPS", "ERROR")
+
 controller = None
+robot_link = {"client": None}  # the socketio client connected to the rover backend, set by py_server
+
+
+def rtcm_type(raw: bytes):
+    return ((raw[3] << 4) | (raw[4] >> 4)) if len(raw) >= 5 else None
 
 
 def _ram_set(pairs):
@@ -52,7 +68,7 @@ class RtcmStats:
 
     def on_frame(self, raw: bytes):
         now = time.monotonic()
-        msg_type = ((raw[3] << 4) | (raw[4] >> 4)) if len(raw) >= 5 else None
+        msg_type = rtcm_type(raw)
         with self._lock:
             self._frames.append((now, len(raw)))
             if msg_type is not None:
@@ -87,12 +103,14 @@ class RtkController:
         self._seen = None
         self._gps = None
         self._retry_after = 0.0
-        self.rover = {
-            "linked": False, "forwarding": False, "forwarded": 0,
-            "lastResult": "NONE", "lastAckAgeS": None, "dropped": 0,
-        }
+        self._queue = deque(maxlen=QUEUE_MAX_FRAMES)  # full queue drops the oldest frame
+        self._overflow = 0  # frames lost to a full queue; only the reader thread writes it
+        self._last_ack = None
+        self._base_pos_seen = False
+        self.rover = {"forwarded": 0, "dropped": 0, "lastResult": "NONE"}
         self._mock_start = None
         self._mock_valid_at = None
+        self._mock_frame_at = 0.0
 
     def _current_gps(self):
         return None if self.offline else self.serial_ports["gps"]["port"]
@@ -150,6 +168,14 @@ class RtkController:
         snap = self._snapshot()
         state = self._state(snap)
         surveying = snap["tmode"] == 1
+        client = robot_link["client"]
+        rover = {
+            **self.rover,
+            "linked": client is not None and bool(client.connected),
+            "forwarding": state == "active" and self._base_pos_seen,
+            "dropped": self.rover["dropped"] + self._overflow,
+            "lastAckAgeS": None if self._last_ack is None else round(time.monotonic() - self._last_ack, 1),
+        }
         return {
             "available": rtk_available,
             "gpsConnected": snap["connected"],
@@ -162,12 +188,92 @@ class RtkController:
                 "valid": state == "active",
             },
             "rtcm": snap["rtcm"],
-            "rover": self.rover,
+            "rover": rover,
             "error": self.error if rtk_available else UNAVAILABLE_MESSAGE,
         }
 
     async def emit_status(self):
         await self.sio.emit("rtkStatus", self.status())
+
+    def _reset_delivery(self):
+        self.rover.update(forwarded=0, dropped=0, lastResult="NONE")
+        self._overflow = 0
+        self._last_ack = None
+        self._base_pos_seen = False
+        self._queue.clear()
+
+    def _enqueue(self, raw: bytes):
+        if len(self._queue) == self._queue.maxlen:
+            self._overflow += 1
+        self._queue.append(raw)
+
+    def _on_rtcm(self, raw: bytes):
+        self.stats.on_frame(raw)
+        self._enqueue(raw)
+
+    def _on_ack(self, result):
+        status = result.get("status") if isinstance(result, dict) else None
+        self.rover["lastResult"] = status if status in RESULTS else "ERROR"
+        self._last_ack = time.monotonic()
+
+    @staticmethod
+    def _batches(frames):
+        batch, size = [], 0
+        for frame in frames:
+            if batch and size + len(frame) > MAX_BATCH_BYTES:
+                yield batch
+                batch, size = [], 0
+            batch.append(frame)
+            size += len(frame)
+        if batch:
+            yield batch
+
+    async def _send(self, frames):
+        client = robot_link["client"]
+        if client is None or not client.connected:
+            self.rover["dropped"] += len(frames)
+            return
+        try:
+            await asyncio.wait_for(
+                client.emit("rtcmCorrections", b"".join(frames), callback=self._on_ack), EMIT_TIMEOUT_S)
+            self.rover["forwarded"] += len(frames)
+        except Exception:
+            self.rover["dropped"] += len(frames)
+
+    async def _forward_once(self):
+        if self.offline and self._mock_start is not None and time.monotonic() - self._mock_frame_at >= MOCK_FRAME_PERIOD_S:
+            self._mock_frame_at = time.monotonic()
+            self._enqueue(MOCK_OBS_FRAME)
+            if self._mock_valid_at is not None:
+                self._enqueue(MOCK_FRAME)
+        valid = self.survey_valid()  # read before draining so an old frame cannot pass a gate that opened later
+        frames = []
+        while True:
+            try:
+                frames.append(self._queue.popleft())
+            except IndexError:
+                break
+        # the rover may pair observations with a cached old base position, so discard frames (not counted
+        # as dropped) until the survey is valid and a fresh 1005 has arrived.
+        if not valid:
+            self._base_pos_seen = False
+            return
+        if not self._base_pos_seen:
+            start = next((i for i, f in enumerate(frames) if rtcm_type(f) == RTCM_BASE_POSITION), None)
+            if start is None:
+                return
+            self._base_pos_seen = True
+            frames = frames[start:]
+        for batch in self._batches(frames):
+            await self._send(batch)
+
+    async def forward_loop(self):
+        while True:
+            try:
+                await self._forward_once()
+            except Exception as e:
+                print(f"RTK forward loop error: {e}")
+            await asyncio.sleep(FORWARD_INTERVAL_S)
 
     def _read_tmode(self, gps):
         values = gps.poll_cfg(TMODE_KEYS)
@@ -178,7 +284,7 @@ class RtkController:
         }
 
     def _setup_receiver(self, gps):
-        gps.on_rtcm = self.stats.on_frame
+        gps.on_rtcm = self._on_rtcm
         gps.send_ubx(_ram_set(ALWAYS_ON))
         return self._read_tmode(gps)
 
@@ -212,7 +318,7 @@ class RtkController:
             self._seen = gps
             self.tmode = self.min_duration_s = self.accuracy_limit_m = None
             self.error = None
-            self.rover["forwarded"] = self.rover["dropped"] = 0
+            self._reset_delivery()
             self._retry_after = 0.0
         if gps is None or gps is self._gps or not rtk_available or not gps.reader_active:
             return
@@ -283,7 +389,7 @@ class RtkController:
                     info = await asyncio.to_thread(self._disable, gps)
                 if self._current_gps() is gps:
                     self._apply(info)
-                    self.rover["forwarded"] = self.rover["dropped"] = 0
+                    self._reset_delivery()
                 return {"status": "OK"}
             except Exception as e:
                 message = f"Receiver configuration failed: {e}"
@@ -323,4 +429,4 @@ def register_rtk_events(sio, serial_ports, offline):
 
 
 async def rtk_status_loop():
-    await controller.run()
+    await asyncio.gather(controller.run(), controller.forward_loop())

@@ -27,6 +27,7 @@ from autonomy import get_autonomy_states
 from gps import ZEDF9P, GPS_Data, GNRMC, read_gps_data, send_fake_gps_data
 from arm import dump_session_log
 from shutdown import register_shutdown_commands
+from rtk import register_rtk_events
 from serial_console import SerialConsole, register_serial_console_events
 from drive_control import register_drive_control_events, release_drive_control, revoke_drive_control
 from battery import send_fake_battery_data, get_battery_data
@@ -350,6 +351,7 @@ else:
 register_arm_events(sio, serial_ports)
 register_camera_pt_events(sio,serial_ports)
 register_shutdown_commands(sio)
+register_rtk_events(sio, serial_ports, offline)
 register_serial_console_events(sio, serial_console)
 register_drive_control_events(sio, stop_drive_motors_for_handover)
 register_rover_mode_events(

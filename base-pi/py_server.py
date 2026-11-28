@@ -11,7 +11,7 @@ import sys
 from metrics import asyncsshloop, register_metric_events, cpuloop, send_fake_antenna_stats
 from gps import ZEDF9P, read_gps_data, send_fake_gps_data
 from shutdown import register_shutdown_commands
-from rtk import register_rtk_events, rtk_status_loop
+from rtk import register_rtk_events, rtk_status_loop, robot_link
 from video import send_fake_video_stats, videoloop
 import sys, subprocess
 from notes import register_notes_events
@@ -124,15 +124,25 @@ async def robot_server_loop():
                     "longitude": data["longitude"],
                 }
 
+        @robot.on("connect")
+        async def robot_connected():
+            print(f"Connected to robot server at {ROBOT_SERVER_URL}")
+
+        @robot.on("disconnect")
+        async def robot_disconnected():
+            print("Disconnected from robot server")
+
         try:
             await robot.connect(ROBOT_SERVER_URL, wait_timeout=5)
-            print(f"Connected to robot server at {ROBOT_SERVER_URL}")
+            robot_link["client"] = robot
             await robot.wait()
         except asyncio.CancelledError:
             raise
         except Exception as exc:
             print(f"Robot server connection failed: {exc}")
         finally:
+            if robot_link["client"] is robot:
+                robot_link["client"] = None
             gps_state["robot"] = None
             if robot.connected:
                 await robot.disconnect()

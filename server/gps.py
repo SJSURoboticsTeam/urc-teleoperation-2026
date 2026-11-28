@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import math
 
 import rover_mode
+import rtk
 
 # last position sent as gpsData, used as the mock autonomy start point
 latest_fix = None
@@ -30,14 +31,16 @@ class GPS_Data:
     latitude: float
     longitude: float
     accuracy: Union[AccuracyEstimate, None] = None
+    fix_quality: Union[int, None] = None  # GGA field 6: 1 standalone, 2 DGPS, 4 RTK fixed, 5 RTK float
 
 
 class ZEDF9P:
     def __init__(self, port, baudrate, timeout: float = 0.01):
-        self.gps_port = serial.Serial(port, baudrate, timeout=timeout)
+        self.gps_port = serial.Serial(port, baudrate, timeout=timeout, write_timeout=1)
         self.lines = []
         self.__gnrmc: GNRMC = GNRMC(None, None, False)
         self.__accuracy: Union[AccuracyEstimate, None] = None
+        self.__fix_quality: Union[int, None] = None
 
         # sleep for a second to ensure we have data to populate self.gnrmc
         time.sleep(1)
@@ -74,7 +77,9 @@ class ZEDF9P:
         """
         try:
             parts = line.strip().split(",")
+            self.__fix_quality = None
             fix_quality = int(parts[6])
+            self.__fix_quality = fix_quality
             hdop = float(parts[8])
             if fix_quality <= 0 or hdop <= 0 or not math.isfinite(hdop):
                 self.__accuracy = None
@@ -94,7 +99,8 @@ class ZEDF9P:
         (not castable to float)
         """
         val = self.gnrmc
-        return GPS_Data(longitude=val.longitude, latitude=val.latitude, accuracy=self.__accuracy)
+        return GPS_Data(longitude=val.longitude, latitude=val.latitude, accuracy=self.__accuracy,
+                        fix_quality=self.__fix_quality)
 
     def has_gps_lock(self) -> bool:
         """
@@ -133,6 +139,10 @@ class ZEDF9P:
             if "$GNGGA" in line:
                 self.process_gngga(line)
     
+    def write_corrections(self, data: bytes) -> None:
+        """Write RTCM bytes to the receiver. Blocks, so call it through asyncio.to_thread."""
+        self.gps_port.write(data)
+
     def close(self) -> None:
         self.gps_port.close()
 
@@ -151,11 +161,12 @@ async def read_gps_data(serial_ports, sio):
                     'longitude': position.longitude,
                     'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                     'accuracy_m': position.accuracy.horizontal_m if position.accuracy else None,
-                    'accuracy_source': position.accuracy.source if position.accuracy else None
+                    'accuracy_source': position.accuracy.source if position.accuracy else None,
+                    'fix_quality': position.fix_quality
                 }
                 await sio.emit("gpsData", data)
                 latest_fix = {"latitude": position.latitude, "longitude": position.longitude}
-                print(f"Latitude: {position.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}")
+                print(f"Latitude: {position.latitude}, Longitude: {position.longitude}, Accuracy: {position.accuracy}, Fix quality: {position.fix_quality}")
             else:
                 print("No GPS lock")
             # time.sleep(0.01)
@@ -178,6 +189,7 @@ async def send_fake_gps_data(sio):
                     'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                     'accuracy_m': 0.5,
                     'accuracy_source': 'MOCK',
+                    'fix_quality': rtk.mock_fix_quality(),
                 })
             await asyncio.sleep(1)
             continue
@@ -186,7 +198,8 @@ async def send_fake_gps_data(sio):
             'longitude': round(random.uniform(-121.882, -121.883), 5), 
             'timestamp': datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             'accuracy_m': round(random.uniform(1.5, 4.0), 2),          
-            'accuracy_source': 'HDOP'                                  
+            'accuracy_source': 'HDOP',
+            'fix_quality': rtk.mock_fix_quality()
         }
 
         await sio.emit('gpsData', data)
